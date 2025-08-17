@@ -1,0 +1,32 @@
+batch_jobs:
+  - name: scrape_new_videos
+    description: >
+      外部サイト（例: FANZA）から新作データをスクレイピングし、
+      videos テーブルに新規レコードを追加する。
+    schedule: "0 3 * * *"   # 毎日 03:00 JST 実行
+    input:
+      - target_sources: ["fanza"]
+      - fetch_limit: 200    # 一度に取得する件数上限
+    output:
+      - insert: public.videos
+      - update: public.video_embeddings (再生成)
+    error_handling:
+      - retry: 3
+      - notify: slack_webhook
+
+  - name: update_two_tower_model
+    description: >
+      Two-Tower モデルの再学習と、video_embeddings / user_embeddings の再計算を行う。
+      新しい学習済みモデルを Supabase Edge Function で利用可能にする。
+    schedule: "0 4 * * 0"   # 毎週日曜 04:00 JST 実行
+    input:
+      - training_data: public.user_events
+      - features: ["views", "likes", "dismisses"]
+    output:
+      - update: public.video_embeddings
+      - update: public.user_embeddings
+      - export: "supabase/storage/models/two_tower_latest.pkl"
+    error_handling:
+      - retry: 1
+      - notify: slack_webhook
+      - fallback: "前回のモデルを利用し続ける"
