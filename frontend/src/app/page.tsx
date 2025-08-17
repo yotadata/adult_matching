@@ -15,9 +15,9 @@ const DUMMY_CARDS: CardData[] = [
   { id: 5, title: '田舎で育った純朴な彼女との初体験', category: '#田舎 #純朴 #初体験', description: 'サンプルテキスト。サンプルテキスト。サンプルテキスト。', videoUrl: 'https://www.youtube.com/embed/k7Kf89f9KAw?autoplay=1&mute=1&loop=1&playlist=k7Kf89f9KAw' },
 ];
 
-const ORIGINAL_GRADIENT = 'linear-gradient(to right, #9098B8, #A8AAB8, #C8A8B0, #C8B088)';
-const LEFT_SWIPE_GRADIENT = 'linear-gradient(to right, #E0E0E0, #A8AAB8, #C8A8B0, #C8B088)'; // 左端を明るく
-const RIGHT_SWIPE_GRADIENT = 'linear-gradient(to right, #9098B8, #A8AAB8, #C8A8B0, #E0E0E0)'; // 右端を明るく
+const ORIGINAL_GRADIENT = 'linear-gradient(to right, #C4C8E3, #D7D1E3, #F7D7E0, #F8DBB9)';
+const LEFT_SWIPE_GRADIENT = 'linear-gradient(to right, #AEB4EB, #D7D1E3, #F7D7E0,#F8DBB9)'; // 左端を明るく
+const RIGHT_SWIPE_GRADIENT = 'linear-gradient(to right, #C4C8E3,  #D7D1E3, #F7D7E0,#F9CFA0)'; // 右端を明るく
 
 export default function Home() {
   const [activeIndex, setActiveIndex] = useState(0);
@@ -79,7 +79,12 @@ export default function Home() {
         </AnimatePresence>
       </main>
       <footer className="p-4">
-        {activeCard && <ActionButtons onSkip={() => triggerSwipe('left')} onLike={() => triggerSwipe('right')} />}
+        {activeCard && <ActionButtons 
+          onSkip={() => triggerSwipe('left')} 
+          onLike={() => triggerSwipe('right')}
+          nopeColor="rgba(174, 180, 235, 0.2)"
+          likeColor="rgba(249, 207, 160, 0.2)"
+        />}
       </footer>
     </motion.div>
   );
