@@ -8,7 +8,7 @@ import { AnimatePresence, motion, PanInfo } from "framer-motion";
 
 // ダミーデータ
 const DUMMY_CARDS: CardData[] = [
-  { id: 1, title: '【VR】VR専用機材じゃないとダメなんでしょ？って思ってた時期が俺にもありました。', category: '#VR #高画質 #素人', description: 'サンプルテキスト。サンプルテキスト。サンプルテキスト。', videoUrl: 'https://www.youtube.com/embed/k7Kf89f9KAw?autoplay=1&mute=1&loop=1&playlist=k7Kf89f9KAw' },
+  { id: 1, title: '【VR】VR専用機材じゃないとダメなんでしょ？って思ってた時期が俺にもありました。', category: '#VR #高画質 #素人', description: 'これは非常に長い説明文のサンプルです。スクロール機能が正しく実装されているかを確認するために、このテキストはカードの表示領域を超える長さを持つ必要があります。繰り返しになりますが、これはスクロールのテスト用です。これは非常に長い説明文のサンプルです。スクロール機能が正しく実装されているかを確認するために、このテキストはカードの表示領域を超える長さを持つ必要があります。繰り返しになりますが、これはスクロールのテスト用です。これは非常に長い説明文のサンプルです。スクロール機能が正しく実装されているかを確認するために、このテキストはカードの表示領域を超える長さを持つ必要があります。繰り返しになりますが、これはスクロールのテスト用です。', videoUrl: 'https://www.youtube.com/embed/k7Kf89f9KAw?autoplay=1&mute=1&loop=1&playlist=k7Kf89f9KAw' },
   { id: 2, title: '新人グラビアアイドル！初めての撮影で緊張…！', category: '#新人 #グラビア #アイドル', description: 'サンプルテキスト。サンプルテキスト。サンプルテキスト。', videoUrl: 'https://www.youtube.com/embed/k7Kf89f9KAw?autoplay=1&mute=1&loop=1&playlist=k7Kf89f9KAw' },
   { id: 3, title: '会社の美人上司と禁断の社内恋愛', category: '#上司 #OL #ドラマ', description: 'サンプルテキスト。サンプルテキスト。サンプルテキスト。', videoUrl: 'https://www.youtube.com/embed/k7Kf89f9KAw?autoplay=1&mute=1&loop=1&playlist=k7Kf89f9KAw' },
   { id: 4, title: 'ギャルで人妻とかいうパワーワード', category: '#ギャル #人妻 #ドキュメンタリー', description: 'サンプルテキスト。サンプルテキスト。サンプルテキスト。', videoUrl: 'https://www.youtube.com/embed/k7Kf89f9KAw?autoplay=1&mute=1&loop=1&playlist=k7Kf89f9KAw' },
