@@ -9,7 +9,7 @@ export interface CardData {
   title: string;
   category: string;
   description: string;
-  videoUrl: string; // 追加
+  videoUrl: string;
 }
 
 export interface SwipeCardHandle {
@@ -24,8 +24,12 @@ interface SwipeCardProps {
 const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwipe }, ref) => {
   const controls = useAnimation();
 
+  // カードの幅を考慮して画面外に完全に移動させる
+  // max-w-md は 28rem = 448px
+  const CARD_WIDTH_PX = 448; 
+
   const swipe = async (direction: 'left' | 'right') => {
-    const x = direction === 'right' ? '100vw' : '-100vw';
+    const x = direction === 'right' ? `calc(100vw + ${CARD_WIDTH_PX}px)` : `calc(-100vw - ${CARD_WIDTH_PX}px)`;
     await controls.start({ x, opacity: 0, transition: { duration: 0.4 } });
     onSwipe();
   };
@@ -35,6 +39,7 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwi
   }));
 
   const handleDragEnd = (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+    // スワイプの閾値はそのまま
     if (info.offset.x > 100) {
       swipe('right');
     } else if (info.offset.x < -100) {
