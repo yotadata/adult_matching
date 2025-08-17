@@ -18,21 +18,14 @@ export interface SwipeCardHandle {
 interface SwipeCardProps {
   cardData: CardData;
   onSwipe: () => void;
-  index: number;
-  isTop: boolean;
 }
 
-const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwipe, index, isTop }, ref) => {
+const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwipe }, ref) => {
   const controls = useAnimation();
 
   const swipe = async (direction: 'left' | 'right') => {
     const x = direction === 'right' ? '100vw' : '-100vw';
-    // isTop が false の場合はアニメーションが完了する前に onSwipe を呼んで即座にカードを削除する
-    if (!isTop) {
-      onSwipe();
-      return;
-    }
-    await controls.start({ x, opacity: 0 });
+    await controls.start({ x, opacity: 0, transition: { duration: 0.4 } });
     onSwipe();
   };
 
@@ -53,23 +46,15 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwi
   return (
     <motion.div 
       className="absolute w-full max-w-md h-[60vh] rounded-2xl bg-white/10 backdrop-blur-lg border border-white/30 shadow-2xl flex flex-col justify-between p-6 cursor-grab"
-      drag={isTop ? "x" : false}
+      drag="x"
       dragConstraints={{ left: 0, right: 0 }}
       onDragEnd={handleDragEnd}
       animate={controls}
-      initial={{ 
-        scale: 1 - (3 - index) * 0.1, 
-        y: (3 - index) * -30, 
-        zIndex: 10 - index 
-      }}
-      style={{ 
-        zIndex: 10 - index,
-        transformOrigin: 'bottom',
-      }}
-      transition={{ ease: "easeOut", duration: 0.3 }}
+      initial={{ scale: 0.95, opacity: 0 }}
+      animate={{ scale: 1, opacity: 1, transition: { duration: 0.3 } }}
+      exit={{ x: 0, y: 20, scale: 0.95, opacity: 0, transition: { duration: 0.3 } }} // スワイプ以外で消えるときのアニメーション
       whileTap={{ cursor: "grabbing" }}
     >
-      {/* ... card content ... */}
       <div className="w-full h-1/2 bg-white/20 rounded-lg flex items-center justify-center">
         <p className="text-white/50">Sample Video</p>
       </div>
