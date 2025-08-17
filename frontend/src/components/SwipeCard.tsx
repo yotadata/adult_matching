@@ -1,7 +1,7 @@
 'use client';
 
 import { motion, useAnimation, PanInfo } from 'framer-motion';
-import { forwardRef, useImperativeHandle } from 'react';
+import { forwardRef, useImperativeHandle, useState } from 'react';
 
 // カードデータの型定義
 export interface CardData {
@@ -24,6 +24,7 @@ interface SwipeCardProps {
 }
 
 const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwipe, onDrag, onDragEnd }, ref) => {
+  const [isDraggable, setIsDraggable] = useState(true);
   const controls = useAnimation();
 
   const CARD_WIDTH_PX = 448; 
@@ -53,10 +54,13 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwi
     onDragEnd?.(event, info); // 親の onDragEnd を呼び出す
   };
 
+  const handleMouseEnter = () => setIsDraggable(false);
+  const handleMouseLeave = () => setIsDraggable(true);
+
   return (
     <motion.div 
-      className="absolute w-full max-w-md h-[70vh] rounded-2xl bg-white/10 backdrop-blur-lg border border-white/30 shadow-2xl flex flex-col p-4 cursor-grab overflow-hidden"
-      drag="x"
+      className="absolute w-full max-w-md h-[70vh] rounded-2xl bg-black border border-white/20 shadow-2xl flex flex-col justify-between cursor-grab overflow-hidden"
+      drag={isDraggable ? "x" : false}
       dragConstraints={{ left: 0, right: 0 }}
       onDragStart={(event, info) => onDrag?.(event, info)} // onDragStart も追加
       onDrag={handleDrag}
@@ -80,7 +84,7 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwi
       </div>
       
       {/* 下部: テキスト情報エリア */}
-      <div className="flex flex-col text-white p-4 flex-grow overflow-y-auto touch-pan-y">
+      <div className="flex flex-col text-white p-4 flex-grow overflow-y-auto" onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
         <h2 className="text-xl font-bold">{cardData.title}</h2>
         <div className="flex flex-wrap gap-2 my-2">
           {cardData.category.split(' ').map(tag => (
