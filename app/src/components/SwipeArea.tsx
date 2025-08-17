@@ -7,7 +7,7 @@ import ActionButton from './ActionButton';
 import { dummyVideos } from '@/lib/data';
 
 const SwipeArea = () => {
-  const [videos, setVideos] = useState(dummyVideos.reverse()); // Reverse for stacking
+  const [videos, setVideos] = useState([...dummyVideos].reverse()); // Reverse for stacking
   const x = useMotionValue(0);
   const constraintsRef = useRef(null);
 
