@@ -11,13 +11,14 @@ const Card: React.FC<CardProps> = ({ video }) => {
 
   return (
     <motion.div
-      className="w-full h-full bg-black/25 backdrop-blur-2xl rounded-2xl shadow-2xl overflow-hidden flex flex-col"
+      className="w-full h-full bg-black/25 rounded-2xl shadow-2xl overflow-hidden flex flex-col" // backdrop-blur-2xl を削除
       style={{
         border: '1px solid rgba(255, 255, 255, 0.18)',
+        filter: 'blur(16px)', // filter: blur() を追加
       }}
     >
       <div className="relative w-full h-3/5">
-        <iframe
+        <iframe // iframe に戻す
           src={youtubeEmbedUrl}
           title={video.title}
           frameBorder="0"
@@ -35,7 +36,9 @@ const Card: React.FC<CardProps> = ({ video }) => {
             </span>
           ))}
         </div>
-        <p className="text-sm text-gray-200 line-clamp-3 flex-grow">{video.description}</p>
+        <p className="text-sm text-gray-200 line-clamp-3 flex-grow">
+          {video.description}
+        </p>
       </div>
     </motion.div>
   );
