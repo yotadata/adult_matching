@@ -67,7 +67,6 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwi
       onDragEnd={handleDragEnd}
       animate={controls}
       initial={{ scale: 0.95, opacity: 0 }}
-      animate={{ scale: 1, opacity: 1, transition: { duration: 0.3 } }}
       whileTap={{ cursor: "grabbing" }}
     >
       {/* 上部: YouTube動画エリア */}
