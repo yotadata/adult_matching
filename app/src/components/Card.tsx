@@ -1,5 +1,4 @@
 import React from 'react';
-import Image from 'next/image';
 import { motion } from 'framer-motion';
 import type { Video } from '@/lib/data';
 
@@ -8,23 +7,26 @@ interface CardProps {
 }
 
 const Card: React.FC<CardProps> = ({ video }) => {
+  const youtubeEmbedUrl = `https://www.youtube.com/embed/${video.videoId}`;
+
   return (
     <motion.div
-      className="absolute w-[90vw] max-w-md h-[70vh] bg-white/10 backdrop-blur-lg rounded-2xl shadow-2xl overflow-hidden cursor-grab"
+      className="absolute w-[90vw] max-w-md h-[70vh] bg-black/20 backdrop-blur-xl rounded-2xl shadow-2xl overflow-hidden cursor-grab p-4 flex flex-col"
       style={{
-        border: '1px solid rgba(255, 255, 255, 0.3)',
+        border: '1px solid rgba(255, 255, 255, 0.2)',
       }}
     >
-      <div className="relative w-full h-3/5">
-        <Image
-          src={video.thumbnailUrl}
-          alt={video.title}
-          fill
-          className="object-cover"
-          priority
-        />
+      <div className="relative w-full h-3/5 rounded-lg overflow-hidden">
+        <iframe
+          src={youtubeEmbedUrl}
+          title={video.title}
+          frameBorder="0"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowFullScreen
+          className="w-full h-full"
+        ></iframe>
       </div>
-      <div className="p-4 text-white">
+      <div className="pt-4 text-white flex-grow">
         <h2 className="text-2xl font-bold font-poppins">{video.title}</h2>
         <div className="flex flex-wrap gap-2 my-2">
           {video.tags.map((tag) => (
