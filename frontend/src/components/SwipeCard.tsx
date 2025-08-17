@@ -55,10 +55,10 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwi
 
   return (
     <motion.div 
-      className="relative absolute w-full max-w-md h-[70vh] rounded-2xl bg-black border border-white/20 shadow-2xl flex flex-col justify-between cursor-grab overflow-hidden"
+      className="absolute w-full max-w-md h-[70vh] rounded-2xl bg-white/10 backdrop-blur-lg border border-white/30 shadow-2xl flex flex-col p-4 cursor-grab overflow-hidden"
       drag="x"
       dragConstraints={{ left: 0, right: 0 }}
-      onDragStart={(event, info) => onDrag?.(event, info)}
+      onDragStart={(event, info) => onDrag?.(event, info)} // onDragStart も追加
       onDrag={handleDrag}
       onDragEnd={handleDragEnd}
       animate={controls}
@@ -66,10 +66,11 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwi
       animate={{ scale: 1, opacity: 1, transition: { duration: 0.3 } }}
       whileTap={{ cursor: "grabbing" }}
     >
-      {/* 背景動画 */}
-      <div className="absolute top-0 left-0 w-full h-full z-0">
+      {/* 上部: YouTube動画エリア */}
+      <div className="w-full h-1/2 rounded-lg overflow-hidden">
         <iframe
-          className="w-full h-full object-cover"
+          width="100%"
+          height="100%"
           src={cardData.videoUrl}
           title="YouTube video player"
           frameBorder="0"
@@ -77,16 +78,16 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwi
           allowFullScreen
         ></iframe>
       </div>
-
-      {/* グラデーションとテキスト */}
-      <div className="relative z-10 flex flex-col justify-end h-full p-4 bg-gradient-to-t from-black/80 to-transparent">
-        <h2 className="text-xl font-bold line-clamp-2 text-white">{cardData.title}</h2>
+      
+      {/* 下部: テキスト情報エリア */}
+      <div className="flex flex-col text-white p-4 flex-grow">
+        <h2 className="text-xl font-bold line-clamp-2">{cardData.title}</h2>
         <div className="flex flex-wrap gap-2 my-2">
           {cardData.category.split(' ').map(tag => (
             <span key={tag} className="bg-white/20 text-xs font-semibold px-2 py-1 rounded-full">{tag}</span>
           ))}
         </div>
-        <p className="text-sm line-clamp-3 text-white">{cardData.description}</p>
+        <p className="text-sm line-clamp-3">{cardData.description}</p>
       </div>
     </motion.div>
   );
