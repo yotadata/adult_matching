@@ -36,7 +36,7 @@ export default function Home() {
     <div className="flex flex-col items-center justify-between min-h-screen p-4 overflow-hidden">
       <Header />
       <main className="flex-grow flex items-center justify-center w-full relative h-[60vh]">
-        <AnimatePresence>
+        <AnimatePresence mode="wait">
           {cards.map((card, index) => (
             <SwipeCard 
               ref={cardRefs.current[index]}
