@@ -7,4 +7,17 @@ body {
   color: white;
   min-height: 100vh;
   overflow: hidden;
+  position: relative; /* for ::before positioning */
+}
+
+body::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: inherit; /* Inherit the body's background */
+  filter: blur(50px); /* 強いぼかし効果 */
+  z-index: -1; /* 背景として配置 */
 }
