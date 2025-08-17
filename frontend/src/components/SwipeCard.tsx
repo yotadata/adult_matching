@@ -1,7 +1,7 @@
 'use client';
 
 import { motion, useAnimation, PanInfo } from 'framer-motion';
-import { forwardRef, useImperativeHandle, useState } from 'react';
+import { forwardRef, useImperativeHandle } from 'react';
 
 // カードデータの型定義
 export interface CardData {
@@ -24,7 +24,6 @@ interface SwipeCardProps {
 }
 
 const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwipe, onDrag, onDragEnd }, ref) => {
-  const [isDraggable, setIsDraggable] = useState(true);
   const controls = useAnimation();
 
   const CARD_WIDTH_PX = 448; 
@@ -53,9 +52,6 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwi
     }
     onDragEnd?.(event, info); // 親の onDragEnd を呼び出す
   };
-
-  const handleMouseEnter = () => setIsDraggable(false);
-  const handleMouseLeave = () => setIsDraggable(true);
 
   return (
     <motion.div 
