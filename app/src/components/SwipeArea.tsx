@@ -30,7 +30,7 @@ const SwipeArea = () => {
 
   return (
     <div ref={constraintsRef} className="relative w-full h-full flex flex-col items-center justify-center">
-      <div className="relative w-[90vw] max-w-md h-[70vh] flex items-center justify-center">
+      <div className="relative w-[90vw] max-w-md h-[70vh]">
         {videos.length > 0 ? (
           videos.map((video, index) => {
             const isTopCard = index === 0;
@@ -40,6 +40,8 @@ const SwipeArea = () => {
                 drag={isTopCard ? "x" : false}
                 style={{
                   x: isTopCard ? x : 0,
+                  translateX: "-50%",
+                  translateY: "-50%",
                   rotate: isTopCard ? rotate : 0,
                   scale: 1 - (videos.length - 1 - index) * 0.05,
                   zIndex: index,
@@ -53,7 +55,7 @@ const SwipeArea = () => {
                     handleSwipeComplete('left');
                   }
                 }}
-                className="absolute"
+                className="absolute top-1/2 left-1/2"
               >
                 <Card video={video} />
               </motion.div>
