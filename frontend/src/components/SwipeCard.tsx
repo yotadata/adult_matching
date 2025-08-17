@@ -80,7 +80,7 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwi
       </div>
       
       {/* 下部: テキスト情報エリア */}
-      <div className="flex flex-col text-white p-4 flex-grow">
+      <div className="relative z-10 flex flex-col text-white p-4 flex-grow">
         <h2 className="text-xl font-bold line-clamp-2">{cardData.title}</h2>
         <div className="flex flex-wrap gap-2 my-2">
           {cardData.category.split(' ').map(tag => (
