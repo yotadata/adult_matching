@@ -55,7 +55,7 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwi
 
   return (
     <motion.div 
-      className="absolute w-full max-w-md h-[70vh] rounded-2xl bg-white/20 backdrop-blur-lg border border-white/30 shadow-2xl flex flex-col p-4 cursor-grab overflow-hidden"
+      className="absolute w-full max-w-md h-[70vh] rounded-2xl bg-white/10 backdrop-blur-lg border border-white/30 shadow-2xl flex flex-col p-4 cursor-grab overflow-hidden"
       drag="x"
       dragConstraints={{ left: 0, right: 0 }}
       onDragStart={(event, info) => onDrag?.(event, info)} // onDragStart も追加
