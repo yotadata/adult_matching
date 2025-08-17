@@ -60,7 +60,8 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwi
   return (
     <motion.div 
       className="absolute w-full max-w-md h-[70vh] rounded-2xl bg-black border border-white/20 shadow-2xl flex flex-col justify-between cursor-grab overflow-hidden"
-      drag={isDraggable ? "x" : false}
+      // drag={isDraggable ? "x" : false}
+      drag={"x"}
       dragConstraints={{ left: 0, right: 0 }}
       onDragStart={(event, info) => onDrag?.(event, info)} // onDragStart も追加
       onDrag={handleDrag}
