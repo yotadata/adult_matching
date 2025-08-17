@@ -60,8 +60,7 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwi
   return (
     <motion.div 
       className="absolute w-full max-w-md h-[70vh] rounded-2xl bg-black border border-white/20 shadow-2xl flex flex-col justify-between cursor-grab overflow-hidden"
-      // drag={isDraggable ? "x" : false}
-      drag={"x"}
+      drag="x"
       dragConstraints={{ left: 0, right: 0 }}
       onDragStart={(event, info) => onDrag?.(event, info)} // onDragStart も追加
       onDrag={handleDrag}
@@ -85,7 +84,7 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwi
       </div>
       
       {/* 下部: テキスト情報エリア */}
-      <div className="flex flex-col text-white p-4 flex-grow overflow-y-auto" onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
+      <div className="flex flex-col text-white p-4 flex-grow overflow-y-auto">
         <h2 className="text-xl font-bold">{cardData.title}</h2>
         <div className="flex flex-wrap gap-2 my-2">
           {cardData.category.split(' ').map(tag => (
