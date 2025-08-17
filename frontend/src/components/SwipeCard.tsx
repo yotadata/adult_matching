@@ -19,16 +19,17 @@ export interface SwipeCardHandle {
 interface SwipeCardProps {
   cardData: CardData;
   onSwipe: () => void;
+  onDrag?: (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => void; // 追加
+  onDragEnd?: (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => void; // 追加
 }
 
-const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwipe }, ref) => {
+const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwipe, onDrag, onDragEnd }, ref) => {
   const controls = useAnimation();
 
   const CARD_WIDTH_PX = 448; 
 
   const swipe = async (direction: 'left' | 'right') => {
     const x = direction === 'right' ? `calc(100vw + ${CARD_WIDTH_PX}px)` : `calc(-100vw - ${CARD_WIDTH_PX}px)`;
-    // duration を 0.4 から 0.6 に変更
     await controls.start({ x, opacity: 0, transition: { duration: 0.6 } }); 
     onSwipe();
   };
@@ -36,6 +37,10 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwi
   useImperativeHandle(ref, () => ({
     swipe,
   }));
+
+  const handleDrag = (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+    onDrag?.(event, info); // 親の onDrag を呼び出す
+  };
 
   const handleDragEnd = (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
     if (info.offset.x > 100) {
@@ -45,6 +50,7 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwi
     } else {
       controls.start({ x: 0 });
     }
+    onDragEnd?.(event, info); // 親の onDragEnd を呼び出す
   };
 
   return (
@@ -52,6 +58,8 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwi
       className="absolute w-full max-w-md h-[70vh] rounded-2xl bg-white/10 backdrop-blur-lg border border-white/30 shadow-2xl flex flex-col p-4 cursor-grab overflow-hidden"
       drag="x"
       dragConstraints={{ left: 0, right: 0 }}
+      onDragStart={(event, info) => onDrag?.(event, info)} // onDragStart も追加
+      onDrag={handleDrag}
       onDragEnd={handleDragEnd}
       animate={controls}
       initial={{ scale: 0.95, opacity: 0 }}

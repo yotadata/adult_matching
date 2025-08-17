@@ -4,7 +4,7 @@ import Header from "@/components/Header";
 import SwipeCard, { CardData, SwipeCardHandle } from "@/components/SwipeCard";
 import ActionButtons from "@/components/ActionButtons";
 import { useState, useRef } from "react";
-import { AnimatePresence } from "framer-motion";
+import { AnimatePresence, motion, PanInfo } from "framer-motion";
 
 // ダミーデータ
 const DUMMY_CARDS: CardData[] = [
@@ -15,12 +15,18 @@ const DUMMY_CARDS: CardData[] = [
   { id: 5, title: '田舎で育った純朴な彼女との初体験', category: '#田舎 #純朴 #初体験', description: 'サンプルテキスト。サンプルテキスト。サンプルテキスト。', videoUrl: 'https://www.youtube.com/embed/k7Kf89f9KAw?autoplay=1&mute=1&loop=1&playlist=k7Kf89f9KAw' },
 ];
 
+const ORIGINAL_GRADIENT = 'linear-gradient(to right, #9098B8, #A8AAB8, #C8A8B0, #C8B088)';
+const LEFT_SWIPE_GRADIENT = 'linear-gradient(to right, #E0E0E0, #A8AAB8, #C8A8B0, #C8B088)'; // 左端を明るく
+const RIGHT_SWIPE_GRADIENT = 'linear-gradient(to right, #9098B8, #A8AAB8, #C8A8B0, #E0E0E0)'; // 右端を明るく
+
 export default function Home() {
   const [activeIndex, setActiveIndex] = useState(0);
   const cardRef = useRef<SwipeCardHandle>(null);
+  const [currentGradient, setCurrentGradient] = useState(ORIGINAL_GRADIENT);
 
   const handleSwipe = () => {
     setActiveIndex((prev) => prev + 1);
+    setCurrentGradient(ORIGINAL_GRADIENT); // スワイプ完了後、元のグラデーションに戻す
   };
 
   const triggerSwipe = (direction: 'left' | 'right') => {
@@ -29,8 +35,32 @@ export default function Home() {
 
   const activeCard = activeIndex < DUMMY_CARDS.length ? DUMMY_CARDS[activeIndex] : null;
 
+  // ドラッグ中に背景色をリアルタイムで変更
+  const handleDrag = (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+    if (info.offset.x > 50) { // 右に50px以上ドラッグ
+      setCurrentGradient(RIGHT_SWIPE_GRADIENT);
+    } else if (info.offset.x < -50) { // 左に50px以上ドラッグ
+      setCurrentGradient(LEFT_SWIPE_GRADIENT);
+    } else {
+      setCurrentGradient(ORIGINAL_GRADIENT);
+    }
+  };
+
+  // ドラッグ終了時に背景色を最終決定
+  const handleDragEnd = (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+    // スワイプアウトした場合は handleSwipe で ORIGINAL_GRADIENT に戻るので、ここでは何もしない
+    // スワイプアウトしなかった場合は、カードが戻るので ORIGINAL_GRADIENT に戻す
+    if (Math.abs(info.offset.x) <= 100) { // 閾値を超えなかった場合
+      setCurrentGradient(ORIGINAL_GRADIENT);
+    }
+  };
+
   return (
-    <div className="flex flex-col items-center justify-between min-h-screen p-4 overflow-hidden">
+    <motion.div 
+      className="flex flex-col items-center justify-between min-h-screen p-4 overflow-hidden"
+      style={{ background: currentGradient }} // ここで背景色を適用
+      transition={{ duration: 0.3 }} // 背景色変化のアニメーション
+    >
       <Header />
       <main className="flex-grow flex items-center justify-center w-full relative h-[70vh]">
         <AnimatePresence mode="wait">
@@ -40,6 +70,8 @@ export default function Home() {
               key={activeCard.id}
               cardData={activeCard} 
               onSwipe={handleSwipe}
+              onDrag={handleDrag} 
+              onDragEnd={handleDragEnd} 
             />
           ) : (
             <p className="text-white font-bold text-2xl">No more cards</p>
@@ -49,6 +81,6 @@ export default function Home() {
       <footer className="p-4">
         {activeCard && <ActionButtons onSkip={() => triggerSwipe('left')} onLike={() => triggerSwipe('right')} />}
       </footer>
-    </div>
+    </motion.div>
   );
 }
