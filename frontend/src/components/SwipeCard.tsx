@@ -9,6 +9,7 @@ export interface CardData {
   title: string;
   category: string;
   description: string;
+  videoUrl: string; // 追加
 }
 
 export interface SwipeCardHandle {
@@ -45,27 +46,37 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwi
 
   return (
     <motion.div 
-      className="absolute w-full max-w-md h-[60vh] rounded-2xl bg-white/10 backdrop-blur-lg border border-white/30 shadow-2xl flex flex-col justify-between p-6 cursor-grab"
+      className="absolute w-full max-w-md h-[70vh] rounded-2xl bg-white/10 backdrop-blur-lg border border-white/30 shadow-2xl flex flex-col p-4 cursor-grab overflow-hidden"
       drag="x"
       dragConstraints={{ left: 0, right: 0 }}
       onDragEnd={handleDragEnd}
       animate={controls}
       initial={{ scale: 0.95, opacity: 0 }}
       animate={{ scale: 1, opacity: 1, transition: { duration: 0.3 } }}
-      exit={{ x: 0, y: 20, scale: 0.95, opacity: 0, transition: { duration: 0.3 } }} // スワイプ以外で消えるときのアニメーション
       whileTap={{ cursor: "grabbing" }}
     >
-      <div className="w-full h-1/2 bg-white/20 rounded-lg flex items-center justify-center">
-        <p className="text-white/50">Sample Video</p>
+      {/* 上部: YouTube動画エリア */}
+      <div className="w-full h-3/5 rounded-lg overflow-hidden">
+        <iframe
+          width="100%"
+          height="100%"
+          src={cardData.videoUrl}
+          title="YouTube video player"
+          frameBorder="0"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+          allowFullScreen
+        ></iframe>
       </div>
-      <div className="flex flex-col text-white">
-        <h2 className="text-xl font-bold">{cardData.title}</h2>
+      
+      {/* 下部: テキスト情報エリア */}
+      <div className="flex flex-col text-white p-4 flex-grow">
+        <h2 className="text-xl font-bold line-clamp-2">{cardData.title}</h2>
         <div className="flex flex-wrap gap-2 my-2">
           {cardData.category.split(' ').map(tag => (
             <span key={tag} className="bg-white/20 text-xs font-semibold px-2 py-1 rounded-full">{tag}</span>
           ))}
         </div>
-        <p className="text-sm">{cardData.description}</p>
+        <p className="text-sm line-clamp-3">{cardData.description}</p>
       </div>
     </motion.div>
   );
