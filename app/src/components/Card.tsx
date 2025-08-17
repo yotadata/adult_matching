@@ -11,12 +11,12 @@ const Card: React.FC<CardProps> = ({ video }) => {
 
   return (
     <motion.div
-      className="absolute w-[90vw] max-w-md h-[70vh] bg-black/20 backdrop-blur-xl rounded-2xl shadow-2xl overflow-hidden cursor-grab p-4 flex flex-col"
+      className="w-full h-full bg-black/25 backdrop-blur-2xl rounded-2xl shadow-2xl overflow-hidden flex flex-col"
       style={{
-        border: '1px solid rgba(255, 255, 255, 0.2)',
+        border: '1px solid rgba(255, 255, 255, 0.18)',
       }}
     >
-      <div className="relative w-full h-3/5 rounded-lg overflow-hidden">
+      <div className="relative w-full h-3/5">
         <iframe
           src={youtubeEmbedUrl}
           title={video.title}
@@ -26,16 +26,16 @@ const Card: React.FC<CardProps> = ({ video }) => {
           className="w-full h-full"
         ></iframe>
       </div>
-      <div className="pt-4 text-white flex-grow">
-        <h2 className="text-2xl font-bold font-poppins">{video.title}</h2>
+      <div className="p-4 text-white flex-grow flex flex-col">
+        <h2 className="text-2xl font-bold font-poppins line-clamp-2">{video.title}</h2>
         <div className="flex flex-wrap gap-2 my-2">
           {video.tags.map((tag) => (
-            <span key={tag} className="px-2 py-1 text-sm bg-white/20 rounded-full">
+            <span key={tag} className="px-2 py-1 text-xs bg-white/20 rounded-full">
               {tag}
             </span>
           ))}
         </div>
-        <p className="text-sm text-gray-200 line-clamp-3">{video.description}</p>
+        <p className="text-sm text-gray-200 line-clamp-3 flex-grow">{video.description}</p>
       </div>
     </motion.div>
   );
