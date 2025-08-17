@@ -58,15 +58,15 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwi
       animate={{ scale: 1, opacity: 1, transition: { duration: 0.3 } }}
       whileTap={{ cursor: "grabbing" }}
     >
-      {/* 上部: DMM動画エリア */}
-      <div style={{width:'100%', paddingTop: '75%', position:'relative'}} className="rounded-lg overflow-hidden">
+      {/* 上部: YouTube動画エリア */}
+      <div className="w-full h-3/5 rounded-lg overflow-hidden">
         <iframe
           width="100%"
           height="100%"
-          style={{position: 'absolute', top: 0, left: 0}}
           src={cardData.videoUrl}
-          scrolling="no"
+          title="YouTube video player"
           frameBorder="0"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
           allowFullScreen
         ></iframe>
       </div>

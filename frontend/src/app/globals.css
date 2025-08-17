@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 body {
-  background: linear-gradient(to right, #C4C8E3, #A8AAB8, #C8A8B0, #F8DBB9);
+  background: linear-gradient(to right, #C4C8E3, #D7D1E3, #E0C0C8, #F8DBB9);
   color: #FFFFFF;
   min-height: 100vh;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
