@@ -55,7 +55,7 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwi
 
   return (
     <motion.div 
-      className="relative absolute w-full max-w-md h-[70vh] rounded-2xl bg-white/10 backdrop-blur-lg border border-white/30 shadow-2xl flex flex-col cursor-grab overflow-hidden"
+      className="absolute w-full max-w-md h-[70vh] rounded-2xl bg-white/10 backdrop-blur-lg border border-white/30 shadow-2xl flex flex-col p-4 cursor-grab overflow-hidden"
       drag="x"
       dragConstraints={{ left: 0, right: 0 }}
       onDragStart={(event, info) => onDrag?.(event, info)} // onDragStart も追加
@@ -66,7 +66,6 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwi
       animate={{ scale: 1, opacity: 1, transition: { duration: 0.3 } }}
       whileTap={{ cursor: "grabbing" }}
     >
-      <div className="absolute inset-0 rounded-2xl pointer-events-none" style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.8), rgba(0,0,0,0.1))' }}></div>
       {/* 上部: YouTube動画エリア */}
       <div className="w-full h-3/5 rounded-lg overflow-hidden">
         <iframe
@@ -81,7 +80,7 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwi
       </div>
       
       {/* 下部: テキスト情報エリア */}
-      <div className="relative z-10 flex flex-col text-white p-4 flex-grow">
+      <div className="flex flex-col text-white p-4 flex-grow">
         <h2 className="text-xl font-bold line-clamp-2">{cardData.title}</h2>
         <div className="flex flex-wrap gap-2 my-2">
           {cardData.category.split(' ').map(tag => (
