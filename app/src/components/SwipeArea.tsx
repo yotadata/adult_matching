@@ -7,12 +7,12 @@ import ActionButton from './ActionButton';
 import { dummyVideos } from '@/lib/data';
 
 const SwipeArea = () => {
-  const [videos, setVideos] = useState([...dummyVideos].reverse()); // Reverse for stacking
+  const [videos, setVideos] = useState(dummyVideos);
   const x = useMotionValue(0);
   const constraintsRef = useRef(null);
 
-  const handleSwipe = () => {
-    setVideos((prevVideos) => prevVideos.slice(1));
+  const handleEndSwipe = () => {
+    setVideos((prev) => prev.slice(0, prev.length - 1));
     x.set(0);
   };
 
@@ -24,28 +24,26 @@ const SwipeArea = () => {
       type: 'spring',
       stiffness: 400,
       damping: 50,
-      onComplete: handleSwipe,
+      onComplete: handleEndSwipe,
     });
   };
 
   return (
-    <div ref={constraintsRef} className="relative w-full h-full flex flex-col items-center justify-center">
-      <div className="relative w-[90vw] max-w-md h-[70vh]">
+    <div ref={constraintsRef} className="relative w-full h-full">
+      {/* カードコンテナを中央に配置 */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[90vw] max-w-md h-[70vh]">
         {videos.length > 0 ? (
           videos.map((video, index) => {
-            const isTopCard = index === 0;
+            const isTopCard = index === videos.length - 1;
             return (
               <motion.div
                 key={video.id}
                 drag={isTopCard ? "x" : false}
                 style={{
                   x: isTopCard ? x : 0,
-                  translateX: "-50%",
-                  translateY: "-50%",
                   rotate: isTopCard ? rotate : 0,
                   scale: 1 - (videos.length - 1 - index) * 0.05,
                   zIndex: index,
-                  pointerEvents: isTopCard ? 'auto' : 'none',
                 }}
                 dragConstraints={constraintsRef}
                 onDragEnd={(event, info) => {
@@ -55,19 +53,19 @@ const SwipeArea = () => {
                     handleSwipeComplete('left');
                   }
                 }}
-                className="absolute top-1/2 left-1/2"
+                className="absolute w-full h-full"
               >
                 <Card video={video} />
               </motion.div>
             );
-          }).reverse() // Reverse for correct stacking order (z-index)
+          })
         ) : (
-          <p>本日のカードは以上です。</p>
+          <p className="text-center text-white">本日のカードは以上です。</p>
         )}
       </div>
 
       {videos.length > 0 && (
-        <div className="fixed bottom-10 flex space-x-8 z-20">
+        <div className="fixed bottom-10 left-1/2 -translate-x-1/2 flex space-x-8 z-20">
           <ActionButton onClick={() => handleSwipeComplete('left')} className="bg-white/20">
             <span className="text-3xl">❌</span>
           </ActionButton>
