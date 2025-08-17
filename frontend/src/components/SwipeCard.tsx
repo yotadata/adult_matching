@@ -84,10 +84,10 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwi
         <h2 className="text-xl font-bold line-clamp-2">{cardData.title}</h2>
         <div className="flex flex-wrap gap-2 my-2">
           {cardData.category.split(' ').map(tag => (
-            <span key={tag} className="bg-white/20 text-xs font-semibold px-2 py-1 rounded-full [text-shadow:0_1px_2px_rgba(0,0,0,0.3)]">{tag}</span>
+            <span key={tag} className="bg-white/20 text-xs font-semibold px-2 py-1 rounded-full">{tag}</span>
           ))}
         </div>
-                <p className="text-sm line-clamp-3 [text-shadow:0_1px_2px_rgba(0,0,0,0.3)]">{cardData.description}</p>
+        <p className="text-sm line-clamp-3">{cardData.description}</p>
       </div>
     </motion.div>
   );
