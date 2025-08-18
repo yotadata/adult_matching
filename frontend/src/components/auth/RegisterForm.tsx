@@ -39,8 +39,13 @@ const RegisterForm = () => {
       let errorMessage = '予期せぬエラーが発生しました';
       if (error instanceof Error) {
         errorMessage = error.message;
-      } else if (typeof error === 'object' && error !== null && 'error' in error && typeof (error as any).error === 'string') {
-        errorMessage = (error as any).error; // APIからのエラーメッセージを想定
+      } else if (
+        typeof error === 'object' &&
+        error !== null &&
+        'error' in error &&
+        typeof (error as { error: string }).error === 'string'
+      ) {
+        errorMessage = (error as { error: string }).error;
       }
       setMessage({ type: 'error', text: errorMessage });
     } finally {
