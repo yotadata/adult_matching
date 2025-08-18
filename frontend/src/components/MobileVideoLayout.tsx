@@ -13,7 +13,7 @@ const MobileVideoLayout: React.FC<MobileVideoLayoutProps> = ({ cardData, onSkip,
   return (
     <div className="flex flex-col w-full h-full">
       {/* 動画表示エリア */}
-      <div className="w-full aspect-video overflow-hidden">
+      <div className="w-full aspect-video overflow-hidden relative">
         <iframe
           width="100%"
           height="100%"
@@ -22,6 +22,7 @@ const MobileVideoLayout: React.FC<MobileVideoLayoutProps> = ({ cardData, onSkip,
           frameBorder="0"
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
           allowFullScreen
+          className="absolute inset-0"
         ></iframe>
       </div>
 
