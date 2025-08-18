@@ -1,0 +1,74 @@
+name: Deploy DB Docs to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'db/migrations/**/*.sql'
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - 'db/migrations/**/*.sql'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:14
+        env:
+          POSTGRES_DB: test_db
+          POSTGRES_USER: user
+          POSTGRES_PASSWORD: password
+        ports:
+          - 5432:5432
+        options: >- # health-check for postgres
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Wait for PostgreSQL to be ready
+        run: | # wait for 10 seconds for postgres to be ready
+          sleep 10
+
+      - name: Apply migrations
+        run: |
+          PGPASSWORD=password psql -h localhost -p 5432 -U user -d test_db -f db/migrations/20250818000000000_initial.sql
+
+      - name: Set up Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Download SchemaSpy and JDBC Driver
+        run: |
+          curl -L -o schemaspy.jar https://github.com/schemaspy/schemaspy/releases/download/v6.2.4/schemaspy-6.2.4.jar
+          curl -L -o postgresql-jdbc.jar https://jdbc.postgresql.org/download/postgresql-42.7.3.jar
+
+      - name: Generate DB Docs
+        run: |
+          java -jar schemaspy.jar \
+            -t pgsql \
+            -host localhost \
+            -port 5432 \
+            -db test_db \
+            -u user \
+            -p password \
+            -o docs/db-docs \
+            -dp postgresql-jdbc.jar
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./docs/db-docs
+          publish_branch: gh-pages
+          destination_dir: ${{ github.event_name == 'pull_request' && format('pr-preview/{0}/db-docs', github.event.pull_request.number) || 'db-docs' }}
