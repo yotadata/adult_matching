@@ -13,7 +13,7 @@ const Header = () => (
         draggable="false" // 画像を選択できないようにする
         style={{ filter: 'drop-shadow(0 0 0.5rem rgba(0, 0, 0, 0.1))' }} // ロゴに影をつける
       />
-      <button className="p-4 py-2 mx-2 text-sm font-bold text-white rounded-xl border border-white/50 hover:bg-white/20 transition-colors duration-200" style={{ filter: 'drop-shadow(0 0 0.5rem rgba(0, 0, 0, 0.1))' }}>
+      <button className="p-4 py-2 mx-2 text-sm font-bold text-white rounded-xl border border-white/50 bg-white/20 backdrop-blur-md shadow-lg hover:bg-white/30 transition-colors duration-200" style={{ filter: 'drop-shadow(0 0 0.5rem rgba(0, 0, 0, 0.1))' }}>
         ログイン
       </button>
     </div>
