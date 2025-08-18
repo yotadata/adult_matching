@@ -82,8 +82,8 @@ export default function Home() {
         {activeCard && <ActionButtons 
           onSkip={() => triggerSwipe('left')} 
           onLike={() => triggerSwipe('right')}
-          nopeColor="#AEB4EB"
-          likeColor="#F9CFA0"
+          nopeColor="#A78BFA"
+          likeColor="#FBBF24"
         />}
       </footer>
     </motion.div>
