@@ -19,6 +19,11 @@ jobs:
         with:
           node-version: '18' # またはプロジェクトに合わせたバージョン
 
+      - name: Configure Git User
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
       - name: Install gh-pages
         run: npm install gh-pages
         working-directory: ./docs # docs ディレクトリで実行
