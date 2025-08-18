@@ -57,7 +57,7 @@ export default function Home() {
 
   return (
     <motion.div 
-      className="flex flex-col items-center justify-between min-h-screen p-4 overflow-hidden"
+      className="flex flex-col items-center min-h-screen p-4 overflow-hidden"
       style={{ background: currentGradient }} // ここで背景色を適用
       transition={{ duration: 0.3 }} // 背景色変化のアニメーション
     >
