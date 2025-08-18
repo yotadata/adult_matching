@@ -35,8 +35,14 @@ const RegisterForm = () => {
       }
 
       setMessage({ type: 'success', text: '登録が完了しました！メールをご確認ください。' }); // メッセージを調整
-    } catch (error: any) {
-      setMessage({ type: 'error', text: error.message || '予期せぬエラーが発生しました' });
+    } catch (error: unknown) {
+      let errorMessage = '予期せぬエラーが発生しました';
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      } else if (typeof error === 'object' && error !== null && 'error' in error && typeof (error as any).error === 'string') {
+        errorMessage = (error as any).error; // APIからのエラーメッセージを想定
+      }
+      setMessage({ type: 'error', text: errorMessage });
     } finally {
       setIsLoading(false);
     }

@@ -1,7 +1,7 @@
 'use client';
 
 import { Dialog, Tab } from '@headlessui/react';
-import { Fragment, useState } from 'react';
+import { Fragment } from 'react';
 import LoginForm from './LoginForm';
 import RegisterForm from './RegisterForm';
 import { X } from 'lucide-react';
