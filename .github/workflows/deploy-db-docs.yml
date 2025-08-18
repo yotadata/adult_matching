@@ -52,11 +52,11 @@ jobs:
           sudo add-apt-repository 'deb http://apt.postgresql.org/pub/repos/apt/ jammy-pgdg main 13' # PostgreSQL 13 のリポジトリを追加
           wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add - # リポジトリのGPGキーを追加
           sudo apt-get update
-          sudo apt-get install -y postgresql-server-dev-13 build-essential git # PostgreSQL開発ファイルとビルドツール、gitをインストール
+          sudo apt-get install -y postgresql-server-dev-13 build-essential git postgresql-client-13 # postgresql-client-13 を追加
 
           git clone --branch v0.5.1 https://github.com/pgvector/pgvector.git
           cd pgvector
-          sudo make install
+          sudo make install PG_CONFIG=/usr/bin/pg_config # PG_CONFIG を明示的に指定
 
       - name: Apply migrations
         run: |
