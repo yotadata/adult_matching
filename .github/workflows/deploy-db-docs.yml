@@ -58,6 +58,15 @@ jobs:
           cd pgvector
           sudo make install PG_CONFIG=/usr/bin/pg_config PG_CPPFLAGS="-I/usr/include/postgresql/13/server" # インクルードパスを追加
 
+          # pgvectorの共有ライブラリとコントロールファイルをPostgreSQLの拡張機能ディレクトリにコピー
+          PG_LIB_DIR=$(/usr/bin/pg_config --pkglibdir)
+          sudo cp $(find /usr/lib/postgresql/13/ -name 'vector.so') $PG_LIB_DIR/
+          sudo cp $(find /usr/share/postgresql/13/extension/ -name 'vector.control') $PG_LIB_DIR/../extension/
+
+      - name: Create dummy auth.uid() function
+        run: |
+          PGPASSWORD=password psql -h localhost -p 5432 -U user -d test_db -c "CREATE OR REPLACE FUNCTION auth.uid() RETURNS uuid LANGUAGE plpgsql IMMUTABLE AS $ BEGIN RETURN '00000000-0000-0000-0000-000000000000'; END; $;"
+
       - name: Apply migrations
         run: |
           PGPASSWORD=password psql -h localhost -p 5432 -U user -d test_db -f db/migrations/20250818000000000_initial.sql
