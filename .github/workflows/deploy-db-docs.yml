@@ -56,7 +56,7 @@ jobs:
 
           git clone --branch v0.5.1 https://github.com/pgvector/pgvector.git
           cd pgvector
-          sudo make install PG_CONFIG=/usr/bin/pg_config # PG_CONFIG を明示的に指定
+          sudo make install PG_CONFIG=/usr/bin/pg_config PG_CPPFLAGS="-I/usr/include/postgresql/13/server" # インクルードパスを追加
 
       - name: Apply migrations
         run: |
