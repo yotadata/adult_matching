@@ -5,6 +5,7 @@ import SwipeCard, { CardData, SwipeCardHandle } from "@/components/SwipeCard";
 import ActionButtons from "@/components/ActionButtons";
 import { useState, useRef } from "react";
 import { AnimatePresence, motion, PanInfo } from "framer-motion";
+import HowToUseCard from "@/components/HowToUseCard";
 
 // ダミーデータ
 const DUMMY_CARDS: CardData[] = [
@@ -23,6 +24,7 @@ export default function Home() {
   const [activeIndex, setActiveIndex] = useState(0);
   const cardRef = useRef<SwipeCardHandle>(null);
   const [currentGradient, setCurrentGradient] = useState(ORIGINAL_GRADIENT);
+  const [showHowToUse, setShowHowToUse] = useState(true);
 
   const handleSwipe = () => {
     setActiveIndex((prev) => prev + 1);
@@ -53,6 +55,10 @@ export default function Home() {
     if (Math.abs(info.offset.x) <= 100) { // 閾値を超えなかった場合
       setCurrentGradient(ORIGINAL_GRADIENT);
     }
+  };
+
+  const handleCloseHowToUse = () => {
+    setShowHowToUse(false);
   };
 
   return (
@@ -86,6 +92,19 @@ export default function Home() {
           likeColor="#FBBF24"
         />}
       </footer>
+      <AnimatePresence>
+        {showHowToUse && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            transition={{ duration: 0.3 }}
+            className="fixed bottom-0 left-0 z-50"
+          >
+            <HowToUseCard onClose={handleCloseHowToUse} />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }
