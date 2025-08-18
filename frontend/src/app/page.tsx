@@ -78,7 +78,7 @@ export default function Home() {
           )}
         </AnimatePresence>
       </main>
-      <footer className="w-full max-w-md mx-auto py-8">
+      <footer className="w-full max-w-md mx-auto pb-4">
         {activeCard && <ActionButtons 
           onSkip={() => triggerSwipe('left')} 
           onLike={() => triggerSwipe('right')}
