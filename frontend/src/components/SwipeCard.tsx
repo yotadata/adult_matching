@@ -66,7 +66,7 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwi
       whileTap={{ cursor: "grabbing" }}
     >
       {/* 上部: YouTube動画エリア */}
-      <div className="w-full h-1/2 rounded-lg overflow-hidden">
+      <div className="w-full aspect-video rounded-lg overflow-hidden">
         <iframe
           width="100%"
           height="100%"
