@@ -6,6 +6,8 @@ import ActionButtons from "@/components/ActionButtons";
 import { useState, useRef } from "react";
 import { AnimatePresence, motion, PanInfo } from "framer-motion";
 import HowToUseCard from "@/components/HowToUseCard";
+import useMediaQuery from "@/hooks/useMediaQuery"; // useMediaQuery をインポート
+import MobileVideoLayout from "@/components/MobileVideoLayout"; // MobileVideoLayout をインポート
 
 // ダミーデータ
 const DUMMY_CARDS: CardData[] = [
@@ -25,6 +27,7 @@ export default function Home() {
   const cardRef = useRef<SwipeCardHandle>(null);
   const [currentGradient, setCurrentGradient] = useState(ORIGINAL_GRADIENT);
   const [showHowToUse, setShowHowToUse] = useState(true);
+  const isMobile = useMediaQuery('(max-width: 639px)'); // Tailwind CSS の sm (640px) 未満をモバイルとする
 
   const handleSwipe = () => {
     setActiveIndex((prev) => prev + 1);
@@ -62,36 +65,46 @@ export default function Home() {
   };
 
   return (
-    <motion.div 
+    <motion.div
       className="flex flex-col items-center min-h-screen overflow-hidden"
-      style={{ background: currentGradient }} // ここで背景色を適用
-      transition={{ duration: 0.3 }} // 背景色変化のアニメーション
+      style={{ background: currentGradient }}
+      transition={{ duration: 0.3 }}
     >
       <Header />
       <main className="flex-grow flex items-center justify-center w-full relative">
         <AnimatePresence mode="wait">
           {activeCard ? (
-            <SwipeCard 
-              ref={cardRef}
-              key={activeCard.id}
-              cardData={activeCard} 
-              onSwipe={handleSwipe}
-              onDrag={handleDrag} 
-              onDragEnd={handleDragEnd} 
-            />
+            isMobile ? (
+              <MobileVideoLayout
+                cardData={activeCard}
+                onSkip={() => handleSwipe()}
+                onLike={() => handleSwipe()}
+              />
+            ) : (
+              <SwipeCard
+                ref={cardRef}
+                key={activeCard.id}
+                cardData={activeCard}
+                onSwipe={handleSwipe}
+                onDrag={handleDrag}
+                onDragEnd={handleDragEnd}
+              />
+            )
           ) : (
             <p className="text-white font-bold text-2xl">No more cards</p>
           )}
         </AnimatePresence>
       </main>
-      <footer className="w-full max-w-md mx-auto py-8">
-        {activeCard && <ActionButtons 
-          onSkip={() => triggerSwipe('left')} 
-          onLike={() => triggerSwipe('right')}
-          nopeColor="#A78BFA"
-          likeColor="#FBBF24"
-        />}
-      </footer>
+      {!isMobile && (
+        <footer className="w-full max-w-md mx-auto py-8">
+          {activeCard && <ActionButtons
+            onSkip={() => triggerSwipe('left')}
+            onLike={() => triggerSwipe('right')}
+            nopeColor="#A78BFA"
+            likeColor="#FBBF24"
+          />}
+        </footer>
+      )}
       <AnimatePresence>
         {showHowToUse && (
           <motion.div
