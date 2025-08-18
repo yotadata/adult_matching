@@ -66,12 +66,12 @@ export default function Home() {
 
   return (
     <motion.div
-      className="flex flex-col items-center min-h-screen overflow-hidden"
+      className="flex flex-col items-center h-screen overflow-hidden" // min-h-screen を h-screen に変更
       style={{ background: currentGradient }}
       transition={{ duration: 0.3 }}
     >
-      <Header />
-      <main className={`flex-grow flex w-full relative ${isMobile ? 'flex-col bg-white h-full' : 'items-center justify-center'}`}>
+      <Header /> {/* Header は fixed に変更済み */}
+      <main className={`flex-grow flex w-full relative ${isMobile ? 'flex-col bg-white h-full pt-20 pb-16' : 'items-center justify-center'}`}> {/* pt-20 pb-16 を追加 */}
         <AnimatePresence mode="wait">
           {activeCard ? (
             isMobile ? (
@@ -102,6 +102,17 @@ export default function Home() {
             onLike={() => triggerSwipe('right')}
             nopeColor="#A78BFA"
             likeColor="#FBBF24"
+          />}
+        </footer>
+      )}
+      {isMobile && (
+        <footer className="fixed bottom-0 left-0 right-0 z-40">
+          {activeCard && <ActionButtons
+            onSkip={() => handleSwipe()}
+            onLike={() => handleSwipe()}
+            nopeColor="#A78BFA"
+            likeColor="#FBBF24"
+            isMobileLayout={true}
           />}
         </footer>
       )}

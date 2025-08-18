@@ -14,8 +14,8 @@ const Header = () => {
   };
 
   return (
-    <header className="w-full max-w-md mt-4 mb-2">
-      <div className="flex justify-between items-center text-white">
+    <header className="fixed top-0 left-0 right-0 z-40 bg-gradient-to-r from-[#C4C8E3] via-[#D7D1E3] to-[#F7D7E0] to-[#F8DBB9] p-4 shadow-md">
+      <div className="flex justify-between items-center text-white max-w-md mx-auto">
         <Image
           src="/seiheki_lab.png"
           alt="Seiheki Lab Logo"
