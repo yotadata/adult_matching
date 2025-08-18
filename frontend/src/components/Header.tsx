@@ -1,31 +1,30 @@
 'use client';
 
 import Image from 'next/image';
-import { useState, useEffect } from 'react'; // useEffect をインポート
+import { useState, useEffect, useRef } from 'react'; // useRef をインポート
 import AuthModal from './auth/AuthModal';
 import useMediaQuery from '@/hooks/useMediaQuery';
-import { supabase } from '@/lib/supabase'; // supabase クライアントをインポート
-import { User } from '@supabase/supabase-js'; // User 型をインポート
+import { supabase } from '@/lib/supabase';
+import { User } from '@supabase/supabase-js';
+import { Menu } from '@headlessui/react'; // Menu コンポーネントをインポート
 
 const Header = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [user, setUser] = useState<User | null>(null); // ユーザー情報を保持するステート
+  const [user, setUser] = useState<User | null>(null);
   const isMobile = useMediaQuery('(max-width: 639px)');
+  const menuButtonRef = useRef<HTMLButtonElement>(null); // メニューボタンの参照
 
   useEffect(() => {
-    // 初期ロード時にセッションを取得
     const getSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       setUser(session?.user || null);
     };
     getSession();
 
-    // 認証状態の変更を購読
     const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user || null);
     });
 
-    // クリーンアップ
     return () => {
       authListener?.unsubscribe();
     };
@@ -41,8 +40,6 @@ const Header = () => {
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    // ログアウト後の処理（例: ページリロードやリダイレクト）
-    // setUser(null) は onAuthStateChange で自動的に行われる
   };
 
   return (
@@ -58,14 +55,70 @@ const Header = () => {
           style={{ filter: 'drop-shadow(0 0 0.5rem rgba(0, 0, 0, 0.1))' }}
         />
         {user ? (
-          // ログイン後の表示
-          <button
-            onClick={handleLogout} // 仮でログアウトボタン
-            className="p-4 py-2 mx-2 text-sm font-bold text-gray-900 rounded-xl border border-gray-300 bg-white shadow-lg hover:bg-gray-100 transition-colors duration-200"
-            style={{ filter: 'drop-shadow(0 0 0.5rem rgba(0, 0, 0, 0.1))' }}
-          >
-            ログアウト
-          </button>
+          // ログイン後の表示（メニューボタン）
+          <Menu as="div" className="relative inline-block text-left">
+            <div>
+              <Menu.Button
+                ref={menuButtonRef} // ref を設定
+                className="p-4 py-2 mx-2 text-sm font-bold text-gray-900 rounded-xl border border-gray-300 bg-white shadow-lg hover:bg-gray-100 transition-colors duration-200"
+                style={{ filter: 'drop-shadow(0 0 0.5rem rgba(0, 0, 0, 0.1))' }}
+              >
+                メニュー
+              </Menu.Button>
+            </div>
+
+            <Menu.Items className="absolute right-0 mt-2 w-56 origin-top-right divide-y divide-gray-100 rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-50">
+              <div className="px-1 py-1 ">
+                <Menu.Item>
+                  {({ active }) => (
+                    <button
+                      className={`${
+                        active ? 'bg-violet-500 text-white' : 'text-gray-900'
+                      } group flex w-full items-center rounded-md px-2 py-2 text-sm`}
+                    >
+                      LIKEしたものリスト
+                    </button>
+                  )}
+                </Menu.Item>
+                <Menu.Item>
+                  {({ active }) => (
+                    <button
+                      className={`${
+                        active ? 'bg-violet-500 text-white' : 'text-gray-900'
+                      } group flex w-full items-center rounded-md px-2 py-2 text-sm`}
+                    >
+                      アカウント管理
+                    </button>
+                  )}
+                </Menu.Item>
+                <Menu.Item>
+                  {({ active }) => (
+                    <button
+                      className={`${
+                        active ? 'bg-violet-500 text-white' : 'text-gray-900'
+                      } group flex w-full items-center rounded-md px-2 py-2 text-sm`}
+                    >
+                      性癖分析結果
+                    </button>
+                  )}
+                </Menu.Item>
+              </div>
+              <div className="px-1 py-1">
+                <Menu.Item>
+                  {({ active }) => (
+                    <button
+                      onClick={handleLogout}
+                      className={`${
+                        active ? 'bg-violet-500 text-white' : 'text-gray-900'
+                      } group flex w-full items-center rounded-md px-2 py-2 text-sm`}
+                    >
+                      ログアウト
+                    </button>
+                  )}
+                </Menu.Item>
+              </div>
+            </Menu.Items>
+          </Menu>
         ) : (
           // ログイン前の表示
           <button
