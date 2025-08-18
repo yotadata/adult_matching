@@ -1,7 +1,7 @@
 import Image from 'next/image'; // Imageコンポーネントをインポート
 
 const Header = () => (
-  <header className="w-full max-w-md">
+  <header className="w-full max-w-md mt-4 mb-2">
     <div className="flex justify-between items-center text-white">
       {/* <h1>adult_matching</h1> の代わりに画像を表示 */}
       <Image

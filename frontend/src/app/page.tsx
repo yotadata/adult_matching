@@ -57,7 +57,7 @@ export default function Home() {
 
   return (
     <motion.div 
-      className="flex flex-col items-center min-h-screen p-4 overflow-hidden"
+      className="flex flex-col items-center min-h-screen overflow-hidden"
       style={{ background: currentGradient }} // ここで背景色を適用
       transition={{ duration: 0.3 }} // 背景色変化のアニメーション
     >
@@ -78,7 +78,7 @@ export default function Home() {
           )}
         </AnimatePresence>
       </main>
-      <footer className="w-full max-w-md mx-auto pb-4">
+      <footer className="w-full max-w-md mx-auto py-8">
         {activeCard && <ActionButtons 
           onSkip={() => triggerSwipe('left')} 
           onLike={() => triggerSwipe('right')}
