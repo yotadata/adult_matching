@@ -9,7 +9,7 @@ type HowToUseCardProps = {
 
 const HowToUseCard: React.FC<HowToUseCardProps> = ({ onClose }) => {
   return (
-    <div className="fixed bottom-6 left-6 w-80 max-w-[calc(100%-3rem)] bg-white/30 backdrop-blur-lg border border-white/40 rounded-2xl shadow-lg p-6 text-gray-800 z-50">
+    <div className="fixed bottom-6 left-6 w-80 max-w-[calc(100%-3rem)] bg-white rounded-2xl shadow-lg p-6 text-gray-800 z-50">
       <button
         onClick={onClose}
         className="absolute top-3 right-3 text-gray-600 hover:text-gray-900 transition-colors"
