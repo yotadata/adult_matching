@@ -1,3 +1,5 @@
+import { useState } from 'react';
+
 interface ActionButtonsProps {
   onSkip: () => void;
   onLike: () => void;
@@ -5,25 +7,46 @@ interface ActionButtonsProps {
   likeColor: string;
 }
 
-const ActionButtons = ({ onSkip, onLike, nopeColor, likeColor }: ActionButtonsProps) => (
-  <div className="flex items-center justify-between w-full">
-    {/* NOPE Button */}
-    <button 
-      onClick={onSkip} 
-      className="flex items-center justify-center w-40 h-14 font-bold tracking-wider text-lg text-white rounded-2xl transition-all duration-200 ease-in-out hover:scale-105 active:scale-95 border"
-      style={{ backgroundColor: `color-mix(in srgb, ${nopeColor} 80%, transparent)`, textShadow: '0 2px 4px rgba(0, 0, 0, 0.25)', borderColor: '#C4B5FD' }}
-    >
-      NOPE
-    </button>
-    {/* LIKE Button */}
-    <button 
-      onClick={onLike} 
-      className="flex items-center justify-center w-40 h-14 font-bold tracking-wider text-lg text-white rounded-2xl transition-all duration-200 ease-in-out hover:scale-105 active:scale-95 border"
-      style={{ backgroundColor: `color-mix(in srgb, ${likeColor} 80%, transparent)`, textShadow: '0 2px 4px rgba(0, 0, 0, 0.25)', borderColor: '#FCD34D' }}
-    >
-      LIKE
-    </button>
-  </div>
-);
+const ActionButtons = ({ onSkip, onLike, nopeColor, likeColor }: ActionButtonsProps) => {
+  const [isNopeHovered, setIsNopeHovered] = useState(false);
+  const [isLikeHovered, setIsLikeHovered] = useState(false);
+
+  const nopeButtonStyle = {
+    background: isNopeHovered ? nopeColor : `color-mix(in srgb, ${nopeColor} 20%, transparent)`,
+    borderColor: nopeColor,
+    transition: 'background 0.2s ease-in-out',
+  };
+
+  const likeButtonStyle = {
+    background: isLikeHovered ? likeColor : `color-mix(in srgb, ${likeColor} 20%, transparent)`,
+    borderColor: likeColor,
+    transition: 'background 0.2s ease-in-out',
+  };
+
+  return (
+    <div className="flex items-center justify-between w-full">
+      {/* NOPE Button */}
+      <button 
+        onClick={onSkip} 
+        onMouseEnter={() => setIsNopeHovered(true)}
+        onMouseLeave={() => setIsNopeHovered(false)}
+        className="flex items-center justify-center w-40 h-14 font-bold tracking-wider text-lg text-white rounded-2xl hover:scale-105 active:scale-95 border-2"
+        style={nopeButtonStyle}
+      >
+        NOPE
+      </button>
+      {/* LIKE Button */}
+      <button 
+        onClick={onLike} 
+        onMouseEnter={() => setIsLikeHovered(true)}
+        onMouseLeave={() => setIsLikeHovered(false)}
+        className="flex items-center justify-center w-40 h-14 font-bold tracking-wider text-lg text-white rounded-2xl hover:scale-105 active:scale-95 border-2"
+        style={likeButtonStyle}
+      >
+        LIKE
+      </button>
+    </div>
+  );
+};
 
 export default ActionButtons;
