@@ -18,8 +18,8 @@ const ActionButtons = ({ onSkip, onLike, nopeColor, likeColor }: ActionButtonsPr
     {/* LIKE Button */}
     <button 
       onClick={onLike} 
-      className="flex items-center justify-center w-40 h-14 font-bold tracking-wider text-lg text-white rounded-2xl transition-all duration-200 ease-in-out hover:scale-105 active:scale-95 border"
-      style={{ backgroundColor: likeColor, textShadow: '0 2px 4px rgba(0, 0, 0, 0.25)', borderColor: '#FCD34D' }}
+      className="flex items-center justify-center w-40 h-14 font-bold tracking-wider text-lg text-white rounded-2xl transition-all duration-200 ease-in-out hover:scale-105 active:scale-95 border-2"
+      style={{ background: `color-mix(in srgb, ${likeColor} 20%, transparent)`, borderColor: likeColor }}
     >
       LIKE
     </button>
