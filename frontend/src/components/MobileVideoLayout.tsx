@@ -11,7 +11,7 @@ interface MobileVideoLayoutProps {
 
 const MobileVideoLayout: React.FC<MobileVideoLayoutProps> = ({ cardData, onSkip, onLike }) => {
   return (
-    <div className="flex flex-col h-full w-full bg-white rounded-lg shadow-lg overflow-hidden">
+    <div className="flex flex-col flex-grow w-full overflow-hidden">
       {/* 動画表示エリア */}
       <div className="w-full flex-grow overflow-hidden">
         <iframe
@@ -37,12 +37,13 @@ const MobileVideoLayout: React.FC<MobileVideoLayoutProps> = ({ cardData, onSkip,
       </div>
 
       {/* フッターボタンエリア */}
-      <div className="w-full p-4">
+      <div className="w-full">
         <ActionButtons
           onSkip={onSkip}
           onLike={onLike}
           nopeColor="#A78BFA"
           likeColor="#FBBF24"
+        isMobileLayout={true} // 追加
         />
       </div>
     </div>

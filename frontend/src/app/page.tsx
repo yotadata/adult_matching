@@ -71,7 +71,7 @@ export default function Home() {
       transition={{ duration: 0.3 }}
     >
       <Header />
-      <main className="flex-grow flex items-center justify-center w-full relative">
+      <main className={`flex-grow flex w-full relative ${isMobile ? 'flex-col' : 'items-center justify-center'}`}>
         <AnimatePresence mode="wait">
           {activeCard ? (
             isMobile ? (
