@@ -2,7 +2,7 @@
 
 import Input from './Input';
 import { useForm, SubmitHandler } from 'react-hook-form';
-import { useState }'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 type LoginFormInputs = {
