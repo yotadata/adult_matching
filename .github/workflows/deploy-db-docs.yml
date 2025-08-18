@@ -38,14 +38,22 @@ jobs:
         run: | # wait for 10 seconds for postgres to be ready
           sleep 10
 
-      - name: Create dummy auth schema and users table
+      - name: Create dummy auth schema, users table, and roles
         run: |
           PGPASSWORD=password psql -h localhost -p 5432 -U user -d test_db -c "CREATE SCHEMA IF NOT EXISTS auth;"
           PGPASSWORD=password psql -h localhost -p 5432 -U user -d test_db -c "CREATE TABLE IF NOT EXISTS auth.users (id UUID PRIMARY KEY, email TEXT UNIQUE, created_at TIMESTAMPTZ DEFAULT NOW());"
+          PGPASSWORD=password psql -h localhost -p 5432 -U user -d test_db -c "CREATE ROLE authenticated;"
+          PGPASSWORD=password psql -h localhost -p 5432 -U user -d test_db -c "CREATE ROLE anon;"
+
+      - name: Install pgvector extension
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-13-pgvector
 
       - name: Apply migrations
         run: |
           PGPASSWORD=password psql -h localhost -p 5432 -U user -d test_db -f db/migrations/20250818000000000_initial.sql
+          PGPASSWORD=password psql -h localhost -p 5432 -U user -d test_db -c "CREATE EXTENSION IF NOT EXISTS vector;" # Ensure vector extension is created after pgvector install
 
       - name: Install Graphviz
         run: |
