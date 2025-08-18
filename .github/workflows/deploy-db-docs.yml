@@ -48,11 +48,15 @@ jobs:
       - name: Install pgvector from source
         run: |
           sudo apt-get update
+          sudo apt-get install -y software-properties-common # add-apt-repository を提供
+          sudo add-apt-repository 'deb http://apt.postgresql.org/pub/repos/apt/ jammy-pgdg main 13' # PostgreSQL 13 のリポジトリを追加
+          wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add - # リポジトリのGPGキーを追加
+          sudo apt-get update
           sudo apt-get install -y postgresql-server-dev-13 build-essential git # PostgreSQL開発ファイルとビルドツール、gitをインストール
 
-          git clone --branch v0.5.1 https://github.com/pgvector/pgvector.git # pgvectorの安定版をクローン
+          git clone --branch v0.5.1 https://github.com/pgvector/pgvector.git
           cd pgvector
-          sudo make install # pgvectorをビルドしてインストール
+          sudo make install
 
       - name: Apply migrations
         run: |
