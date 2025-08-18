@@ -71,7 +71,7 @@ export default function Home() {
       transition={{ duration: 0.3 }}
     >
       <Header /> {/* Header は fixed に変更済み */}
-      <main className={`flex-grow flex w-full relative ${isMobile ? 'flex-col bg-white h-full pt-20' : 'items-center justify-center'}`}> {/* pt-20 pb-16 を追加 */}
+      <main className={`flex-grow flex w-full relative ${isMobile ? 'flex-col bg-white h-full pt-20' : 'items-center justify-center pt-20'}`}> {/* pt-20 pb-16 を追加 */}
         <AnimatePresence mode="wait">
           {activeCard ? (
             isMobile ? (
