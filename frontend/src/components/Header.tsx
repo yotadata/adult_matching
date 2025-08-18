@@ -1,18 +1,19 @@
 'use client';
 
 import Image from 'next/image';
-import { useState, useEffect, useRef } from 'react'; // useRef をインポート
+import { useState, useEffect, useRef } from 'react';
 import AuthModal from './auth/AuthModal';
 import useMediaQuery from '@/hooks/useMediaQuery';
 import { supabase } from '@/lib/supabase';
 import { User } from '@supabase/supabase-js';
-import { Menu } from '@headlessui/react'; // Menu コンポーネントをインポート
+import { Menu } from '@headlessui/react';
+import Link from 'next/link'; // Link コンポーネントをインポート
 
 const Header = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const isMobile = useMediaQuery('(max-width: 639px)');
-  const menuButtonRef = useRef<HTMLButtonElement>(null); // メニューボタンの参照
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     const getSession = async () => {
@@ -59,7 +60,7 @@ const Header = () => {
           <Menu as="div" className="relative inline-block text-left">
             <div>
               <Menu.Button
-                ref={menuButtonRef} // ref を設定
+                ref={menuButtonRef}
                 className="p-4 py-2 mx-2 text-sm font-bold text-gray-900 rounded-xl border border-gray-300 bg-white shadow-lg hover:bg-gray-100 transition-colors duration-200"
                 style={{ filter: 'drop-shadow(0 0 0.5rem rgba(0, 0, 0, 0.1))' }}
               >
@@ -71,35 +72,41 @@ const Header = () => {
               <div className="px-1 py-1 ">
                 <Menu.Item>
                   {({ active }) => (
-                    <button
-                      className={`${
-                        active ? 'bg-violet-500 text-white' : 'text-gray-900'
-                      } group flex w-full items-center rounded-md px-2 py-2 text-sm`}
-                    >
-                      LIKEしたものリスト
-                    </button>
+                    <Link href="/liked-videos" passHref>
+                      <button
+                        className={`${
+                          active ? 'bg-violet-500 text-white' : 'text-gray-900'
+                        } group flex w-full items-center rounded-md px-2 py-2 text-sm`}
+                      >
+                        LIKEしたものリスト
+                      </button>
+                    </Link>
                   )}
                 </Menu.Item>
                 <Menu.Item>
                   {({ active }) => (
-                    <button
-                      className={`${
-                        active ? 'bg-violet-500 text-white' : 'text-gray-900'
-                      } group flex w-full items-center rounded-md px-2 py-2 text-sm`}
-                    >
-                      アカウント管理
-                    </button>
+                    <Link href="/account-management" passHref>
+                      <button
+                        className={`${
+                          active ? 'bg-violet-500 text-white' : 'text-gray-900'
+                        } group flex w-full items-center rounded-md px-2 py-2 text-sm`}
+                      >
+                        アカウント管理
+                      </button>
+                    </Link>
                   )}
                 </Menu.Item>
                 <Menu.Item>
                   {({ active }) => (
-                    <button
-                      className={`${
-                        active ? 'bg-violet-500 text-white' : 'text-gray-900'
-                      } group flex w-full items-center rounded-md px-2 py-2 text-sm`}
-                    >
-                      性癖分析結果
-                    </button>
+                    <Link href="/analysis-results" passHref>
+                      <button
+                        className={`${
+                          active ? 'bg-violet-500 text-white' : 'text-gray-900'
+                        } group flex w-full items-center rounded-md px-2 py-2 text-sm`}
+                      >
+                        性癖分析結果
+                      </button>
+                    </Link>
                   )}
                 </Menu.Item>
               </div>
