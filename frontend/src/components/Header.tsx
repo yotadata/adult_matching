@@ -27,7 +27,7 @@ const Header = () => {
         />
         <button
           onClick={handleOpenModal}
-          className="p-4 py-2 mx-2 text-sm font-bold text-white rounded-xl border border-white/50 bg-white/20 backdrop-blur-md shadow-lg hover:bg-white/30 transition-colors duration-200"
+          className="p-4 py-2 mx-2 text-sm font-bold text-gray-900 rounded-xl border border-gray-300 bg-white shadow-lg hover:bg-gray-100 transition-colors duration-200"
           style={{ filter: 'drop-shadow(0 0 0.5rem rgba(0, 0, 0, 0.1))' }}
         >
           ログイン
