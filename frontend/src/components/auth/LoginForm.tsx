@@ -2,11 +2,11 @@
 
 import Input from './Input';
 import { useForm, SubmitHandler } from 'react-hook-form';
-import { useState } from 'react';
-import { useRouter } from 'next/navigation'; // useRouterをインポート
+import { useState }'react';
+import { useRouter } from 'next/navigation';
 
 type LoginFormInputs = {
-  userId: string;
+  email: string; // userId から email に変更
   password: string;
 };
 
@@ -14,7 +14,7 @@ const LoginForm = () => {
   const { register, handleSubmit, formState: { errors } } = useForm<LoginFormInputs>();
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const router = useRouter(); // useRouterを初期化
+  const router = useRouter();
 
   const onSubmit: SubmitHandler<LoginFormInputs> = async (data) => {
     setMessage(null);
@@ -25,7 +25,7 @@ const LoginForm = () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ userId: data.userId, password: data.password }),
+        body: JSON.stringify({ email: data.email, password: data.password }), // userId から email に変更
       });
 
       const result = await response.json();
@@ -35,7 +35,6 @@ const LoginForm = () => {
       }
 
       setMessage({ type: 'success', text: 'ログイン成功！' });
-      // ログイン成功後、トップページにリダイレクト
       router.push('/');
     } catch (error: any) {
       setMessage({ type: 'error', text: error.message || '予期せぬエラーが発生しました' });
@@ -52,15 +51,19 @@ const LoginForm = () => {
         </div>
       )}
       <Input
-        id="userId"
-        label="ユーザーID"
-        type="text"
-        placeholder="ユーザーIDを入力"
-        {...register('userId', {
-          required: 'ユーザーIDは必須です',
+        id="email" // id を email に変更
+        label="メールアドレス" // label を変更
+        type="email" // type を email に変更
+        placeholder="your@example.com" // placeholder を変更
+        {...register('email', {
+          required: 'メールアドレスは必須です',
+          pattern: {
+            value: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/,
+            message: '有効なメールアドレスを入力してください',
+          },
         })}
       />
-      {errors.userId && <p className="text-red-500 text-xs mt-1">{errors.userId.message}</p>}
+      {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email.message}</p>} {/* userId から email に変更 */}
 
       <Input
         id="password"

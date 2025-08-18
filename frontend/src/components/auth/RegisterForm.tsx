@@ -5,7 +5,7 @@ import { useForm, SubmitHandler } from 'react-hook-form';
 import { useState } from 'react';
 
 type RegisterFormInputs = {
-  userId: string;
+  email: string; // userId から email に変更
   password: string;
   confirmPassword: string;
 };
@@ -25,7 +25,7 @@ const RegisterForm = () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ userId: data.userId, password: data.password }),
+        body: JSON.stringify({ email: data.email, password: data.password }), // userId から email に変更
       });
 
       const result = await response.json();
@@ -34,8 +34,7 @@ const RegisterForm = () => {
         throw new Error(result.error || '登録に失敗しました');
       }
 
-      setMessage({ type: 'success', text: '登録が完了しました！ログインしてください。' });
-      // 登録成功後のリダイレクトやモーダルを閉じる処理は親コンポーネントで制御することも可能
+      setMessage({ type: 'success', text: '登録が完了しました！メールをご確認ください。' }); // メッセージを調整
     } catch (error: any) {
       setMessage({ type: 'error', text: error.message || '予期せぬエラーが発生しました' });
     } finally {
@@ -51,18 +50,19 @@ const RegisterForm = () => {
         </div>
       )}
       <Input
-        id="userId"
-        label="ユーザーID"
-        type="text"
-        placeholder="3〜15文字の半角英数字"
-        {...register('userId', {
-          required: 'ユーザーIDは必須です',
-          minLength: { value: 3, message: 'ユーザーIDは3文字以上です' },
-          maxLength: { value: 15, message: 'ユーザーIDは15文字以下です' },
-          pattern: { value: /^[a-zA-Z0-9]+$/, message: 'ユーザーIDは半角英数字のみ使用できます' },
+        id="email" // id を email に変更
+        label="メールアドレス" // label を変更
+        type="email" // type を email に変更
+        placeholder="your@example.com" // placeholder を変更
+        {...register('email', { // userId から email に変更
+          required: 'メールアドレスは必須です',
+          pattern: {
+            value: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/,
+            message: '有効なメールアドレスを入力してください',
+          },
         })}
       />
-      {errors.userId && <p className="text-red-500 text-xs mt-1">{errors.userId.message}</p>}
+      {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email.message}</p>} {/* userId から email に変更 */}
 
       <Input
         id="password"

@@ -2,11 +2,10 @@ import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 
 export async function POST(request: Request) {
-  const { userId, password } = await request.json();
+  const { email, password } = await request.json(); // userId から email に変更
 
-  // Supabaseのauth.signInWithPasswordはメールアドレスが必須のため、signupと同様にuserIdをメールアドレスとして扱う
   const { data, error } = await supabase.auth.signInWithPassword({
-    email: `${userId}@example.com`, // signup時と同じダミーのメールアドレス形式
+    email: email, // email を直接使用
     password: password,
   });
 
