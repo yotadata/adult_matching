@@ -16,20 +16,30 @@ const Header = () => {
   const menuButtonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
+    // 初期ロード時にセッションを取得
     const getSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
+      console.log('Initial session:', session); // 追加
       setUser(session?.user || null);
     };
     getSession();
 
+    // 認証状態の変更を購読
     const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+      console.log('Auth state changed:', _event, session); // 追加
       setUser(session?.user || null);
     });
 
+    // クリーンアップ
     return () => {
       authListener?.unsubscribe();
     };
   }, []);
+
+  // user ステートの変更を監視
+  useEffect(() => {
+    console.log('User state updated:', user); // 追加
+  }, [user]);
 
   const handleOpenModal = () => {
     setIsModalOpen(true);
