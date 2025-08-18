@@ -1,1 +1,4 @@
+user_events
+likes
+profiles
 videos

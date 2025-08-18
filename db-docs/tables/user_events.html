@@ -3,7 +3,7 @@
     <head>
         <meta charset="utf-8">
         <meta http-equiv="X-UA-Compatible" content="IE=edge">
-        <title>videos - test_db.public</title>
+        <title>user_events - test_db.public</title>
         <!-- Tell the browser to be responsive to screen width -->
         <meta content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" name="viewport">
         <link rel="icon" type="image/png" sizes="16x16" href="../favicon.png">
@@ -73,7 +73,7 @@
             <div class="content-wrapper">
                 <!-- Content Header (Page header) -->
                 <section class="content-header">
-                    <h1>videos</h1><p><span id="recordNumber">0</span> rows</p><br />
+                    <h1>user_events</h1><p><span id="recordNumber">0</span> rows</p><br />
                 </section>
                 <!-- Main content -->
                 <section class="content">
@@ -110,56 +110,68 @@
                                 <tbody>
                                 <tr>
                                     <td class='primaryKey' title='Primary Key'><i class='icon ion-key iconkey' style='padding-left: 5px;'></i><span id="id">id</span></td>
+                                    <td>bigserial</td>
+                                    <td>19</td>
+                                    <td title=''></td>
+                                    <td title='Automatically updated by the database'>√</td>
+                                    <td>nextval(&#39;user_events_id_seq&#39;::regclass)</td>
+                                    <td>
+                                        <table border='0' cellspacing='0' cellpadding='0'>
+                                        </table>
+                                    </td>
+                                    <td>
+                                        <table border='0' cellspacing='0' cellpadding='0'>
+                                        </table>
+                                    </td>
+                                    <td></td>
+                                </tr>
+                                <tr>
+                                    <td class='foreignKey' title='Foreign Key'><i class='icon ion-key iconkey' style='padding-left: 5px;'></i><span id="user_id">user_id</span></td>
                                     <td>uuid</td>
                                     <td>2147483647</td>
+                                    <td title='nullable'>√</td>
                                     <td title=''></td>
-                                    <td title=''></td>
-                                    <td>gen_random_uuid()</td>
+                                    <td>null</td>
+                                    <td>
+                                        <table border='0' cellspacing='0' cellpadding='0'>
+                                        </table>
+                                    </td>
                                     <td>
                                         <table border='0' cellspacing='0' cellpadding='0'>
                                             <tr>
-                                                <td title="likes.video_id references videos.id via likes_video_id_fkey"><a href='likes.html'>likes</a><span class='relatedKey'>.video_id</span></td>
-                                                <td class="constraint detail">likes_video_id_fkey</td>
+                                                <td title="user_events.user_id references auth.users.id via user_events_user_id_fkey"><a href='../../auth/tables/users.html'>users</a><span class='relatedKey'>.id</span></td>
+                                                <td class="constraint detail">user_events_user_id_fkey</td>
                                                 <td class="constraint detail"><span title='Cascade on delete:&#10;Deletion of parent deletes child'>C</span></td>
                                             </tr>
+                                        </table>
+                                    </td>
+                                    <td></td>
+                                </tr>
+                                <tr>
+                                    <td class='foreignKey' title='Foreign Key'><i class='icon ion-key iconkey' style='padding-left: 5px;'></i><span id="video_id">video_id</span></td>
+                                    <td>uuid</td>
+                                    <td>2147483647</td>
+                                    <td title='nullable'>√</td>
+                                    <td title=''></td>
+                                    <td>null</td>
+                                    <td>
+                                        <table border='0' cellspacing='0' cellpadding='0'>
+                                        </table>
+                                    </td>
+                                    <td>
+                                        <table border='0' cellspacing='0' cellpadding='0'>
                                             <tr>
-                                                <td title="user_events.video_id references videos.id via user_events_video_id_fkey"><a href='user_events.html'>user_events</a><span class='relatedKey'>.video_id</span></td>
+                                                <td title="user_events.video_id references videos.id via user_events_video_id_fkey"><a href='videos.html'>videos</a><span class='relatedKey'>.id</span></td>
                                                 <td class="constraint detail">user_events_video_id_fkey</td>
                                                 <td class="constraint detail"><span title='Cascade on delete:&#10;Deletion of parent deletes child'>C</span></td>
                                             </tr>
-                                            <tr>
-                                                <td title="video_popularity_daily.video_id&#39;s name implies that it&#39;s a child of videos.id, but it doesn&#39;t reference that column."><a href='video_popularity_daily.html'>video_popularity_daily</a><span class='relatedKey'>.video_id</span></td>
-                                                <td class="constraint detail">Implied Constraint</td>
-                                                <td class="constraint detail"><span title='Restrict delete:&#10;Parent cannot be deleted if children exist'>R</span></td>
-                                            </tr>
-                                        </table>
-                                    </td>
-                                    <td>
-                                        <table border='0' cellspacing='0' cellpadding='0'>
                                         </table>
                                     </td>
                                     <td></td>
                                 </tr>
                                 <tr>
-                                    <td class='indexedColumn' title='Indexed'><i class='fa fa-sitemap fa-rotate-120' style='padding-right: 5px;'></i><span id="external_id">external_id</span></td>
-                                    <td>text</td>
-                                    <td>2147483647</td>
-                                    <td title='nullable'>√</td>
-                                    <td title=''></td>
-                                    <td>null</td>
-                                    <td>
-                                        <table border='0' cellspacing='0' cellpadding='0'>
-                                        </table>
-                                    </td>
-                                    <td>
-                                        <table border='0' cellspacing='0' cellpadding='0'>
-                                        </table>
-                                    </td>
-                                    <td></td>
-                                </tr>
-                                <tr>
-                                    <td><span id="title">title</span></td>
-                                    <td>text</td>
+                                    <td><span id="type">type</span></td>
+                                    <td>event_type</td>
                                     <td>2147483647</td>
                                     <td title=''></td>
                                     <td title=''></td>
@@ -175,143 +187,7 @@
                                     <td></td>
                                 </tr>
                                 <tr>
-                                    <td><span id="description">description</span></td>
-                                    <td>text</td>
-                                    <td>2147483647</td>
-                                    <td title='nullable'>√</td>
-                                    <td title=''></td>
-                                    <td>null</td>
-                                    <td>
-                                        <table border='0' cellspacing='0' cellpadding='0'>
-                                        </table>
-                                    </td>
-                                    <td>
-                                        <table border='0' cellspacing='0' cellpadding='0'>
-                                        </table>
-                                    </td>
-                                    <td></td>
-                                </tr>
-                                <tr>
-                                    <td><span id="categories">categories</span></td>
-                                    <td>_text</td>
-                                    <td>2147483647</td>
-                                    <td title='nullable'>√</td>
-                                    <td title=''></td>
-                                    <td>null</td>
-                                    <td>
-                                        <table border='0' cellspacing='0' cellpadding='0'>
-                                        </table>
-                                    </td>
-                                    <td>
-                                        <table border='0' cellspacing='0' cellpadding='0'>
-                                        </table>
-                                    </td>
-                                    <td></td>
-                                </tr>
-                                <tr>
-                                    <td><span id="performers">performers</span></td>
-                                    <td>_text</td>
-                                    <td>2147483647</td>
-                                    <td title='nullable'>√</td>
-                                    <td title=''></td>
-                                    <td>null</td>
-                                    <td>
-                                        <table border='0' cellspacing='0' cellpadding='0'>
-                                        </table>
-                                    </td>
-                                    <td>
-                                        <table border='0' cellspacing='0' cellpadding='0'>
-                                        </table>
-                                    </td>
-                                    <td></td>
-                                </tr>
-                                <tr>
-                                    <td><span id="duration_seconds">duration_seconds</span></td>
-                                    <td>int4</td>
-                                    <td>10</td>
-                                    <td title='nullable'>√</td>
-                                    <td title=''></td>
-                                    <td>null</td>
-                                    <td>
-                                        <table border='0' cellspacing='0' cellpadding='0'>
-                                        </table>
-                                    </td>
-                                    <td>
-                                        <table border='0' cellspacing='0' cellpadding='0'>
-                                        </table>
-                                    </td>
-                                    <td></td>
-                                </tr>
-                                <tr>
-                                    <td><span id="thumbnail_url">thumbnail_url</span></td>
-                                    <td>text</td>
-                                    <td>2147483647</td>
-                                    <td title='nullable'>√</td>
-                                    <td title=''></td>
-                                    <td>null</td>
-                                    <td>
-                                        <table border='0' cellspacing='0' cellpadding='0'>
-                                        </table>
-                                    </td>
-                                    <td>
-                                        <table border='0' cellspacing='0' cellpadding='0'>
-                                        </table>
-                                    </td>
-                                    <td></td>
-                                </tr>
-                                <tr>
-                                    <td><span id="preview_video_url">preview_video_url</span></td>
-                                    <td>text</td>
-                                    <td>2147483647</td>
-                                    <td title='nullable'>√</td>
-                                    <td title=''></td>
-                                    <td>null</td>
-                                    <td>
-                                        <table border='0' cellspacing='0' cellpadding='0'>
-                                        </table>
-                                    </td>
-                                    <td>
-                                        <table border='0' cellspacing='0' cellpadding='0'>
-                                        </table>
-                                    </td>
-                                    <td></td>
-                                </tr>
-                                <tr>
-                                    <td><span id="source">source</span></td>
-                                    <td>text</td>
-                                    <td>2147483647</td>
-                                    <td title=''></td>
-                                    <td title=''></td>
-                                    <td>null</td>
-                                    <td>
-                                        <table border='0' cellspacing='0' cellpadding='0'>
-                                        </table>
-                                    </td>
-                                    <td>
-                                        <table border='0' cellspacing='0' cellpadding='0'>
-                                        </table>
-                                    </td>
-                                    <td></td>
-                                </tr>
-                                <tr>
-                                    <td><span id="published_at">published_at</span></td>
-                                    <td>timestamptz</td>
-                                    <td>35,6</td>
-                                    <td title='nullable'>√</td>
-                                    <td title=''></td>
-                                    <td>null</td>
-                                    <td>
-                                        <table border='0' cellspacing='0' cellpadding='0'>
-                                        </table>
-                                    </td>
-                                    <td>
-                                        <table border='0' cellspacing='0' cellpadding='0'>
-                                        </table>
-                                    </td>
-                                    <td></td>
-                                </tr>
-                                <tr>
-                                    <td><span id="created_at">created_at</span></td>
+                                    <td><span id="occurred_at">occurred_at</span></td>
                                     <td>timestamptz</td>
                                     <td>35,6</td>
                                     <td title='nullable'>√</td>
@@ -358,16 +234,10 @@
                                 </thead>
                                 <tbody>
                                 <tr>
-                                    <td class='primaryKey' title='Primary Key'><i class='icon ion-key iconkey'></i> videos_pkey</td>
+                                    <td class='primaryKey' title='Primary Key'><i class='icon ion-key iconkey'></i> user_events_pkey</td>
                                     <td>Primary key</td>
                                     <td><span title='Ascending'>Asc</span></td>
                                     <td>id</td>
-                                </tr>
-                                <tr>
-                                    <td class='uniqueKey' title='Unique Key'><i class='icon ion-key iconkey'></i> videos_external_id_key</td>
-                                    <td>Must be unique</td>
-                                    <td><span title='Ascending'>Asc</span></td>
-                                    <td>external_id</td>
                                 </tr>
                                 </tbody>
                             </table>
@@ -394,39 +264,40 @@
                                 <div class="tab-content no-padding">
                                     <div class="chart tab-pane active" id="oneDegreeImg-chart" style="position: relative; overflow-x:auto;">
                                         <map id="oneDegreeRelationshipsDiagram" name="oneDegreeRelationshipsDiagram">
-<area shape="rect" id="node1" href="likes.html" target="_top" title="likes" alt="" coords="437,5,581,152">
-<area shape="rect" id="node2" href="videos.html" target="_top" title="videos" alt="" coords="5,128,369,549">
-<area shape="rect" id="node3" href="user_events.html" target="_top" title="user_events" alt="" coords="413,169,605,345">
+<area shape="rect" id="node1" href="user_events.html" target="_top" title="user_events" alt="" coords="260,9,616,225">
+<area shape="rect" id="node2" title="auth.users" alt="" coords="21,5,201,93">
+<area shape="rect" id="node3" href="videos.html" target="_top" title="videos" alt="" coords="5,111,216,257">
 </map>
-                                        <a name='diagram'><img id="oneDegreeImg" src="../diagrams/tables/videos.1degree.png" usemap="#oneDegreeRelationshipsDiagram" class="diagram" border="0" align="left"></a>
+                                        <a name='diagram'><img id="oneDegreeImg" src="../diagrams/tables/user_events.1degree.png" usemap="#oneDegreeRelationshipsDiagram" class="diagram" border="0" align="left"></a>
                                     </div>
                                     <div class="chart tab-pane " id="twodegreesDegreeImg-chart" style="position: relative; overflow-x:auto;">
                                         <map id="twoDegreesRelationshipsDiagram" name="twoDegreesRelationshipsDiagram">
-<area shape="rect" id="node1" href="likes.html" target="_top" title="likes" alt="" coords="437,5,581,152">
-<area shape="rect" id="node2" title="auth.users" alt="" coords="97,36,277,124">
-<area shape="rect" id="node3" href="videos.html" target="_top" title="videos" alt="" coords="5,169,369,591">
-<area shape="rect" id="node4" href="user_events.html" target="_top" title="user_events" alt="" coords="413,169,605,345">
+<area shape="rect" id="node1" href="likes.html" target="_top" title="likes" alt="" coords="372,344,504,432">
+<area shape="rect" id="node2" title="auth.users" alt="" coords="21,148,201,236">
+<area shape="rect" id="node3" href="videos.html" target="_top" title="videos" alt="" coords="5,297,216,444">
+<area shape="rect" id="node4" href="profiles.html" target="_top" title="profiles" alt="" coords="362,5,514,93">
+<area shape="rect" id="node5" href="user_events.html" target="_top" title="user_events" alt="" coords="260,111,616,327">
 </map>
-                                        <a name='diagram'><img id="twodegreesDegreeImg" src="../diagrams/tables/videos.2degrees.png" usemap="#twoDegreesRelationshipsDiagram" class="diagram" border="0" align="left"></a>
+                                        <a name='diagram'><img id="twodegreesDegreeImg" src="../diagrams/tables/user_events.2degrees.png" usemap="#twoDegreesRelationshipsDiagram" class="diagram" border="0" align="left"></a>
                                     </div>
                                     <div class="chart tab-pane " id="oneimpliedDegreeImg-chart" style="position: relative; overflow-x:auto;">
                                         <map id="oneDegreeRelationshipsDiagramImplied" name="oneDegreeRelationshipsDiagramImplied">
-<area shape="rect" id="node1" href="likes.html" target="_top" title="likes" alt="" coords="483,5,627,152">
-<area shape="rect" id="node2" href="videos.html" target="_top" title="videos" alt="" coords="5,225,369,647">
-<area shape="rect" id="node3" href="user_events.html" target="_top" title="user_events" alt="" coords="459,169,651,345">
-<area shape="rect" id="node4" href="video_popularity_daily.html" target="_top" title="video_popularity_daily" alt="" coords="413,363,696,456">
+<area shape="rect" id="node1" href="user_events.html" target="_top" title="user_events" alt="" coords="260,9,616,225">
+<area shape="rect" id="node2" title="auth.users" alt="" coords="21,5,201,93">
+<area shape="rect" id="node3" href="videos.html" target="_top" title="videos" alt="" coords="5,111,216,257">
 </map>
-                                        <a name='diagram'><img id="oneimpliedDegreeImg" src="../diagrams/tables/videos.implied1degrees.png" usemap="#oneDegreeRelationshipsDiagramImplied" class="diagram" border="0" align="left"></a>
+                                        <a name='diagram'><img id="oneimpliedDegreeImg" src="../diagrams/tables/user_events.implied1degrees.png" usemap="#oneDegreeRelationshipsDiagramImplied" class="diagram" border="0" align="left"></a>
                                     </div>
                                     <div class="chart tab-pane " id="twoimpliedDegreeImg-chart" style="position: relative; overflow-x:auto;">
                                         <map id="twoDegreesRelationshipsDiagramImplied" name="twoDegreesRelationshipsDiagramImplied">
-<area shape="rect" id="node1" href="likes.html" target="_top" title="likes" alt="" coords="483,199,627,345">
-<area shape="rect" id="node2" title="auth.users" alt="" coords="97,79,277,167">
-<area shape="rect" id="node3" href="videos.html" target="_top" title="videos" alt="" coords="5,225,369,647">
-<area shape="rect" id="node4" href="user_events.html" target="_top" title="user_events" alt="" coords="459,5,651,181">
-<area shape="rect" id="node5" href="video_popularity_daily.html" target="_top" title="video_popularity_daily" alt="" coords="413,363,696,456">
+<area shape="rect" id="node1" href="likes.html" target="_top" title="likes" alt="" coords="372,111,504,199">
+<area shape="rect" id="node2" title="auth.users" alt="" coords="21,113,201,201">
+<area shape="rect" id="node3" href="videos.html" target="_top" title="videos" alt="" coords="5,277,216,424">
+<area shape="rect" id="node4" href="profiles.html" target="_top" title="profiles" alt="" coords="362,5,514,93">
+<area shape="rect" id="node5" href="user_events.html" target="_top" title="user_events" alt="" coords="260,216,616,432">
+<area shape="rect" id="node6" href="video_popularity_daily.html" target="_top" title="video_popularity_daily" alt="" coords="297,449,579,513">
 </map>
-                                        <a name='diagram'><img id="twoimpliedDegreeImg" src="../diagrams/tables/videos.implied2degrees.png" usemap="#twoDegreesRelationshipsDiagramImplied" class="diagram" border="0" align="left"></a>
+                                        <a name='diagram'><img id="twoimpliedDegreeImg" src="../diagrams/tables/user_events.implied2degrees.png" usemap="#twoDegreesRelationshipsDiagramImplied" class="diagram" border="0" align="left"></a>
                                     </div>
                                 </div>
                             </div>

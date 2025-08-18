@@ -1,7 +1,64 @@
-<?xml version="1.0" encoding="UTF-8"?><database name="test_db" schema="public" type="PostgreSQL - 14.19 (Debian 14.19-1.pgdg13+1)">
+<?xml version="1.0" encoding="UTF-8"?><database name="test_db" schema="public" type="PostgreSQL - 13.22 (Debian 13.22-1.pgdg13+1)">
+   <sequences>
+      <sequence increment="1" name="user_events_id_seq" startValue="1"/>
+   </sequences>
    <tables>
-      <table name="videos" remarks="" schema="public" type="TABLE">
-         <column autoUpdated="false" defaultValue="gen_random_uuid()" digits="0" id="0" name="id" nullable="false" remarks="" size="2147483647" type="uuid" typeCode="1111"/>
+      <table name="likes" numRows="0" remarks="" schema="public" type="TABLE">
+         <column autoUpdated="false" defaultValue="null" digits="0" id="0" name="user_id" nullable="false" remarks="" size="2147483647" type="uuid" typeCode="1111">
+            <parent column="id" foreignKey="likes_user_id_fkey" implied="false" onDeleteCascade="true" schema="auth" table="users"/>
+         </column>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="1" name="video_id" nullable="false" remarks="" size="2147483647" type="uuid" typeCode="1111">
+            <parent column="id" foreignKey="likes_video_id_fkey" implied="false" onDeleteCascade="true" schema="public" table="videos"/>
+         </column>
+         <column autoUpdated="false" defaultValue="now()" digits="6" id="2" name="created_at" nullable="true" remarks="" size="35" type="timestamptz" typeCode="93"/>
+         <primaryKey column="user_id" sequenceNumberInPK="1"/>
+         <primaryKey column="video_id" sequenceNumberInPK="2"/>
+         <index name="likes_pkey" unique="true">
+            <column ascending="true" name="user_id"/>
+            <column ascending="true" name="video_id"/>
+         </index>
+      </table>
+      <table name="profiles" numRows="0" remarks="" schema="public" type="TABLE">
+         <column autoUpdated="false" defaultValue="null" digits="0" id="0" name="user_id" nullable="false" remarks="" size="2147483647" type="uuid" typeCode="1111">
+            <parent column="id" foreignKey="profiles_user_id_fkey" implied="false" onDeleteCascade="true" schema="auth" table="users"/>
+         </column>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="1" name="display_name" nullable="true" remarks="" size="2147483647" type="text" typeCode="12"/>
+         <column autoUpdated="false" defaultValue="now()" digits="6" id="2" name="created_at" nullable="true" remarks="" size="35" type="timestamptz" typeCode="93"/>
+         <primaryKey column="user_id" sequenceNumberInPK="1"/>
+         <index name="profiles_pkey" unique="true">
+            <column ascending="true" name="user_id"/>
+         </index>
+      </table>
+      <table name="user_events" numRows="0" remarks="" schema="public" type="TABLE">
+         <column autoUpdated="true" defaultValue="nextval('user_events_id_seq'::regclass)" digits="0" id="0" name="id" nullable="false" remarks="" size="19" type="bigserial" typeCode="-5"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="1" name="user_id" nullable="true" remarks="" size="2147483647" type="uuid" typeCode="1111">
+            <parent column="id" foreignKey="user_events_user_id_fkey" implied="false" onDeleteCascade="true" schema="auth" table="users"/>
+         </column>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="2" name="video_id" nullable="true" remarks="" size="2147483647" type="uuid" typeCode="1111">
+            <parent column="id" foreignKey="user_events_video_id_fkey" implied="false" onDeleteCascade="true" schema="public" table="videos"/>
+         </column>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="3" name="type" nullable="false" remarks="" size="2147483647" type="event_type" typeCode="12"/>
+         <column autoUpdated="false" defaultValue="now()" digits="6" id="4" name="occurred_at" nullable="true" remarks="" size="35" type="timestamptz" typeCode="93"/>
+         <primaryKey column="id" sequenceNumberInPK="1"/>
+         <index name="user_events_pkey" unique="true">
+            <column ascending="true" name="id"/>
+         </index>
+      </table>
+      <table name="video_popularity_daily" numRows="0" remarks="" schema="public" type="VIEW" viewSql=" SELECT v.id AS video_id,&#10;    date_trunc('day'::text, e.occurred_at) AS d,&#10;    count(*) FILTER (WHERE (e.type = 'view'::event_type)) AS views,&#10;    count(*) FILTER (WHERE (e.type = 'like'::event_type)) AS likes,&#10;    count(*) FILTER (WHERE (e.type = 'dismiss'::event_type)) AS dismisses&#10;   FROM (videos v&#10;     LEFT JOIN user_events e ON ((e.video_id = v.id)))&#10;  GROUP BY v.id, (date_trunc('day'::text, e.occurred_at));">
+         <column autoUpdated="false" defaultValue="null" digits="0" id="0" name="video_id" nullable="true" remarks="" size="2147483647" type="uuid" typeCode="1111">
+            <parent column="id" foreignKey="Implied Constraint" implied="true" onDeleteCascade="false" schema="public" table="videos"/>
+         </column>
+         <column autoUpdated="false" defaultValue="null" digits="6" id="1" name="d" nullable="true" remarks="" size="35" type="timestamptz" typeCode="93"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="2" name="views" nullable="true" remarks="" size="19" type="int8" typeCode="-5"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="3" name="likes" nullable="true" remarks="" size="19" type="int8" typeCode="-5"/>
+         <column autoUpdated="false" defaultValue="null" digits="0" id="4" name="dismisses" nullable="true" remarks="" size="19" type="int8" typeCode="-5"/>
+      </table>
+      <table name="videos" numRows="0" remarks="" schema="public" type="TABLE">
+         <column autoUpdated="false" defaultValue="gen_random_uuid()" digits="0" id="0" name="id" nullable="false" remarks="" size="2147483647" type="uuid" typeCode="1111">
+            <child column="video_id" foreignKey="likes_video_id_fkey" implied="false" onDeleteCascade="true" schema="public" table="likes"/>
+            <child column="video_id" foreignKey="user_events_video_id_fkey" implied="false" onDeleteCascade="true" schema="public" table="user_events"/>
+            <child column="video_id" foreignKey="Implied Constraint" implied="true" onDeleteCascade="false" schema="public" table="video_popularity_daily"/>
+         </column>
          <column autoUpdated="false" defaultValue="null" digits="0" id="1" name="external_id" nullable="true" remarks="" size="2147483647" type="text" typeCode="12"/>
          <column autoUpdated="false" defaultValue="null" digits="0" id="2" name="title" nullable="false" remarks="" size="2147483647" type="text" typeCode="12"/>
          <column autoUpdated="false" defaultValue="null" digits="0" id="3" name="description" nullable="true" remarks="" size="2147483647" type="text" typeCode="12"/>
