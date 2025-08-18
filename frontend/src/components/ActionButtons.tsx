@@ -30,7 +30,7 @@ const ActionButtons = ({ onSkip, onLike, nopeColor, likeColor }: ActionButtonsPr
         onClick={onSkip} 
         onMouseEnter={() => setIsNopeHovered(true)}
         onMouseLeave={() => setIsNopeHovered(false)}
-        className="flex items-center justify-center w-40 h-14 font-bold tracking-wider text-lg text-white rounded-2xl hover:scale-105 active:scale-95 border-2"
+        className="flex items-center justify-center w-40 h-14 font-bold tracking-wider text-lg text-white rounded-2xl hover:scale-105 active:scale-95 border-2 shadow-lg"
         style={nopeButtonStyle}
       >
         NOPE
@@ -40,7 +40,7 @@ const ActionButtons = ({ onSkip, onLike, nopeColor, likeColor }: ActionButtonsPr
         onClick={onLike} 
         onMouseEnter={() => setIsLikeHovered(true)}
         onMouseLeave={() => setIsLikeHovered(false)}
-        className="flex items-center justify-center w-40 h-14 font-bold tracking-wider text-lg text-white rounded-2xl hover:scale-105 active:scale-95 border-2"
+        className="flex items-center justify-center w-40 h-14 font-bold tracking-wider text-lg text-white rounded-2xl hover:scale-105 active:scale-95 border-2 shadow-lg"
         style={likeButtonStyle}
       >
         LIKE
