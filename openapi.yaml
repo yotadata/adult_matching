@@ -1,0 +1,137 @@
+openapi: 3.0.3
+info:
+  title: AVマッチングAPI
+  description: AVレコメンド・マッチング用のAPI仕様書
+  version: 1.0.0
+servers:
+  - url: https://<project-ref>.supabase.co/functions/v1
+    description: Supabase Edge Functions
+
+security:
+  - bearerAuth: []
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+paths:
+  /feed_explore:
+    get:
+      summary: 初回ばらつき含んだ動画リストを取得
+      description: 新規ユーザー用にカテゴリ分散・人気・新着を混ぜた動画を返す
+      parameters:
+        - name: limit
+          in: query
+          schema: { type: integer, default: 24 }
+        - name: seed
+          in: query
+          schema: { type: number }
+        - name: exclude_liked
+          in: query
+          schema: { type: boolean, default: true }
+      responses:
+        '200':
+          description: 動画リスト
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/VideoWithScore'
+
+  /update_user_embedding:
+    post:
+      summary: ユーザー埋め込み更新
+      description: 行動履歴に基づいてユーザーのembeddingを更新
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                strategy:
+                  type: string
+                  enum: [online, batch]
+                window_days:
+                  type: integer
+                  default: 30
+      responses:
+        '200':
+          description: 更新結果
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string }
+
+  /recommendations:
+    get:
+      summary: レコメンド動画取得
+      description: Two-Towerモデル + ユーザーembeddingに基づいて動画を返す
+      parameters:
+        - name: limit
+          in: query
+          schema: { type: integer, default: 20 }
+      responses:
+        '200':
+          description: 動画リスト
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/VideoWithScore'
+
+  /likes:
+    get:
+      summary: 自分がLIKEした動画リスト取得
+      responses:
+        '200':
+          description: LIKEした動画リスト
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Video'
+
+  /delete_account:
+    delete:
+      summary: アカウント削除
+      description: Supabase Authユーザーを削除（Service Role必須）
+      responses:
+        '200':
+          description: 削除結果
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string }
+
+components:
+  schemas:
+    Video:
+      type: object
+      properties:
+        id: { type: string }
+        title: { type: string }
+        description: { type: string }
+        categories: { type: array, items: { type: string } }
+        thumbnail_url: { type: string }
+        preview_video_url: { type: string }
+        source: { type: string }
+        published_at: { type: string, format: date-time }
+
+    VideoWithScore:
+      allOf:
+        - $ref: '#/components/schemas/Video'
+        - type: object
+          properties:
+            score: { type: number }
+            reasons: { type: array, items: { type: string } }
