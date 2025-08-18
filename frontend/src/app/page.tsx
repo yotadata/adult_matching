@@ -3,11 +3,11 @@
 import Header from "@/components/Header";
 import SwipeCard, { CardData, SwipeCardHandle } from "@/components/SwipeCard";
 import ActionButtons from "@/components/ActionButtons";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react"; // useEffect をインポート
 import { AnimatePresence, motion, PanInfo } from "framer-motion";
 import HowToUseCard from "@/components/HowToUseCard";
-import useMediaQuery from "@/hooks/useMediaQuery"; // useMediaQuery をインポート
-import MobileVideoLayout from "@/components/MobileVideoLayout"; // MobileVideoLayout をインポート
+import useMediaQuery from "@/hooks/useMediaQuery";
+import MobileVideoLayout from "@/components/MobileVideoLayout";
 
 // ダミーデータ
 const DUMMY_CARDS: CardData[] = [
@@ -28,6 +28,18 @@ export default function Home() {
   const [currentGradient, setCurrentGradient] = useState(ORIGINAL_GRADIENT);
   const [showHowToUse, setShowHowToUse] = useState(true);
   const isMobile = useMediaQuery('(max-width: 639px)'); // Tailwind CSS の sm (640px) 未満をモバイルとする
+  const [headerHeight, setHeaderHeight] = useState(0); // headerHeight state を追加
+
+  useEffect(() => {
+    if (isMobile) { // モバイルの場合のみヘッダーの高さを取得
+      const headerElement = document.getElementById('main-header');
+      if (headerElement) {
+        setHeaderHeight(headerElement.offsetHeight);
+      }
+    } else {
+      setHeaderHeight(0); // モバイルではない場合は0にリセット
+    }
+  }, [isMobile]); // isMobile が変更されたときに実行
 
   const handleSwipe = () => {
     setActiveIndex((prev) => prev + 1);
@@ -40,22 +52,18 @@ export default function Home() {
 
   const activeCard = activeIndex < DUMMY_CARDS.length ? DUMMY_CARDS[activeIndex] : null;
 
-  // ドラッグ中に背景色をリアルタイムで変更
   const handleDrag = (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
-    if (info.offset.x > 50) { // 右に50px以上ドラッグ
+    if (info.offset.x > 50) {
       setCurrentGradient(RIGHT_SWIPE_GRADIENT);
-    } else if (info.offset.x < -50) { // 左に50px以上ドラッグ
+    } else if (info.offset.x < -50) {
       setCurrentGradient(LEFT_SWIPE_GRADIENT);
     } else {
       setCurrentGradient(ORIGINAL_GRADIENT);
     }
   };
 
-  // ドラッグ終了時に背景色を最終決定
   const handleDragEnd = (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
-    // スワイプアウトした場合は handleSwipe で ORIGINAL_GRADIENT に戻るので、ここでは何もしない
-    // スワイプアウトしなかった場合は、カードが戻るので ORIGINAL_GRADIENT に戻す
-    if (Math.abs(info.offset.x) <= 100) { // 閾値を超えなかった場合
+    if (Math.abs(info.offset.x) <= 100) {
       setCurrentGradient(ORIGINAL_GRADIENT);
     }
   };
@@ -66,12 +74,15 @@ export default function Home() {
 
   return (
     <motion.div
-      className="flex flex-col items-center h-screen overflow-hidden" // min-h-screen を h-screen に変更
+      className="flex flex-col items-center h-screen overflow-hidden"
       style={{ background: currentGradient }}
       transition={{ duration: 0.3 }}
     >
-      <Header /> {/* Header は fixed に変更済み */}
-      <main className={`flex-grow flex w-full relative ${isMobile ? 'flex-col bg-white h-full pt-24' : 'items-center justify-center'}`}> {/* pt-20 pb-16 を追加 */}
+      <Header />
+      <main
+        className={`flex-grow flex w-full relative ${isMobile ? 'flex-col bg-white h-full' : 'items-center justify-center'}`}
+        style={isMobile ? { paddingTop: `${headerHeight}px` } : {}} // headerHeight を使って paddingTop を動的に設定
+      >
         <AnimatePresence mode="wait">
           {activeCard ? (
             isMobile ? (
