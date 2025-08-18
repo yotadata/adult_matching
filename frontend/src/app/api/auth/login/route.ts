@@ -13,5 +13,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
 
-  return NextResponse.json({ message: 'Logged in successfully', user: data.user });
+  return NextResponse.json({
+    message: 'Logged in successfully',
+    user: data.user,
+    session: data.session,
+    access_token: data.session?.access_token,
+  });
 }

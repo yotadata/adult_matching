@@ -2,6 +2,7 @@
 
 import Input from './Input';
 import { useForm, SubmitHandler } from 'react-hook-form';
+import { supabase } from '@/lib/supabase';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
@@ -32,6 +33,14 @@ const LoginForm = () => {
 
       if (!response.ok) {
         throw new Error(result.error || 'ログインに失敗しました');
+      }
+
+      // Set the Supabase session on the client side
+      if (result.session && result.access_token) {
+        await supabase.auth.setSession({
+          access_token: result.access_token,
+          refresh_token: result.session.refresh_token,
+        });
       }
 
       setMessage({ type: 'success', text: 'ログイン成功！' });
