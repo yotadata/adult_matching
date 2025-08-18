@@ -68,9 +68,7 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwi
       {/* 上部: YouTube動画エリア */}
       <div className="w-full aspect-video rounded-lg overflow-hidden relative">
         <iframe
-          width="100%"
-          height="100%"
-          src={cardData.videoUrl}
+          src={cardData.videoUrl} // width と height 属性を削除
           title="YouTube video player"
           frameBorder="0"
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
