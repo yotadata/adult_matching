@@ -16,6 +16,26 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
+  schemas:
+    Video:
+      type: object
+      properties:
+        id: { type: string }
+        title: { type: string }
+        description: { type: string }
+        categories: { type: array, items: { type: string } }
+        thumbnail_url: { type: string }
+        preview_video_url: { type: string }
+        source: { type: string }
+        published_at: { type: string, format: date-time }
+
+    VideoWithScore:
+      allOf:
+        - $ref: '#/components/schemas/Video'
+        - type: object
+          properties:
+            score: { type: number }
+            reasons: { type: array, items: { type: string } }
 
 paths:
   /feed_explore:
@@ -113,25 +133,3 @@ paths:
                 type: object
                 properties:
                   status: { type: string }
-
-components:
-  schemas:
-    Video:
-      type: object
-      properties:
-        id: { type: string }
-        title: { type: string }
-        description: { type: string }
-        categories: { type: array, items: { type: string } }
-        thumbnail_url: { type: string }
-        preview_video_url: { type: string }
-        source: { type: string }
-        published_at: { type: string, format: date-time }
-
-    VideoWithScore:
-      allOf:
-        - $ref: '#/components/schemas/Video'
-        - type: object
-          properties:
-            score: { type: number }
-            reasons: { type: array, items: { type: string } }
