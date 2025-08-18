@@ -12,13 +12,13 @@ const ActionButtons = ({ onSkip, onLike, nopeColor, likeColor }: ActionButtonsPr
   const [isLikeHovered, setIsLikeHovered] = useState(false);
 
   const nopeButtonStyle = {
-    background: isNopeHovered ? nopeColor : `color-mix(in srgb, ${nopeColor} 20%, transparent)`,
+    background: isNopeHovered ? nopeColor : `color-mix(in srgb, ${nopeColor} 80%, transparent)`,
     borderColor: nopeColor,
     transition: 'background 0.2s ease-in-out',
   };
 
   const likeButtonStyle = {
-    background: isLikeHovered ? likeColor : `color-mix(in srgb, ${likeColor} 20%, transparent)`,
+    background: isLikeHovered ? likeColor : `color-mix(in srgb, ${likeColor} 80%, transparent)`,
     borderColor: likeColor,
     transition: 'background 0.2s ease-in-out',
   };
