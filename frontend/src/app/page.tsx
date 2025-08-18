@@ -62,7 +62,7 @@ export default function Home() {
       transition={{ duration: 0.3 }} // 背景色変化のアニメーション
     >
       <Header />
-      <main className="flex-grow flex items-center justify-center w-full relative h-[70vh]">
+      <main className="flex-grow flex items-center justify-center w-full relative">
         <AnimatePresence mode="wait">
           {activeCard ? (
             <SwipeCard 
