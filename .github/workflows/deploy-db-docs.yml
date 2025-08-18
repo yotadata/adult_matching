@@ -45,15 +45,18 @@ jobs:
           PGPASSWORD=password psql -h localhost -p 5432 -U user -d test_db -c "CREATE ROLE authenticated;"
           PGPASSWORD=password psql -h localhost -p 5432 -U user -d test_db -c "CREATE ROLE anon;"
 
-      - name: Install pgvector extension
+      - name: Install pgvector from source
         run: |
           sudo apt-get update
-          sudo apt-get install -y postgresql-13-pgvector
+          sudo apt-get install -y postgresql-server-dev-13 build-essential git # PostgreSQL開発ファイルとビルドツール、gitをインストール
+
+          git clone --branch v0.5.1 https://github.com/pgvector/pgvector.git # pgvectorの安定版をクローン
+          cd pgvector
+          sudo make install # pgvectorをビルドしてインストール
 
       - name: Apply migrations
         run: |
           PGPASSWORD=password psql -h localhost -p 5432 -U user -d test_db -f db/migrations/20250818000000000_initial.sql
-          PGPASSWORD=password psql -h localhost -p 5432 -U user -d test_db -c "CREATE EXTENSION IF NOT EXISTS vector;" # Ensure vector extension is created after pgvector install
 
       - name: Install Graphviz
         run: |
