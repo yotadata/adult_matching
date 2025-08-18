@@ -27,13 +27,13 @@ const ActionButtons = ({ onSkip, onLike, nopeColor, likeColor, isMobileLayout = 
   const buttonBaseClasses = "flex items-center justify-center h-14 font-bold tracking-wider text-lg text-white border-2";
 
   return (
-    <div className="flex items-center w-full"> {/* justify-between を削除 */}
+    <div className={`flex items-center w-full ${!isMobileLayout ? 'justify-between' : ''}`}> {/* justify-between を条件付きで追加 */}
       {/* NOPE Button */}
       <button 
         onClick={onSkip} 
         onMouseEnter={() => setIsNopeHovered(true)}
         onMouseLeave={() => setIsLikeHovered(false)}
-        className={`${buttonBaseClasses} w-1/2 ${isMobileLayout ? 'rounded-none' : 'rounded-2xl'} ${!isMobileLayout ? 'hover:scale-105 active:scale-95 shadow-lg' : ''}`}
+        className={`${buttonBaseClasses} ${isMobileLayout ? 'w-1/2' : 'w-40'} ${isMobileLayout ? 'rounded-none' : 'rounded-2xl'} ${!isMobileLayout ? 'hover:scale-105 active:scale-95 shadow-lg' : ''}`}
         style={nopeButtonStyle}
       >
         NOPE
@@ -43,7 +43,7 @@ const ActionButtons = ({ onSkip, onLike, nopeColor, likeColor, isMobileLayout = 
         onClick={onLike} 
         onMouseEnter={() => setIsLikeHovered(true)}
         onMouseLeave={() => setIsLikeHovered(false)}
-        className={`${buttonBaseClasses} w-1/2 ${isMobileLayout ? 'rounded-none' : 'rounded-2xl'} ${!isMobileLayout ? 'hover:scale-105 active:scale-95 shadow-lg' : ''}`}
+        className={`${buttonBaseClasses} ${isMobileLayout ? 'w-1/2' : 'w-40'} ${isMobileLayout ? 'rounded-none' : 'rounded-2xl'} ${!isMobileLayout ? 'hover:scale-105 active:scale-95 shadow-lg' : ''}`}
         style={likeButtonStyle}
       >
         LIKE
