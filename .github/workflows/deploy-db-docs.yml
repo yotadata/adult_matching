@@ -54,9 +54,11 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y postgresql-server-dev-13 build-essential git postgresql-client-13 # postgresql-client-13 を追加
 
-          git clone --branch v0.5.1 https://github.com/pgvector/pgvector.git
-          cd pgvector
-          sudo make install PG_CONFIG=/usr/bin/pg_config PG_CPPFLAGS="-I/usr/include/postgresql/13/server" # インクルードパスを追加
+          git checkout e630efd195c563496c3550abb1817303586ee46d
+          # Patch Makefile to fix bitcode installation path
+          sed -i 's|$(INSTALL_DATA) $(DESTDIR)$(pkglibdir_bitcode)/$(MODULE_NAME).index.bc $(DESTDIR)$(pkglibdir)|$(INSTALL_DATA) $(DESTDIR)$(pkglibdir_bitcode)/$(MODULE_NAME).index.bc $(DESTDIR)$(pkglibdir)/$(MODULE_NAME).index.bc|g' Makefile
+          make
+          sudo make install
 
           # pgvectorの共有ライブラリとコントロールファイルをPostgreSQLの拡張機能ディレクトリにコピー
           PG_LIB_DIR=$(/usr/bin/pg_config --pkglibdir)
