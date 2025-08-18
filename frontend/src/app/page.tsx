@@ -105,17 +105,6 @@ export default function Home() {
           />}
         </footer>
       )}
-      {isMobile && (
-        <footer className="fixed bottom-0 left-0 right-0 z-40">
-          {activeCard && <ActionButtons
-            onSkip={() => handleSwipe()}
-            onLike={() => handleSwipe()}
-            nopeColor="#A78BFA"
-            likeColor="#FBBF24"
-            isMobileLayout={true}
-          />}
-        </footer>
-      )}
       <AnimatePresence>
         {showHowToUse && (
           <motion.div
