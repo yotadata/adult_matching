@@ -6,6 +6,7 @@ on:
       - main
     paths:
       - 'docs/openapi.yaml' # openapi.yaml が変更された場合のみトリガー
+  workflow_dispatch: # 手動でワークフローをキックできるようにする
 
 jobs:
   deploy:
@@ -14,22 +15,9 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '18' # またはプロジェクトに合わせたバージョン
-
-      - name: Configure Git User
-        run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-
-      - name: Install gh-pages
-        run: npm install gh-pages
-        working-directory: ./docs # docs ディレクトリで実行
-
       - name: Deploy to GitHub Pages
-        run: npx gh-pages -d .
-        working-directory: ./docs # docs ディレクトリで実行
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./docs
+          publish_branch: gh-pages
