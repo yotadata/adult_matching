@@ -11,7 +11,7 @@ interface MobileVideoLayoutProps {
 
 const MobileVideoLayout: React.FC<MobileVideoLayoutProps> = ({ cardData, onSkip, onLike }) => {
   return (
-    <div className="flex flex-col flex-grow w-full overflow-hidden">
+    <div className="flex flex-col w-full h-full">
       {/* 動画表示エリア */}
       <div className="w-full aspect-video overflow-hidden">
         <iframe
@@ -26,7 +26,7 @@ const MobileVideoLayout: React.FC<MobileVideoLayoutProps> = ({ cardData, onSkip,
       </div>
 
       {/* テキスト情報エリア */}
-      <div className="p-4 text-gray-700">
+      <div className="p-4 text-gray-700 flex-grow overflow-y-auto">
         <h2 className="text-xl font-bold">{cardData.title}</h2>
         <div className="flex flex-wrap gap-2 my-2">
           {cardData.category.split(' ').map(tag => (
