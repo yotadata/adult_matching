@@ -54,7 +54,6 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y postgresql-server-dev-13 build-essential git postgresql-client-13 # postgresql-client-13 を追加
 
-          git checkout e630efd195c563496c3550abb1817303586ee46d
           # Patch Makefile to fix bitcode installation path
           sed -i 's|$(INSTALL_DATA) $(DESTDIR)$(pkglibdir_bitcode)/$(MODULE_NAME).index.bc $(DESTDIR)$(pkglibdir)|$(INSTALL_DATA) $(DESTDIR)$(pkglibdir_bitcode)/$(MODULE_NAME).index.bc $(DESTDIR)$(pkglibdir)/$(MODULE_NAME).index.bc|g' Makefile
           make
