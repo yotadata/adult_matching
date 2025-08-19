@@ -1,6 +1,10 @@
-user_events
+video_tags
+video_performers
 likes
 video_embeddings
 user_embeddings
 profiles
+tags
+tag_groups
+performers
 videos

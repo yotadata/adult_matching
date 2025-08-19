@@ -123,13 +123,18 @@
                                                 <td class="constraint detail"><span title='Cascade on delete:&#10;Deletion of parent deletes child'>C</span></td>
                                             </tr>
                                             <tr>
-                                                <td title="user_events.video_id references videos.id via user_events_video_id_fkey"><a href='user_events.html'>user_events</a><span class='relatedKey'>.video_id</span></td>
-                                                <td class="constraint detail">user_events_video_id_fkey</td>
+                                                <td title="video_embeddings.video_id references videos.id via video_embeddings_video_id_fkey"><a href='video_embeddings.html'>video_embeddings</a><span class='relatedKey'>.video_id</span></td>
+                                                <td class="constraint detail">video_embeddings_video_id_fkey</td>
                                                 <td class="constraint detail"><span title='Cascade on delete:&#10;Deletion of parent deletes child'>C</span></td>
                                             </tr>
                                             <tr>
-                                                <td title="video_embeddings.video_id references videos.id via video_embeddings_video_id_fkey"><a href='video_embeddings.html'>video_embeddings</a><span class='relatedKey'>.video_id</span></td>
-                                                <td class="constraint detail">video_embeddings_video_id_fkey</td>
+                                                <td title="video_performers.video_id references videos.id via video_performers_video_id_fkey"><a href='video_performers.html'>video_performers</a><span class='relatedKey'>.video_id</span></td>
+                                                <td class="constraint detail">video_performers_video_id_fkey</td>
+                                                <td class="constraint detail"><span title='Cascade on delete:&#10;Deletion of parent deletes child'>C</span></td>
+                                            </tr>
+                                            <tr>
+                                                <td title="video_tags.video_id references videos.id via video_tags_video_id_fkey"><a href='video_tags.html'>video_tags</a><span class='relatedKey'>.video_id</span></td>
+                                                <td class="constraint detail">video_tags_video_id_fkey</td>
                                                 <td class="constraint detail"><span title='Cascade on delete:&#10;Deletion of parent deletes child'>C</span></td>
                                             </tr>
                                         </table>
@@ -177,40 +182,6 @@
                                 <tr>
                                     <td><span id="description">description</span></td>
                                     <td>text</td>
-                                    <td>2147483647</td>
-                                    <td title='nullable'>√</td>
-                                    <td title=''></td>
-                                    <td>null</td>
-                                    <td>
-                                        <table border='0' cellspacing='0' cellpadding='0'>
-                                        </table>
-                                    </td>
-                                    <td>
-                                        <table border='0' cellspacing='0' cellpadding='0'>
-                                        </table>
-                                    </td>
-                                    <td></td>
-                                </tr>
-                                <tr>
-                                    <td><span id="categories">categories</span></td>
-                                    <td>_text</td>
-                                    <td>2147483647</td>
-                                    <td title='nullable'>√</td>
-                                    <td title=''></td>
-                                    <td>null</td>
-                                    <td>
-                                        <table border='0' cellspacing='0' cellpadding='0'>
-                                        </table>
-                                    </td>
-                                    <td>
-                                        <table border='0' cellspacing='0' cellpadding='0'>
-                                        </table>
-                                    </td>
-                                    <td></td>
-                                </tr>
-                                <tr>
-                                    <td><span id="performers">performers</span></td>
-                                    <td>_text</td>
                                     <td>2147483647</td>
                                     <td title='nullable'>√</td>
                                     <td title=''></td>
@@ -603,19 +574,23 @@
                                     <div class="chart tab-pane active" id="oneDegreeImg-chart" style="position: relative; overflow-x:auto;">
                                         <map id="oneDegreeRelationshipsDiagram" name="oneDegreeRelationshipsDiagram">
 <area shape="rect" id="node1" href="likes.html" target="_top" title="likes" alt="" coords="511,5,655,152">
-<area shape="rect" id="node2" href="videos.html" target="_top" title="videos" alt="" coords="5,225,413,999">
-<area shape="rect" id="node3" href="user_events.html" target="_top" title="user_events" alt="" coords="487,169,679,345">
-<area shape="rect" id="node4" href="video_embeddings.html" target="_top" title="video_embeddings" alt="" coords="457,363,708,480">
+<area shape="rect" id="node2" href="videos.html" target="_top" title="videos" alt="" coords="5,233,413,948">
+<area shape="rect" id="node3" href="video_embeddings.html" target="_top" title="video_embeddings" alt="" coords="457,169,708,287">
+<area shape="rect" id="node4" href="video_performers.html" target="_top" title="video_performers" alt="" coords="462,304,703,427">
+<area shape="rect" id="node5" href="video_tags.html" target="_top" title="video_tags" alt="" coords="493,444,673,567">
 </map>
                                         <a name='diagram'><img id="oneDegreeImg" src="../diagrams/tables/videos.1degree.png" usemap="#oneDegreeRelationshipsDiagram" class="diagram" border="0" align="left"></a>
                                     </div>
                                     <div class="chart tab-pane " id="twodegreesDegreeImg-chart" style="position: relative; overflow-x:auto;">
                                         <map id="twoDegreesRelationshipsDiagram" name="twoDegreesRelationshipsDiagram">
-<area shape="rect" id="node1" href="likes.html" target="_top" title="likes" alt="" coords="511,199,655,345">
-<area shape="rect" id="node2" title="auth.users" alt="" coords="119,79,299,167">
-<area shape="rect" id="node3" href="videos.html" target="_top" title="videos" alt="" coords="5,225,413,999">
-<area shape="rect" id="node4" href="user_events.html" target="_top" title="user_events" alt="" coords="487,5,679,181">
-<area shape="rect" id="node5" href="video_embeddings.html" target="_top" title="video_embeddings" alt="" coords="457,363,708,480">
+<area shape="rect" id="node1" href="likes.html" target="_top" title="likes" alt="" coords="511,5,655,152">
+<area shape="rect" id="node2" title="auth.users" alt="" coords="119,8,299,96">
+<area shape="rect" id="node3" href="videos.html" target="_top" title="videos" alt="" coords="5,140,413,855">
+<area shape="rect" id="node4" href="video_embeddings.html" target="_top" title="video_embeddings" alt="" coords="457,169,708,287">
+<area shape="rect" id="node5" href="video_performers.html" target="_top" title="video_performers" alt="" coords="462,423,703,545">
+<area shape="rect" id="node6" href="performers.html" target="_top" title="performers" alt="" coords="117,872,301,960">
+<area shape="rect" id="node7" href="video_tags.html" target="_top" title="video_tags" alt="" coords="493,800,673,923">
+<area shape="rect" id="node8" href="tags.html" target="_top" title="tags" alt="" coords="135,977,283,1065">
 </map>
                                         <a name='diagram'><img id="twodegreesDegreeImg" src="../diagrams/tables/videos.2degrees.png" usemap="#twoDegreesRelationshipsDiagram" class="diagram" border="0" align="left"></a>
                                     </div>

@@ -3,7 +3,7 @@
     <head>
         <meta charset="utf-8">
         <meta http-equiv="X-UA-Compatible" content="IE=edge">
-        <title>user_events - test_db.public</title>
+        <title>video_tags - test_db.public</title>
         <!-- Tell the browser to be responsive to screen width -->
         <meta content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" name="viewport">
         <link rel="icon" type="image/png" sizes="16x16" href="../favicon.png">
@@ -73,7 +73,7 @@
             <div class="content-wrapper">
                 <!-- Content Header (Page header) -->
                 <section class="content-header">
-                    <h1>user_events</h1><p><span id="recordNumber">0</span> rows</p><br />
+                    <h1>video_tags</h1><p><span id="recordNumber">0</span> rows</p><br />
                 </section>
                 <!-- Main content -->
                 <section class="content">
@@ -109,27 +109,10 @@
                                 </thead>
                                 <tbody>
                                 <tr>
-                                    <td class='primaryKey' title='Primary Key'><i class='icon ion-key iconkey' style='padding-left: 5px;'></i><span id="id">id</span></td>
-                                    <td>bigserial</td>
-                                    <td>19</td>
-                                    <td title=''></td>
-                                    <td title='Automatically updated by the database'>√</td>
-                                    <td>nextval(&#39;user_events_id_seq&#39;::regclass)</td>
-                                    <td>
-                                        <table border='0' cellspacing='0' cellpadding='0'>
-                                        </table>
-                                    </td>
-                                    <td>
-                                        <table border='0' cellspacing='0' cellpadding='0'>
-                                        </table>
-                                    </td>
-                                    <td></td>
-                                </tr>
-                                <tr>
-                                    <td class='foreignKey' title='Foreign Key'><i class='icon ion-key iconkey' style='padding-left: 5px;'></i><span id="user_id">user_id</span></td>
+                                    <td class='primaryKey' title='Primary Key'><i class='icon ion-key iconkey' style='padding-left: 5px;'></i><span id="video_id">video_id</span></td>
                                     <td>uuid</td>
                                     <td>2147483647</td>
-                                    <td title='nullable'>√</td>
+                                    <td title=''></td>
                                     <td title=''></td>
                                     <td>null</td>
                                     <td>
@@ -139,8 +122,8 @@
                                     <td>
                                         <table border='0' cellspacing='0' cellpadding='0'>
                                             <tr>
-                                                <td title="user_events.user_id references auth.users.id via user_events_user_id_fkey"><a href='../../auth/tables/users.html'>users</a><span class='relatedKey'>.id</span></td>
-                                                <td class="constraint detail">user_events_user_id_fkey</td>
+                                                <td title="video_tags.video_id references videos.id via video_tags_video_id_fkey"><a href='videos.html'>videos</a><span class='relatedKey'>.id</span></td>
+                                                <td class="constraint detail">video_tags_video_id_fkey</td>
                                                 <td class="constraint detail"><span title='Cascade on delete:&#10;Deletion of parent deletes child'>C</span></td>
                                             </tr>
                                         </table>
@@ -148,10 +131,10 @@
                                     <td></td>
                                 </tr>
                                 <tr>
-                                    <td class='foreignKey' title='Foreign Key'><i class='icon ion-key iconkey' style='padding-left: 5px;'></i><span id="video_id">video_id</span></td>
+                                    <td class='primaryKey' title='Primary Key'><i class='icon ion-key iconkey' style='padding-left: 5px;'></i><span id="tag_id">tag_id</span></td>
                                     <td>uuid</td>
                                     <td>2147483647</td>
-                                    <td title='nullable'>√</td>
+                                    <td title=''></td>
                                     <td title=''></td>
                                     <td>null</td>
                                     <td>
@@ -161,44 +144,10 @@
                                     <td>
                                         <table border='0' cellspacing='0' cellpadding='0'>
                                             <tr>
-                                                <td title="user_events.video_id references videos.id via user_events_video_id_fkey"><a href='videos.html'>videos</a><span class='relatedKey'>.id</span></td>
-                                                <td class="constraint detail">user_events_video_id_fkey</td>
+                                                <td title="video_tags.tag_id references tags.id via video_tags_tag_id_fkey"><a href='tags.html'>tags</a><span class='relatedKey'>.id</span></td>
+                                                <td class="constraint detail">video_tags_tag_id_fkey</td>
                                                 <td class="constraint detail"><span title='Cascade on delete:&#10;Deletion of parent deletes child'>C</span></td>
                                             </tr>
-                                        </table>
-                                    </td>
-                                    <td></td>
-                                </tr>
-                                <tr>
-                                    <td><span id="type">type</span></td>
-                                    <td>event_type</td>
-                                    <td>2147483647</td>
-                                    <td title=''></td>
-                                    <td title=''></td>
-                                    <td>null</td>
-                                    <td>
-                                        <table border='0' cellspacing='0' cellpadding='0'>
-                                        </table>
-                                    </td>
-                                    <td>
-                                        <table border='0' cellspacing='0' cellpadding='0'>
-                                        </table>
-                                    </td>
-                                    <td></td>
-                                </tr>
-                                <tr>
-                                    <td><span id="occurred_at">occurred_at</span></td>
-                                    <td>timestamptz</td>
-                                    <td>35,6</td>
-                                    <td title='nullable'>√</td>
-                                    <td title=''></td>
-                                    <td>now()</td>
-                                    <td>
-                                        <table border='0' cellspacing='0' cellpadding='0'>
-                                        </table>
-                                    </td>
-                                    <td>
-                                        <table border='0' cellspacing='0' cellpadding='0'>
                                         </table>
                                     </td>
                                     <td></td>
@@ -234,10 +183,10 @@
                                 </thead>
                                 <tbody>
                                 <tr>
-                                    <td class='primaryKey' title='Primary Key'><i class='icon ion-key iconkey'></i> user_events_pkey</td>
+                                    <td class='primaryKey' title='Primary Key'><i class='icon ion-key iconkey'></i> video_tags_pkey</td>
                                     <td>Primary key</td>
-                                    <td><span title='Ascending'>Asc</span></td>
-                                    <td>id</td>
+                                    <td><span title='Ascending'>Asc</span>/<span title='Ascending'>Asc</span></td>
+                                    <td>video_id + tag_id</td>
                                 </tr>
                                 </tbody>
                             </table>
@@ -262,23 +211,23 @@
                                 <div class="tab-content no-padding">
                                     <div class="chart tab-pane active" id="oneDegreeImg-chart" style="position: relative; overflow-x:auto;">
                                         <map id="oneDegreeRelationshipsDiagram" name="oneDegreeRelationshipsDiagram">
-<area shape="rect" id="node1" href="user_events.html" target="_top" title="user_events" alt="" coords="304,9,660,225">
-<area shape="rect" id="node2" title="auth.users" alt="" coords="43,5,223,93">
-<area shape="rect" id="node3" href="videos.html" target="_top" title="videos" alt="" coords="5,111,260,345">
+<area shape="rect" id="node1" href="video_tags.html" target="_top" title="video_tags" alt="" coords="304,115,596,243">
+<area shape="rect" id="node2" href="tags.html" target="_top" title="tags" alt="" coords="50,257,215,404">
+<area shape="rect" id="node3" href="videos.html" target="_top" title="videos" alt="" coords="5,5,260,240">
 </map>
-                                        <a name='diagram'><img id="oneDegreeImg" src="../diagrams/tables/user_events.1degree.png" usemap="#oneDegreeRelationshipsDiagram" class="diagram" border="0" align="left"></a>
+                                        <a name='diagram'><img id="oneDegreeImg" src="../diagrams/tables/video_tags.1degree.png" usemap="#oneDegreeRelationshipsDiagram" class="diagram" border="0" align="left"></a>
                                     </div>
                                     <div class="chart tab-pane " id="twodegreesDegreeImg-chart" style="position: relative; overflow-x:auto;">
                                         <map id="twoDegreesRelationshipsDiagram" name="twoDegreesRelationshipsDiagram">
-<area shape="rect" id="node1" href="likes.html" target="_top" title="likes" alt="" coords="416,449,548,537">
-<area shape="rect" id="node2" title="auth.users" alt="" coords="43,184,223,272">
-<area shape="rect" id="node3" href="videos.html" target="_top" title="videos" alt="" coords="5,447,260,681">
-<area shape="rect" id="node4" href="profiles.html" target="_top" title="profiles" alt="" coords="406,111,558,199">
-<area shape="rect" id="node5" href="user_embeddings.html" target="_top" title="user_embeddings" alt="" coords="361,5,603,93">
-<area shape="rect" id="node6" href="user_events.html" target="_top" title="user_events" alt="" coords="304,216,660,432">
-<area shape="rect" id="node7" href="video_embeddings.html" target="_top" title="video_embeddings" alt="" coords="357,555,607,643">
+<area shape="rect" id="node1" href="likes.html" target="_top" title="likes" alt="" coords="612,5,744,93">
+<area shape="rect" id="node2" href="videos.html" target="_top" title="videos" alt="" coords="233,108,488,343">
+<area shape="rect" id="node3" href="tags.html" target="_top" title="tags" alt="" coords="278,360,443,507">
+<area shape="rect" id="node4" href="tag_groups.html" target="_top" title="tag_groups" alt="" coords="5,392,189,480">
+<area shape="rect" id="node5" href="video_embeddings.html" target="_top" title="video_embeddings" alt="" coords="553,111,803,199">
+<area shape="rect" id="node6" href="video_performers.html" target="_top" title="video_performers" alt="" coords="557,216,799,304">
+<area shape="rect" id="node7" href="video_tags.html" target="_top" title="video_tags" alt="" coords="532,324,824,452">
 </map>
-                                        <a name='diagram'><img id="twodegreesDegreeImg" src="../diagrams/tables/user_events.2degrees.png" usemap="#twoDegreesRelationshipsDiagram" class="diagram" border="0" align="left"></a>
+                                        <a name='diagram'><img id="twodegreesDegreeImg" src="../diagrams/tables/video_tags.2degrees.png" usemap="#twoDegreesRelationshipsDiagram" class="diagram" border="0" align="left"></a>
                                     </div>
                                 </div>
                             </div>

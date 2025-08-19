@@ -143,41 +143,7 @@
                                     <td></td>
                                 </tr>
                                 <tr>
-                                    <td><span id="views">views</span></td>
-                                    <td>int8</td>
-                                    <td>19</td>
-                                    <td title='nullable'>√</td>
-                                    <td title=''></td>
-                                    <td>null</td>
-                                    <td>
-                                        <table border='0' cellspacing='0' cellpadding='0'>
-                                        </table>
-                                    </td>
-                                    <td>
-                                        <table border='0' cellspacing='0' cellpadding='0'>
-                                        </table>
-                                    </td>
-                                    <td></td>
-                                </tr>
-                                <tr>
                                     <td><span id="likes">likes</span></td>
-                                    <td>int8</td>
-                                    <td>19</td>
-                                    <td title='nullable'>√</td>
-                                    <td title=''></td>
-                                    <td>null</td>
-                                    <td>
-                                        <table border='0' cellspacing='0' cellpadding='0'>
-                                        </table>
-                                    </td>
-                                    <td>
-                                        <table border='0' cellspacing='0' cellpadding='0'>
-                                        </table>
-                                    </td>
-                                    <td></td>
-                                </tr>
-                                <tr>
-                                    <td><span id="dismisses">dismisses</span></td>
                                     <td>int8</td>
                                     <td>19</td>
                                     <td title='nullable'>√</td>
@@ -215,7 +181,7 @@
                                 <div class="tab-content no-padding">
                                     <div class="chart tab-pane active" id="oneDegreeImg-chart" style="position: relative; overflow-x:auto;">
                                         <map id="oneDegreeRelationshipsDiagram" name="oneDegreeRelationshipsDiagram">
-<area shape="rect" id="node1" href="video_popularity_daily.html" target="_top" title="video_popularity_daily" alt="" coords="5,5,407,197">
+<area shape="rect" id="node1" href="video_popularity_daily.html" target="_top" title="video_popularity_daily" alt="" coords="5,5,407,139">
 </map>
                                         <a name='diagram'><img id="oneDegreeImg" src="../diagrams/tables/video_popularity_daily.1degree.png" usemap="#oneDegreeRelationshipsDiagram" class="diagram" border="0" align="left"></a>
                                     </div>
@@ -233,7 +199,7 @@
                             </div>
                         </div>
                         <div class="box-body">
-                            <textarea id="sql-script-codemirror" name="sql-script-codemirror" rows="" style="display: none;">SELECT v.id AS video_id,&#10;    date_trunc(&#39;day&#39;::text, e.occurred_at) AS d,&#10;    count(*) FILTER (WHERE (e.type &#61; &#39;view&#39;::event_type)) AS views,&#10;    count(*) FILTER (WHERE (e.type &#61; &#39;like&#39;::event_type)) AS likes,&#10;    count(*) FILTER (WHERE (e.type &#61; &#39;dismiss&#39;::event_type)) AS dismisses&#10;   FROM (videos v&#10;     LEFT JOIN user_events e ON ((e.video_id &#61; v.id)))&#10;  GROUP BY v.id, (date_trunc(&#39;day&#39;::text, e.occurred_at));</textarea>
+                            <textarea id="sql-script-codemirror" name="sql-script-codemirror" rows="" style="display: none;">SELECT v.id AS video_id,&#10;    date_trunc(&#39;day&#39;::text, l.created_at) AS d,&#10;    count(l.video_id) AS likes&#10;   FROM (videos v&#10;     LEFT JOIN likes l ON ((l.video_id &#61; v.id)))&#10;  GROUP BY v.id, (date_trunc(&#39;day&#39;::text, l.created_at));</textarea>
                             <div style="padding-top: 5px;"><hr></div>
                             <div class="box box-solid">
                                 <div class="box-header with-border">
@@ -245,7 +211,6 @@
                                     <ul class="list-unstyled">
                                         <li><a href="likes.html">likes</a></li>
                                         <li><a href="videos.html">videos</a></li>
-                                        <li><a href="user_events.html">user_events</a></li>
                                     </ul>
                                 </div><!-- /.box-body -->
                             </div>
