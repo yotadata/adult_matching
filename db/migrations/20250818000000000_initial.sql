@@ -33,16 +33,6 @@ create table public.profiles (
   created_at timestamptz default now()
 );
 
--- 行動ログ
-create type public.event_type as enum ('view', 'like', 'dislike', 'dismiss');
-create table public.user_events (
-  id bigserial primary key,
-  user_id uuid references auth.users(id) on delete cascade,
-  video_id uuid references public.videos(id) on delete cascade,
-  type public.event_type not null,
-  occurred_at timestamptz default now()
-);
-
 -- LIKE管理
 create table public.likes (
   user_id uuid references auth.users(id) on delete cascade,
@@ -62,21 +52,13 @@ create table public.user_embeddings (
 create materialized view public.video_popularity_daily as
 select
   v.id as video_id,
-  date_trunc('day', e.occurred_at) as d,
-  count(*) filter (where e.type='view') as views,
-  count(*) filter (where e.type='like') as likes,
-  count(*) filter (where e.type='dismiss') as dismisses
+  date_trunc('day', l.created_at) as d,
+  count(l.video_id) as likes
 from videos v
-left join user_events e on e.video_id = v.id
-group by v.id, date_trunc('day', e.occurred_at);
+left join likes l on l.video_id = v.id
+group by v.id, date_trunc('day', l.created_at);
 
 -- RLS
-alter table public.user_events enable row level security;
-create policy "insert own events"
-on public.user_events for insert
-to authenticated
-with check (auth.uid() = user_id);
-
 alter table public.likes enable row level security;
 create policy "select own likes"
 on public.likes for select to authenticated
