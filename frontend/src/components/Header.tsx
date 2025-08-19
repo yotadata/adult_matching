@@ -32,7 +32,7 @@ const Header = () => {
 
     // クリーンアップ
     return () => {
-      authListener?.unsubscribe();
+      authListener.subscription.unsubscribe();
     };
   }, []);
 
