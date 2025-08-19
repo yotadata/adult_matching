@@ -1,5 +1,0 @@
-videos
-profiles
-user_embeddings
-video_embeddings
-likes
