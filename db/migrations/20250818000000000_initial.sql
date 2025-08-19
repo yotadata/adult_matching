@@ -14,9 +14,22 @@ create table public.videos (
   duration_seconds int,
   thumbnail_url text,
   preview_video_url text,
+  distribution_code text,
+  maker_code text,
+  director text,
+  series text,
+  maker text,
+  label text,
+  genre text,
+  price numeric,
+  distribution_started_at timestamptz,
+  product_released_at timestamptz,
+  sample_video_url text,
+  image_urls text[],
   source text not null,
   published_at timestamptz,
-  created_at timestamptz default now()
+  created_at timestamptz default now(),
+  unique (source, distribution_code, maker_code)
 );
 
 -- 動画埋め込み
