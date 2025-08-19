@@ -57,11 +57,11 @@ jobs:
       - name: Create dummy auth.uid() function
         run: |
           PGPASSWORD=password psql -h localhost -p 5432 -U user -d test_db <<'EOF'
-          CREATE OR REPLACE FUNCTION auth.uid() RETURNS uuid LANGUAGE plpgsql IMMUTABLE AS $
+          CREATE OR REPLACE FUNCTION auth.uid() RETURNS uuid LANGUAGE plpgsql IMMUTABLE AS $$
           BEGIN
             RETURN '00000000-0000-0000-0000-000000000000';
           END;
-          $;
+          $$
           EOF
 
       - name: Enable pgvector extension
