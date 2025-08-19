@@ -17,7 +17,7 @@ jobs:
     runs-on: ubuntu-22.04
     services:
       postgres:
-        image: postgres:13
+        image: ankane/pgvector:v0.7.1-pg13
         env:
           POSTGRES_DB: test_db
           POSTGRES_USER: user
@@ -45,14 +45,14 @@ jobs:
           PGPASSWORD=password psql -h localhost -p 5432 -U user -d test_db -c "CREATE ROLE authenticated;"
           PGPASSWORD=password psql -h localhost -p 5432 -U user -d test_db -c "CREATE ROLE anon;"
 
-      - name: Install PostgreSQL client and pgvector
+      - name: Install PostgreSQL client
         run: |
           sudo apt-get update
           sudo apt-get install -y software-properties-common
           sudo add-apt-repository 'deb http://apt.postgresql.org/pub/repos/apt/ jammy-pgdg main'
           wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
           sudo apt-get update
-          sudo apt-get install -y postgresql-client-13 postgresql-13-pgvector postgresql-server-dev-13
+          sudo apt-get install -y postgresql-client-13
 
       - name: Create dummy auth.uid() function
         run: |
