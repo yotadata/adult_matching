@@ -47,6 +47,7 @@ create table public.user_events (
 create table public.likes (
   user_id uuid references auth.users(id) on delete cascade,
   video_id uuid references public.videos(id) on delete cascade,
+  purchased boolean default false,
   created_at timestamptz default now(),
   primary key (user_id, video_id)
 );
