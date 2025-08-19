@@ -52,7 +52,7 @@ jobs:
           sudo add-apt-repository 'deb http://apt.postgresql.org/pub/repos/apt/ jammy-pgdg main'
           wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
           sudo apt-get update
-          sudo apt-get install -y postgresql-client-13 postgresql-13-pgvector
+          sudo apt-get install -y postgresql-client-13 postgresql-13-pgvector postgresql-server-dev-13
 
       - name: Create dummy auth.uid() function
         run: |
