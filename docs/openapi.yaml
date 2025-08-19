@@ -18,13 +18,25 @@ components:
       scheme: bearer
       bearerFormat: JWT
   schemas:
+    Tag:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        tag_group_id: { type: string }
+    Performer:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
     Video:
       type: object
       properties:
         id: { type: string }
         title: { type: string }
         description: { type: string }
-        categories: { type: array, items: { type: string } }
+        tags: { type: array, items: { type: string, description: 'Tag ID' } }
+        performers: { type: array, items: { type: string, description: 'Performer ID' } }
         thumbnail_url: { type: string }
         preview_video_url: { type: string }
         source: { type: string }
@@ -42,7 +54,7 @@ paths:
   /feed_explore:
     get:
       summary: 初回ばらつき含んだ動画リストを取得
-      description: 新規ユーザー用にカテゴリ分散・人気・新着を混ぜた動画を返す
+      description: 新規ユーザー用にタグ分散・人気・新着を混ぜた動画を返す
       parameters:
         - name: limit
           in: query
