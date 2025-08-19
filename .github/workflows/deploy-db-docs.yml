@@ -17,7 +17,7 @@ jobs:
     runs-on: ubuntu-22.04
     services:
       postgres:
-        image: ankane/pgvector:v0.7.1-pg13
+        image: pgvector/pgvector:pg13
         env:
           POSTGRES_DB: test_db
           POSTGRES_USER: user
