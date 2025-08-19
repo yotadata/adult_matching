@@ -25,8 +25,8 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
             </button>
             <Tab.Group>
               <Tab.List className="flex space-x-1 rounded-xl bg-gray-100 p-1 mb-6">
-                {['ログイン', '新規登録'].map((category) => (
-                  <Tab as={Fragment} key={category}>
+                {['ログイン', '新規登録'].map((tab) => (
+                  <Tab as={Fragment} key={tab}>
                     {({ selected }) => (
                       <button
                         className={`w-full rounded-lg py-2.5 text-sm font-bold leading-5 transition-all duration-300 focus:outline-none ${selected
@@ -34,7 +34,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                             : 'text-gray-600 hover:bg-gray-200'
                           }`}
                       >
-                        {category}
+                        {tab}
                       </button>
                     )}
                   </Tab>

@@ -9,14 +9,45 @@ create table public.videos (
   external_id text unique,
   title text not null,
   description text,
-  categories text[],
-  performers text[],
   duration_seconds int,
   thumbnail_url text,
   preview_video_url text,
   source text not null,
   published_at timestamptz,
   created_at timestamptz default now()
+);
+
+-- タググループ
+create table public.tag_groups (
+  id uuid primary key default gen_random_uuid(),
+  name text not null
+);
+
+-- タグ
+create table public.tags (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  tag_group_id uuid references public.tag_groups(id)
+);
+
+-- 動画タグ
+create table public.video_tags (
+  video_id uuid references public.videos(id) on delete cascade,
+  tag_id uuid references public.tags(id) on delete cascade,
+  primary key (video_id, tag_id)
+);
+
+-- 出演者
+create table public.performers (
+  id uuid primary key default gen_random_uuid(),
+  name text not null
+);
+
+-- 動画出演者
+create table public.video_performers (
+  video_id uuid references public.videos(id) on delete cascade,
+  performer_id uuid references public.performers(id) on delete cascade,
+  primary key (video_id, performer_id)
 );
 
 -- 動画埋め込み

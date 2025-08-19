@@ -7,7 +7,7 @@ import { forwardRef, useImperativeHandle } from 'react';
 export interface CardData {
   id: number;
   title: string;
-  category: string;
+  tags: string[];
   description: string;
   videoUrl: string;
 }
@@ -81,8 +81,10 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwi
       <div className="flex flex-col text-gray-700 p-4 flex-grow overflow-y-auto">
         <h2 className="text-xl font-bold">{cardData.title}</h2>
         <div className="flex flex-wrap gap-2 my-2">
-          {cardData.category.split(' ').map(tag => (
-            <span key={tag} className="bg-purple-300 text-white text-xs font-bold px-2 py-1 rounded-full">{tag}</span>
+          {cardData.tags.map((tag) => (
+            <span key={tag} className="bg-purple-300 text-white text-xs font-bold px-2 py-1 rounded-full">
+              {tag}
+            </span>
           ))}
         </div>
         <p className="text-sm">{cardData.description}</p>
