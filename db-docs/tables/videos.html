@@ -128,9 +128,9 @@
                                                 <td class="constraint detail"><span title='Cascade on delete:&#10;Deletion of parent deletes child'>C</span></td>
                                             </tr>
                                             <tr>
-                                                <td title="video_popularity_daily.video_id&#39;s name implies that it&#39;s a child of videos.id, but it doesn&#39;t reference that column."><a href='video_popularity_daily.html'>video_popularity_daily</a><span class='relatedKey'>.video_id</span></td>
-                                                <td class="constraint detail">Implied Constraint</td>
-                                                <td class="constraint detail"><span title='Restrict delete:&#10;Parent cannot be deleted if children exist'>R</span></td>
+                                                <td title="video_embeddings.video_id references videos.id via video_embeddings_video_id_fkey"><a href='video_embeddings.html'>video_embeddings</a><span class='relatedKey'>.video_id</span></td>
+                                                <td class="constraint detail">video_embeddings_video_id_fkey</td>
+                                                <td class="constraint detail"><span title='Cascade on delete:&#10;Deletion of parent deletes child'>C</span></td>
                                             </tr>
                                         </table>
                                     </td>
@@ -388,45 +388,26 @@
                                 <ul class="nav nav-tabs pull-left ui-sortable-handle">
                                     <li class="active"><a href="#oneDegreeImg-chart" data-toggle="tab" aria-expanded="true">One</a></li>
                                     <li class=""><a href="#twodegreesDegreeImg-chart" data-toggle="tab" aria-expanded="true">Two degrees</a></li>
-                                    <li class=""><a href="#oneimpliedDegreeImg-chart" data-toggle="tab" aria-expanded="true">One implied</a></li>
-                                    <li class=""><a href="#twoimpliedDegreeImg-chart" data-toggle="tab" aria-expanded="true">Two implied</a></li>
                                 </ul>
                                 <div class="tab-content no-padding">
                                     <div class="chart tab-pane active" id="oneDegreeImg-chart" style="position: relative; overflow-x:auto;">
                                         <map id="oneDegreeRelationshipsDiagram" name="oneDegreeRelationshipsDiagram">
-<area shape="rect" id="node1" href="likes.html" target="_top" title="likes" alt="" coords="437,5,581,152">
-<area shape="rect" id="node2" href="videos.html" target="_top" title="videos" alt="" coords="5,128,369,549">
-<area shape="rect" id="node3" href="user_events.html" target="_top" title="user_events" alt="" coords="413,169,605,345">
+<area shape="rect" id="node1" href="likes.html" target="_top" title="likes" alt="" coords="467,5,611,152">
+<area shape="rect" id="node2" href="videos.html" target="_top" title="videos" alt="" coords="5,225,369,647">
+<area shape="rect" id="node3" href="user_events.html" target="_top" title="user_events" alt="" coords="443,169,635,345">
+<area shape="rect" id="node4" href="video_embeddings.html" target="_top" title="video_embeddings" alt="" coords="413,363,664,480">
 </map>
                                         <a name='diagram'><img id="oneDegreeImg" src="../diagrams/tables/videos.1degree.png" usemap="#oneDegreeRelationshipsDiagram" class="diagram" border="0" align="left"></a>
                                     </div>
                                     <div class="chart tab-pane " id="twodegreesDegreeImg-chart" style="position: relative; overflow-x:auto;">
                                         <map id="twoDegreesRelationshipsDiagram" name="twoDegreesRelationshipsDiagram">
-<area shape="rect" id="node1" href="likes.html" target="_top" title="likes" alt="" coords="437,5,581,152">
-<area shape="rect" id="node2" title="auth.users" alt="" coords="97,36,277,124">
-<area shape="rect" id="node3" href="videos.html" target="_top" title="videos" alt="" coords="5,169,369,591">
-<area shape="rect" id="node4" href="user_events.html" target="_top" title="user_events" alt="" coords="413,169,605,345">
-</map>
-                                        <a name='diagram'><img id="twodegreesDegreeImg" src="../diagrams/tables/videos.2degrees.png" usemap="#twoDegreesRelationshipsDiagram" class="diagram" border="0" align="left"></a>
-                                    </div>
-                                    <div class="chart tab-pane " id="oneimpliedDegreeImg-chart" style="position: relative; overflow-x:auto;">
-                                        <map id="oneDegreeRelationshipsDiagramImplied" name="oneDegreeRelationshipsDiagramImplied">
-<area shape="rect" id="node1" href="likes.html" target="_top" title="likes" alt="" coords="483,5,627,152">
-<area shape="rect" id="node2" href="videos.html" target="_top" title="videos" alt="" coords="5,225,369,647">
-<area shape="rect" id="node3" href="user_events.html" target="_top" title="user_events" alt="" coords="459,169,651,345">
-<area shape="rect" id="node4" href="video_popularity_daily.html" target="_top" title="video_popularity_daily" alt="" coords="413,363,696,456">
-</map>
-                                        <a name='diagram'><img id="oneimpliedDegreeImg" src="../diagrams/tables/videos.implied1degrees.png" usemap="#oneDegreeRelationshipsDiagramImplied" class="diagram" border="0" align="left"></a>
-                                    </div>
-                                    <div class="chart tab-pane " id="twoimpliedDegreeImg-chart" style="position: relative; overflow-x:auto;">
-                                        <map id="twoDegreesRelationshipsDiagramImplied" name="twoDegreesRelationshipsDiagramImplied">
-<area shape="rect" id="node1" href="likes.html" target="_top" title="likes" alt="" coords="483,199,627,345">
+<area shape="rect" id="node1" href="likes.html" target="_top" title="likes" alt="" coords="467,199,611,345">
 <area shape="rect" id="node2" title="auth.users" alt="" coords="97,79,277,167">
 <area shape="rect" id="node3" href="videos.html" target="_top" title="videos" alt="" coords="5,225,369,647">
-<area shape="rect" id="node4" href="user_events.html" target="_top" title="user_events" alt="" coords="459,5,651,181">
-<area shape="rect" id="node5" href="video_popularity_daily.html" target="_top" title="video_popularity_daily" alt="" coords="413,363,696,456">
+<area shape="rect" id="node4" href="user_events.html" target="_top" title="user_events" alt="" coords="443,5,635,181">
+<area shape="rect" id="node5" href="video_embeddings.html" target="_top" title="video_embeddings" alt="" coords="413,363,664,480">
 </map>
-                                        <a name='diagram'><img id="twoimpliedDegreeImg" src="../diagrams/tables/videos.implied2degrees.png" usemap="#twoDegreesRelationshipsDiagramImplied" class="diagram" border="0" align="left"></a>
+                                        <a name='diagram'><img id="twodegreesDegreeImg" src="../diagrams/tables/videos.2degrees.png" usemap="#twoDegreesRelationshipsDiagram" class="diagram" border="0" align="left"></a>
                                     </div>
                                 </div>
                             </div>
