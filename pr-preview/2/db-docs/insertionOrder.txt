@@ -1,0 +1,11 @@
+videos
+performers
+tag_groups
+tags
+profiles
+user_embeddings
+video_embeddings
+likes
+user_events
+video_performers
+video_tags
