@@ -118,7 +118,7 @@ const LikedVideosDrawer: React.FC<LikedVideosDrawerProps> = ({ isOpen, onClose }
                               <div className="mt-2 flex justify-between items-center">
                                 <p className="text-md font-bold text-amber-500">{`￥${video.price.toLocaleString()}`}</p>
                                 <Link href={video.productUrl} passHref>
-                                  <button className="bg-gradient-to-r from-purple-400 via-pink-400 to-amber-400 hover:from-purple-500 hover:via-pink-500 hover:to-amber-500 text-white font-bold py-1 px-3 rounded-md transition-all duration-300 text-sm">
+                                  <button className="bg-transparent border border-amber-400 text-amber-400 hover:bg-amber-400 hover:text-white font-bold py-1 px-3 rounded-md transition-all duration-300 text-sm">
                                     見る
                                   </button>
                                 </Link>
