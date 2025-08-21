@@ -146,6 +146,30 @@ const LikedVideosDrawer: React.FC<LikedVideosDrawerProps> = ({ isOpen, onClose }
                     
                     {/* List */}
                     <div className="flex-1 px-4 sm:px-6 overflow-y-auto">
+                       <div className="space-y-4">
+                        {dummyLikedVideos.map((video) => (
+                          <div key={video.id} className="bg-gray-50 rounded-lg shadow-sm overflow-hidden flex items-center p-3">
+                            <div className="relative w-24 h-24 flex-shrink-0 rounded-md overflow-hidden">
+                               {/* <Image src={video.imageUrl} alt={video.title} layout="fill" objectFit="cover" /> */}
+                               <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                                 <span className="text-gray-400 text-xs">画像</span>
+                               </div>
+                            </div>
+                            <div className="pl-4 flex-grow">
+                              <h3 className="text-sm font-semibold text-gray-800 line-clamp-2">{video.title}</h3>
+                              <div className="mt-2 flex justify-between items-center">
+                                <p className="text-md font-bold text-amber-500">{`￥${video.price.toLocaleString()}`}</p>
+                                <Link href={video.productUrl} passHref>
+                                  <button className="bg-transparent border border-amber-400 text-amber-400 hover:bg-amber-400 hover:text-white font-bold py-1 px-3 rounded-md transition-all duration-300 text-sm">
+                                    見る
+                                  </button>
+                                </Link>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                   </div>
                 </Dialog.Panel>
               </Transition.Child>
