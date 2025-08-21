@@ -26,7 +26,7 @@ const MobileVideoLayout: React.FC<MobileVideoLayoutProps> = ({ cardData, onSkip,
 
       {/* テキスト情報エリア */}
       <div className="p-4 text-gray-700 flex-grow overflow-y-auto">
-        <h2 className="text-xl font-bold">{cardData.title}</h2>
+        <h2 className="text-lg font-bold">{cardData.title}</h2>
         <div className="flex flex-wrap gap-2 my-2">
           {cardData.tags.map((tag) => (
             <span
