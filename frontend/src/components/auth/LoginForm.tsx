@@ -104,7 +104,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onClose }) => {
 
       <button
         type="submit"
-        className="w-full py-3 px-4 bg-gradient-to-r from-purple-400 to-amber-400 hover:from-purple-500 hover:to-amber-500 text-white font-bold rounded-lg transition-all duration-300 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+        className="w-full py-3 px-4 bg-gradient-to-r from-purple-400 via-pink-400 to-amber-400 hover:from-purple-500 hover:via-pink-500 hover:to-amber-500 text-white font-bold rounded-lg transition-all duration-300 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
         disabled={isLoading}
       >
         {isLoading ? 'ログイン中...' : 'ログイン'}
