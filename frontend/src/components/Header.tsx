@@ -5,41 +5,31 @@ import { useState, useEffect, useRef } from 'react';
 import AuthModal from './auth/AuthModal';
 import useMediaQuery from '@/hooks/useMediaQuery';
 import { supabase } from '@/lib/supabase';
-import { User } from '@supabase/supabase-js';
+import { User as SupabaseUser } from '@supabase/supabase-js';
 import { Menu } from '@headlessui/react';
-import Link from 'next/link'; // Link コンポーネントをインポート
+import Link from 'next/link';
+import { Heart, User } from 'lucide-react'; // アイコンをインポート
 
 const Header = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<SupabaseUser | null>(null);
   const isMobile = useMediaQuery('(max-width: 639px)');
-  const menuButtonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
-    // 初期ロード時にセッションを取得
     const getSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      console.log('Initial session:', session); // 追加
       setUser(session?.user || null);
     };
     getSession();
 
-    // 認証状態の変更を購読
     const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
-      console.log('Auth state changed:', _event, session); // 追加
       setUser(session?.user || null);
     });
 
-    // クリーンアップ
     return () => {
       authListener.subscription.unsubscribe();
     };
   }, []);
-
-  // user ステートの変更を監視
-  useEffect(() => {
-    console.log('User state updated:', user); // 追加
-  }, [user]);
 
   const handleOpenModal = () => {
     setIsModalOpen(true);
@@ -66,78 +56,67 @@ const Header = () => {
           style={{ filter: 'drop-shadow(0 0 0.5rem rgba(0, 0, 0, 0.1))' }}
         />
         {user ? (
-          // ログイン後の表示（メニューボタン）
-          <Menu as="div" className="relative inline-block text-left">
-            <div>
-              <Menu.Button
-                ref={menuButtonRef}
-                className="p-4 py-2 mx-2 text-sm font-bold text-gray-900 rounded-xl border border-gray-300 bg-white shadow-lg hover:bg-gray-100 transition-colors duration-200"
-                style={{ filter: 'drop-shadow(0 0 0.5rem rgba(0, 0, 0, 0.1))' }}
-              >
-                メニュー
-              </Menu.Button>
-            </div>
+          <div className="flex items-center space-x-2">
+            <Link href="/liked-videos" passHref>
+              <button className="p-2 rounded-full hover:bg-white/20 transition-colors">
+                <Heart className="text-white drop-shadow-md" size={24} />
+              </button>
+            </Link>
+            
+            <Menu as="div" className="relative inline-block text-left">
+              <div>
+                <Menu.Button className="p-2 rounded-full hover:bg-white/20 transition-colors">
+                  <User className="text-white drop-shadow-md" size={24} />
+                </Menu.Button>
+              </div>
 
-            <Menu.Items className="absolute right-0 mt-2 w-56 origin-top-right divide-y divide-gray-100 rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-50">
-              <div className="px-1 py-1 ">
-                <Menu.Item>
-                  {({ active }) => (
-                    <Link href="/liked-videos" passHref>
+              <Menu.Items className="absolute right-0 mt-2 w-56 origin-top-right divide-y divide-gray-100 rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-50">
+                <div className="px-1 py-1 ">
+                  <Menu.Item>
+                    {({ active }) => (
+                      <Link href="/account-management" passHref>
+                        <button
+                          className={`${
+                            active ? 'bg-violet-500 text-white' : 'text-gray-900'
+                          } group flex w-full items-center rounded-md px-2 py-2 text-sm`}
+                        >
+                          アカウント管理
+                        </button>
+                      </Link>
+                    )}
+                  </Menu.Item>
+                  <Menu.Item>
+                    {({ active }) => (
+                      <Link href="/analysis-results" passHref>
+                        <button
+                          className={`${
+                            active ? 'bg-violet-500 text-white' : 'text-gray-900'
+                          } group flex w-full items-center rounded-md px-2 py-2 text-sm`}
+                        >
+                          性癖分析結果
+                        </button>
+                      </Link>
+                    )}
+                  </Menu.Item>
+                </div>
+                <div className="px-1 py-1">
+                  <Menu.Item>
+                    {({ active }) => (
                       <button
+                        onClick={handleLogout}
                         className={`${
                           active ? 'bg-violet-500 text-white' : 'text-gray-900'
                         } group flex w-full items-center rounded-md px-2 py-2 text-sm`}
                       >
-                        LIKEしたものリスト
+                        ログアウト
                       </button>
-                    </Link>
-                  )}
-                </Menu.Item>
-                <Menu.Item>
-                  {({ active }) => (
-                    <Link href="/account-management" passHref>
-                      <button
-                        className={`${
-                          active ? 'bg-violet-500 text-white' : 'text-gray-900'
-                        } group flex w-full items-center rounded-md px-2 py-2 text-sm`}
-                      >
-                        アカウント管理
-                      </button>
-                    </Link>
-                  )}
-                </Menu.Item>
-                <Menu.Item>
-                  {({ active }) => (
-                    <Link href="/analysis-results" passHref>
-                      <button
-                        className={`${
-                          active ? 'bg-violet-500 text-white' : 'text-gray-900'
-                        } group flex w-full items-center rounded-md px-2 py-2 text-sm`}
-                      >
-                        性癖分析結果
-                      </button>
-                    </Link>
-                  )}
-                </Menu.Item>
-              </div>
-              <div className="px-1 py-1">
-                <Menu.Item>
-                  {({ active }) => (
-                    <button
-                      onClick={handleLogout}
-                      className={`${
-                        active ? 'bg-violet-500 text-white' : 'text-gray-900'
-                      } group flex w-full items-center rounded-md px-2 py-2 text-sm`}
-                    >
-                      ログアウト
-                    </button>
-                  )}
-                </Menu.Item>
-              </div>
-            </Menu.Items>
-          </Menu>
+                    )}
+                  </Menu.Item>
+                </div>
+              </Menu.Items>
+            </Menu>
+          </div>
         ) : (
-          // ログイン前の表示
           <button
             onClick={handleOpenModal}
             className="p-4 py-2 mx-2 text-sm font-bold text-gray-900 rounded-xl border border-gray-300 bg-white shadow-lg hover:bg-gray-100 transition-colors duration-200"
