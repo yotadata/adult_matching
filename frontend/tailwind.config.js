@@ -4,7 +4,11 @@ const config = {
     './src/**/*.{js,ts,jsx,tsx,mdx}',
   ],
   theme: {
-    extend: {},
+    extend: {
+      colors: {
+        darkAccent: '#18186A',
+      },
+    },
   },
   plugins: [],
 };

@@ -107,7 +107,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onClose }) => {
 
       <button
         type="submit"
-        className="w-full py-3 px-4 bg-transparent border border-purple-500 text-purple-500 hover:bg-purple-500 hover:text-white font-bold rounded-lg transition-all duration-300 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+        className="w-full py-3 px-4 bg-transparent border border-darkAccent text-darkAccent hover:bg-darkAccent hover:text-white font-bold rounded-lg transition-all duration-300 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
         disabled={isLoading}
       >
         {isLoading ? '登録中...' : '利用規約に同意して登録'}
