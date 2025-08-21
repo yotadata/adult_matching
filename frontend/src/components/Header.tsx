@@ -116,7 +116,7 @@ const Header = () => {
         ) : (
           <button
             onClick={handleOpenModal}
-            className="p-4 py-2 mx-2 text-sm font-bold text-gray-900 rounded-xl border border-gray-300 bg-white shadow-lg hover:bg-gray-100 transition-colors duration-200"
+            className="p-4 py-2 mx-2 text-sm font-bold text-white rounded-xl bg-gradient-to-r from-purple-400 to-amber-400 hover:from-purple-500 hover:to-amber-500 shadow-lg transition-all duration-300"
             style={{ filter: 'drop-shadow(0 0 0.5rem rgba(0, 0, 0, 0.1))' }}
           >
             ログイン
