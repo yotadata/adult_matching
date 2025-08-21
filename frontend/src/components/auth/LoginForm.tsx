@@ -7,13 +7,17 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 type LoginFormInputs = {
-  email: string; // userId から email に変更
+  email: string;
   password: string;
 };
 
-const LoginForm = () => {
+interface LoginFormProps {
+  onClose: () => void;
+}
+
+const LoginForm: React.FC<LoginFormProps> = ({ onClose }) => {
   const { register, handleSubmit, formState: { errors } } = useForm<LoginFormInputs>();
-  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [message, setMessage] = useState<{ type: 'error'; text: string } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
@@ -26,7 +30,7 @@ const LoginForm = () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email: data.email, password: data.password }), // userId から email に変更
+        body: JSON.stringify({ email: data.email, password: data.password }),
       });
 
       const result = await response.json();
@@ -43,7 +47,7 @@ const LoginForm = () => {
         });
       }
 
-      setMessage({ type: 'success', text: 'ログイン成功！' });
+      onClose();
       router.push('/');
     } catch (error: unknown) {
       let errorMessage = '予期せぬエラーが発生しました';
@@ -66,15 +70,15 @@ const LoginForm = () => {
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
       {message && (
-        <div className={`p-3 rounded-lg text-sm ${message.type === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+        <div className={'p-3 rounded-lg text-sm bg-red-100 text-red-800'}>
           {message.text}
         </div>
       )}
       <Input
-        id="email" // id を email に変更
-        label="メールアドレス" // label を変更
-        type="email" // type を email に変更
-        placeholder="your@example.com" // placeholder を変更
+        id="email"
+        label="メールアドレス"
+        type="email"
+        placeholder="your@example.com"
         {...register('email', {
           required: 'メールアドレスは必須です',
           pattern: {
@@ -83,7 +87,7 @@ const LoginForm = () => {
           },
         })}
       />
-      {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email.message}</p>} {/* userId から email に変更 */}
+      {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email.message}</p>}
 
       <Input
         id="password"

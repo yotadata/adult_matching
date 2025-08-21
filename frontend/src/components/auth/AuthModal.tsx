@@ -42,7 +42,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
               </Tab.List>
               <Tab.Panels>
                 <Tab.Panel className="focus:outline-none">
-                  <LoginForm />
+                  <LoginForm onClose={onClose} />
                 </Tab.Panel>
                 <Tab.Panel className="focus:outline-none">
                   <RegisterForm />
