@@ -5,6 +5,7 @@ import { useForm, SubmitHandler } from 'react-hook-form';
 import { supabase } from '@/lib/supabase';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import toast from 'react-hot-toast';
 
 type LoginFormInputs = {
   email: string;
@@ -47,6 +48,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onClose }) => {
         });
       }
 
+      toast.success('ログインしました！');
       onClose();
       router.push('/');
     } catch (error: unknown) {
