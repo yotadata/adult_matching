@@ -1,17 +1,19 @@
 'use client';
 
 import Image from 'next/image';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import AuthModal from './auth/AuthModal';
 import useMediaQuery from '@/hooks/useMediaQuery';
 import { supabase } from '@/lib/supabase';
 import { User as SupabaseUser } from '@supabase/supabase-js';
 import { Menu } from '@headlessui/react';
 import Link from 'next/link';
-import { Heart, User } from 'lucide-react'; // アイコンをインポート
+import { Heart, User } from 'lucide-react';
+import LikedVideosDrawer from './LikedVideosDrawer'; // ドロワーコンポーネントをインポート
 
 const Header = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false); // ドロワー用のstate
   const [user, setUser] = useState<SupabaseUser | null>(null);
   const isMobile = useMediaQuery('(max-width: 639px)');
 
@@ -31,13 +33,10 @@ const Header = () => {
     };
   }, []);
 
-  const handleOpenModal = () => {
-    setIsModalOpen(true);
-  };
-
-  const handleCloseModal = () => {
-    setIsModalOpen(false);
-  };
+  const handleOpenModal = () => setIsModalOpen(true);
+  const handleCloseModal = () => setIsModalOpen(false);
+  const handleOpenDrawer = () => setIsDrawerOpen(true);
+  const handleCloseDrawer = () => setIsDrawerOpen(false);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -57,11 +56,9 @@ const Header = () => {
         />
         {user ? (
           <div className="flex items-center space-x-2">
-            <Link href="/liked-videos" passHref>
-              <button className="p-2 rounded-full hover:bg-white/20 transition-colors">
-                <Heart className="text-white drop-shadow-md" size={24} />
-              </button>
-            </Link>
+            <button onClick={handleOpenDrawer} className="p-2 rounded-full hover:bg-white/20 transition-colors">
+              <Heart className="text-white drop-shadow-md" size={24} />
+            </button>
             
             <Menu as="div" className="relative inline-block text-left">
               <div>
@@ -127,6 +124,7 @@ const Header = () => {
         )}
       </div>
       <AuthModal isOpen={isModalOpen} onClose={handleCloseModal} />
+      <LikedVideosDrawer isOpen={isDrawerOpen} onClose={handleCloseDrawer} />
     </header>
   );
 };
