@@ -70,7 +70,7 @@ const Header = () => {
                 </Menu.Button>
               </div>
 
-              <Menu.Items className="absolute right-0 mt-2 w-56 origin-top-right divide-y divide-gray-100 rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-50">
+              <Menu.Items className="absolute right-0 mt-2 w-56 origin-top-right divide-y divide-gray-100 rounded-2xl bg-white shadow-2xl ring-1 ring-black ring-opacity-5 focus:outline-none z-50">
                 <div className="px-1 py-1 ">
                   <Menu.Item>
                     {({ active }) => (
