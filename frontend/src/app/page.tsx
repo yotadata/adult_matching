@@ -3,90 +3,79 @@
 import Header from "@/components/Header";
 import SwipeCard, { CardData, SwipeCardHandle } from "@/components/SwipeCard";
 import ActionButtons from "@/components/ActionButtons";
-import { useState, useRef, useEffect } from "react"; // useEffect をインポート
+import { useState, useRef, useEffect } from "react";
 import { AnimatePresence, motion, PanInfo } from "framer-motion";
 import HowToUseCard from "@/components/HowToUseCard";
 import useMediaQuery from "@/hooks/useMediaQuery";
 import MobileVideoLayout from "@/components/MobileVideoLayout";
-
-// ダミーデータ
-const DUMMY_CARDS: CardData[] = [
-  {
-    id: 1,
-    title: '【VR】VR専用機材じゃないとダメなんでしょ？って思ってた時期が俺にもありました。',
-    tags: ['#VR', '#高画質', '#素人'],
-    description:
-      'これは非常に長い説明文のサンプルです。スクロール機能が正しく実装されているかを確認するために、このテキストはカードの表示領域を超える長さを持つ必要があります。繰り返しになりますが、これはスクロールのテスト用です。これは非常に長い説明文のサンプルです。スクロール機能が正しく実装されているかを確認するために、このテキストはカードの表示領域を超える長さを持つ必要があります。繰り返しになりますが、これはスクロールのテスト用です。これは非常に長い説明文のサンプルです。スクロール機能が正しく実装されているかを確認するために、このテキストはカードの表示領域を超える長さを持つ必要があります。繰り返しになりますが、これはスクロールのテスト用です。',
-    videoUrl:
-      'https://www.youtube.com/embed/k7Kf89f9KAw?autoplay=1&mute=1&loop=1&playlist=k7Kf89f9KAw',
-  },
-  {
-    id: 2,
-    title: '新人グラビアアイドル！初めての撮影で緊張…！',
-    tags: ['#新人', '#グラビア', '#アイドル'],
-    description: 'サンプルテキスト。サンプルテキスト。サンプルテキスト。',
-    videoUrl:
-      'https://www.youtube.com/embed/k7Kf89f9KAw?autoplay=1&mute=1&loop=1&playlist=k7Kf89f9KAw',
-  },
-  {
-    id: 3,
-    title: '会社の美人上司と禁断の社内恋愛',
-    tags: ['#上司', '#OL', '#ドラマ'],
-    description: 'サンプルテキスト。サンプルテキスト。サンプルテキスト。',
-    videoUrl:
-      'https://www.youtube.com/embed/k7Kf89f9KAw?autoplay=1&mute=1&loop=1&playlist=k7Kf89f9KAw',
-  },
-  {
-    id: 4,
-    title: 'ギャルで人妻とかいうパワーワード',
-    tags: ['#ギャル', '#人妻', '#ドキュメンタリー'],
-    description: 'サンプルテキスト。サンプルテキスト。サンプルテキスト。',
-    videoUrl:
-      'https://www.youtube.com/embed/k7Kf89f9KAw?autoplay=1&mute=1&loop=1&playlist=k7Kf89f9KAw',
-  },
-  {
-    id: 5,
-    title: '田舎で育った純朴な彼女との初体験',
-    tags: ['#田舎', '#純朴', '#初体験'],
-    description: 'サンプルテキスト。サンプルテキスト。サンプルテキスト。',
-    videoUrl:
-      'https://www.youtube.com/embed/k7Kf89f9KAw?autoplay=1&mute=1&loop=1&playlist=k7Kf89f9KAw',
-  },
-];
+import { supabase } from "@/lib/supabase"; // supabaseクライアントをインポート
 
 const ORIGINAL_GRADIENT = 'linear-gradient(to right, #C4C8E3, #D7D1E3, #F7D7E0, #F8DBB9)';
 const LEFT_SWIPE_GRADIENT = 'linear-gradient(to right, #AEB4EB, #D7D1E3, #F7D7E0,#F8DBB9)'; // 左端を明るく
 const RIGHT_SWIPE_GRADIENT = 'linear-gradient(to right, #C4C8E3,  #D7D1E3, #F7D7E0,#F9CFA0)'; // 右端を明るく
 
 export default function Home() {
+  const [cards, setCards] = useState<CardData[]>([]); // APIからのデータを保持するstate
   const [activeIndex, setActiveIndex] = useState(0);
   const cardRef = useRef<SwipeCardHandle>(null);
   const [currentGradient, setCurrentGradient] = useState(ORIGINAL_GRADIENT);
   const [showHowToUse, setShowHowToUse] = useState(true);
-  const isMobile = useMediaQuery('(max-width: 639px)'); // Tailwind CSS の sm (640px) 未満をモバイルとする
-  const [headerHeight, setHeaderHeight] = useState(0); // headerHeight state を追加
+  const isMobile = useMediaQuery('(max-width: 639px)');
+  const [headerHeight, setHeaderHeight] = useState(0);
+
+  // APIから動画データを取得する
+  useEffect(() => {
+    const fetchVideos = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+
+      const { data, error } = await supabase.functions.invoke('videos-feed', {
+        headers: {
+          Authorization: `Bearer ${session?.access_token}`,
+        },
+      });
+
+      if (error) {
+        console.error('Error fetching videos:', error);
+        return;
+      }
+      
+      // APIレスポンスをCardData形式に変換
+      const fetchedCards: CardData[] = data.map((video: any) => ({
+        id: video.id,
+        title: video.title,
+        tags: video.reasons, // openapi.yamlのVideoWithScoreのreasonsをタグとして利用
+        description: video.description,
+        // TODO: Supabase StorageのURLなどに変更する
+        videoUrl: `https://www.youtube.com/embed/k7Kf89f9KAw?autoplay=1&mute=1&loop=1&playlist=k7Kf89f9KAw`,
+      }));
+
+      setCards(fetchedCards);
+    };
+
+    fetchVideos();
+  }, []);
 
   useEffect(() => {
-    if (isMobile) { // モバイルの場合のみヘッダーの高さを取得
+    if (isMobile) {
       const headerElement = document.getElementById('main-header');
       if (headerElement) {
         setHeaderHeight(headerElement.offsetHeight);
       }
     } else {
-      setHeaderHeight(0); // モバイルではない場合は0にリセット
+      setHeaderHeight(0);
     }
-  }, [isMobile]); // isMobile が変更されたときに実行
+  }, [isMobile]);
 
   const handleSwipe = () => {
     setActiveIndex((prev) => prev + 1);
-    setCurrentGradient(ORIGINAL_GRADIENT); // スワイプ完了後、元のグラデーションに戻す
+    setCurrentGradient(ORIGINAL_GRADIENT);
   };
 
   const triggerSwipe = (direction: 'left' | 'right') => {
     cardRef.current?.swipe(direction);
   };
 
-  const activeCard = activeIndex < DUMMY_CARDS.length ? DUMMY_CARDS[activeIndex] : null;
+  const activeCard = activeIndex < cards.length ? cards[activeIndex] : null;
 
   const handleDrag = (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
     if (info.offset.x > 50) {
@@ -117,7 +106,7 @@ export default function Home() {
       <Header />
       <main
         className={`flex-grow flex w-full relative ${isMobile ? 'flex-col bg-white h-full' : 'items-center justify-center'}`}
-        style={isMobile ? { paddingTop: `${headerHeight}px` } : {}} // headerHeight を使って paddingTop を動的に設定
+        style={isMobile ? { paddingTop: `${headerHeight}px` } : {}}
       >
         <AnimatePresence mode="wait">
           {activeCard ? (
@@ -138,7 +127,7 @@ export default function Home() {
               />
             )
           ) : (
-            <p className="text-white font-bold text-2xl">No more cards</p>
+            <p className="text-white font-bold text-2xl">Loading videos...</p> // ローディング表示
           )}
         </AnimatePresence>
       </main>
