@@ -1,0 +1,107 @@
+import { createClient } from '@supabase/supabase-js';
+import { mapFanzaItem, VideoRecord } from './fanza_ingest'; // fanza_ingest.tsからインポート
+
+// 環境変数の読み込み
+const FANZA_API_ID = process.env.FANZA_API_ID;
+const FANZA_AFFILIATE_ID = process.env.FANZA_AFFILIATE_ID;
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+if (!FANZA_API_ID || !FANZA_AFFILIATE_ID) {
+  console.error('FANZA_API_ID and FANZA_AFFILIATE_ID must be set in environment variables.');
+  process.exit(1);
+}
+
+if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+  console.error('NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY must be set in environment variables.');
+  process.exit(1);
+}
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+const FANZA_API_BASE_URL = 'https://api.dmm.com/affiliate/v3/ItemList';
+
+async function fetchFanzaData(offset: number = 1, hits: number = 100): Promise<any> {
+  const params = new URLSearchParams({
+    api_id: FANZA_API_ID!,
+    affiliate_id: FANZA_AFFILIATE_ID!,
+    site: 'DMM.com', // DMM.comサイトを指定
+    service: 'digital', // デジタルコンテンツ
+    floor: 'videoa', // アダルトビデオ
+    hits: hits.toString(),
+    offset: offset.toString(),
+    sort: 'rank', // ランキング順
+    output: 'json',
+  });
+
+  const url = `${FANZA_API_BASE_URL}?${params.toString()}`;
+
+  try {
+    console.log(`Fetching data from: ${url}`);
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error fetching FANZA data:', error);
+    return null;
+  }
+}
+
+async function ingestFanzaData() {
+  let offset = 1;
+  const hits = 100; // 1回のリクエストで取得する件数
+  let totalCount = 0;
+  let insertedCount = 0;
+
+  while (true) {
+    const data: any = await fetchFanzaData(offset, hits);
+
+    if (!data || !data.result || !data.result.items || data.result.items.length === 0) {
+      console.log('No more data to fetch or an error occurred.');
+      break;
+    }
+
+    const fanzaItems = data.result.items;
+    const videoRecords: VideoRecord[] = fanzaItems.map(mapFanzaItem);
+
+    console.log(`Fetched ${videoRecords.length} items from FANZA (offset: ${offset}).`);
+
+    for (const record of videoRecords) {
+      try {
+        const { data, error } = await supabase
+          .from('videos')
+          .upsert(record, { onConflict: 'source, distribution_code, maker_code' });
+
+        if (error) {
+          // 重複エラーはスキップ
+          if (error.code === '23505') { // unique_violation
+            // console.warn(`Skipping duplicate record: ${record.title}`);
+          } else {
+            console.error('Error inserting record:', error);
+          }
+        } else {
+          insertedCount++;
+        }
+      } catch (e) {
+        console.error('Unexpected error during upsert:', e);
+      }
+    }
+
+    totalCount += videoRecords.length;
+    console.log(`Processed ${totalCount} items. Inserted/Updated: ${insertedCount}`);
+
+    // 次のページがあるか確認
+    if (data.result.total_count && (offset + hits) <= data.result.total_count) {
+      offset += hits;
+    } else {
+      break;
+    }
+  }
+
+  console.log(`FANZA data ingestion complete. Total processed: ${totalCount}, Successfully inserted/updated: ${insertedCount}`);
+}
+
+ingestFanzaData();
