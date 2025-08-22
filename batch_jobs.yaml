@@ -20,8 +20,8 @@ batch_jobs:
       新しい学習済みモデルを Supabase Edge Function で利用可能にする。
     schedule: "0 4 * * 0"   # 毎週日曜 04:00 JST 実行
     input:
-      - training_data: public.user_events
-      - features: ["views", "likes", "dismisses"]
+      - training_data: public.likes
+      - features: ["likes"]
     output:
       - update: public.video_embeddings
       - update: public.user_embeddings
