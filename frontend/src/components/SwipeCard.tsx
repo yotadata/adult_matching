@@ -1,15 +1,18 @@
 'use client';
 
 import { motion, useAnimation, PanInfo } from 'framer-motion';
-import { forwardRef, useImperativeHandle } from 'react';
+import { forwardRef, useImperativeHandle, useState } from 'react';
 import useWindowSize from '../hooks/useWindowSize';
+import { Play } from 'lucide-react';
 
 // カードデータの型定義
 export interface CardData {
   id: number;
   title: string;
   genre: string[];
+  description: string;
   videoUrl: string;
+  thumbnail_url: string; // 追加
 }
 
 export interface SwipeCardHandle {
@@ -27,6 +30,7 @@ interface SwipeCardProps {
 const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwipe, onDrag, onDragEnd }, ref) => {
   const controls = useAnimation();
   const { height: windowHeight } = useWindowSize();
+  const [showVideo, setShowVideo] = useState(false);
 
   // 動画のアスペクト比を21:20と仮定（プレーヤーUIを考慮）
   const videoAspectRatio = 21 / 20;
@@ -60,6 +64,10 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwi
     onDragEnd?.(event, info); // 親の onDragEnd を呼び出す
   };
 
+  const handlePlayClick = () => {
+    setShowVideo(true);
+  };
+
   return (
     <motion.div 
       className="absolute h-full rounded-2xl bg-white backdrop-blur-lg border border-white/60 shadow-2xl flex flex-col p-4 cursor-grab overflow-hidden"
@@ -73,16 +81,37 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwi
       initial={false}
       whileTap={{ cursor: "grabbing" }}
     >
-      {/* 上部: YouTube動画エリア */}
-      <div className="relative w-full h-1/2">
-        <iframe
-          src={cardData.videoUrl} // FANZA埋め込みURLがここに渡されることを想定
-          title="FANZA Video Player" // タイトルを修正
-          frameBorder="0"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" // 必要に応じてallow属性を調整
-          allowFullScreen
-          className="absolute top-0 left-0 w-full h-full" // classNameに変更
-        ></iframe>
+      {/* 上部: 動画エリア */}
+      <div className="relative w-full h-1/2 bg-black flex items-center justify-center">
+        {!showVideo && cardData.thumbnail_url ? (
+          <div
+            className="absolute inset-0 w-full h-full bg-cover bg-center cursor-pointer flex items-center justify-center"
+            style={{ backgroundImage: `url(${cardData.thumbnail_url})` }}
+            onClick={handlePlayClick}
+          >
+            <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center">
+              <Play className="text-white w-16 h-16 opacity-80" fill="white" />
+            </div>
+          </div>
+        ) : !showVideo && !cardData.thumbnail_url ? (
+          <div
+            className="absolute inset-0 w-full h-full bg-gray-800 flex items-center justify-center text-white text-lg"
+            onClick={handlePlayClick}
+          >
+            <Play className="text-white w-16 h-16 opacity-80" fill="white" />
+          </div>
+        ) : null}
+
+        {showVideo && (
+          <iframe
+            src={cardData.videoUrl} // FANZA埋め込みURLがここに渡されることを想定
+            title="FANZA Video Player" // タイトルを修正
+            frameBorder="0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" // 必要に応じてallow属性を調整
+            allowFullScreen
+            className="absolute top-0 left-0 w-full h-full" // classNameに変更
+          ></iframe>
+        )}
       </div>
       
       {/* 下部: テキスト情報エリア */}

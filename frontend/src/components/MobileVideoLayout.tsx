@@ -2,6 +2,8 @@
 
 import { CardData } from '@/components/SwipeCard';
 import ActionButtons from '@/components/ActionButtons';
+import { useState } from 'react';
+import { Play } from 'lucide-react';
 
 interface MobileVideoLayoutProps {
   cardData: CardData;
@@ -10,18 +12,45 @@ interface MobileVideoLayoutProps {
 }
 
 const MobileVideoLayout: React.FC<MobileVideoLayoutProps> = ({ cardData, onSkip, onLike }) => {
+  const [showVideo, setShowVideo] = useState(false);
+
+  const handlePlayClick = () => {
+    setShowVideo(true);
+  };
+
   return (
     <div className="flex flex-col w-full h-full">
       {/* 動画表示エリア */}
-      <div className="w-full overflow-hidden relative aspect-[494/370]">
-        <iframe
-          src={cardData.videoUrl}
-          title="YouTube video player"
-          frameBorder="0"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-          allowFullScreen
-          className="absolute inset-0 w-full h-full"
-        ></iframe>
+      <div className="w-full overflow-hidden relative aspect-[494/370] bg-black flex items-center justify-center">
+        {!showVideo && cardData.thumbnail_url ? (
+          <div
+            className="absolute inset-0 w-full h-full bg-cover bg-center cursor-pointer flex items-center justify-center"
+            style={{ backgroundImage: `url(${cardData.thumbnail_url})` }}
+            onClick={handlePlayClick}
+          >
+            <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center">
+              <Play className="text-white w-16 h-16 opacity-80" fill="white" />
+            </div>
+          </div>
+        ) : !showVideo && !cardData.thumbnail_url ? (
+          <div
+            className="absolute inset-0 w-full h-full bg-gray-800 flex items-center justify-center text-white text-lg"
+            onClick={handlePlayClick}
+          >
+            <Play className="text-white w-16 h-16 opacity-80" fill="white" />
+          </div>
+        ) : null}
+
+        {showVideo && (
+          <iframe
+            src={cardData.videoUrl}
+            title="YouTube video player"
+            frameBorder="0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            allowFullScreen
+            className="absolute inset-0 w-full h-full"
+          ></iframe>
+        )}
       </div>
 
       {/* テキスト情報エリア */}

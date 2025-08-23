@@ -59,6 +59,7 @@ export default function Home() {
           genre: video.genre, // tags から genre に変更
           description: video.description,
           videoUrl: fanzaEmbedUrl, // 生成したURLをセット
+          thumbnail_url: video.thumbnail_url, // サムネイルURLを追加
         };
       });
 
