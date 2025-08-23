@@ -25,7 +25,7 @@ export default function Home() {
   const [showHowToUse, setShowHowToUse] = useState(true);
   const isMobile = useMediaQuery('(max-width: 639px)');
   const { width: windowWidth } = useWindowSize();
-  const [cardWidth, setCardWidth] = useState<number | undefined>(undefined); // cardWidthをstateとして管理
+  const [cardWidth, setCardWidth] = useState<number | undefined>(400); // cardWidthをstateとして管理し、デフォルト値を400に設定
   const [headerHeight, setHeaderHeight] = useState(0);
 
   console.log('isMobile:', isMobile);
@@ -83,7 +83,7 @@ export default function Home() {
     return () => {
       window.removeEventListener('resize', updateCardWidth);
     };
-  }, [cardRef.current]); // cardRef.current が変更されたときに実行
+  }, [cardRef.current, activeCard]); // cardRef.current と activeCard が変更されたときに実行
 
   useEffect(() => {
     if (isMobile) {
