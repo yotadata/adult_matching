@@ -7,6 +7,7 @@ import { useState, useRef, useEffect } from "react";
 import { AnimatePresence, motion, PanInfo } from "framer-motion";
 import HowToUseCard from "@/components/HowToUseCard";
 import useMediaQuery from "@/hooks/useMediaQuery";
+import useWindowSize from "@/hooks/useWindowSize";
 import MobileVideoLayout from "@/components/MobileVideoLayout";
 import { supabase } from "@/lib/supabase"; // supabaseクライアントをインポート
 
@@ -21,6 +22,8 @@ export default function Home() {
   const [currentGradient, setCurrentGradient] = useState(ORIGINAL_GRADIENT);
   const [showHowToUse, setShowHowToUse] = useState(true);
   const isMobile = useMediaQuery('(max-width: 639px)');
+  const { width: windowWidth } = useWindowSize();
+  const cardWidth = isMobile ? windowWidth - 40 : 400; // 40px for horizontal padding (px-5 * 2)
   const [headerHeight, setHeaderHeight] = useState(0);
 
   // APIから動画データを取得する
