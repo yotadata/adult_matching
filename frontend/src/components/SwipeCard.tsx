@@ -66,7 +66,7 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwi
     >
       {/* 上部: YouTube動画エリア */}
       {/* 上部: YouTube動画エリア */}
-      <div style={{ width: '100%', paddingTop: '75%', position: 'relative' }}> {/* FANZAの埋め込みコードのスタイルを適用 */}
+      <div style={{ width: '100%', paddingTop: '56.25%', position: 'relative' }}> {/* 16:9 aspect ratio */}
         <iframe
           src={cardData.videoUrl} // FANZA埋め込みURLがここに渡されることを想定
           title="FANZA Video Player" // タイトルを修正
