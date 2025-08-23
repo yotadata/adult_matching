@@ -177,7 +177,7 @@ export default function Home() {
         </AnimatePresence>
       </main>
       {!isMobile && (
-        <footer className="w-full py-8">
+        <footer className="py-8 mx-auto" style={{ maxWidth: cardWidth ? `${cardWidth}px` : 'auto' }}>
           {activeCard && <ActionButtons
             onSkip={() => triggerSwipe('left')}
             onLike={() => triggerSwipe('right')}
