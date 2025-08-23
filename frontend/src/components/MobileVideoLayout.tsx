@@ -13,7 +13,7 @@ const MobileVideoLayout: React.FC<MobileVideoLayoutProps> = ({ cardData, onSkip,
   return (
     <div className="flex flex-col w-full h-full">
       {/* 動画表示エリア */}
-      <div className="w-full overflow-hidden relative aspect-video">
+      <div className="w-full overflow-hidden relative aspect-[21/20]">
         <iframe
           src={cardData.videoUrl}
           title="YouTube video player"
