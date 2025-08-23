@@ -6,8 +6,8 @@ import ActionButtons from "@/components/ActionButtons";
 import { useState, useRef, useEffect } from "react";
 import { AnimatePresence, motion, PanInfo } from "framer-motion";
 import HowToUseCard from "@/components/HowToUseCard";
-// import useMediaQuery from "@/hooks/useMediaQuery";
-// import useWindowSize from "@/hooks/useWindowSize";
+import useMediaQuery from "@/hooks/useMediaQuery";
+import useWindowSize from "@/hooks/useWindowSize";
 import MobileVideoLayout from "@/components/MobileVideoLayout";
 import { supabase } from "@/lib/supabase"; // supabaseクライアントをインポート
 
@@ -23,10 +23,14 @@ export default function Home() {
   const cardRef = useRef<SwipeCardHandle>(null);
   const [currentGradient, setCurrentGradient] = useState(ORIGINAL_GRADIENT);
   const [showHowToUse, setShowHowToUse] = useState(true);
-  // const isMobile = useMediaQuery('(max-width: 639px)');
-  // const { width: windowWidth } = useWindowSize();
-  // const cardWidth = isMobile ? windowWidth - 40 : 400; // 40px for horizontal padding (px-5 * 2)
+  const isMobile = useMediaQuery('(max-width: 639px)');
+  const { width: windowWidth } = useWindowSize();
+  const cardWidth = isMobile ? windowWidth - 40 : 400; // 40px for horizontal padding (px-5 * 2)
   const [headerHeight, setHeaderHeight] = useState(0);
+
+  console.log('isMobile:', isMobile);
+  console.log('windowWidth:', windowWidth);
+  console.log('cardWidth:', cardWidth);
 
   // APIから動画データを取得する
   useEffect(() => {
@@ -62,16 +66,16 @@ export default function Home() {
     fetchVideos();
   }, []);
 
-  // useEffect(() => {
-  //   if (isMobile) {
-  //     const headerElement = document.getElementById('main-header');
-  //     if (headerElement) {
-  //       setHeaderHeight(headerElement.offsetHeight);
-  //     }
-  //   } else {
-  //     setHeaderHeight(0);
-  //   }
-  // }, [isMobile]);
+  useEffect(() => {
+    if (isMobile) {
+      const headerElement = document.getElementById('main-header');
+      if (headerElement) {
+        setHeaderHeight(headerElement.offsetHeight);
+      }
+    } else {
+      setHeaderHeight(0);
+    }
+  }, [isMobile]);
 
   const handleSwipe = async (direction: 'left' | 'right') => {
     if (direction === 'right') {
@@ -124,14 +128,14 @@ export default function Home() {
       style={{ background: currentGradient }}
       transition={{ duration: 0.3 }}
     >
-      <Header />
+      <Header cardWidth={cardWidth} />
       <main
-        className={`flex-grow flex w-full relative ${true ? 'flex-col bg-white h-full' : 'items-center justify-center'}`}
-        style={true ? { paddingTop: `${headerHeight}px` } : {}}
+        className={`flex-grow flex w-full relative ${isMobile ? 'flex-col bg-white h-full' : 'items-center justify-center'}`}
+        style={isMobile ? { paddingTop: `${headerHeight}px` } : {}}
       >
         <AnimatePresence mode="wait">
           {activeCard ? (
-            true ? (
+            isMobile ? (
               <MobileVideoLayout
                 cardData={activeCard}
                 onSkip={() => handleSwipe('left')}
@@ -152,13 +156,14 @@ export default function Home() {
           )}
         </AnimatePresence>
       </main>
-      {false && (
+      {!isMobile && (
         <footer className="w-full py-8">
           {activeCard && <ActionButtons
             onSkip={() => triggerSwipe('left')}
             onLike={() => triggerSwipe('right')}
             nopeColor="#A78BFA"
             likeColor="#FBBF24"
+            cardWidth={cardWidth}
           />}
         </footer>
       )}
