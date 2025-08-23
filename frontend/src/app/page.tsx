@@ -121,8 +121,6 @@ export default function Home() {
     cardRef.current?.swipe(direction);
   };
 
-  const activeCard = activeIndex < cards.length ? cards[activeIndex] : null;
-
   const handleDrag = (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
     if (info.offset.x > 50) {
       setCurrentGradient(RIGHT_SWIPE_GRADIENT);
