@@ -28,7 +28,7 @@ const MobileVideoLayout: React.FC<MobileVideoLayoutProps> = ({ cardData, onSkip,
       <div className="p-4 text-gray-700 flex-grow overflow-y-auto">
         <h2 className="text-xl font-bold">{cardData.title}</h2>
         <div className="flex flex-wrap gap-2 my-2">
-          {cardData.tags.map((tag) => (
+          {cardData.genre.map((tag) => (
             <span
               key={tag}
               className="bg-purple-600 bg-opacity-60 text-white text-xs font-bold px-2 py-1 rounded-full"
@@ -37,7 +37,6 @@ const MobileVideoLayout: React.FC<MobileVideoLayoutProps> = ({ cardData, onSkip,
             </span>
           ))}
         </div>
-        <p className="text-sm">{cardData.description}</p>
       </div>
 
       {/* フッターボタンエリア */}
