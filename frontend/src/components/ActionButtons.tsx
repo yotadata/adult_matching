@@ -28,7 +28,7 @@ const ActionButtons = ({ onSkip, onLike, nopeColor, likeColor, isMobileLayout = 
   const buttonBaseClasses = "flex items-center justify-center h-14 font-bold tracking-wider text-lg text-white border-2";
 
   return (
-    <div className={`flex items-center ${!isMobileLayout ? 'justify-between mx-auto' : 'w-full'}`} style={!isMobileLayout ? { width: cardWidth ? `${cardWidth}px` : 'auto' } : {}}>
+    <div className="flex items-center justify-between mx-auto" style={{ maxWidth: cardWidth ? `${cardWidth}px` : 'auto' }}>
       {/* NOPE Button */}
       <button 
         onClick={onSkip} 
