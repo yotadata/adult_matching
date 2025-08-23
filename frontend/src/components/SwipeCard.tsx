@@ -66,16 +66,17 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwi
       whileTap={{ cursor: "grabbing" }}
     >
       {/* 上部: YouTube動画エリア */}
-      <div className="w-full rounded-lg overflow-hidden relative aspect-video">
+      {/* 上部: YouTube動画エリア */}
+      <div style={{ width: '100%', paddingTop: '75%', position: 'relative' }}> {/* FANZAの埋め込みコードのスタイルを適用 */}
         <iframe
           src={cardData.videoUrl} // FANZA埋め込みURLがここに渡されることを想定
           title="FANZA Video Player" // タイトルを修正
           frameBorder="0"
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" // 必要に応じてallow属性を調整
           allowFullScreen
-          width="100%" // 追加
-          height="100%" // 追加
-          className="absolute inset-0 w-full h-full object-cover" // object-cover を追加
+          width="100%" // 明示的に100%
+          height="100%" // 明示的に100%
+          style={{ position: 'absolute', top: 0, left: 0 }} // FANZAの埋め込みコードのスタイルを適用
         ></iframe>
       </div>
       
