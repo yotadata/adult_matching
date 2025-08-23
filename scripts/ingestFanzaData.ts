@@ -20,12 +20,37 @@ if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 const FANZA_API_BASE_URL = 'https://api.dmm.com/affiliate/v3/ItemList';
+const FANZA_FLOOR_API_URL = 'https://api.dmm.com/affiliate/v3/FloorList';
+
+async function fetchFanzaFloors(): Promise<any> {
+  const params = new URLSearchParams({
+    api_id: FANZA_API_ID!,
+    affiliate_id: FANZA_AFFILIATE_ID!,
+    output: 'json',
+  });
+
+  const url = `${FANZA_FLOOR_API_URL}?${params.toString()}`;
+
+  try {
+    console.log(`Fetching floor data from: ${url}`);
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    const data = await response.json();
+    console.log('FANZA Floor API Response:', JSON.stringify(data, null, 2));
+    return data;
+  } catch (error) {
+    console.error('Error fetching FANZA floor data:', error);
+    return null;
+  }
+}
 
 async function fetchFanzaData(offset: number = 1, hits: number = 100): Promise<any> {
   const params = new URLSearchParams({
     api_id: FANZA_API_ID!,
     affiliate_id: FANZA_AFFILIATE_ID!,
-    site: 'DMM.com', // DMM.comサイトを指定
+    site: 'FANZA', // FANZAサイトを指定
     service: 'digital', // デジタルコンテンツ
     floor: 'videoa', // アダルトビデオ
     hits: hits.toString(),
@@ -43,6 +68,7 @@ async function fetchFanzaData(offset: number = 1, hits: number = 100): Promise<a
       throw new Error(`HTTP error! status: ${response.status}`);
     }
     const data = await response.json();
+    console.log('FANZA API Response:', JSON.stringify(data, null, 2));
     return data;
   } catch (error) {
     console.error('Error fetching FANZA data:', error);
@@ -51,6 +77,12 @@ async function fetchFanzaData(offset: number = 1, hits: number = 100): Promise<a
 }
 
 async function ingestFanzaData() {
+  // 追加: フロア情報を取得
+  const floorData = await fetchFanzaFloors();
+  if (!floorData || !floorData.result || !floorData.result.floors) {
+    console.error('Failed to fetch floor data. Exiting.');
+  }
+
   let offset = 1;
   const hits = 100; // 1回のリクエストで取得する件数
   let totalCount = 0;
