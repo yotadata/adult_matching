@@ -16,11 +16,11 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_ANON_KEY') ?? ''
     )
 
-    // Count only videos with a sample URL
+    // Count only videos with a video URL
     const { count: totalCount, error: countError } = await supabase
       .from('videos')
-      .select('id', { count: 'exact', head: true })
-      .not('sample_video_url', 'is', null);
+      .select('*', { count: 'exact', head: true })
+      .not('videoUrl', 'is', null);
 
     if (countError) {
       console.error('Error counting videos:', countError.message);
@@ -33,11 +33,11 @@ Deno.serve(async (req) => {
     const limit = 20;
     const offset = totalCount && totalCount > limit ? Math.floor(Math.random() * (totalCount - limit)) : 0;
 
-    // Fetch videos with a sample URL and alias the column
+    // Fetch videos with a video URL
     const { data: videos, error } = await supabase
       .from('videos')
-      .select('id, title, genre, videoUrl:sample_video_url')
-      .not('sample_video_url', 'is', null)
+      .select('*')
+      .not('videoUrl', 'is', null)
       .order('id')
       .range(offset, offset + limit - 1);
 
