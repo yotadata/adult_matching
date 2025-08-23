@@ -28,6 +28,8 @@ export default function Home() {
   const [cardWidth, setCardWidth] = useState<number | undefined>(400); // cardWidthをstateとして管理し、デフォルト値を400に設定
   const [headerHeight, setHeaderHeight] = useState(0);
 
+  const activeCard = activeIndex < cards.length ? cards[activeIndex] : null; // activeCard の宣言を移動
+
   console.log('isMobile:', isMobile);
   console.log('windowWidth:', windowWidth);
   console.log('cardWidth:', cardWidth);
