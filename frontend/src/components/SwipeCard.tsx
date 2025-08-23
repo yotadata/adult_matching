@@ -66,21 +66,19 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwi
     >
       {/* 上部: YouTube動画エリア */}
       {/* 上部: YouTube動画エリア */}
-      <div style={{ width: '100%', paddingTop: '56.25%', position: 'relative' }}> {/* 16:9 aspect ratio */}
+      <div className="relative w-full h-1/2">
         <iframe
           src={cardData.videoUrl} // FANZA埋め込みURLがここに渡されることを想定
           title="FANZA Video Player" // タイトルを修正
           frameBorder="0"
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" // 必要に応じてallow属性を調整
           allowFullScreen
-          width="100%" // 明示的に100%
-          height="100%" // 明示的に100%
-          style={{ position: 'absolute', top: 0, left: 0 }} // FANZAの埋め込みコードのスタイルを適用
+          className="absolute top-0 left-0 w-full h-full" // classNameに変更
         ></iframe>
       </div>
       
       {/* 下部: テキスト情報エリア */}
-      <div className="flex flex-col text-gray-700 p-4 flex-grow overflow-y-auto">
+      <div className="flex flex-col text-gray-700 p-4 overflow-y-auto h-1/2">
         <h2 className="text-xl font-bold">{cardData.title}</h2>
         <div className="flex flex-wrap gap-2 my-2">
           {Array.isArray(cardData.genre) && cardData.genre.map((tag) => (
