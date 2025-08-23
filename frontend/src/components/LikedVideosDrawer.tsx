@@ -97,7 +97,7 @@ const LikedVideosDrawer: React.FC<LikedVideosDrawerProps> = ({ isOpen, onClose }
                         <div className="space-y-4">
                           {likedVideos.map((video) => (
                             <div key={video.external_id} className="bg-gray-50 rounded-lg shadow-sm overflow-hidden flex items-center p-3">
-                              <div className="relative w-24 h-24 flex-shrink-0 rounded-md overflow-hidden bg-gray-200">
+                              <div className="relative w-24 flex-shrink-0 rounded-md overflow-hidden bg-gray-200 aspect-w-16 aspect-h-9">
                                 {video.thumbnail_url ? (
                                   <img src={video.thumbnail_url} alt={video.title} className="w-full h-full object-cover" />
                                 ) : (
@@ -110,7 +110,7 @@ const LikedVideosDrawer: React.FC<LikedVideosDrawerProps> = ({ isOpen, onClose }
                                 <h3 className="text-sm font-semibold text-gray-800 line-clamp-2">{video.title}</h3>
                                 <div className="mt-2 flex justify-between items-center">
                                   <p className="text-md font-bold text-amber-500">
-                                    {video.price ? `￥${video.price.toLocaleString()}` : '価格情報なし'}
+                                    {video.price ? `￥${video.price.toLocaleString()}~` : '価格情報なし'}
                                   </p>
                                   <Link href={video.product_url || '#'} passHref target="_blank" rel="noopener noreferrer">
                                     <button className="bg-transparent border border-amber-400 text-amber-400 hover:bg-amber-400 hover:text-white font-bold py-1 px-3 rounded-md transition-all duration-300 text-sm">
