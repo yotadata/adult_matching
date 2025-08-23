@@ -6,9 +6,10 @@ interface ActionButtonsProps {
   nopeColor: string;
   likeColor: string;
   isMobileLayout?: boolean; // 追加
+  cardWidth?: number; // 追加
 }
 
-const ActionButtons = ({ onSkip, onLike, nopeColor, likeColor, isMobileLayout = false }: ActionButtonsProps) => {
+const ActionButtons = ({ onSkip, onLike, nopeColor, likeColor, isMobileLayout = false, cardWidth }: ActionButtonsProps) => {
   const [isNopeHovered, setIsNopeHovered] = useState(false);
   const [isLikeHovered, setIsLikeHovered] = useState(false);
 
@@ -27,7 +28,7 @@ const ActionButtons = ({ onSkip, onLike, nopeColor, likeColor, isMobileLayout = 
   const buttonBaseClasses = "flex items-center justify-center h-14 font-bold tracking-wider text-lg text-white border-2";
 
   return (
-    <div className={`flex items-center w-full ${!isMobileLayout ? 'justify-between' : ''}`}> {/* justify-between を条件付きで追加 */}
+    <div className={`flex items-center ${!isMobileLayout ? 'justify-between mx-auto' : 'w-full'}`} style={!isMobileLayout ? { width: cardWidth ? `${cardWidth}px` : 'auto' } : {}}>
       {/* NOPE Button */}
       <button 
         onClick={onSkip} 

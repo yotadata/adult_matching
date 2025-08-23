@@ -11,7 +11,7 @@ import Link from 'next/link';
 import { Heart, User } from 'lucide-react';
 import LikedVideosDrawer from './LikedVideosDrawer'; // ドロワーコンポーネントをインポート
 
-const Header = () => {
+const Header = ({ cardWidth }: { cardWidth: number | undefined }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false); // ドロワー用のstate
   const [user, setUser] = useState<SupabaseUser | null>(null);
@@ -43,8 +43,8 @@ const Header = () => {
   };
 
   return (
-    <header id="main-header" className={`w-full ${isMobile ? 'fixed top-0 left-0 right-0 z-40 p-4 bg-gradient-to-r from-[#C4C8E3] via-[#D7D1E3] to-[#F7D7E0] to-[#F8DBB9] shadow-md' : 'max-w-md mx-auto mt-4 mb-2'}`}>
-      <div className="flex justify-between items-center text-white max-w-md mx-auto">
+    <header id="main-header" className={`w-full ${isMobile ? 'fixed top-0 left-0 right-0 z-40 p-4 bg-gradient-to-r from-[#C4C8E3] via-[#D7D1E3] to-[#F7D7E0] to-[#F8DBB9] shadow-md' : 'mx-auto mt-4 mb-2'}`} style={!isMobile ? { width: cardWidth ? `${cardWidth}px` : 'auto' } : {}}>
+      <div className="flex justify-between items-center text-white mx-auto" style={!isMobile ? { width: cardWidth ? `${cardWidth}px` : 'auto' } : {}}>
         <Image
           src="/seiheki_lab.png"
           alt="Seiheki Lab Logo"

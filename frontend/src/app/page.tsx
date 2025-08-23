@@ -119,7 +119,7 @@ export default function Home() {
       style={{ background: currentGradient }}
       transition={{ duration: 0.3 }}
     >
-      <Header />
+      <Header cardWidth={cardWidth} />
       <main
         className={`flex-grow flex w-full relative ${isMobile ? 'flex-col bg-white h-full' : 'items-center justify-center'}`}
         style={isMobile ? { paddingTop: `${headerHeight}px` } : {}}
@@ -148,12 +148,13 @@ export default function Home() {
         </AnimatePresence>
       </main>
       {!isMobile && (
-        <footer className="w-full max-w-md mx-auto py-8">
+        <footer className="w-full py-8">
           {activeCard && <ActionButtons
             onSkip={() => triggerSwipe('left')}
             onLike={() => triggerSwipe('right')}
             nopeColor="#A78BFA"
             likeColor="#FBBF24"
+            cardWidth={cardWidth}
           />}
         </footer>
       )}
