@@ -85,7 +85,7 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwi
       <div className="relative w-full h-1/2 bg-black flex items-center justify-center">
         {!showVideo && cardData.thumbnail_url ? (
           <div
-            className="absolute inset-0 w-full h-full bg-cover bg-center cursor-pointer flex items-center justify-center"
+            className="absolute inset-0 w-full h-full bg-contain bg-no-repeat bg-center cursor-pointer flex items-center justify-center"
             style={{ backgroundImage: `url(${cardData.thumbnail_url})` }}
             onClick={handlePlayClick}
           >

@@ -52,7 +52,7 @@ export default function Home() {
       
       // APIレスポンスをCardData形式に変換
       const fetchedCards: CardData[] = data.map((video: any) => {
-        const fanzaEmbedUrl = `https://www.dmm.co.jp/litevideo/-/part/=/affi_id=${process.env.FANZA_AFFILIATE_ID}/cid=${video.external_id}/size=1280_720/`; // FANZA埋め込みURLを生成
+        const fanzaEmbedUrl = `https://www.dmm.co.jp/litevideo/-/part/=/affi_id=${process.env.FANZA_AFFILIATE_ID}/cid=${video.external_id}/size=1280_720/&autoplay=1`; // FANZA埋め込みURLを生成
         return {
           id: video.id,
           title: video.title,

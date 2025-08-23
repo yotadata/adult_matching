@@ -24,7 +24,7 @@ const MobileVideoLayout: React.FC<MobileVideoLayoutProps> = ({ cardData, onSkip,
       <div className="w-full overflow-hidden relative aspect-[494/370] bg-black flex items-center justify-center">
         {!showVideo && cardData.thumbnail_url ? (
           <div
-            className="absolute inset-0 w-full h-full bg-cover bg-center cursor-pointer flex items-center justify-center"
+            className="absolute inset-0 w-full h-full bg-contain bg-no-repeat bg-center cursor-pointer flex items-center justify-center"
             style={{ backgroundImage: `url(${cardData.thumbnail_url})` }}
             onClick={handlePlayClick}
           >
