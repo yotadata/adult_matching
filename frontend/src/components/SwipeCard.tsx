@@ -27,8 +27,8 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwi
   const controls = useAnimation();
   const { height: windowHeight } = useWindowSize();
 
-  // 動画のアスペクト比を11:10と仮定（プレーヤーUIを考慮）
-  const videoAspectRatio = 11 / 10;
+  // 動画のアスペクト比を21:20と仮定（プレーヤーUIを考慮）
+  const videoAspectRatio = 21 / 20;
   // カードの高さをウィンドウの高さとし、その半分の高さの動画がアスペクト比を維持するのに必要な横幅を計算
   const cardWidth = windowHeight ? (windowHeight / 2) * videoAspectRatio : undefined;
 
