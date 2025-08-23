@@ -18,7 +18,7 @@ export interface SwipeCardHandle {
 
 interface SwipeCardProps {
   cardData: CardData;
-  onSwipe: () => void;
+  onSwipe: (direction: 'left' | 'right') => void;
   onDrag?: (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => void; // 追加
   onDragEnd?: (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => void; // 追加
 }
@@ -36,7 +36,7 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwi
     const swipeWidth = cardWidth || 448; // cardWidthが未定義の場合のフォールバック
     const x = direction === 'right' ? `calc(100vw + ${swipeWidth}px)` : `calc(-100vw - ${swipeWidth}px)`;
     await controls.start({ x, opacity: 0, transition: { duration: 0.6 } }); 
-    onSwipe();
+    onSwipe(direction);
   };
 
   useImperativeHandle(ref, () => ({
