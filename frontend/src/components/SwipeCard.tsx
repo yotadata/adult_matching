@@ -5,11 +5,19 @@ import { forwardRef, useImperativeHandle } from 'react';
 
 // カードデータの型定義
 export interface CardData {
-  id: number;
+  id: string;
   title: string;
-  tags: string[];
   description: string;
-  videoUrl: string;
+  duration_seconds: number;
+  thumbnail_url: string;
+  preview_video_url: string;
+  maker: string;
+  genre: string;
+  price: number;
+  sample_video_url: string;
+  image_urls: string[];
+  performers: string[];
+  tags: string[];
 }
 
 export interface SwipeCardHandle {
@@ -18,9 +26,9 @@ export interface SwipeCardHandle {
 
 interface SwipeCardProps {
   cardData: CardData;
-  onSwipe: () => void;
-  onDrag?: (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => void; // 追加
-  onDragEnd?: (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => void; // 追加
+  onSwipe: (direction?: 'left' | 'right') => void;
+  onDrag?: (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => void;
+  onDragEnd?: (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => void;
 }
 
 const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwipe, onDrag, onDragEnd }, ref) => {
@@ -31,7 +39,7 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwi
   const swipe = async (direction: 'left' | 'right') => {
     const x = direction === 'right' ? `calc(100vw + ${CARD_WIDTH_PX}px)` : `calc(-100vw - ${CARD_WIDTH_PX}px)`;
     await controls.start({ x, opacity: 0, transition: { duration: 0.6 } }); 
-    onSwipe();
+    onSwipe(direction);
   };
 
   useImperativeHandle(ref, () => ({

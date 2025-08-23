@@ -1,99 +1,100 @@
 'use client';
 
 import { Dialog, Transition } from '@headlessui/react';
-import { Fragment } from 'react';
-import { X } from 'lucide-react';
+import { Fragment, useEffect, useState } from 'react';
+import { X, Trash2 } from 'lucide-react';
 import Link from 'next/link';
+import { createClient } from '@supabase/supabase-js';
 
-// ダミーデータの型定義
 interface LikedVideo {
-  id: number;
+  id: string;
   title: string;
-  imageUrl: string;
+  description: string;
+  thumbnail_url: string;
+  preview_video_url: string;
+  maker: string;
+  genre: string;
   price: number;
-  productUrl: string;
+  sample_video_url: string;
+  image_urls: string[];
+  performers: string[];
+  tags: string[];
+  liked_at: string;
+  purchased: boolean;
 }
-
-// ダミーデータ
-const dummyLikedVideos: LikedVideo[] = [
-  {
-    id: 1,
-    title: '【VR】VR専用機材じゃないとダメなんでしょ？って思ってた時期が俺にもありました。',
-    imageUrl: '/images/sample-thumb-1.jpg', // 仮の画像パス
-    price: 2980,
-    productUrl: '#',
-  },
-  {
-    id: 2,
-    title: '新人グラビアアイドル！初めての撮影で緊張…！',
-    imageUrl: '/images/sample-thumb-2.jpg', // 仮の画像パス
-    price: 1980,
-    productUrl: '#',
-  },
-  {
-    id: 3,
-    title: '会社の美人上司と禁断の社内恋愛',
-    imageUrl: '/images/sample-thumb-3.jpg', // 仮の画像パス
-    price: 2480,
-    productUrl: '#',
-  },
-    {
-    id: 4,
-    title: 'ギャルで人妻とかいうパワーワード',
-    imageUrl: '/images/sample-thumb-4.jpg', // 仮の画像パス
-    price: 3200,
-    productUrl: '#',
-  },
-    {
-    id: 5,
-    title: '田舎で育った純朴な彼女との初体験',
-    imageUrl: '/images/sample-thumb-5.jpg', // 仮の画像パス
-    price: 2800,
-    productUrl: '#',
-  },
-    {
-    id: 6,
-    title: 'オフィスで秘密の残業デート',
-    imageUrl: '/images/sample-thumb-6.jpg', // 仮の画像パス
-    price: 3500,
-    productUrl: '#',
-  },
-    {
-    id: 7,
-    title: '夏休みのビーチで出会った彼女',
-    imageUrl: '/images/sample-thumb-7.jpg', // 仮の画像パス
-    price: 2100,
-    productUrl: '#',
-  },
-    {
-    id: 8,
-    title: '家庭教師の先生との禁断の関係',
-    imageUrl: '/images/sample-thumb-8.jpg', // 仮の画像パス
-    price: 2900,
-    productUrl: '#',
-  },
-    {
-    id: 9,
-    title: '幼馴染との再会、そして…',
-    imageUrl: '/images/sample-thumb-9.jpg', // 仮の画像パス
-    price: 2600,
-    productUrl: '#',
-  },
-    {
-    id: 10,
-    title: '憧れの先輩と二人きりの部室',
-    imageUrl: '/images/sample-thumb-10.jpg', // 仮の画像パス
-    price: 3100,
-    productUrl: '#',
-  },
-];
 
 interface LikedVideosDrawerProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+const supabase = createClient(supabaseUrl, supabaseKey);
+
 const LikedVideosDrawer: React.FC<LikedVideosDrawerProps> = ({ isOpen, onClose }) => {
+  const [likedVideos, setLikedVideos] = useState<LikedVideo[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchLikedVideos = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        setError('ログインが必要です');
+        return;
+      }
+
+      const { data, error } = await supabase.functions.invoke('likes');
+      
+      if (error) {
+        console.error('API Error:', error);
+        setError('いいねした動画の取得に失敗しました');
+        return;
+      }
+      
+      if (data?.likes) {
+        setLikedVideos(data.likes);
+      }
+    } catch (err) {
+      console.error('Fetch error:', err);
+      setError('動画の取得中にエラーが発生しました');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const removeLike = async (videoId: string) => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const { error } = await supabase.functions.invoke('likes', {
+        method: 'DELETE',
+        body: { video_id: videoId },
+      });
+      
+      if (error) {
+        console.error('Remove like error:', error);
+        return;
+      }
+      
+      // ローカル状態からも削除
+      setLikedVideos(prev => prev.filter(video => video.id !== videoId));
+    } catch (err) {
+      console.error('Remove like error:', err);
+    }
+  };
+
+  useEffect(() => {
+    if (isOpen) {
+      fetchLikedVideos();
+    }
+  }, [isOpen]);
+
   return (
     <Transition appear show={isOpen} as={Fragment}>
       <Dialog as="div" className="relative z-50" onClose={onClose}>
@@ -144,31 +145,73 @@ const LikedVideosDrawer: React.FC<LikedVideosDrawerProps> = ({ isOpen, onClose }
                       </div>
                     </div>
                     
-                    {/* List */}
+                    {/* Content */}
                     <div className="flex-1 px-4 sm:px-6 overflow-y-auto">
-                       <div className="space-y-4">
-                        {dummyLikedVideos.map((video) => (
-                          <div key={video.id} className="bg-gray-50 rounded-lg shadow-sm overflow-hidden flex items-center p-3">
-                            <div className="relative w-24 h-24 flex-shrink-0 rounded-md overflow-hidden">
-                               {/* <Image src={video.imageUrl} alt={video.title} layout="fill" objectFit="cover" /> */}
-                               <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-                                 <span className="text-gray-400 text-xs">画像</span>
-                               </div>
-                            </div>
-                            <div className="pl-4 flex-grow">
-                              <h3 className="text-sm font-semibold text-gray-800 line-clamp-2">{video.title}</h3>
-                              <div className="mt-2 flex justify-between items-center">
-                                <p className="text-md font-bold text-amber-500">{`￥${video.price.toLocaleString()}`}</p>
-                                <Link href={video.productUrl} passHref>
-                                  <button className="bg-transparent border border-amber-400 text-amber-400 hover:bg-amber-400 hover:text-white font-bold py-1 px-3 rounded-md transition-all duration-300 text-sm">
-                                    見る
-                                  </button>
-                                </Link>
+                      {loading ? (
+                        <div className="flex items-center justify-center py-8">
+                          <p className="text-gray-500">読み込み中...</p>
+                        </div>
+                      ) : error ? (
+                        <div className="flex items-center justify-center py-8">
+                          <p className="text-red-500">{error}</p>
+                        </div>
+                      ) : likedVideos.length === 0 ? (
+                        <div className="flex items-center justify-center py-8">
+                          <p className="text-gray-500">いいねした動画がありません</p>
+                        </div>
+                      ) : (
+                        <div className="space-y-4">
+                          {likedVideos.map((video) => (
+                            <div key={video.id} className="bg-gray-50 rounded-lg shadow-sm overflow-hidden flex items-center p-3">
+                              <div className="relative w-24 h-24 flex-shrink-0 rounded-md overflow-hidden">
+                                {video.thumbnail_url ? (
+                                  <img 
+                                    src={video.thumbnail_url} 
+                                    alt={video.title}
+                                    className="w-full h-full object-cover"
+                                  />
+                                ) : (
+                                  <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                                    <span className="text-gray-400 text-xs">画像</span>
+                                  </div>
+                                )}
+                              </div>
+                              <div className="pl-4 flex-grow">
+                                <h3 className="text-sm font-semibold text-gray-800 line-clamp-2">{video.title}</h3>
+                                <div className="mt-1">
+                                  <p className="text-xs text-gray-500">{video.maker}</p>
+                                  <div className="flex flex-wrap gap-1 mt-1">
+                                    {video.tags.slice(0, 3).map((tag, index) => (
+                                      <span key={index} className="text-xs px-2 py-0.5 bg-gray-200 rounded-full">
+                                        {tag}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </div>
+                                <div className="mt-2 flex justify-between items-center">
+                                  <p className="text-md font-bold text-amber-500">
+                                    ¥{video.price.toLocaleString()}
+                                  </p>
+                                  <div className="flex gap-2">
+                                    <button
+                                      onClick={() => removeLike(video.id)}
+                                      className="text-red-400 hover:text-red-600 p-1"
+                                      title="いいねを削除"
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </button>
+                                    <Link href="#" passHref>
+                                      <button className="bg-transparent border border-amber-400 text-amber-400 hover:bg-amber-400 hover:text-white font-bold py-1 px-3 rounded-md transition-all duration-300 text-sm">
+                                        見る
+                                      </button>
+                                    </Link>
+                                  </div>
+                                </div>
                               </div>
                             </div>
-                          </div>
-                        ))}
-                      </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </div>
                 </Dialog.Panel>

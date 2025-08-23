@@ -3,56 +3,16 @@
 import Header from "@/components/Header";
 import SwipeCard, { CardData, SwipeCardHandle } from "@/components/SwipeCard";
 import ActionButtons from "@/components/ActionButtons";
-import { useState, useRef, useEffect } from "react"; // useEffect をインポート
+import { useState, useRef, useEffect } from "react";
 import { AnimatePresence, motion, PanInfo } from "framer-motion";
 import HowToUseCard from "@/components/HowToUseCard";
 import useMediaQuery from "@/hooks/useMediaQuery";
 import MobileVideoLayout from "@/components/MobileVideoLayout";
+import { createClient } from "@supabase/supabase-js";
 
-// ダミーデータ
-const DUMMY_CARDS: CardData[] = [
-  {
-    id: 1,
-    title: '【VR】VR専用機材じゃないとダメなんでしょ？って思ってた時期が俺にもありました。',
-    tags: ['#VR', '#高画質', '#素人'],
-    description:
-      'これは非常に長い説明文のサンプルです。スクロール機能が正しく実装されているかを確認するために、このテキストはカードの表示領域を超える長さを持つ必要があります。繰り返しになりますが、これはスクロールのテスト用です。これは非常に長い説明文のサンプルです。スクロール機能が正しく実装されているかを確認するために、このテキストはカードの表示領域を超える長さを持つ必要があります。繰り返しになりますが、これはスクロールのテスト用です。これは非常に長い説明文のサンプルです。スクロール機能が正しく実装されているかを確認するために、このテキストはカードの表示領域を超える長さを持つ必要があります。繰り返しになりますが、これはスクロールのテスト用です。',
-    videoUrl:
-      'https://www.youtube.com/embed/k7Kf89f9KAw?autoplay=1&mute=1&loop=1&playlist=k7Kf89f9KAw',
-  },
-  {
-    id: 2,
-    title: '新人グラビアアイドル！初めての撮影で緊張…！',
-    tags: ['#新人', '#グラビア', '#アイドル'],
-    description: 'サンプルテキスト。サンプルテキスト。サンプルテキスト。',
-    videoUrl:
-      'https://www.youtube.com/embed/k7Kf89f9KAw?autoplay=1&mute=1&loop=1&playlist=k7Kf89f9KAw',
-  },
-  {
-    id: 3,
-    title: '会社の美人上司と禁断の社内恋愛',
-    tags: ['#上司', '#OL', '#ドラマ'],
-    description: 'サンプルテキスト。サンプルテキスト。サンプルテキスト。',
-    videoUrl:
-      'https://www.youtube.com/embed/k7Kf89f9KAw?autoplay=1&mute=1&loop=1&playlist=k7Kf89f9KAw',
-  },
-  {
-    id: 4,
-    title: 'ギャルで人妻とかいうパワーワード',
-    tags: ['#ギャル', '#人妻', '#ドキュメンタリー'],
-    description: 'サンプルテキスト。サンプルテキスト。サンプルテキスト。',
-    videoUrl:
-      'https://www.youtube.com/embed/k7Kf89f9KAw?autoplay=1&mute=1&loop=1&playlist=k7Kf89f9KAw',
-  },
-  {
-    id: 5,
-    title: '田舎で育った純朴な彼女との初体験',
-    tags: ['#田舎', '#純朴', '#初体験'],
-    description: 'サンプルテキスト。サンプルテキスト。サンプルテキスト。',
-    videoUrl:
-      'https://www.youtube.com/embed/k7Kf89f9KAw?autoplay=1&mute=1&loop=1&playlist=k7Kf89f9KAw',
-  },
-];
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 const ORIGINAL_GRADIENT = 'linear-gradient(to right, #C4C8E3, #D7D1E3, #F7D7E0, #F8DBB9)';
 const LEFT_SWIPE_GRADIENT = 'linear-gradient(to right, #AEB4EB, #D7D1E3, #F7D7E0,#F8DBB9)'; // 左端を明るく
@@ -63,30 +23,133 @@ export default function Home() {
   const cardRef = useRef<SwipeCardHandle>(null);
   const [currentGradient, setCurrentGradient] = useState(ORIGINAL_GRADIENT);
   const [showHowToUse, setShowHowToUse] = useState(true);
-  const isMobile = useMediaQuery('(max-width: 639px)'); // Tailwind CSS の sm (640px) 未満をモバイルとする
-  const [headerHeight, setHeaderHeight] = useState(0); // headerHeight state を追加
+  const isMobile = useMediaQuery('(max-width: 639px)');
+  const [headerHeight, setHeaderHeight] = useState(0);
+  const [videos, setVideos] = useState<CardData[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (isMobile) { // モバイルの場合のみヘッダーの高さを取得
+    if (isMobile) {
       const headerElement = document.getElementById('main-header');
       if (headerElement) {
         setHeaderHeight(headerElement.offsetHeight);
       }
     } else {
-      setHeaderHeight(0); // モバイルではない場合は0にリセット
+      setHeaderHeight(0);
     }
-  }, [isMobile]); // isMobile が変更されたときに実行
+  }, [isMobile]);
 
-  const handleSwipe = () => {
+  useEffect(() => {
+    const fetchVideos = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        // Check if user is logged in
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        let apiData, apiError;
+        
+        if (session) {
+          // Logged in user: get personalized recommendations
+          console.log('Fetching personalized recommendations...');
+          const response = await supabase.functions.invoke('recommendations', {
+            body: { limit: 20, exclude_liked: true }
+          });
+          apiData = response.data;
+          apiError = response.error;
+          
+          // If recommendations fail, fallback to diverse feed
+          if (apiError || !apiData?.recommendations) {
+            console.log('Recommendations failed, falling back to diverse feed...');
+            const fallbackResponse = await supabase.functions.invoke('feed_explore', {
+              body: { limit: 20, offset: 0 }
+            });
+            apiData = fallbackResponse.data;
+            apiError = fallbackResponse.error;
+          }
+        } else {
+          // Not logged in: get diverse feed
+          console.log('Fetching diverse video feed...');
+          const response = await supabase.functions.invoke('feed_explore', {
+            body: { limit: 20, offset: 0 }
+          });
+          apiData = response.data;
+          apiError = response.error;
+        }
+        
+        if (apiError) {
+          console.error('API Error:', apiError);
+          setError('動画の取得に失敗しました');
+          return;
+        }
+        
+        // Handle both recommendations and feed_explore response formats
+        const videoList = apiData?.recommendations || apiData?.videos || [];
+        
+        if (videoList.length > 0) {
+          const formattedVideos = videoList.map((video: any) => ({
+            ...video,
+            videoUrl: video.sample_video_url || video.preview_video_url || '',
+          }));
+          setVideos(formattedVideos);
+          
+          // Log recommendation info if available
+          if (apiData?.recommendations && session) {
+            console.log(`Loaded ${formattedVideos.length} personalized recommendations`);
+            if (apiData.fallback) {
+              console.log('Using fallback recommendations while user embedding updates');
+            }
+          }
+        } else {
+          setError('表示する動画がありません');
+        }
+        
+      } catch (err) {
+        console.error('Fetch error:', err);
+        setError('動画の取得中にエラーが発生しました');
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchVideos();
+  }, []);
+
+  const handleSwipe = async (direction?: 'left' | 'right') => {
+    const currentCard = activeIndex < videos.length ? videos[activeIndex] : null;
+    
+    // 右スワイプ（いいね）の場合、APIを呼び出す
+    if (direction === 'right' && currentCard) {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          // Add like
+          await supabase.functions.invoke('likes', {
+            body: { video_id: currentCard.id },
+          });
+          
+          // Update user embedding (non-blocking)
+          supabase.functions.invoke('update_user_embedding').catch(error => {
+            console.warn('User embedding update failed:', error);
+          });
+        }
+      } catch (error) {
+        console.error('Failed to add like:', error);
+      }
+    }
+    
     setActiveIndex((prev) => prev + 1);
-    setCurrentGradient(ORIGINAL_GRADIENT); // スワイプ完了後、元のグラデーションに戻す
+    setCurrentGradient(ORIGINAL_GRADIENT);
   };
 
-  const triggerSwipe = (direction: 'left' | 'right') => {
+  const triggerSwipe = async (direction: 'left' | 'right') => {
+    await handleSwipe(direction);
     cardRef.current?.swipe(direction);
   };
 
-  const activeCard = activeIndex < DUMMY_CARDS.length ? DUMMY_CARDS[activeIndex] : null;
+  const activeCard = activeIndex < videos.length ? videos[activeIndex] : null;
 
   const handleDrag = (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
     if (info.offset.x > 50) {
@@ -120,12 +183,20 @@ export default function Home() {
         style={isMobile ? { paddingTop: `${headerHeight}px` } : {}} // headerHeight を使って paddingTop を動的に設定
       >
         <AnimatePresence mode="wait">
-          {activeCard ? (
+          {loading ? (
+            <div className="flex items-center justify-center">
+              <p className="text-white font-bold text-xl">動画を読み込み中...</p>
+            </div>
+          ) : error ? (
+            <div className="flex items-center justify-center">
+              <p className="text-red-500 font-bold text-xl">{error}</p>
+            </div>
+          ) : activeCard ? (
             isMobile ? (
               <MobileVideoLayout
                 cardData={activeCard}
-                onSkip={() => handleSwipe()}
-                onLike={() => handleSwipe()}
+                onSkip={() => handleSwipe('left')}
+                onLike={() => handleSwipe('right')}
               />
             ) : (
               <SwipeCard
@@ -138,7 +209,7 @@ export default function Home() {
               />
             )
           ) : (
-            <p className="text-white font-bold text-2xl">No more cards</p>
+            <p className="text-white font-bold text-2xl">動画がありません</p>
           )}
         </AnimatePresence>
       </main>
