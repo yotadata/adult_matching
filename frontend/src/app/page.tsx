@@ -25,7 +25,7 @@ export default function Home() {
   const [showHowToUse, setShowHowToUse] = useState(true);
   const isMobile = useMediaQuery('(max-width: 639px)');
   const { width: windowWidth } = useWindowSize();
-  const cardWidth = isMobile ? windowWidth - 40 : 400; // 40px for horizontal padding (px-5 * 2)
+  const [cardWidth, setCardWidth] = useState<number | undefined>(undefined); // cardWidthをstateとして管理
   const [headerHeight, setHeaderHeight] = useState(0);
 
   console.log('isMobile:', isMobile);
@@ -65,6 +65,25 @@ export default function Home() {
 
     fetchVideos();
   }, []);
+
+  useEffect(() => {
+    const updateCardWidth = () => {
+      if (cardRef.current) {
+        const swiperCardWidth = cardRef.current.getCardWidth();
+        if (swiperCardWidth !== undefined) {
+          setCardWidth(swiperCardWidth);
+        }
+      }
+    };
+
+    // 初回レンダリング時とウィンドウサイズ変更時に幅を更新
+    updateCardWidth();
+    window.addEventListener('resize', updateCardWidth);
+
+    return () => {
+      window.removeEventListener('resize', updateCardWidth);
+    };
+  }, [cardRef.current]); // cardRef.current が変更されたときに実行
 
   useEffect(() => {
     if (isMobile) {
