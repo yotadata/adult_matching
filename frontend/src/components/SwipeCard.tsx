@@ -8,7 +8,6 @@ export interface CardData {
   id: number;
   title: string;
   genre: string[];
-  description: string;
   videoUrl: string;
 }
 
@@ -90,7 +89,6 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwi
             </span>
           ))}
         </div>
-        <p className="text-sm">{cardData.description}</p>
       </div>
     </motion.div>
   );
