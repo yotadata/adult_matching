@@ -35,8 +35,7 @@ Deno.serve(async (req) => {
       .from('videos')
       .select('*')
       .order('id')
-      .offset(offset)
-      .limit(limit);
+      .range(offset, offset + limit - 1);
 
     if (error) {
       console.error('Error fetching videos:', error.message);
