@@ -43,8 +43,8 @@ const Header = ({ cardWidth }: { cardWidth: number | undefined }) => {
   };
 
   return (
-    <header id="main-header" className={`mx-auto mt-4 mb-2 ${isMobile ? 'p-4 bg-gradient-to-r from-[#C4C8E3] via-[#D7D1E3] to-[#F7D7E0] to-[#F8DBB9] shadow-md' : ''}`} style={{ maxWidth: cardWidth ? `${cardWidth}px` : 'auto' }}>
-      <div className="flex justify-between items-center text-white mx-auto" style={{ maxWidth: cardWidth ? `${cardWidth}px` : 'auto' }}>
+    <header id="main-header" className={`mx-auto mt-4 mb-2 ${isMobile ? 'p-4 bg-gradient-to-r from-[#C4C8E3] via-[#D7D1E3] to-[#F7D7E0] to-[#F8DBB9] shadow-md w-full' : ''}`} style={!isMobile ? { maxWidth: cardWidth ? `${cardWidth}px` : 'auto' } : {}}>
+      <div className="flex justify-between items-center text-white mx-auto" style={!isMobile ? { maxWidth: cardWidth ? `${cardWidth}px` : 'auto' } : {}}>
         <Image
           src="/seiheki_lab.png"
           alt="Seiheki Lab Logo"
