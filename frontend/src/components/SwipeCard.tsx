@@ -2,6 +2,7 @@
 
 import { motion, useAnimation, PanInfo } from 'framer-motion';
 import { forwardRef, useImperativeHandle } from 'react';
+import useWindowSize from '../hooks/useWindowSize';
 
 // カードデータの型定義
 export interface CardData {
@@ -24,11 +25,16 @@ interface SwipeCardProps {
 
 const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwipe, onDrag, onDragEnd }, ref) => {
   const controls = useAnimation();
+  const { height: windowHeight } = useWindowSize();
 
-  const CARD_WIDTH_PX = 448; 
+  // 動画のアスペクト比を4:3と仮定
+  const videoAspectRatio = 4 / 3;
+  // カードの高さをウィンドウの高さとし、その半分の高さの動画がアスペクト比を維持するのに必要な横幅を計算
+  const cardWidth = windowHeight ? (windowHeight / 2) * videoAspectRatio : undefined;
 
   const swipe = async (direction: 'left' | 'right') => {
-    const x = direction === 'right' ? `calc(100vw + ${CARD_WIDTH_PX}px)` : `calc(-100vw - ${CARD_WIDTH_PX}px)`;
+    const swipeWidth = cardWidth || 448; // cardWidthが未定義の場合のフォールバック
+    const x = direction === 'right' ? `calc(100vw + ${swipeWidth}px)` : `calc(-100vw - ${swipeWidth}px)`;
     await controls.start({ x, opacity: 0, transition: { duration: 0.6 } }); 
     onSwipe();
   };
@@ -54,7 +60,8 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwi
 
   return (
     <motion.div 
-      className="absolute w-full max-w-md h-full rounded-2xl bg-white backdrop-blur-lg border border-white/60 shadow-2xl flex flex-col p-4 cursor-grab overflow-hidden"
+      className="absolute h-full rounded-2xl bg-white backdrop-blur-lg border border-white/60 shadow-2xl flex flex-col p-4 cursor-grab overflow-hidden"
+      style={{ width: cardWidth ? `${cardWidth}px` : 'auto' }}
       drag="x"
       dragConstraints={{ left: 0, right: 0 }}
       onDragStart={(event, info) => onDrag?.(event, info)} // onDragStart も追加
@@ -64,7 +71,6 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwi
       initial={false}
       whileTap={{ cursor: "grabbing" }}
     >
-      {/* 上部: YouTube動画エリア */}
       {/* 上部: YouTube動画エリア */}
       <div className="relative w-full h-1/2">
         <iframe
