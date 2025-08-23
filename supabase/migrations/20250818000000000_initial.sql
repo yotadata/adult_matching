@@ -26,6 +26,7 @@ create table public.videos (
   image_urls text[],
   source text not null,
   published_at timestamptz,
+  product_url text, -- 追加
   created_at timestamptz default now(),
   unique (source, distribution_code, maker_code)
 );

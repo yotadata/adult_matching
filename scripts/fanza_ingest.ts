@@ -19,6 +19,7 @@ export interface VideoRecord {
   image_urls?: string[];
   source: string;
   published_at?: string;
+  product_url?: string; // 追加
 }
 
 export function mapFanzaItem(item: any): VideoRecord {
@@ -48,7 +49,7 @@ export function mapFanzaItem(item: any): VideoRecord {
   return {
     external_id: item.product_id,
     title: item.title,
-    description: item.description, // JSONにdescriptionフィールドがないため、これはundefinedになる
+    description: item.title, // description を title と同じにする
     duration_seconds: item.duration, // JSONにdurationフィールドがないため、これはundefinedになる
     thumbnail_url: item.imageURL?.large || item.imageURL?.list, // largeがなければlist
     preview_video_url: item.sampleMovieURL?.size_476_306, // JSONにpreviewフィールドがないため、これはundefinedになる
@@ -66,5 +67,6 @@ export function mapFanzaItem(item: any): VideoRecord {
     image_urls: [...(mapImages(item.imageURL) || []), ...(mapSampleImages(item.sampleImageURL) || [])], // imageURLとsampleImageURLを結合
     source: 'fanza',
     published_at: item.date, // published_atはdateにマッピング
+    product_url: item.URL, // 追加
   };
 }

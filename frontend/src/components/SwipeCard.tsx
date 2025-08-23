@@ -7,7 +7,7 @@ import { forwardRef, useImperativeHandle } from 'react';
 export interface CardData {
   id: number;
   title: string;
-  tags: string[];
+  genre: string[];
   description: string;
   videoUrl: string;
 }
@@ -68,12 +68,14 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwi
       {/* 上部: YouTube動画エリア */}
       <div className="w-full rounded-lg overflow-hidden relative aspect-video">
         <iframe
-          src={cardData.videoUrl}
-          title="YouTube video player"
+          src={cardData.videoUrl} // FANZA埋め込みURLがここに渡されることを想定
+          title="FANZA Video Player" // タイトルを修正
           frameBorder="0"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" // 必要に応じてallow属性を調整
           allowFullScreen
-          className="absolute inset-0 w-full h-full"
+          width="100%" // 追加
+          height="100%" // 追加
+          className="absolute inset-0 w-full h-full object-cover" // object-cover を追加
         ></iframe>
       </div>
       
@@ -81,7 +83,7 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwi
       <div className="flex flex-col text-gray-700 p-4 flex-grow overflow-y-auto">
         <h2 className="text-xl font-bold">{cardData.title}</h2>
         <div className="flex flex-wrap gap-2 my-2">
-          {cardData.tags.map((tag) => (
+          {Array.isArray(cardData.genre) && cardData.genre.map((tag) => (
             <span key={tag} className="bg-purple-300 text-white text-xs font-bold px-2 py-1 rounded-full">
               {tag}
             </span>

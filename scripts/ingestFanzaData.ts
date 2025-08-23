@@ -48,6 +48,14 @@ async function fetchFanzaFloors(): Promise<any> {
 }
 
 async function fetchFanzaData(offset: number = 1, hits: number = 100): Promise<any> {
+  // 現在の日付から1年前の日付を計算
+  const oneYearAgo = new Date();
+  oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+  const year = oneYearAgo.getFullYear();
+  const month = (oneYearAgo.getMonth() + 1).toString().padStart(2, '0');
+  const day = oneYearAgo.getDate().toString().padStart(2, '0');
+  const dateFilter = `${year}-${month}-${day}`;
+
   const params = new URLSearchParams({
     api_id: FANZA_API_ID!,
     affiliate_id: FANZA_AFFILIATE_ID!,
@@ -58,6 +66,8 @@ async function fetchFanzaData(offset: number = 1, hits: number = 100): Promise<a
     offset: offset.toString(),
     sort: 'rank', // ランキング順
     output: 'json',
+    // 追加: 発売日フィルタ
+    date: dateFilter,
   });
 
   const url = `${FANZA_API_BASE_URL}?${params.toString()}`;
@@ -106,7 +116,7 @@ async function ingestFanzaData() {
       try { // forループ内のtry
         const { data, error } = await supabase
           .from('videos')
-          .upsert(record, { onConflict: 'source, distribution_code, maker_code' });
+          .upsert(record, { onConflict: 'source, distribution_code, maker_code' }) as { data: any[] | null, error: any };
 
         if (error) {
           // 重複エラーはスキップ

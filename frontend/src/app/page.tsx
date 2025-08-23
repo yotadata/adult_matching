@@ -40,14 +40,16 @@ export default function Home() {
       }
       
       // APIレスポンスをCardData形式に変換
-      const fetchedCards: CardData[] = data.map((video: any) => ({
-        id: video.id,
-        title: video.title,
-        tags: video.reasons, // openapi.yamlのVideoWithScoreのreasonsをタグとして利用
-        description: video.description,
-        // TODO: Supabase StorageのURLなどに変更する
-        videoUrl: `https://www.youtube.com/embed/k7Kf89f9KAw?autoplay=1&mute=1&loop=1&playlist=k7Kf89f9KAw`,
-      }));
+      const fetchedCards: CardData[] = data.map((video: any) => {
+        const fanzaEmbedUrl = `https://www.dmm.co.jp/litevideo/-/part/=/affi_id=${process.env.FANZA_AFFILIATE_ID}/cid=${video.external_id}/size=1280_720/`; // FANZA埋め込みURLを生成
+        return {
+          id: video.id,
+          title: video.title,
+          genre: video.genre, // tags から genre に変更
+          description: video.description,
+          videoUrl: fanzaEmbedUrl, // 生成したURLをセット
+        };
+      });
 
       setCards(fetchedCards);
     };

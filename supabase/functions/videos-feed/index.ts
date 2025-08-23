@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts"
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.43.0" // Supabaseクライアントをインポート
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -12,26 +13,33 @@ serve(async (req) => {
   }
 
   try {
-    // TODO: Implement authentication and logic to switch between random and recommended videos.
+    // Supabaseクライアントを初期化
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? ''
+    )
 
-    // For now, return 20 dummy video objects.
-    const dummyVideos = Array.from({ length: 20 }, (_, i) => ({
-      id: `video_${i + 1}`,
-      title: `Dummy Video ${i + 1}`,
-      description: 'This is a dummy video description.',
-      thumbnail_url: `https://placehold.jp/150x150.png?text=Video+${i + 1}`,
-      preview_video_url: '',
-      source: 'dummy',
-      published_at: new Date().toISOString(),
-      score: Math.random(),
-      reasons: ['dummy reason'],
-    }))
+    // videos テーブルからデータを取得
+    const { data: videos, error } = await supabase
+      .from('videos')
+      .select('*') // すべてのカラムを取得
+      .limit(20) // とりあえず20件に制限
+      .order('created_at', { ascending: false }); // 新しい順に並べ替え
 
-    return new Response(JSON.stringify(dummyVideos), {
+    if (error) {
+      console.error('Error fetching videos:', error.message);
+      return new Response(JSON.stringify({ error: error.message }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 500, // サーバーエラー
+      })
+    }
+
+    return new Response(JSON.stringify(videos), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     })
   } catch (error) {
+    console.error('Unexpected error:', error.message);
     return new Response(JSON.stringify({ error: error.message }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 400,
