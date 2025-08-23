@@ -68,7 +68,21 @@ export default function Home() {
     }
   }, [isMobile]);
 
-  const handleSwipe = () => {
+  const handleSwipe = async (direction: 'left' | 'right') => {
+    if (direction === 'right') {
+      if (activeCard) {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { error } = await supabase.from('likes').insert({
+            user_id: user.id,
+            video_id: activeCard.id,
+          });
+          if (error) {
+            console.error('Error inserting like:', error);
+          }
+        }
+      }
+    }
     setActiveIndex((prev) => prev + 1);
     setCurrentGradient(ORIGINAL_GRADIENT);
   };
@@ -115,8 +129,8 @@ export default function Home() {
             isMobile ? (
               <MobileVideoLayout
                 cardData={activeCard}
-                onSkip={() => handleSwipe()}
-                onLike={() => handleSwipe()}
+                onSkip={() => handleSwipe('left')}
+                onLike={() => handleSwipe('right')}
               />
             ) : (
               <SwipeCard
