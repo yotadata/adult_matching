@@ -150,7 +150,7 @@ export default function Home() {
       <Header cardWidth={cardWidth} />
       <main
         className={`flex-grow flex w-full relative ${isMobile ? 'flex-col bg-white h-full' : 'items-center justify-center'}`}
-        style={isMobile ? { paddingTop: `${headerHeight}px` } : {}}
+        style={isMobile ? { paddingTop: `0px` } : {}}
       >
         <AnimatePresence mode="wait">
           {activeCard ? (
