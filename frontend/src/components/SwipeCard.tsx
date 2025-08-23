@@ -21,19 +21,20 @@ interface SwipeCardProps {
   onSwipe: (direction: 'left' | 'right') => void;
   onDrag?: (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => void; // 追加
   onDragEnd?: (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => void; // 追加
+  cardWidth?: number; // 追加
 }
 
-const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwipe, onDrag, onDragEnd }, ref) => {
+const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwipe, onDrag, onDragEnd, cardWidth }, ref) => {
   const controls = useAnimation();
-  const { height: windowHeight } = useWindowSize();
+  // const { height: windowHeight } = useWindowSize(); // 削除
 
   // 動画のアスペクト比を21:20と仮定（プレーヤーUIを考慮）
-  const videoAspectRatio = 21 / 20;
+  // const videoAspectRatio = 21 / 20; // 削除
   // カードの高さをウィンドウの高さとし、その半分の高さの動画がアスペクト比を維持するのに必要な横幅を計算
-  const cardWidth = windowHeight ? (windowHeight / 2) * videoAspectRatio : undefined;
+  // const cardWidth = windowHeight ? (windowHeight / 2) * videoAspectRatio : undefined; // 削除
 
   const swipe = async (direction: 'left' | 'right') => {
-    const swipeWidth = cardWidth || 448; // cardWidthが未定義の場合のフォールバック
+    const swipeWidth = cardWidth || 400; // cardWidthが未定義の場合のフォールバックを400pxに設定
     const x = direction === 'right' ? `calc(100vw + ${swipeWidth}px)` : `calc(-100vw - ${swipeWidth}px)`;
     await controls.start({ x, opacity: 0, transition: { duration: 0.6 } }); 
     onSwipe(direction);

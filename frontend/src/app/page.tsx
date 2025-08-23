@@ -149,6 +149,7 @@ export default function Home() {
                 onSwipe={handleSwipe}
                 onDrag={handleDrag}
                 onDragEnd={handleDragEnd}
+                cardWidth={cardWidth}
               />
             )
           ) : (
