@@ -121,6 +121,11 @@ on public.videos for select
 to anon, authenticated
 using (true);
 
+create policy "insert videos"
+on public.videos for insert
+to anon, authenticated
+with check (true); -- 全ての挿入を許可
+
 alter table public.video_embeddings enable row level security;
 create policy "read embeddings"
 on public.video_embeddings for select

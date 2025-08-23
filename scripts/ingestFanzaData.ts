@@ -1,3 +1,4 @@
+require('dotenv').config({ path: './.env.local' });
 import { createClient } from '@supabase/supabase-js';
 import { mapFanzaItem, VideoRecord } from './fanza_ingest'; // fanza_ingest.tsからインポート
 
@@ -102,7 +103,7 @@ async function ingestFanzaData() {
     console.log(`Fetched ${videoRecords.length} items from FANZA (offset: ${offset}).`);
 
     for (const record of videoRecords) {
-      try {
+      try { // forループ内のtry
         const { data, error } = await supabase
           .from('videos')
           .upsert(record, { onConflict: 'source, distribution_code, maker_code' });
@@ -116,11 +117,51 @@ async function ingestFanzaData() {
           }
         } else {
           insertedCount++;
+          if (data && data.length > 0) { // dataがnullでなく、かつ要素があることを確認
+            const videoId = data[0].id; // upsert成功時に返される動画のIDを取得
+
+            // 元のfanzaItemsから対応するitemを見つける
+            const originalItem = fanzaItems.find((item: any) => item.product_id === record.external_id);
+
+            if (originalItem && originalItem.iteminfo && originalItem.iteminfo.actress) {
+              const actresses = originalItem.iteminfo.actress;
+              for (const actress of actresses) {
+                // performers テーブルに upsert
+                const { data: performerData, error: performerError } = await supabase
+                  .from('performers')
+                  .upsert({ name: actress.name }, { onConflict: 'name' })
+                  .select('id'); // 挿入または更新されたperformerのIDを取得
+
+                if (performerError) {
+                  console.error('Error upserting performer:', performerError);
+                  continue;
+                }
+
+                const performerId = performerData[0].id;
+
+                // video_performers テーブルに挿入
+                const { error: videoPerformerError } = await supabase
+                  .from('video_performers')
+                  .insert({ video_id: videoId, performer_id: performerId });
+
+                if (videoPerformerError) {
+                  // 重複エラーはスキップ
+                  if (videoPerformerError.code === '23505') { // unique_violation
+                    // console.warn(`Skipping duplicate video_performer entry for video ${videoId} and performer ${performerId}`);
+                  } else {
+                    console.error('Error inserting video_performer:', videoPerformerError);
+                  }
+                }
+              }
+            }
+          } else { // if (data && data.length > 0) の else
+            console.warn('Upsert successful but no data returned for video:', record.title);
+          }
         }
-      } catch (e) {
+      } catch (e) { // forループ内のcatch
         console.error('Unexpected error during upsert:', e);
       }
-    }
+    } // forループの閉じ括弧
 
     totalCount += videoRecords.length;
     console.log(`Processed ${totalCount} items. Inserted/Updated: ${insertedCount}`);
