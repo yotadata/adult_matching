@@ -63,6 +63,8 @@ export default function Home() {
         };
       });
 
+      console.log('Fetched cards:', fetchedCards); // 追加
+
       setCards(fetchedCards);
     };
 
