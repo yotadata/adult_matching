@@ -53,20 +53,15 @@ export default function Home() {
       // APIレスポンスをCardData形式に変換
       const fetchedCards: CardData[] = data.map((video: any) => {
         const fanzaEmbedUrl = `https://www.dmm.co.jp/litevideo/-/part/=/affi_id=${process.env.FANZA_AFFILIATE_ID}/cid=${video.external_id}/size=1280_720/&autoplay=1`; // FANZA埋め込みURLを生成
-        
-        // APIから返されるネストした構造をフラットな文字列配列に変換
-        const performerNames = video.performers.map((p: any) => p.performers?.name).filter(Boolean);
-        const tagNames = video.tags.map((t: any) => t.tags?.name).filter(Boolean);
-
         return {
           id: video.id,
           title: video.title,
-          genre: tagNames, // パース処理を削除し、タグ名の配列を渡す
+          genre: video.tags, // APIが整形済みの配列を返す
           description: video.description,
           videoUrl: fanzaEmbedUrl, // 生成したURLをセット
           thumbnail_url: video.thumbnail_url, // サムネイルURLを追加
-          performers: performerNames, // 整形した女優情報を追加
-          tags: tagNames, // 整形したタグ情報を追加
+          performers: video.performers, // APIが整形済みの配列を返す
+          tags: video.tags, // APIが整形済みの配列を返す
         };
       });
 

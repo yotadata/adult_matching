@@ -57,7 +57,14 @@ Deno.serve(async (req) => {
       })
     }
 
-    return new Response(JSON.stringify(videos), {
+    // APIのレスポンスを整形
+    const cleanedVideos = videos.map(video => ({
+      ...video,
+      performers: video.performers.map((p: any) => p.performers?.name).filter(Boolean),
+      tags: video.tags.map((t: any) => t.tags?.name).filter(Boolean),
+    }));
+
+    return new Response(JSON.stringify(cleanedVideos), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     })
