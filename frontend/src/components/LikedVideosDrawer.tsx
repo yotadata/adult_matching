@@ -6,7 +6,7 @@ import { X } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { supabase } from '@/lib/supabase';
-import { VideoRecord } from '@/../types';
+import { VideoRecord } from '../../types';
 
 interface LikedVideosDrawerProps {
   isOpen: boolean;
