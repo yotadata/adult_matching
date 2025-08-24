@@ -124,7 +124,8 @@ async function ingestFanzaData() {
       try { // forループ内のtry
         const { data: upsertData, error } = await supabase
           .from('videos')
-          .upsert(videoRecordForUpsert, { onConflict: 'source, distribution_code, maker_code' }) as { data: any[] | null, error: any };
+          .upsert(videoRecordForUpsert, { onConflict: 'source, distribution_code, maker_code' })
+          .select('id');
 
         if (error) {
           // 重複エラーはスキップ
