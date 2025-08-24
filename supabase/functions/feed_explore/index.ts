@@ -4,7 +4,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
 interface VideoData {
@@ -23,10 +23,20 @@ interface VideoData {
   tags: string[];
 }
 
-serve(async (req) => {
+serve(async (req: Request) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
+  }
+
+  if (req.method !== 'POST') {
+    return new Response(
+      JSON.stringify({ error: 'Method not allowed' }),
+      {
+        status: 405,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      }
+    );
   }
 
   try {
@@ -42,44 +52,116 @@ serve(async (req) => {
 
     const { limit = 20, offset = 0 } = await req.json();
 
-    // 多様性を確保するため、異なるジャンル・メーカー・出演者から動画を取得
-    const { data: videos, error } = await supabaseClient
-      .from('videos')
-      .select(`
-        id,
-        title,
-        description,
-        duration_seconds,
-        thumbnail_url,
-        preview_video_url,
-        maker,
-        genre,
-        price,
-        sample_video_url,
-        image_urls,
-        video_performers!inner(
-          performers(name)
-        ),
-        video_tags!inner(
-          tags(name)
-        )
-      `)
-      .order('published_at', { ascending: false })
-      .range(offset, offset + limit - 1);
+    console.log(`Fetching ${limit} diverse videos with offset ${offset}`);
 
-    if (error) {
-      console.error('Database error:', error);
+    // 多様性を重視した動画取得戦略
+    const diversityStrategies = [
+      // ジャンル分散
+      () => supabaseClient
+        .from('videos')
+        .select(`
+          id,
+          title,
+          description,
+          duration_seconds,
+          thumbnail_url,
+          preview_video_url,
+          maker,
+          genre,
+          price,
+          sample_video_url,
+          image_urls,
+          video_performers!inner(
+            performers(name)
+          ),
+          video_tags!inner(
+            tags(name)
+          )
+        `)
+        .order('genre')
+        .range(offset, offset + Math.floor(limit * 0.4)),
+
+      // 人気度順
+      () => supabaseClient
+        .from('videos')
+        .select(`
+          id,
+          title,
+          description,
+          duration_seconds,
+          thumbnail_url,
+          preview_video_url,
+          maker,
+          genre,
+          price,
+          sample_video_url,
+          image_urls,
+          video_performers!inner(
+            performers(name)
+          ),
+          video_tags!inner(
+            tags(name)
+          )
+        `)
+        .order('published_at', { ascending: false })
+        .range(offset, offset + Math.floor(limit * 0.3)),
+
+      // ランダム
+      () => supabaseClient
+        .from('videos')
+        .select(`
+          id,
+          title,
+          description,
+          duration_seconds,
+          thumbnail_url,
+          preview_video_url,
+          maker,
+          genre,
+          price,
+          sample_video_url,
+          image_urls,
+          video_performers!inner(
+            performers(name)
+          ),
+          video_tags!inner(
+            tags(name)
+          )
+        `)
+        .limit(Math.ceil(limit * 0.3))
+    ];
+
+    let allVideos: any[] = [];
+    
+    // 各戦略から動画を取得
+    for (const strategy of diversityStrategies) {
+      const { data: videos, error } = await strategy();
+      if (!error && videos) {
+        allVideos = allVideos.concat(videos);
+      }
+    }
+
+    if (allVideos.length === 0) {
       return new Response(
-        JSON.stringify({ error: 'Failed to fetch videos' }),
+        JSON.stringify({ error: 'No videos available' }),
         {
-          status: 500,
+          status: 404,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         }
       );
     }
 
+    // 重複除去
+    const uniqueVideos = allVideos.reduce((acc: any[], current: any) => {
+      const isDuplicate = acc.some(video => video.id === current.id);
+      if (!isDuplicate) {
+        acc.push(current);
+      }
+      return acc;
+    }, []);
+
     // データを整形
-    const formattedVideos: VideoData[] = videos.map((video: any) => ({
+    const formattedVideos: VideoData[] = uniqueVideos.map((video: any) => ({
       id: video.id,
       title: video.title,
       description: video.description,
@@ -95,14 +177,18 @@ serve(async (req) => {
       tags: video.video_tags?.map((vt: any) => vt.tags?.name).filter(Boolean) || [],
     }));
 
-    // 多様性を確保するため、ジャンル・メーカー・出演者でシャッフル
-    const diverseVideos = ensureDiversity(formattedVideos, limit);
+    // シャッフルして多様性を確保
+    const shuffledVideos = formattedVideos.sort(() => Math.random() - 0.5).slice(0, limit);
+
+    console.log(`Returning ${shuffledVideos.length} diverse videos`);
 
     return new Response(
       JSON.stringify({
-        videos: diverseVideos,
-        total_count: diverseVideos.length,
-        has_more: diverseVideos.length === limit
+        videos: shuffledVideos,
+        total_count: shuffledVideos.length,
+        offset: offset,
+        limit: limit,
+        diversity_score: calculateDiversityScore(shuffledVideos),
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -121,40 +207,17 @@ serve(async (req) => {
   }
 });
 
-// 多様性を確保する関数
-function ensureDiversity(videos: VideoData[], targetCount: number): VideoData[] {
-  if (videos.length <= targetCount) {
-    return videos;
-  }
-
-  const diverseVideos: VideoData[] = [];
-  const usedMakers = new Set<string>();
-  const usedGenres = new Set<string>();
-  const usedPerformers = new Set<string>();
+function calculateDiversityScore(videos: VideoData[]): number {
+  if (videos.length === 0) return 0;
   
-  // まず、異なるメーカー・ジャンル・出演者から優先的に選択
-  for (const video of videos) {
-    if (diverseVideos.length >= targetCount) break;
-    
-    const hasNewMaker = video.maker && !usedMakers.has(video.maker);
-    const hasNewGenre = video.genre && !usedGenres.has(video.genre);
-    const hasNewPerformer = video.performers.some(p => !usedPerformers.has(p));
-    
-    if (hasNewMaker || hasNewGenre || hasNewPerformer) {
-      diverseVideos.push(video);
-      if (video.maker) usedMakers.add(video.maker);
-      if (video.genre) usedGenres.add(video.genre);
-      video.performers.forEach(p => usedPerformers.add(p));
-    }
-  }
+  const genres = new Set(videos.map(v => v.genre));
+  const makers = new Set(videos.map(v => v.maker));
+  const performers = new Set(videos.flatMap(v => v.performers));
   
-  // 残りの枠を埋める
-  for (const video of videos) {
-    if (diverseVideos.length >= targetCount) break;
-    if (!diverseVideos.includes(video)) {
-      diverseVideos.push(video);
-    }
-  }
+  // 多様性スコア = (ユニーク数の平均) / 総数
+  const genreDiv = genres.size / videos.length;
+  const makerDiv = makers.size / videos.length;
+  const performerDiv = Math.min(performers.size / videos.length, 1); // 上限1
   
-  return diverseVideos.slice(0, targetCount);
+  return Math.round((genreDiv + makerDiv + performerDiv) / 3 * 100) / 100;
 }

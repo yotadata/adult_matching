@@ -27,7 +27,7 @@ interface UserFeatures {
   recency_weight: number[];
 }
 
-serve(async (req) => {
+serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
@@ -65,8 +65,14 @@ serve(async (req) => {
       );
     }
 
+    const { 
+      batch_phase = 'automatic', 
+      batch_size = 0, 
+      completed_items = 0 
+    } = await req.json().catch(() => ({}));
+    
     const userId = user.id;
-    console.log(`Updating user embedding for user: ${userId}`);
+    console.log(`Updating user embedding for user: ${userId}, phase: ${batch_phase}, completed: ${completed_items}`);
 
     // ユーザーのいいね履歴を取得
     const { data: likes, error: likesError } = await supabaseClient
@@ -127,7 +133,13 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({ 
           success: true, 
-          message: 'Default embedding created for new user',
+          message: `Default embedding created for new user (${batch_phase} phase)`,
+          batch_completion: {
+            phase: batch_phase,
+            batch_size: batch_size,
+            completed_items: completed_items,
+            next_phase: batch_phase === 'discovery' ? 'recommendation' : 'discovery'
+          },
           embedding_dim: 768 
         }),
         {
@@ -167,7 +179,13 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: 'User embedding updated successfully',
+        message: `User embedding updated successfully (${batch_phase} phase)`,
+        batch_completion: {
+          phase: batch_phase,
+          batch_size: batch_size,
+          completed_items: completed_items,
+          next_phase: batch_phase === 'discovery' ? 'recommendation' : 'discovery'
+        },
         features_processed: {
           genres: Object.keys(features.genre_distribution).length,
           makers: Object.keys(features.maker_distribution).length,
@@ -293,7 +311,7 @@ function generateUserEmbedding(features: UserFeatures): number[] {
   
   // ジャンル特徴量（次元 0-99）
   let idx = 0;
-  Object.entries(features.genre_distribution).forEach(([genre, weight], i) => {
+  Object.entries(features.genre_distribution).forEach(([, weight]) => {
     if (idx < 100) {
       embedding[idx] = weight * (1 + Math.random() * 0.1); // ノイズ追加
       idx++;
@@ -302,7 +320,7 @@ function generateUserEmbedding(features: UserFeatures): number[] {
   
   // メーカー特徴量（次元 100-199）
   idx = 100;
-  Object.entries(features.maker_distribution).forEach(([maker, weight], i) => {
+  Object.entries(features.maker_distribution).forEach(([, weight]) => {
     if (idx < 200) {
       embedding[idx] = weight * (1 + Math.random() * 0.1);
       idx++;
@@ -311,7 +329,7 @@ function generateUserEmbedding(features: UserFeatures): number[] {
   
   // タグ特徴量（次元 200-399）
   idx = 200;
-  Object.entries(features.tag_distribution).forEach(([tag, weight], i) => {
+  Object.entries(features.tag_distribution).forEach(([, weight]) => {
     if (idx < 400) {
       embedding[idx] = weight * (1 + Math.random() * 0.1);
       idx++;
@@ -320,7 +338,7 @@ function generateUserEmbedding(features: UserFeatures): number[] {
   
   // 出演者特徴量（次元 400-599）
   idx = 400;
-  Object.entries(features.performer_distribution).forEach(([performer, weight], i) => {
+  Object.entries(features.performer_distribution).forEach(([, weight]) => {
     if (idx < 600) {
       embedding[idx] = weight * (1 + Math.random() * 0.1);
       idx++;

@@ -24,7 +24,7 @@ interface RecommendedVideo {
   recommendation_reason?: string;
 }
 
-serve(async (req) => {
+serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
@@ -40,21 +40,46 @@ serve(async (req) => {
   }
 
   try {
+    // デバッグ情報をログ出力
+    const authHeader = req.headers.get('Authorization');
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? 'http://127.0.0.1:54321';
+    const anonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
+    
+    console.log('Debug info:', {
+      hasAuthHeader: !!authHeader,
+      authHeaderPrefix: authHeader?.substring(0, 20),
+      supabaseUrl,
+      hasAnonKey: !!anonKey
+    });
+
     const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      supabaseUrl,
+      anonKey,
       {
         global: {
-          headers: { Authorization: req.headers.get('Authorization')! },
+          headers: { Authorization: authHeader || '' },
         },
       }
     );
 
     // ユーザー認証確認
     const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
-    if (authError || !user) {
+    
+    if (authError) {
+      console.error('Auth error:', authError);
       return new Response(
-        JSON.stringify({ error: 'Unauthorized' }),
+        JSON.stringify({ error: 'Authentication failed', details: authError.message }),
+        {
+          status: 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
+    }
+    
+    if (!user) {
+      console.log('No user found');
+      return new Response(
+        JSON.stringify({ error: 'User not authenticated' }),
         {
           status: 401,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -62,7 +87,7 @@ serve(async (req) => {
       );
     }
 
-    const { limit = 20, exclude_liked = true } = await req.json();
+    const { limit = 100, exclude_liked = true } = await req.json();
     const userId = user.id;
 
     console.log(`Generating recommendations for user: ${userId}`);
@@ -181,6 +206,11 @@ serve(async (req) => {
         recommendations: diverseRecommendations,
         total_candidates: videoEmbeddings.length,
         user_embedding_updated: userEmbedding.updated_at,
+        total_count: diverseRecommendations.length,
+        is_recommendation_batch: true,
+        phase: 'recommendation',
+        expected_batch_size: 100,
+        message: 'あなたの嗜好に基づくパーソナライズド推奨です。100件すべてを評価してください。'
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -354,6 +384,10 @@ async function generateDiverseRecommendations(
       recommendations: diverseRecs,
       total_candidates: videos.length,
       fallback: true,
+      total_count: diverseRecs.length,
+      is_recommendation_batch: true,
+      phase: 'recommendation',
+      expected_batch_size: 100,
       message: 'ユーザーエンベディングを更新中です。次回はより精度の高い推奨を提供します。',
     }),
     {

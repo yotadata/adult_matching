@@ -28,6 +28,10 @@ export default function Home() {
   const [videos, setVideos] = useState<CardData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [currentPhase, setCurrentPhase] = useState<'discovery' | 'recommendation'>('discovery');
+  const [batchProgress, setBatchProgress] = useState(0);
+  const [batchSize, setBatchSize] = useState(20);
+  const [isTransitioning, setIsTransitioning] = useState(false);
 
   useEffect(() => {
     if (isMobile) {
@@ -41,81 +45,97 @@ export default function Home() {
   }, [isMobile]);
 
   useEffect(() => {
-    const fetchVideos = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        
-        // Check if user is logged in
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        let apiData, apiError;
-        
-        if (session) {
-          // Logged in user: get personalized recommendations
-          console.log('Fetching personalized recommendations...');
-          const response = await supabase.functions.invoke('recommendations', {
-            body: { limit: 20, exclude_liked: true }
-          });
-          apiData = response.data;
-          apiError = response.error;
-          
-          // If recommendations fail, fallback to diverse feed
-          if (apiError || !apiData?.recommendations) {
-            console.log('Recommendations failed, falling back to diverse feed...');
-            const fallbackResponse = await supabase.functions.invoke('feed_explore', {
-              body: { limit: 20, offset: 0 }
-            });
-            apiData = fallbackResponse.data;
-            apiError = fallbackResponse.error;
-          }
-        } else {
-          // Not logged in: get diverse feed
-          console.log('Fetching diverse video feed...');
-          const response = await supabase.functions.invoke('feed_explore', {
-            body: { limit: 20, offset: 0 }
-          });
-          apiData = response.data;
-          apiError = response.error;
-        }
-        
-        if (apiError) {
-          console.error('API Error:', apiError);
-          setError('動画の取得に失敗しました');
-          return;
-        }
-        
-        // Handle both recommendations and feed_explore response formats
-        const videoList = apiData?.recommendations || apiData?.videos || [];
-        
-        if (videoList.length > 0) {
-          const formattedVideos = videoList.map((video: any) => ({
-            ...video,
-            videoUrl: video.sample_video_url || video.preview_video_url || '',
-          }));
-          setVideos(formattedVideos);
-          
-          // Log recommendation info if available
-          if (apiData?.recommendations && session) {
-            console.log(`Loaded ${formattedVideos.length} personalized recommendations`);
-            if (apiData.fallback) {
-              console.log('Using fallback recommendations while user embedding updates');
-            }
-          }
-        } else {
-          setError('表示する動画がありません');
-        }
-        
-      } catch (err) {
-        console.error('Fetch error:', err);
-        setError('動画の取得中にエラーが発生しました');
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    fetchVideos();
+    fetchInitialVideos();
   }, []);
+  
+  const fetchInitialVideos = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      setCurrentPhase('discovery');
+      setBatchProgress(0);
+      setBatchSize(20);
+      
+      // Always start with discovery phase (20 random items)
+      console.log('Fetching discovery phase videos...');
+      const response = await supabase.functions.invoke('feed_explore', {
+        body: { limit: 20 }
+      });
+      
+      if (response.error) {
+        console.error('API Error:', response.error);
+        setError('動画の取得に失敗しました');
+        return;
+      }
+      
+      const videoList = response.data?.videos || [];
+      
+      if (videoList.length > 0) {
+        const formattedVideos = videoList.map((video: any) => ({
+          ...video,
+          videoUrl: video.sample_video_url || video.preview_video_url || '',
+        }));
+        setVideos(formattedVideos);
+        
+        console.log(`Loaded ${formattedVideos.length} discovery videos`);
+        if (response.data?.phase === 'discovery') {
+          console.log('Discovery phase initiated');
+        }
+      } else {
+        setError('表示する動画がありません');
+      }
+      
+    } catch (err) {
+      console.error('Fetch error:', err);
+      setError('動画の取得中にエラーが発生しました');
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  const fetchRecommendationVideos = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      setCurrentPhase('recommendation');
+      setBatchProgress(0);
+      setBatchSize(100);
+      
+      console.log('Fetching recommendation phase videos...');
+      const response = await supabase.functions.invoke('recommendations', {
+        body: { limit: 100, exclude_liked: true }
+      });
+      
+      if (response.error) {
+        console.error('Recommendations API Error:', response.error);
+        setError('推奨動画の取得に失敗しました');
+        return;
+      }
+      
+      const videoList = response.data?.recommendations || [];
+      
+      if (videoList.length > 0) {
+        const formattedVideos = videoList.map((video: any) => ({
+          ...video,
+          videoUrl: video.sample_video_url || video.preview_video_url || '',
+        }));
+        setVideos(formattedVideos);
+        
+        console.log(`Loaded ${formattedVideos.length} recommendation videos`);
+        if (response.data?.phase === 'recommendation') {
+          console.log('Recommendation phase initiated');
+        }
+      } else {
+        setError('推奨動画がありません');
+      }
+      
+    } catch (err) {
+      console.error('Recommendations fetch error:', err);
+      setError('推奨動画の取得中にエラーが発生しました');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSwipe = async (direction?: 'left' | 'right') => {
     const currentCard = activeIndex < videos.length ? videos[activeIndex] : null;
@@ -129,19 +149,68 @@ export default function Home() {
           await supabase.functions.invoke('likes', {
             body: { video_id: currentCard.id },
           });
-          
-          // Update user embedding (non-blocking)
-          supabase.functions.invoke('update_user_embedding').catch(error => {
-            console.warn('User embedding update failed:', error);
-          });
         }
       } catch (error) {
         console.error('Failed to add like:', error);
       }
     }
     
+    // Update progress
+    const newProgress = batchProgress + 1;
+    setBatchProgress(newProgress);
     setActiveIndex((prev) => prev + 1);
     setCurrentGradient(ORIGINAL_GRADIENT);
+    
+    // Check if batch is completed
+    if (newProgress >= batchSize) {
+      await handleBatchCompletion(newProgress);
+    }
+  };
+  
+  const handleBatchCompletion = async (completedItems: number) => {
+    console.log(`Batch completed: ${currentPhase} phase, ${completedItems} items`);
+    setIsTransitioning(true);
+    
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      // Trigger user embedding update with batch completion info
+      if (session) {
+        console.log(`Updating user embedding after ${currentPhase} batch completion...`);
+        await supabase.functions.invoke('update_user_embedding', {
+          body: {
+            batch_phase: currentPhase,
+            batch_size: batchSize,
+            completed_items: completedItems
+          }
+        });
+      }
+      
+      // Transition to next phase
+      if (currentPhase === 'discovery') {
+        // After discovery phase, move to recommendations
+        if (session) {
+          console.log('Transitioning to recommendation phase...');
+          setActiveIndex(0); // Reset index for new batch
+          await fetchRecommendationVideos();
+        } else {
+          // Non-logged-in users restart discovery phase
+          console.log('User not logged in, restarting discovery phase...');
+          setActiveIndex(0);
+          await fetchInitialVideos();
+        }
+      } else {
+        // After recommendation phase, restart from discovery
+        console.log('Recommendation batch completed, restarting discovery phase...');
+        setActiveIndex(0);
+        await fetchInitialVideos();
+      }
+      
+    } catch (error) {
+      console.error('Batch completion handling failed:', error);
+    } finally {
+      setIsTransitioning(false);
+    }
   };
 
   const triggerSwipe = async (direction: 'left' | 'right') => {
@@ -182,10 +251,51 @@ export default function Home() {
         className={`flex-grow flex w-full relative ${isMobile ? 'flex-col bg-white h-full' : 'items-center justify-center'}`}
         style={isMobile ? { paddingTop: `${headerHeight}px` } : {}} // headerHeight を使って paddingTop を動的に設定
       >
+        {/* Progress Indicator */}
+        {!loading && !error && (
+          <div className="absolute top-4 left-4 right-4 z-10">
+            <div className="bg-white/20 backdrop-blur-sm rounded-lg p-3">
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-white text-sm font-medium">
+                  {currentPhase === 'discovery' ? 'ディスカバリーフェーズ' : 'レコメンドフェーズ'}
+                </span>
+                <span className="text-white text-sm">
+                  {batchProgress}/{batchSize}
+                </span>
+              </div>
+              <div className="w-full bg-white/30 rounded-full h-2">
+                <div 
+                  className="bg-white rounded-full h-2 transition-all duration-300"
+                  style={{ width: `${(batchProgress / batchSize) * 100}%` }}
+                />
+              </div>
+              {currentPhase === 'discovery' && (
+                <p className="text-white text-xs mt-1 opacity-75">
+                  あなたの好みを学習中です。すべての動画を評価してください。
+                </p>
+              )}
+              {currentPhase === 'recommendation' && (
+                <p className="text-white text-xs mt-1 opacity-75">
+                  あなたにおすすめの動画です。
+                </p>
+              )}
+            </div>
+          </div>
+        )}
+        
         <AnimatePresence mode="wait">
-          {loading ? (
-            <div className="flex items-center justify-center">
-              <p className="text-white font-bold text-xl">動画を読み込み中...</p>
+          {loading || isTransitioning ? (
+            <div className="flex flex-col items-center justify-center">
+              <p className="text-white font-bold text-xl mb-2">
+                {isTransitioning ? 'フェーズを切り替え中...' : '動画を読み込み中...'}
+              </p>
+              {isTransitioning && (
+                <p className="text-white text-sm opacity-75">
+                  {currentPhase === 'discovery' 
+                    ? 'あなたの好みを分析して、パーソナライズド推奨を準備しています...' 
+                    : '次のディスカバリーセッションを準備しています...'}
+                </p>
+              )}
             </div>
           ) : error ? (
             <div className="flex items-center justify-center">
