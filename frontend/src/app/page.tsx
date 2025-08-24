@@ -56,7 +56,7 @@ export default function Home() {
         return {
           id: video.id,
           title: video.title,
-          genre: video.genre, // tags から genre に変更
+          genre: JSON.parse(video.genre), // tags から genre に変更し、JSON文字列をパース
           description: video.description,
           videoUrl: fanzaEmbedUrl, // 生成したURLをセット
           thumbnail_url: video.thumbnail_url, // サムネイルURLを追加
