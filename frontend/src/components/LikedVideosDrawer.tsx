@@ -50,7 +50,7 @@ const LikedVideosDrawer: React.FC<LikedVideosDrawerProps> = ({ isOpen, onClose }
           .from('likes')
           .select('videos (*)')
           .eq('user_id', user.id)
-          .order('created_at', { ascending: false });
+          .order('created_at', { ascending: false }) as { data: { videos: VideoRecord }[] | null, error: any };
 
         if (error) {
           console.error('Error fetching liked videos:', error);
