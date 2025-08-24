@@ -116,11 +116,13 @@ async function ingestFanzaData() {
       const record = videoRecords[i];
       const originalItem = fanzaItems[i]; // 対応する元のアイテムを取得
 
+      let videoId: string | undefined; // videoId をここで宣言
+
       // videos テーブルに upsert するレコードから performers と tags を除外
       const videoRecordForUpsert: Omit<VideoRecord, 'performers' | 'tags'> = record;
 
       try { // forループ内のtry
-        const { data, error } = await supabase
+        const { data: upsertData, error } = await supabase
           .from('videos')
           .upsert(videoRecordForUpsert, { onConflict: 'source, distribution_code, maker_code' }) as { data: any[] | null, error: any };
 
@@ -147,7 +149,7 @@ async function ingestFanzaData() {
           }
         } else {
           insertedCount++;
-          videoId = data[0].id; // 新規挿入または更新されたIDを使用
+          videoId = upsertData[0].id; // 新規挿入または更新されたIDを使用
         }
 
         if (videoId) { // videoId が取得できた場合のみ後続処理を実行
@@ -218,11 +220,26 @@ async function ingestFanzaData() {
         } else { // videoId が取得できなかった場合
           console.warn('Could not retrieve videoId for record:', record.title);
         }
-        } // if (error) の else の閉じ括弧
       } catch (e) { // forループ内のcatch
         console.error('Unexpected error during upsert:', e);
-      } // try の閉じ括弧
+      }
     } // forループの閉じ括弧
+
+    totalCount += videoRecords.length;
+    console.log(`Processed ${totalCount} items. Inserted/Updated: ${insertedCount}`);
+
+    // 次のページがあるか確認
+    if (data.result.total_count && (offset + hits) <= data.result.total_count) {
+      offset += hits;
+    } else {
+      break;
+    }
+  }
+
+  console.log(`FANZA data ingestion complete. Total processed: ${totalCount}, Successfully inserted/updated: ${insertedCount}`);
+}
+
+ingestFanzaData();
 
     totalCount += videoRecords.length;
     console.log(`Processed ${totalCount} items. Inserted/Updated: ${insertedCount}`);
