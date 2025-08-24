@@ -35,8 +35,9 @@ export default function Home() {
   const [currentGradient, setCurrentGradient] = useState(ORIGINAL_GRADIENT);
   const [showHowToUse, setShowHowToUse] = useState(true);
   const isMobile = useMediaQuery('(max-width: 639px)');
-  const { width: windowWidth } = useWindowSize();
+  const { width: windowWidth, height: windowHeight } = useWindowSize();
   const [cardWidth, setCardWidth] = useState<number | undefined>(400); // cardWidthをstateとして管理し、デフォルト値を400に設定
+  const videoAspectRatio = 21 / 20;
   
 
   const activeCard = activeIndex < cards.length ? cards[activeIndex] : null; // activeCard の宣言を移動
@@ -85,23 +86,11 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    const updateCardWidth = () => {
-      if (cardRef.current) {
-        const swiperCardWidth = cardRef.current.getCardWidth();
-        if (swiperCardWidth !== undefined) {
-          setCardWidth(swiperCardWidth);
-        }
-      }
-    };
-
-    // 初回レンダリング時とウィンドウサイズ変更時に幅を更新
-    updateCardWidth();
-    window.addEventListener('resize', updateCardWidth);
-
-    return () => {
-      window.removeEventListener('resize', updateCardWidth);
-    };
-  }, [activeCard]); // cardRef.current と activeCard が変更されたときに実行
+    if (windowHeight) {
+      const calculatedCardWidth = (windowHeight / 2) * videoAspectRatio;
+      setCardWidth(calculatedCardWidth);
+    }
+  }, [windowHeight]);
 
   
 
