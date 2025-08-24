@@ -2,7 +2,6 @@
 
 import { motion, useAnimation, PanInfo } from 'framer-motion';
 import { forwardRef, useImperativeHandle, useState } from 'react';
-import useWindowSize from '../hooks/useWindowSize';
 import { Play, User, Tag } from 'lucide-react'; // Userアイコンをインポート
 
 // カードデータの型定義
