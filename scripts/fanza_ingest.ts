@@ -56,10 +56,10 @@ export function mapFanzaItem(item: any): VideoRecord {
     preview_video_url: item.sampleMovieURL?.size_476_306, // JSONにpreviewフィールドがないため、これはundefinedになる
     distribution_code: item.content_id, // dvd_idはcontent_idにマッピング
     maker_code: iteminfo.maker?.[0]?.id, // maker_idはiteminfo.makerのidにマッピング
-    director: mapNames(iteminfo.director)?.[0], // directorは配列の最初の要素
-    series: mapNames(iteminfo.series)?.[0], // seriesは配列の最初の要素
-    maker: mapNames(iteminfo.maker)?.[0], // makerは配列の最初の要素
-    label: mapNames(iteminfo.label)?.[0], // labelは配列の最初の要素
+    director: mapNames(iteminfo.director)?.[0]?.name, // directorは配列の最初の要素
+    series: mapNames(iteminfo.series)?.[0]?.name, // seriesは配列の最初の要素
+    maker: mapNames(iteminfo.maker)?.[0]?.name, // makerは配列の最初の要素
+    label: mapNames(iteminfo.label)?.[0]?.name, // labelは配列の最初の要素
     price: item.prices?.price ? parseFloat(item.prices.price.replace('~', '')) : undefined, // priceは文字列なので数値に変換
     distribution_started_at: item.date, // sale_startはdateにマッピング
     product_released_at: item.date, // release_dateはdateにマッピング
