@@ -11,6 +11,17 @@ import useWindowSize from "@/hooks/useWindowSize";
 import MobileVideoLayout from "@/components/MobileVideoLayout";
 import { supabase } from "@/lib/supabase"; // supabaseクライアントをインポート
 
+// APIから受け取るvideoオブジェクトの型定義
+interface VideoFromApi {
+  id: number;
+  title: string;
+  description: string;
+  external_id: string;
+  thumbnail_url: string;
+  performers: { id: string; name: string }[];
+  tags: { id: string; name: string }[];
+}
+
 const ORIGINAL_GRADIENT = 'linear-gradient(to right, #C4C8E3, #D7D1E3, #F7D7E0, #F8DBB9)';
 const LEFT_SWIPE_GRADIENT = 'linear-gradient(to right, #AEB4EB, #D7D1E3, #F7D7E0,#F8DBB9)'; // 左端を明るく
 const RIGHT_SWIPE_GRADIENT = 'linear-gradient(to right, #C4C8E3,  #D7D1E3, #F7D7E0,#F9CFA0)'; // 右端を明るく
@@ -26,7 +37,7 @@ export default function Home() {
   const isMobile = useMediaQuery('(max-width: 639px)');
   const { width: windowWidth } = useWindowSize();
   const [cardWidth, setCardWidth] = useState<number | undefined>(400); // cardWidthをstateとして管理し、デフォルト値を400に設定
-  const [headerHeight, setHeaderHeight] = useState(0);
+  
 
   const activeCard = activeIndex < cards.length ? cards[activeIndex] : null; // activeCard の宣言を移動
 
@@ -51,7 +62,7 @@ export default function Home() {
       }
       
       // APIレスポンスをCardData形式に変換
-      const fetchedCards: CardData[] = data.map((video: any) => {
+      const fetchedCards: CardData[] = data.map((video: VideoFromApi) => {
         const fanzaEmbedUrl = `https://www.dmm.co.jp/litevideo/-/part/=/affi_id=${process.env.FANZA_AFFILIATE_ID}/cid=${video.external_id}/size=1280_720/&autoplay=1`; // FANZA埋め込みURLを生成
         return {
           id: video.id,
@@ -90,18 +101,9 @@ export default function Home() {
     return () => {
       window.removeEventListener('resize', updateCardWidth);
     };
-  }, [cardRef.current, activeCard]); // cardRef.current と activeCard が変更されたときに実行
+  }, [activeCard]); // cardRef.current と activeCard が変更されたときに実行
 
-  useEffect(() => {
-    if (isMobile) {
-      const headerElement = document.getElementById('main-header');
-      if (headerElement) {
-        setHeaderHeight(headerElement.offsetHeight);
-      }
-    } else {
-      setHeaderHeight(0);
-    }
-  }, [isMobile]);
+  
 
   const handleSwipe = async (direction: 'left' | 'right') => {
     if (direction === 'right') {

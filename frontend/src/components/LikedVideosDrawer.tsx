@@ -4,6 +4,7 @@ import { Dialog, Transition } from '@headlessui/react';
 import { Fragment, useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { supabase } from '@/lib/supabase';
 import { VideoRecord } from '@/../scripts/fanza_ingest';
 
@@ -99,7 +100,7 @@ const LikedVideosDrawer: React.FC<LikedVideosDrawerProps> = ({ isOpen, onClose }
                             <div key={video.external_id} className="bg-gray-50 rounded-lg shadow-sm overflow-hidden flex items-center p-3">
                               <div className="relative w-24 flex-shrink-0 rounded-md overflow-hidden bg-gray-200 aspect-w-16 aspect-h-9">
                                 {video.thumbnail_url ? (
-                                  <img src={video.thumbnail_url} alt={video.title} className="w-full h-full object-cover" />
+                                  <Image src={video.thumbnail_url} alt={video.title} fill className="object-cover" />
                                 ) : (
                                   <div className="w-full h-full flex items-center justify-center">
                                     <span className="text-gray-400 text-xs">画像なし</span>
