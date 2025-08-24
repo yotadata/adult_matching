@@ -204,9 +204,10 @@ async function ingestFanzaData() {
           } else { // if (data && data.length > 0) の else
             console.warn('Upsert successful but no data returned for video:', record.title);
           }
-        } catch (e) { // forループ内のcatch
+        } // if (error) の else の閉じ括弧
+      } catch (e) { // forループ内のcatch
         console.error('Unexpected error during upsert:', e);
-      }
+      } // try の閉じ括弧
     } // forループの閉じ括弧
 
     totalCount += videoRecords.length;
