@@ -139,7 +139,7 @@ async function ingestFanzaData() {
                 // performers テーブルに upsert
                 const { data: performerData, error: performerError } = await supabase
                   .from('performers')
-                  .upsert({ name: actress.name }, { onConflict: 'name' })
+                  .upsert({ name: actress.name, fanza_actress_id: actress.id }, { onConflict: 'fanza_actress_id' })
                   .select('id'); // 挿入または更新されたperformerのIDを取得
 
                 if (performerError) {
@@ -164,6 +164,39 @@ async function ingestFanzaData() {
                 }
               }
             }
+
+            // タグの処理
+            if (originalItem && originalItem.iteminfo && originalItem.iteminfo.genre) {
+              const genres = originalItem.iteminfo.genre;
+              for (const genre of genres) {
+                // tags テーブルに upsert
+                const { data: tagData, error: tagError } = await supabase
+                  .from('tags')
+                  .upsert({ name: genre.name }, { onConflict: 'name' })
+                  .select('id');
+
+                if (tagError) {
+                  console.error('Error upserting tag:', tagError);
+                  continue;
+                }
+
+                const tagId = tagData[0].id;
+
+                // video_tags テーブルに挿入
+                const { error: videoTagError } = await supabase
+                  .from('video_tags')
+                  .insert({ video_id: videoId, tag_id: tagId });
+
+                if (videoTagError) {
+                  if (videoTagError.code === '23505') {
+                    // console.warn(`Skipping duplicate video_tag entry for video ${videoId} and tag ${tagId}`);
+                  } else {
+                    console.error('Error inserting video_tag:', videoTagError);
+                  }
+                }
+              }
+            }
+
           } else { // if (data && data.length > 0) の else
             console.warn('Upsert successful but no data returned for video:', record.title);
           }
