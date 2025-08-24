@@ -36,7 +36,14 @@ Deno.serve(async (req) => {
     // Fetch videos with a sample URL and return the columns needed by the frontend
     const { data: videos, error } = await supabase
       .from('videos')
-      .select('id, title, genre, external_id, thumbnail_url')
+      .select(`
+        id,
+        title,
+        external_id,
+        thumbnail_url,
+        performers: video_performers(performers(name)),
+        tags: video_tags(tags(name))
+      `)
       .not('sample_video_url', 'is', null)
       .order('id')
       .range(offset, offset + limit - 1);

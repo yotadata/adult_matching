@@ -11,7 +11,6 @@ export interface VideoRecord {
   series?: string;
   maker?: string;
   label?: string;
-  genre?: string[];
   price?: number;
   distribution_started_at?: string;
   product_released_at?: string;
@@ -20,6 +19,8 @@ export interface VideoRecord {
   source: string;
   published_at?: string;
   product_url?: string; // 追加
+  performers?: { id: string; name: string; }[]; // 追加
+  tags?: { id: string; name: string; }[]; // 追加
 }
 
 export function mapFanzaItem(item: any): VideoRecord {
@@ -27,7 +28,7 @@ export function mapFanzaItem(item: any): VideoRecord {
   const iteminfo = item.iteminfo || {};
 
   // 配列フィールドの処理ヘルパー
-  const mapNames = (arr: any[] | undefined) => arr ? arr.map(i => i.name) : undefined;
+  const mapNames = (arr: any[] | undefined) => arr ? arr.map(i => ({ id: i.id, name: i.name })) : undefined;
   const mapImages = (obj: any) => {
     const urls: string[] = [];
     if (obj && obj.list) urls.push(obj.list);
@@ -59,7 +60,6 @@ export function mapFanzaItem(item: any): VideoRecord {
     series: mapNames(iteminfo.series)?.[0], // seriesは配列の最初の要素
     maker: mapNames(iteminfo.maker)?.[0], // makerは配列の最初の要素
     label: mapNames(iteminfo.label)?.[0], // labelは配列の最初の要素
-    genre: mapNames(iteminfo.genre), // genreは配列
     price: item.prices?.price ? parseFloat(item.prices.price.replace('~', '')) : undefined, // priceは文字列なので数値に変換
     distribution_started_at: item.date, // sale_startはdateにマッピング
     product_released_at: item.date, // release_dateはdateにマッピング
@@ -68,5 +68,7 @@ export function mapFanzaItem(item: any): VideoRecord {
     source: 'fanza',
     published_at: item.date, // published_atはdateにマッピング
     product_url: item.URL, // 追加
+    performers: mapNames(iteminfo.actress), // 女優情報を追加
+    tags: mapNames(iteminfo.genre), // ジャンル情報をタグとして追加
   };
 }
