@@ -1,4 +1,4 @@
-import { VideoRecord } from '../types';
+import { VideoRecord } from '@types';
 
 export function mapFanzaItem(item: any): VideoRecord {
   // item.iteminfo が存在しない場合の考慮
