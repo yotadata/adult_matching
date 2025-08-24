@@ -90,7 +90,7 @@ export default function Home() {
       const calculatedCardWidth = (windowHeight / 2) * videoAspectRatio;
       setCardWidth(calculatedCardWidth);
     }
-  }, [windowHeight]);
+  }, [windowHeight, videoAspectRatio]);
 
   
 

@@ -31,7 +31,7 @@ interface SwipeCardProps {
 
 const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwipe, onDrag, onDragEnd, cardWidth }, ref) => {
   const controls = useAnimation();
-  const { height: windowHeight } = useWindowSize();
+  
   const [showVideo, setShowVideo] = useState(false);
 
   
