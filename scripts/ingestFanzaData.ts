@@ -6,19 +6,19 @@ import { mapFanzaItem, VideoRecord } from './fanza_ingest'; // fanza_ingest.ts�
 const FANZA_API_ID = process.env.FANZA_API_ID;
 const FANZA_AFFILIATE_ID = process.env.FANZA_AFFILIATE_ID;
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
 
 if (!FANZA_API_ID || !FANZA_AFFILIATE_ID) {
   console.error('FANZA_API_ID and FANZA_AFFILIATE_ID must be set in environment variables.');
   process.exit(1);
 }
 
-if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-  console.error('NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY must be set in environment variables.');
+if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
+  console.error('NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_KEY must be set in environment variables.');
   process.exit(1);
 }
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
 const FANZA_API_BASE_URL = 'https://api.dmm.com/affiliate/v3/ItemList';
 const FANZA_FLOOR_API_URL = 'https://api.dmm.com/affiliate/v3/FloorList';
@@ -224,22 +224,6 @@ async function ingestFanzaData() {
         console.error('Unexpected error during upsert:', e);
       }
     } // forループの閉じ括弧
-
-    totalCount += videoRecords.length;
-    console.log(`Processed ${totalCount} items. Inserted/Updated: ${insertedCount}`);
-
-    // 次のページがあるか確認
-    if (data.result.total_count && (offset + hits) <= data.result.total_count) {
-      offset += hits;
-    } else {
-      break;
-    }
-  }
-
-  console.log(`FANZA data ingestion complete. Total processed: ${totalCount}, Successfully inserted/updated: ${insertedCount}`);
-}
-
-ingestFanzaData();
 
     totalCount += videoRecords.length;
     console.log(`Processed ${totalCount} items. Inserted/Updated: ${insertedCount}`);
