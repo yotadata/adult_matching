@@ -134,11 +134,13 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwi
             </div>
           </div>
         )}
-        <div className="mt-2 flex items-start gap-2">
-            <div className="flex flex-shrink-0 items-center text-sm text-gray-500">
+        <div className="grid grid-cols-[auto_1fr] items-start gap-x-2 mt-2">
+            {/* Grid Column 1: Label */}
+            <div className="flex items-center text-sm text-gray-500">
               <Tag className="mr-1 h-4 w-4" />
               <span>タグ:</span>
             </div>
+            {/* Grid Column 2: Tags container */}
             <div className="flex flex-wrap gap-2">
               {cardData.tags.map((tag) => (
                 <span key={tag.id} className="rounded-full bg-purple-300 px-2 py-1 text-xs font-bold text-white">
