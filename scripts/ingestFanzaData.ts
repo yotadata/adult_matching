@@ -112,11 +112,17 @@ async function ingestFanzaData() {
 
     console.log(`Fetched ${videoRecords.length} items from FANZA (offset: ${offset}).`);
 
-    for (const record of videoRecords) {
+    for (let i = 0; i < fanzaItems.length; i++) {
+      const record = videoRecords[i];
+      const originalItem = fanzaItems[i]; // 対応する元のアイテムを取得
+
+      // videos テーブルに upsert するレコードから performers と tags を除外
+      const videoRecordForUpsert: Omit<VideoRecord, 'performers' | 'tags'> = record;
+
       try { // forループ内のtry
         const { data, error } = await supabase
           .from('videos')
-          .upsert(record, { onConflict: 'source, distribution_code, maker_code' }) as { data: any[] | null, error: any };
+          .upsert(videoRecordForUpsert, { onConflict: 'source, distribution_code, maker_code' }) as { data: any[] | null, error: any };
 
         if (error) {
           // 重複エラーはスキップ
@@ -130,9 +136,7 @@ async function ingestFanzaData() {
           if (data && data.length > 0) { // dataがnullでなく、かつ要素があることを確認
             const videoId = data[0].id; // upsert成功時に返される動画のIDを取得
 
-            // 元のfanzaItemsから対応するitemを見つける
-            const originalItem = fanzaItems.find((item: any) => item.product_id === record.external_id);
-
+            // 女優の処理
             if (originalItem && originalItem.iteminfo && originalItem.iteminfo.actress) {
               const actresses = originalItem.iteminfo.actress;
               for (const actress of actresses) {
@@ -200,8 +204,7 @@ async function ingestFanzaData() {
           } else { // if (data && data.length > 0) の else
             console.warn('Upsert successful but no data returned for video:', record.title);
           }
-        }
-      } catch (e) { // forループ内のcatch
+        } catch (e) { // forループ内のcatch
         console.error('Unexpected error during upsert:', e);
       }
     } // forループの閉じ括弧

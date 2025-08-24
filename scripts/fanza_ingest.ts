@@ -19,8 +19,6 @@ export interface VideoRecord {
   source: string;
   published_at?: string;
   product_url?: string; // 追加
-  performers?: { id: string; name: string; }[]; // 追加
-  tags?: { id: string; name: string; }[]; // 追加
 }
 
 export function mapFanzaItem(item: any): VideoRecord {
@@ -68,7 +66,5 @@ export function mapFanzaItem(item: any): VideoRecord {
     source: 'fanza',
     published_at: item.date, // published_atはdateにマッピング
     product_url: item.URL, // 追加
-    performers: mapNames(iteminfo.actress), // 女優情報を追加
-    tags: mapNames(iteminfo.genre), // ジャンル情報をタグとして追加
   };
 }
