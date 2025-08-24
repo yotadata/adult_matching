@@ -39,7 +39,7 @@ async function fetchFanzaFloors(): Promise<any> {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
     const data = await response.json();
-    console.log('FANZA Floor API Response:', JSON.stringify(data, null, 2));
+    
     return data;
   } catch (error) {
     console.error('Error fetching FANZA floor data:', error);
@@ -79,7 +79,7 @@ async function fetchFanzaData(offset: number = 1, hits: number = 100): Promise<a
       throw new Error(`HTTP error! status: ${response.status}`);
     }
     const data = await response.json();
-    console.log('FANZA API Response:', JSON.stringify(data, null, 2));
+    
     return data;
   } catch (error) {
     console.error('Error fetching FANZA data:', error);
@@ -110,7 +110,7 @@ async function ingestFanzaData() {
     const fanzaItems = data.result.items;
     const videoRecords: VideoRecord[] = fanzaItems.map(mapFanzaItem);
 
-    console.log(`Fetched ${videoRecords.length} items from FANZA (offset: ${offset}).`);
+    
 
     // Step 1: Collect video records for batch upsert.
     const videosToUpsert: Omit<VideoRecord, 'performers' | 'tags'>[] = videoRecords;
@@ -230,7 +230,6 @@ async function ingestFanzaData() {
       const { error: insertError } = await supabase
         .from('video_performers')
         .insert(videoPerformersToInsert)
-        .onConflict('video_id,performer_id')
         .ignoreDuplicates();
       if (insertError) console.error('Error inserting video_performers:', insertError);
     }
@@ -239,7 +238,6 @@ async function ingestFanzaData() {
       const { error: insertError } = await supabase
         .from('video_tags')
         .insert(videoTagsToInsert)
-        .onConflict('video_id,performer_id')
         .ignoreDuplicates();
       if (insertError) console.error('Error inserting video_tags:', insertError);
     }
