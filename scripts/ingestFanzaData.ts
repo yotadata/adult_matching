@@ -88,8 +88,11 @@ async function fetchFanzaData(offset: number = 1, hits: number = 100): Promise<a
 }
 
 async function ingestFanzaData() {
+  console.log('ingestFanzaData: Starting...');
   // 追加: フロア情報を取得
+  console.log('ingestFanzaData: Fetching floor data...');
   const floorData = await fetchFanzaFloors();
+  console.log('ingestFanzaData: Floor data fetched.');
   if (!floorData || !floorData.result || !floorData.result.floors) {
     console.error('Failed to fetch floor data. Exiting.');
   }
@@ -100,7 +103,9 @@ async function ingestFanzaData() {
   let insertedCount = 0;
 
   while (true) {
+    console.log(`ingestFanzaData: Fetching data with offset ${offset}...`);
     const data: any = await fetchFanzaData(offset, hits);
+    console.log(`ingestFanzaData: Data fetched for offset ${offset}.`);
 
     if (!data || !data.result || !data.result.items || data.result.items.length === 0) {
       console.log('No more data to fetch or an error occurred.');
@@ -251,3 +256,7 @@ async function ingestFanzaData() {
     }
   }
 }
+
+ingestFanzaData()
+  .then(() => console.log('Ingestion process completed.'))
+  .catch(error => console.error('Ingestion process failed:', error));
