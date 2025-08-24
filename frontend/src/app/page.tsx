@@ -96,17 +96,17 @@ export default function Home() {
   
 
   const handleSwipe = async (direction: 'left' | 'right') => {
-    if (direction === 'right') {
-      if (activeCard) {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          const { error } = await supabase.from('likes').insert({
-            user_id: user.id,
-            video_id: activeCard.id,
-          });
-          if (error) {
-            console.error('Error inserting like:', error);
-          }
+    if (activeCard) { // activeCard が存在する場合のみ処理
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const decisionType = direction === 'right' ? 'like' : 'nope';
+        const { error } = await supabase.from('user_video_decisions').insert({
+          user_id: user.id,
+          video_id: activeCard.id,
+          decision_type: decisionType,
+        });
+        if (error) {
+          console.error(`Error inserting ${decisionType} decision:`, error);
         }
       }
     }

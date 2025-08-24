@@ -16,11 +16,47 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_ANON_KEY') ?? ''
     )
 
-    // Count only videos with a sample video URL
-    const { count: totalCount, error: countError } = await supabase
+    // 認証済みユーザーのIDを取得
+    const authHeader = req.headers.get('Authorization')
+    let userId = null;
+    if (authHeader) {
+      const token = authHeader.split(' ')[1];
+      const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+      if (userError) {
+        console.error('Error getting user:', userError.message);
+        // エラーがあっても処理を続行し、userIdはnullのままにする
+      } else {
+        userId = user?.id;
+      }
+    }
+
+    let decidedVideoIds: string[] = [];
+    if (userId) {
+      // ユーザーがすでに判定した動画のIDを取得
+      const { data: decisions, error: decisionsError } = await supabase
+        .from('user_video_decisions')
+        .select('video_id')
+        .eq('user_id', userId);
+
+      if (decisionsError) {
+        console.error('Error fetching user decisions:', decisionsError.message);
+        // エラーがあっても処理を続行し、decidedVideoIdsは空のままにする
+      } else {
+        decidedVideoIds = decisions?.map(d => d.video_id) || [];
+      }
+    }
+
+    // Count only videos with a sample video URL and not already decided by the user
+    let countQuery = supabase
       .from('videos')
       .select('id', { count: 'exact', head: true })
       .not('sample_video_url', 'is', null);
+
+    if (decidedVideoIds.length > 0) {
+      countQuery = countQuery.not('id', 'in', decidedVideoIds);
+    }
+
+    const { count: totalCount, error: countError } = await countQuery;
 
     if (countError) {
       console.error('Error counting videos:', countError.message);
@@ -31,10 +67,12 @@ Deno.serve(async (req) => {
     }
 
     const limit = 20;
-    const offset = totalCount && totalCount > limit ? Math.floor(Math.random() * (totalCount - limit)) : 0;
+    // totalCountがnullの場合を考慮
+    const effectiveTotalCount = totalCount || 0;
+    const offset = effectiveTotalCount > limit ? Math.floor(Math.random() * (effectiveTotalCount - limit)) : 0;
 
-    // Fetch videos with a sample URL and return the columns needed by the frontend
-    const { data: videos, error } = await supabase
+    // Fetch videos with a sample URL, not already decided by the user, and return the columns needed by the frontend
+    let videosQuery = supabase
       .from('videos')
       .select(`
         id,
@@ -46,8 +84,13 @@ Deno.serve(async (req) => {
         tags: video_tags(tags(id, name))
       `)
       .not('sample_video_url', 'is', null)
-      .order('id')
-      .range(offset, offset + limit - 1);
+      .order('id');
+
+    if (decidedVideoIds.length > 0) {
+      videosQuery = videosQuery.not('id', 'in', decidedVideoIds);
+    }
+
+    const { data: videos, error } = await videosQuery.range(offset, offset + limit - 1);
 
     if (error) {
       console.error('Error fetching videos:', error.message);
