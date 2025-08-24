@@ -112,132 +112,137 @@ async function ingestFanzaData() {
 
     console.log(`Fetched ${videoRecords.length} items from FANZA (offset: ${offset}).`);
 
-    for (let i = 0; i < fanzaItems.length; i++) {
-      const record = videoRecords[i];
-      const originalItem = fanzaItems[i]; // 対応する元のアイテムを取得
+    // Step 1: Collect video records for batch upsert.
+    const videosToUpsert: Omit<VideoRecord, 'performers' | 'tags'>[] = videoRecords.map(record => {
+      const { performers, tags, ...rest } = record; // performersとtagsを除外
+      return rest;
+    });
 
-      let videoId: string | undefined; // videoId をここで宣言
+    // Step 2: Perform batch upsert for videos.
+    const { data: upsertedVideos, error: videosUpsertError } = await supabase
+      .from('videos')
+      .upsert(videosToUpsert, { onConflict: 'source, distribution_code, maker_code' })
+      .select('id, source, distribution_code, maker_code');
 
-      // videos テーブルに upsert するレコードから performers と tags を除外
-      const videoRecordForUpsert: Omit<VideoRecord, 'performers' | 'tags'> = record;
-
-      try { // forループ内のtry
-        const { data: upsertData, error } = await supabase
-          .from('videos')
-          .upsert(videoRecordForUpsert, { onConflict: 'source, distribution_code, maker_code' })
-          .select('id');
-
-        if (error) {
-          // 重複エラーはスキップ
-          if (error.code === '23505') { // unique_violation
-            // 既存のレコードのIDを取得
-            const { data: existingVideo, error: fetchError } = await supabase
-              .from('videos')
-              .select('id')
-              .eq('source', record.source)
-              .eq('distribution_code', record.distribution_code)
-              .eq('maker_code', record.maker_code)
-              .single();
-
-            if (fetchError || !existingVideo) {
-              console.error('Error fetching existing video ID:', fetchError || 'No existing video found');
-              continue; // このレコードの処理をスキップ
-            }
-            videoId = existingVideo.id; // 既存のIDを使用
-          } else {
-            console.error('Error inserting record:', error);
-            continue; // このレコードの処理をスキップ
-          }
-        } else {
-          insertedCount++;
-          videoId = upsertData?.[0]?.id; // 新規挿入または更新されたIDを使用
-        }
-
-        if (videoId) { // videoId が取得できた場合のみ後続処理を実行
-          // 女優の処理
-          if (originalItem && originalItem.iteminfo && originalItem.iteminfo.actress) {
-            const actresses = originalItem.iteminfo.actress;
-            for (const actress of actresses) {
-              // performers テーブルに upsert
-              const { data: performerData, error: performerError } = await supabase
-                .from('performers')
-                .upsert({ name: actress.name, fanza_actress_id: actress.id }, { onConflict: 'fanza_actress_id' })
-                .select('id'); // 挿入または更新されたperformerのIDを取得
-
-              if (performerError) {
-                console.error('Error upserting performer:', performerError);
-                continue;
-              }
-
-              const performerId = performerData[0].id;
-
-              // video_performers テーブルに挿入
-              const { error: videoPerformerError } = await supabase
-                .from('video_performers')
-                .insert({ video_id: videoId, performer_id: performerId });
-
-              if (videoPerformerError) {
-                // 重複エラーはスキップ
-                if (videoPerformerError.code === '23505') { // unique_violation
-                  // console.warn(`Skipping duplicate video_performer entry for video ${videoId} and performer ${performerId}`);
-                } else {
-                  console.error('Error inserting video_performer:', videoPerformerError);
-                }
-              }
-            }
-          }
-
-          // タグの処理
-          if (originalItem && originalItem.iteminfo && originalItem.iteminfo.genre) {
-            const genres = originalItem.iteminfo.genre;
-            for (const genre of genres) {
-              // tags テーブルに upsert
-              const { data: tagData, error: tagError } = await supabase
-                .from('tags')
-                .upsert({ name: genre.name }, { onConflict: 'name' })
-                .select('id');
-
-              if (tagError) {
-                console.error('Error upserting tag:', tagError);
-                continue;
-              }
-
-              const tagId = tagData[0].id;
-
-              // video_tags テーブルに挿入
-              const { error: videoTagError } = await supabase
-                .from('video_tags')
-                .insert({ video_id: videoId, tag_id: tagId });
-
-              if (videoTagError) {
-                if (videoTagError.code === '23505') {
-                  // console.warn(`Skipping duplicate video_tag entry for video ${videoId} and tag ${tagId}`);
-                } else {
-                  console.error('Error inserting video_tag:', videoTagError);
-                }
-              }
-            }
-          }
-        } else { // videoId が取得できなかった場合
-          console.warn('Could not retrieve videoId for record:', record.title);
-        }
-      } catch (e) { // forループ内のcatch
-        console.error('Unexpected error during upsert:', e);
-      }
-    } // forループの閉じ括弧
-
-    totalCount += videoRecords.length;
-    console.log(`Processed ${totalCount} items. Inserted/Updated: ${insertedCount}`);
-
-    // 次のページがあるか確認
-    if (data.result.total_count && (offset + hits) <= data.result.total_count) {
-      offset += hits;
+    if (videosUpsertError) {
+      console.error('Error batch upserting videos:', videosUpsertError);
+      // エラーが発生しても処理を続行するか、ここでbreakするかは要検討
+      // 今回は続行するが、エラーの種類によってはbreakも考慮
     } else {
-      break;
+      insertedCount += (upsertedVideos?.length || 0); // 挿入/更新された数を加算
     }
-  }
 
-  console.log(`FANZA data ingestion complete. Total processed: ${totalCount}, Successfully inserted/updated: ${insertedCount}`);
-}
+    // Step 3: Map video_ids for linking performers and tags.
+    const videoIdMap = new Map<string, string>(); // key: source_distribution_code_maker_code, value: video_id
+    upsertedVideos?.forEach(video => {
+      const key = `${video.source}_${video.distribution_code}_${video.maker_code}`;
+      videoIdMap.set(key, video.id);
+    });
 
-ingestFanzaData();
+    // Step 4: Collect unique performers and tags for batch upsert.
+    const allPerformers: { name: string; fanza_actress_id: string }[] = [];
+    const allTags: { name: string }[] = [];
+    const videoPerformersToInsert: { video_id: string; performer_id: string }[] = [];
+    const videoTagsToInsert: { video_id: string; tag_id: string }[] = [];
+
+    const uniquePerformers = new Map<string, { name: string; fanza_actress_id: string }>();
+    const uniqueTags = new Map<string, { name: string }>();
+
+    fanzaItems.forEach(originalItem => {
+      const videoId = videoIdMap.get(`${originalItem.source}_${originalItem.content_id}_${originalItem.iteminfo?.maker?.[0]?.id}`);
+
+      if (videoId) {
+        // 女優の処理
+        if (originalItem.iteminfo && originalItem.iteminfo.actress) {
+          originalItem.iteminfo.actress.forEach((actress: any) => {
+            if (!uniquePerformers.has(actress.id)) {
+              uniquePerformers.set(actress.id, { name: actress.name, fanza_actress_id: actress.id });
+            }
+          });
+        }
+
+        // タグの処理
+        if (originalItem.iteminfo && originalItem.iteminfo.genre) {
+          originalItem.iteminfo.genre.forEach((genre: any) => {
+            if (!uniqueTags.has(genre.name)) {
+              uniqueTags.set(genre.name, { name: genre.name });
+            }
+          });
+        }
+      }
+    });
+
+    allPerformers.push(...Array.from(uniquePerformers.values()));
+    allTags.push(...Array.from(uniqueTags.values()));
+
+    // Step 5: Perform batch upsert for performers and tags.
+    const { data: upsertedPerformers, error: performersUpsertError } = await supabase
+      .from('performers')
+      .upsert(allPerformers, { onConflict: 'fanza_actress_id' })
+      .select('id, fanza_actress_id');
+
+    if (performersUpsertError) {
+      console.error('Error batch upserting performers:', performersUpsertError);
+    }
+
+    const { data: upsertedTags, error: tagsUpsertError } = await supabase
+      .from('tags')
+      .upsert(allTags, { onConflict: 'name' })
+      .select('id, name');
+
+    if (tagsUpsertError) {
+      console.error('Error batch upserting tags:', tagsUpsertError);
+    }
+
+    // Create maps for performer_id and tag_id
+    const performerIdMap = new Map<string, string>(); // key: fanza_actress_id, value: performer_id
+    upsertedPerformers?.forEach(p => performerIdMap.set(p.fanza_actress_id, p.id));
+
+    const tagIdMap = new Map<string, string>(); // key: tag_name, value: tag_id
+    upsertedTags?.forEach(t => tagIdMap.set(t.name, t.id));
+
+    // Step 6: Collect and batch insert into join tables.
+    fanzaItems.forEach(originalItem => {
+      const videoId = videoIdMap.get(`${originalItem.source}_${originalItem.content_id}_${originalItem.iteminfo?.maker?.[0]?.id}`);
+
+      if (videoId) {
+        // video_performers
+        if (originalItem.iteminfo && originalItem.iteminfo.actress) {
+          originalItem.iteminfo.actress.forEach((actress: any) => {
+            const performerId = performerIdMap.get(actress.id);
+            if (performerId) {
+              videoPerformersToInsert.push({ video_id: videoId, performer_id: performerId });
+            }
+          });
+        }
+
+        // video_tags
+        if (originalItem.iteminfo && originalItem.iteminfo.genre) {
+          originalItem.iteminfo.genre.forEach((genre: any) => {
+            const tagId = tagIdMap.get(genre.name);
+            if (tagId) {
+              videoTagsToInsert.push({ video_id: videoId, tag_id: tagId });
+            }
+          });
+        }
+      }
+    });
+
+    // Perform batch inserts for join tables
+    if (videoPerformersToInsert.length > 0) {
+      const { error: insertError } = await supabase
+        .from('video_performers')
+        .insert(videoPerformersToInsert)
+        .onConflict('video_id,performer_id')
+        .ignoreDuplicates();
+      if (insertError) console.error('Error inserting video_performers:', insertError);
+    }
+
+    if (videoTagsToInsert.length > 0) {
+      const { error: insertError } = await supabase
+        .from('video_tags')
+        .insert(videoTagsToInsert)
+        .onConflict('video_id,tag_id')
+        .ignoreDuplicates();
+      if (insertError) console.error('Error inserting video_tags:', insertError);
+    }
