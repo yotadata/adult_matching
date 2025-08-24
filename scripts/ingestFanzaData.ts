@@ -230,6 +230,7 @@ async function ingestFanzaData() {
       const { error: insertError } = await supabase
         .from('video_performers')
         .insert(videoPerformersToInsert)
+        .onConflict('video_id,performer_id')
         .ignoreDuplicates();
       if (insertError) console.error('Error inserting video_performers:', insertError);
     }
@@ -238,6 +239,7 @@ async function ingestFanzaData() {
       const { error: insertError } = await supabase
         .from('video_tags')
         .insert(videoTagsToInsert)
+        .onConflict('video_id,performer_id')
         .ignoreDuplicates();
       if (insertError) console.error('Error inserting video_tags:', insertError);
     }
@@ -251,3 +253,4 @@ async function ingestFanzaData() {
     } else {
       break;
     }
+  }
