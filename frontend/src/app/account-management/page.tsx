@@ -25,7 +25,7 @@ export default function AccountManagementPage() {
       }
 
       if (user) {
-        setEmail(user.email);
+        setEmail(user.email ?? null);
         const { data: profile, error: profileError } = await supabase
           .from('profiles')
           .select('display_name')
