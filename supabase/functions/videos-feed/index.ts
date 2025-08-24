@@ -39,6 +39,7 @@ Deno.serve(async (req) => {
       .select(`
         id,
         title,
+        description,
         external_id,
         thumbnail_url,
         performers: video_performers(performers(name)),
