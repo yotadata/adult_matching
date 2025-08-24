@@ -95,7 +95,7 @@ export default function AccountManagementPage() {
 
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col">
-      <Header />
+      <Header cardWidth={undefined} />
       <main className="flex-grow container mx-auto px-4 py-8">
         <h1 className="text-3xl font-bold text-gray-800 mb-8">アカウント管理</h1>
         <div className="bg-white p-6 rounded-lg shadow-md max-w-md mx-auto">
