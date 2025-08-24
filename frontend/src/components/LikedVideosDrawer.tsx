@@ -121,7 +121,7 @@ const LikedVideosDrawer: React.FC<LikedVideosDrawerProps> = ({ isOpen, onClose }
                         <div className="space-y-4">
                           {likedVideos.map((video) => (
                             <div key={video.external_id} className="bg-gray-50 rounded-lg shadow-sm overflow-hidden flex items-center p-3">
-                              <div className="relative w-24 flex-shrink-0 rounded-md overflow-hidden bg-gray-200" style={{ height: 0, paddingBottom: '54px' }}>
+                              <div className="relative w-28 flex-shrink-0 rounded-md overflow-hidden bg-gray-200" style={{ height: 0, paddingBottom: '78px' }}>
                                 {video.thumbnail_url ? (
                                   <Image src={video.thumbnail_url} alt={video.title} fill className="object-cover" />
                                 ) : (
