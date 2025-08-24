@@ -113,10 +113,7 @@ async function ingestFanzaData() {
     console.log(`Fetched ${videoRecords.length} items from FANZA (offset: ${offset}).`);
 
     // Step 1: Collect video records for batch upsert.
-    const videosToUpsert: Omit<VideoRecord, 'performers' | 'tags'>[] = videoRecords.map(record => {
-      const { performers, tags, ...rest } = record; // performersとtagsを除外
-      return rest;
-    });
+    const videosToUpsert: Omit<VideoRecord, 'performers' | 'tags'>[] = videoRecords;
 
     // Step 2: Perform batch upsert for videos.
     const { data: upsertedVideos, error: videosUpsertError } = await supabase
@@ -148,7 +145,7 @@ async function ingestFanzaData() {
     const uniquePerformers = new Map<string, { name: string; fanza_actress_id: string }>();
     const uniqueTags = new Map<string, { name: string }>();
 
-    fanzaItems.forEach(originalItem => {
+    fanzaItems.forEach((originalItem: any) => {
       const videoId = videoIdMap.get(`${originalItem.source}_${originalItem.content_id}_${originalItem.iteminfo?.maker?.[0]?.id}`);
 
       if (videoId) {
@@ -202,7 +199,7 @@ async function ingestFanzaData() {
     upsertedTags?.forEach(t => tagIdMap.set(t.name, t.id));
 
     // Step 6: Collect and batch insert into join tables.
-    fanzaItems.forEach(originalItem => {
+    fanzaItems.forEach((originalItem: any) => {
       const videoId = videoIdMap.get(`${originalItem.source}_${originalItem.content_id}_${originalItem.iteminfo?.maker?.[0]?.id}`);
 
       if (videoId) {
@@ -233,7 +230,6 @@ async function ingestFanzaData() {
       const { error: insertError } = await supabase
         .from('video_performers')
         .insert(videoPerformersToInsert)
-        .onConflict('video_id,performer_id')
         .ignoreDuplicates();
       if (insertError) console.error('Error inserting video_performers:', insertError);
     }
@@ -242,7 +238,16 @@ async function ingestFanzaData() {
       const { error: insertError } = await supabase
         .from('video_tags')
         .insert(videoTagsToInsert)
-        .onConflict('video_id,tag_id')
         .ignoreDuplicates();
       if (insertError) console.error('Error inserting video_tags:', insertError);
+    }
+
+    totalCount += videoRecords.length;
+    console.log(`Processed ${totalCount} items. Inserted/Updated: ${insertedCount}`);
+
+    // 次のページがあるか確認
+    if (data.result.total_count && (offset + hits) <= data.result.total_count) {
+      offset += hits;
+    } else {
+      break;
     }
