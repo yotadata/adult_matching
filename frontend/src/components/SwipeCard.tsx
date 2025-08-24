@@ -120,7 +120,7 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwi
       <div className="flex flex-col text-gray-700 p-4 overflow-y-auto h-1/2">
         <h2 className="text-xl font-bold">{cardData.title}</h2>
         {cardData.performers && cardData.performers.length > 0 && (
-          <div className="mt-2 flex items-center gap-2">
+          <div className="mt-2 flex items-start gap-2">
             <div className="flex flex-shrink-0 items-center text-sm text-gray-500">
               <User className="mr-1 h-4 w-4" />
               <span>出演:</span>
@@ -134,7 +134,7 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwi
             </div>
           </div>
         )}
-        <div className="mt-2 flex items-center gap-2">
+        <div className="mt-2 flex items-start gap-2">
             <div className="flex flex-shrink-0 items-center text-sm text-gray-500">
               <Tag className="mr-1 h-4 w-4" />
               <span>タグ:</span>
