@@ -56,13 +56,18 @@ const MobileVideoLayout: React.FC<MobileVideoLayoutProps> = ({ cardData, onSkip,
       {/* テキスト情報エリア */}
       <div className="p-4 text-gray-700 flex-grow overflow-y-auto">
         <h2 className="text-xl font-bold">{cardData.title}</h2>
+        {cardData.performers && cardData.performers.length > 0 && (
+          <p className="text-sm text-gray-500 mt-1">
+            出演: {cardData.performers.map(p => p.name).join(', ')}
+          </p>
+        )}
         <div className="flex flex-wrap gap-2 my-2">
-          {Array.isArray(cardData.genre) && cardData.genre.map((tag) => (
+          {Array.isArray(cardData.tags) && cardData.tags.map((tag) => (
             <span
-              key={tag}
+              key={tag.id}
               className="bg-purple-600 bg-opacity-60 text-white text-xs font-bold px-2 py-1 rounded-full"
             >
-              {tag}
+              {tag.name}
             </span>
           ))}
         </div>

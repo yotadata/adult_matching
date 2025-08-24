@@ -13,6 +13,8 @@ export interface CardData {
   description: string;
   videoUrl: string;
   thumbnail_url: string; // 追加
+  performers?: { id: string; name: string; }[]; // 追加
+  tags?: { id: string; name: string; }[]; // 追加
 }
 
 export interface SwipeCardHandle {
@@ -117,10 +119,15 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwi
       {/* 下部: テキスト情報エリア */}
       <div className="flex flex-col text-gray-700 p-4 overflow-y-auto h-1/2">
         <h2 className="text-xl font-bold">{cardData.title}</h2>
+        {cardData.performers && cardData.performers.length > 0 && (
+          <p className="text-sm text-gray-500 mt-1">
+            出演: {cardData.performers.map(p => p.name).join(', ')}
+          </p>
+        )}
         <div className="flex flex-wrap gap-2 my-2">
-          {Array.isArray(cardData.genre) && cardData.genre.map((tag) => (
-            <span key={tag} className="bg-purple-300 text-white text-xs font-bold px-2 py-1 rounded-full">
-              {tag}
+          {Array.isArray(cardData.tags) && cardData.tags.map((tag) => (
+            <span key={tag.id} className="bg-purple-300 text-white text-xs font-bold px-2 py-1 rounded-full">
+              {tag.name}
             </span>
           ))}
         </div>

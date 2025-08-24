@@ -60,6 +60,8 @@ export default function Home() {
           description: video.description,
           videoUrl: fanzaEmbedUrl, // 生成したURLをセット
           thumbnail_url: video.thumbnail_url, // サムネイルURLを追加
+          performers: video.performers, // 女優情報を追加
+          tags: video.tags, // タグ情報を追加
         };
       });
 
