@@ -48,9 +48,10 @@ const LikedVideosDrawer: React.FC<LikedVideosDrawerProps> = ({ isOpen, onClose }
 
       if (user) {
         const { data, error } = await supabase
-          .from('likes')
+          .from('user_video_decisions')
           .select('videos (*)')
           .eq('user_id', user.id)
+          .eq('decision_type', 'like')
           .order('created_at', { ascending: false }) as { data: { videos: VideoRecord }[] | null, error: PostgrestError | null };
 
         if (error) {
