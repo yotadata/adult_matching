@@ -6,6 +6,7 @@ import { X } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { supabase } from '@/lib/supabase';
+import { PostgrestError } from '@supabase/supabase-js';
 
 interface VideoRecord {
   external_id: string;
@@ -50,7 +51,7 @@ const LikedVideosDrawer: React.FC<LikedVideosDrawerProps> = ({ isOpen, onClose }
           .from('likes')
           .select('videos (*)')
           .eq('user_id', user.id)
-          .order('created_at', { ascending: false }) as { data: { videos: VideoRecord }[] | null, error: any };
+          .order('created_at', { ascending: false }) as { data: { videos: VideoRecord }[] | null, error: PostgrestError | null };
 
         if (error) {
           console.error('Error fetching liked videos:', error);
