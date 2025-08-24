@@ -27,7 +27,7 @@ const LEFT_SWIPE_GRADIENT = 'linear-gradient(to right, #AEB4EB, #D7D1E3, #F7D7E0
 const RIGHT_SWIPE_GRADIENT = 'linear-gradient(to right, #C4C8E3,  #D7D1E3, #F7D7E0,#F9CFA0)'; // 右端を明るく
 
 export default function Home() {
-  console.log('Home component rendered!');
+  
 
   const [cards, setCards] = useState<CardData[]>([]); // APIからのデータを保持するstate
   const [activeIndex, setActiveIndex] = useState(0);
@@ -42,9 +42,7 @@ export default function Home() {
 
   const activeCard = activeIndex < cards.length ? cards[activeIndex] : null; // activeCard の宣言を移動
 
-  console.log('isMobile:', isMobile);
-  console.log('windowWidth:', windowWidth);
-  console.log('cardWidth:', cardWidth);
+  
 
   // APIから動画データを取得する
   useEffect(() => {
