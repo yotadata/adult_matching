@@ -19,25 +19,22 @@ export interface CardData {
 
 export interface SwipeCardHandle {
   swipe: (direction: 'left' | 'right') => void;
-  getCardWidth: () => number | undefined;
 }
 
 interface SwipeCardProps {
   cardData: CardData;
   onSwipe: (direction: 'left' | 'right') => void;
-  onDrag?: (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => void; // 追加
-  onDragEnd?: (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => void; // 追加
+  onDrag?: (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => void;
+  onDragEnd?: (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => void;
+  cardWidth: number | undefined; // cardWidth propを追加
 }
 
-const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwipe, onDrag, onDragEnd }, ref) => {
+const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwipe, onDrag, onDragEnd, cardWidth }, ref) => {
   const controls = useAnimation();
   const { height: windowHeight } = useWindowSize();
   const [showVideo, setShowVideo] = useState(false);
 
-  // 動画のアスペクト比を21:20と仮定（プレーヤーUIを考慮）
-  const videoAspectRatio = 21 / 20;
-  // カードの高さをウィンドウの高さとし、その半分の高さの動画がアスペクト比を維持するのに必要な横幅を計算
-  const cardWidth = windowHeight ? (windowHeight / 2) * videoAspectRatio : undefined;
+  
 
   const swipe = async (direction: 'left' | 'right') => {
     const swipeWidth = cardWidth || 448; // cardWidthが未定義の場合のフォールバック
@@ -48,7 +45,6 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwi
 
   useImperativeHandle(ref, () => ({
     swipe,
-    getCardWidth: () => cardWidth,
   }));
 
   const handleDrag = (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
