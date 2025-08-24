@@ -149,7 +149,7 @@ async function ingestFanzaData() {
           }
         } else {
           insertedCount++;
-          videoId = upsertData[0].id; // 新規挿入または更新されたIDを使用
+          videoId = upsertData?.[0]?.id; // 新規挿入または更新されたIDを使用
         }
 
         if (videoId) { // videoId が取得できた場合のみ後続処理を実行
