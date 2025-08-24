@@ -42,8 +42,8 @@ Deno.serve(async (req) => {
         description,
         external_id,
         thumbnail_url,
-        performers: video_performers(performers(name)),
-        tags: video_tags(tags(name))
+        performers: video_performers(performers(id, name)),
+        tags: video_tags(tags(id, name))
       `)
       .not('sample_video_url', 'is', null)
       .order('id')
@@ -60,8 +60,8 @@ Deno.serve(async (req) => {
     // APIのレスポンスを整形
     const cleanedVideos = videos.map(video => ({
       ...video,
-      performers: video.performers.map((p: any) => p.performers?.name).filter(Boolean),
-      tags: video.tags.map((t: any) => t.tags?.name).filter(Boolean),
+      performers: video.performers.map((p: any) => p.performers).filter(Boolean),
+      tags: video.tags.map((t: any) => t.tags).filter(Boolean),
     }));
 
     return new Response(JSON.stringify(cleanedVideos), {

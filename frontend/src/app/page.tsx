@@ -56,7 +56,7 @@ export default function Home() {
         return {
           id: video.id,
           title: video.title,
-          genre: video.tags, // APIが整形済みの配列を返す
+          genre: video.tags.map((tag: any) => tag.name), // `tags`オブジェクトの配列から`name`の配列を生成
           description: video.description,
           videoUrl: fanzaEmbedUrl, // 生成したURLをセット
           thumbnail_url: video.thumbnail_url, // サムネイルURLを追加
