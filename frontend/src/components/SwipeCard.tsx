@@ -129,7 +129,8 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwi
             </div>
           </div>
         )}
-        <div className="grid grid-cols-[auto_1fr] items-baseline gap-x-2 mt-2">
+        {cardData.tags && cardData.tags.length > 0 && (
+          <div className="grid grid-cols-[auto_1fr] items-baseline gap-x-2 mt-2">
             {/* Grid Column 1: Label */}
             <div className="flex flex-shrink-0 items-center pt-0.5 text-sm text-gray-500">
               <Tag className="mr-1 h-4 w-4" />
@@ -144,6 +145,7 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwi
               ))}
             </div>
           </div>
+        )}
       </div>
     </motion.div>
   );
