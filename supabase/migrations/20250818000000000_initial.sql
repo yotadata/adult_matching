@@ -18,7 +18,6 @@ create table public.videos (
   series text,
   maker text,
   label text,
-  genre text,
   price numeric,
   distribution_started_at timestamptz,
   product_released_at timestamptz,
@@ -54,7 +53,8 @@ create table public.video_tags (
 -- 出演者
 create table public.performers (
   id uuid primary key default gen_random_uuid(),
-  name text not null
+  name text not null,
+  fanza_actress_id TEXT UNIQUE
 );
 
 -- 動画出演者
