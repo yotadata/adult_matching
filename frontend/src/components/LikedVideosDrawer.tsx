@@ -56,7 +56,7 @@ const LikedVideosDrawer: React.FC<LikedVideosDrawerProps> = ({ isOpen, onClose }
         if (error) {
           console.error('Error fetching liked videos:', error);
         } else {
-          const videos = data.map(item => item.videos).filter(Boolean) as VideoRecord[];
+          const videos = (data || []).map(item => item.videos).filter(Boolean) as VideoRecord[];
           setLikedVideos(videos);
         }
       }
