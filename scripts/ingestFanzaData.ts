@@ -203,7 +203,7 @@ async function ingestFanzaData() {
       const videoId = videoIdMap.get(`${originalItem.source}_${originalItem.content_id}_${originalItem.iteminfo?.maker?.[0]?.id}`);
 
       if (videoId) {
-        // video_performers
+        // 女優の処理
         if (originalItem.iteminfo && originalItem.iteminfo.actress) {
           originalItem.iteminfo.actress.forEach((actress: any) => {
             const performerId = performerIdMap.get(actress.id);
@@ -229,16 +229,14 @@ async function ingestFanzaData() {
     if (videoPerformersToInsert.length > 0) {
       const { error: insertError } = await supabase
         .from('video_performers')
-        .insert(videoPerformersToInsert)
-        .ignoreDuplicates();
+        .upsert(videoPerformersToInsert, { onConflict: 'video_id, performer_id', ignoreDuplicates: true });
       if (insertError) console.error('Error inserting video_performers:', insertError);
     }
 
     if (videoTagsToInsert.length > 0) {
       const { error: insertError } = await supabase
         .from('video_tags')
-        .insert(videoTagsToInsert)
-        .ignoreDuplicates();
+        .upsert(videoTagsToInsert, { onConflict: 'video_id, tag_id', ignoreDuplicates: true });
       if (insertError) console.error('Error inserting video_tags:', insertError);
     }
 
@@ -252,3 +250,4 @@ async function ingestFanzaData() {
       break;
     }
   }
+}
