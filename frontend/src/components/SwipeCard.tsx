@@ -3,7 +3,7 @@
 import { motion, useAnimation, PanInfo } from 'framer-motion';
 import { forwardRef, useImperativeHandle, useState } from 'react';
 import useWindowSize from '../hooks/useWindowSize';
-import { Play, User } from 'lucide-react'; // Userアイコンをインポート
+import { Play, User, Tag } from 'lucide-react'; // Userアイコンをインポート
 
 // カードデータの型定義
 export interface CardData {
@@ -134,13 +134,19 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwi
             </div>
           </div>
         )}
-        <div className="flex flex-wrap gap-2 my-2">
-          {Array.isArray(cardData.tags) && cardData.tags.map((tag) => (
-            <span key={tag.id} className="bg-purple-300 text-white text-xs font-bold px-2 py-1 rounded-full">
-              {tag.name}
-            </span>
-          ))}
-        </div>
+        <div className="mt-2 flex items-center gap-2">
+            <div className="flex flex-shrink-0 items-center text-sm text-gray-500">
+              <Tag className="mr-1 h-4 w-4" />
+              <span>タグ:</span>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {cardData.tags.map((tag) => (
+                <span key={tag.id} className="rounded-full bg-purple-300 px-2 py-1 text-xs font-bold text-white">
+                  {tag.name}
+                </span>
+              ))}
+            </div>
+          </div>
       </div>
     </motion.div>
   );
