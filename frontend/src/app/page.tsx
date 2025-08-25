@@ -88,10 +88,13 @@ export default function Home() {
 
   useEffect(() => {
     if (windowHeight) {
-      const calculatedCardWidth = (windowHeight / 2) * videoAspectRatio;
+      // PC版: 動画エリアを画面の3/5に変更し、それに合わせてカード横幅を計算
+      // モバイルは従来の1/2のまま（MobileVideoLayout使用のため見た目には影響なし）
+      const targetVideoHeight = (!isMobile ? windowHeight * (3 / 5) : windowHeight / 2);
+      const calculatedCardWidth = targetVideoHeight * videoAspectRatio;
       setCardWidth(calculatedCardWidth);
     }
-  }, [windowHeight, videoAspectRatio]);
+  }, [windowHeight, videoAspectRatio, isMobile]);
 
   
 

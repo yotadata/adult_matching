@@ -78,8 +78,8 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwi
       initial={false}
       whileTap={{ cursor: "grabbing" }}
     >
-      {/* 上部: 動画エリア */}
-      <div className="relative w-full h-1/2 bg-black flex items-center justify-center">
+      {/* 上部: 動画エリア（PC表示では高さ60%） */}
+      <div className="relative w-full h-[60%] bg-black flex items-center justify-center">
         {!showVideo && cardData.thumbnail_url ? (
           <div
             className="absolute inset-0 w-full h-full bg-contain bg-no-repeat bg-center cursor-pointer flex items-center justify-center"
@@ -111,9 +111,9 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwi
         )}
       </div>
       
-      {/* 下部: テキスト情報エリア */}
-      <div className="flex flex-col text-gray-700 p-4 overflow-y-auto h-1/2">
-        <h2 className="text-xl font-bold">{cardData.title}</h2>
+      {/* 下部: テキスト情報エリア（PC表示では高さ40%） */}
+      <div className="flex flex-col text-gray-700 p-4 overflow-y-auto h-[40%]">
+        <h2 className="text-lg font-bold">{cardData.title}</h2>
         {cardData.performers && cardData.performers.length > 0 && (
           <div className="grid grid-cols-[auto_1fr] items-baseline gap-x-2 mt-2">
             <div className="flex flex-shrink-0 items-center pt-0.5 text-sm text-gray-500">
