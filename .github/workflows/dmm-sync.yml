@@ -1,0 +1,41 @@
+name: DMM Data Sync
+
+on:
+  schedule:
+    # 毎日午前2時（UTC）に実行 = 日本時間午前11時
+    - cron: '0 2 * * *'
+    # 6時間ごとに新着チェック
+    - cron: '0 */6 * * *'
+  
+  # 手動実行も可能
+  workflow_dispatch:
+    inputs:
+      page:
+        description: 'Page number to fetch'
+        default: '1'
+        required: false
+      limit:
+        description: 'Items per page'
+        default: '100'
+        required: false
+
+jobs:
+  sync-dmm-data:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Sync DMM Data
+        run: |
+          curl -X POST "https://mfleexehdterobgsyokex.supabase.co/functions/v1/dmm_sync" \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
+            -d '{
+              "page": ${{ github.event.inputs.page || 1 }},
+              "limit": ${{ github.event.inputs.limit || 100 }}
+            }'
+      
+      - name: Notify on failure
+        if: failure()
+        run: |
+          echo "DMM sync failed at $(date)"
+          # Slack通知やメール通知をここに追加可能

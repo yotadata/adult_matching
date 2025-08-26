@@ -311,8 +311,9 @@ inspector_port = 8083
 # The Deno major version to use.
 deno_version = 1
 
-# [edge_runtime.secrets]
-# secret_key = "env(SECRET_VALUE)"
+[edge_runtime.secrets]
+DMM_API_ID = "kG4AFzXp15PTK3R52MFc"
+DMM_AFFILIATE_ID = "rocqe9nnn-001"
 
 [analytics]
 enabled = true
