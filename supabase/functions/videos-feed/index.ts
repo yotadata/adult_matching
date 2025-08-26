@@ -53,7 +53,8 @@ Deno.serve(async (req) => {
       .not('sample_video_url', 'is', null);
 
     if (decidedVideoIds.length > 0) {
-      countQuery = countQuery.not('id', 'in', decidedVideoIds);
+      const inList = `(${decidedVideoIds.map(id => `'${id}'`).join(',')})`;
+      countQuery = countQuery.not('id', 'in', inList);
     }
 
     const { count: totalCount, error: countError } = await countQuery;
@@ -87,7 +88,8 @@ Deno.serve(async (req) => {
       .order('id');
 
     if (decidedVideoIds.length > 0) {
-      videosQuery = videosQuery.not('id', 'in', decidedVideoIds);
+      const inList = `(${decidedVideoIds.map(id => `'${id}'`).join(',')})`;
+      videosQuery = videosQuery.not('id', 'in', inList);
     }
 
     const { data: videos, error } = await videosQuery.range(offset, offset + limit - 1);

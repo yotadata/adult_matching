@@ -1,11 +1,6 @@
 name: Deploy Supabase Edge Functions
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - 'supabase/functions/**'
   workflow_dispatch:
     inputs:
       function:
@@ -63,4 +58,3 @@ jobs:
     # Notes:
     # - Configure repo secrets: SUPABASE_ACCESS_TOKEN, SUPABASE_PROJECT_ID
     # - Uses `supabase link` with non-interactive token for CI.
-
