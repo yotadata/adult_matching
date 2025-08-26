@@ -15,12 +15,14 @@ const Header = ({ cardWidth }: { cardWidth: number | undefined }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false); // ドロワー用のstate
   const [user, setUser] = useState<SupabaseUser | null>(null);
+  const [authChecked, setAuthChecked] = useState(false);
   const isMobile = useMediaQuery('(max-width: 639px)');
 
   useEffect(() => {
     const getSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       setUser(session?.user || null);
+      setAuthChecked(true);
     };
     getSession();
 
@@ -114,13 +116,15 @@ const Header = ({ cardWidth }: { cardWidth: number | undefined }) => {
             </Menu>
           </div>
         ) : (
-          <button
-            onClick={handleOpenModal}
-            className="p-4 py-2 mx-2 text-sm font-bold text-white rounded-xl bg-transparent border border-white hover:bg-purple-500 hover:text-white shadow-lg transition-all duration-300"
-            style={{ filter: 'drop-shadow(0 0 0.5rem rgba(0, 0, 0, 0.1))' }}
-          >
-            ログイン
-          </button>
+          authChecked ? (
+            <button
+              onClick={handleOpenModal}
+              className="p-4 py-2 mx-2 text-sm font-bold text-white rounded-xl bg-transparent border border-white hover:bg-purple-500 hover:text-white shadow-lg transition-all duration-300"
+              style={{ filter: 'drop-shadow(0 0 0.5rem rgba(0, 0, 0, 0.1))' }}
+            >
+              ログイン
+            </button>
+          ) : null
         )}
       </div>
       <AuthModal isOpen={isModalOpen} onClose={handleCloseModal} />

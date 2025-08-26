@@ -172,7 +172,14 @@ export default function Home() {
               />
             )
           ) : (
-            <p className="text-white font-bold text-2xl">Loading videos...</p> // ローディング表示
+            // ローディング表示（サークル型スピナー）
+            <div className="flex items-center justify-center w-full h-full">
+              <div
+                className="w-12 h-12 rounded-full border-4 border-gray-300 border-t-violet-500 animate-spin"
+                role="status"
+                aria-label="Loading videos"
+              />
+            </div>
           )}
         </AnimatePresence>
       </main>
