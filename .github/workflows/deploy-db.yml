@@ -1,0 +1,127 @@
+name: Deploy DB Migrations (Supabase)
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'supabase/migrations/**'
+  pull_request:
+    paths:
+      - 'supabase/migrations/**'
+  workflow_dispatch:
+    inputs:
+      apply:
+        description: 'Apply migrations to remote (type "yes" to confirm)'
+        required: true
+        default: 'no'
+      target:
+        description: 'Target project ref (defaults to SUPABASE_PROJECT_ID secret)'
+        required: false
+        default: ''
+
+jobs:
+  validate:
+    name: Validate migrations on PR
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-22.04
+    services:
+      postgres:
+        image: pgvector/pgvector:pg13
+        env:
+          POSTGRES_DB: test_db
+          POSTGRES_USER: user
+          POSTGRES_PASSWORD: password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Wait for PostgreSQL
+        run: sleep 10
+
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+
+      - name: Prepare auth schema and roles
+        run: |
+          PGPASSWORD=password psql -h localhost -p 5432 -U user -d test_db -v ON_ERROR_STOP=1 -c "CREATE SCHEMA IF NOT EXISTS auth;"
+          PGPASSWORD=password psql -h localhost -p 5432 -U user -d test_db -v ON_ERROR_STOP=1 -c "CREATE TABLE IF NOT EXISTS auth.users (id UUID PRIMARY KEY, email TEXT UNIQUE, created_at TIMESTAMPTZ DEFAULT NOW());"
+          PGPASSWORD=password psql -h localhost -p 5432 -U user -d test_db -v ON_ERROR_STOP=1 -c "CREATE ROLE authenticated;"
+          PGPASSWORD=password psql -h localhost -p 5432 -U user -d test_db -v ON_ERROR_STOP=1 -c "CREATE ROLE anon;"
+
+      - name: Create auth.uid() function
+        run: |
+          PGPASSWORD=password psql -h localhost -p 5432 -U user -d test_db -v ON_ERROR_STOP=1 <<'SQL'
+          CREATE OR REPLACE FUNCTION auth.uid() RETURNS uuid LANGUAGE plpgsql STABLE AS $$
+          BEGIN
+            RETURN '00000000-0000-0000-0000-000000000000';
+          END;
+          $$;
+          SQL
+
+      - name: Enable pgvector
+        run: |
+          PGPASSWORD=password psql -h localhost -p 5432 -U user -d test_db -v ON_ERROR_STOP=1 -c "CREATE EXTENSION IF NOT EXISTS vector;"
+
+      - name: Apply migrations (in order)
+        run: |
+          set -euo pipefail
+          for f in $(ls -1 supabase/migrations/*.sql | sort); do
+            echo "Applying $f";
+            PGPASSWORD=password psql -h localhost -p 5432 -U user -d test_db -v ON_ERROR_STOP=1 -f "$f";
+          done
+
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v2
+        with:
+          version: latest
+
+      - name: Link project
+        working-directory: supabase
+        run: |
+          PROJECT_REF=${{ inputs.target != '' && inputs.target || env.SUPABASE_PROJECT_ID }}
+          echo "Linking to project: $PROJECT_REF"
+          supabase link --project-ref "$PROJECT_REF"
+
+      - name: Push migrations (push to main)
+        if: github.event_name == 'push'
+        working-directory: supabase
+        run: supabase db push
+
+      - name: Confirm apply flag (dispatch)
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          if [ "${{ inputs.apply }}" != "yes" ]; then
+            echo "Refusing to apply migrations without confirmation (set input 'apply' to 'yes')." >&2
+            exit 1
+          fi
+
+      - name: Push migrations (dispatch)
+        if: github.event_name == 'workflow_dispatch'
+        working-directory: supabase
+        run: |
+          PROJECT_REF=${{ inputs.target != '' && inputs.target || env.SUPABASE_PROJECT_ID }}
+          echo "Applying migrations to: $PROJECT_REF"
+          supabase db push
+
+    # Notes:
+    # - Configure repo secrets: SUPABASE_ACCESS_TOKEN, SUPABASE_PROJECT_ID
+    # - Uses 'supabase db push' to apply migrations in supabase/migrations to the linked project.

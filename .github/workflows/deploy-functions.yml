@@ -1,0 +1,66 @@
+name: Deploy Supabase Edge Functions
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'supabase/functions/**'
+  workflow_dispatch:
+    inputs:
+      function:
+        description: 'Function name to deploy (leave empty or "all" to deploy all)'
+        required: false
+        default: 'all'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v2
+        with:
+          version: latest
+
+      - name: Link project
+        working-directory: supabase
+        run: |
+          supabase link --project-ref "$SUPABASE_PROJECT_ID"
+
+      - name: Deploy all functions (push)
+        if: github.event_name == 'push'
+        run: |
+          set -euo pipefail
+          for dir in supabase/functions/*/ ; do
+            fname=$(basename "$dir")
+            echo "Deploying function: $fname"
+            supabase functions deploy "$fname" --project-ref "$SUPABASE_PROJECT_ID"
+          done
+
+      - name: Deploy selected function (dispatch)
+        if: github.event_name == 'workflow_dispatch' && inputs.function != '' && inputs.function != 'all'
+        run: |
+          set -euo pipefail
+          echo "Deploying function: ${INPUT_FUNCTION:-${{ inputs.function }}}"
+          supabase functions deploy "${{ inputs.function }}" --project-ref "$SUPABASE_PROJECT_ID"
+
+      - name: Deploy all functions (dispatch)
+        if: github.event_name == 'workflow_dispatch' && (inputs.function == '' || inputs.function == 'all')
+        run: |
+          set -euo pipefail
+          for dir in supabase/functions/*/ ; do
+            fname=$(basename "$dir")
+            echo "Deploying function: $fname"
+            supabase functions deploy "$fname" --project-ref "$SUPABASE_PROJECT_ID"
+          done
+
+    # Notes:
+    # - Configure repo secrets: SUPABASE_ACCESS_TOKEN, SUPABASE_PROJECT_ID
+    # - Uses `supabase link` with non-interactive token for CI.
+
