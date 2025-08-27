@@ -1,14 +1,6 @@
 name: Deploy Frontend to Vercel
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - 'frontend/**'
-  pull_request:
-    paths:
-      - 'frontend/**'
   workflow_dispatch:
     inputs:
       environment:
@@ -57,7 +49,7 @@ jobs:
         run: vercel pull --yes --environment=production --token "$VERCEL_TOKEN"
 
       - name: Pull Vercel environment (preview)
-        if: (github.event_name == 'workflow_dispatch' && inputs.environment == 'preview') || github.event_name == 'pull_request'
+        if: github.event_name == 'workflow_dispatch' && inputs.environment == 'preview'
         run: vercel pull --yes --environment=preview --token "$VERCEL_TOKEN"
 
       - name: Build (Vercel build)
@@ -74,31 +66,6 @@ jobs:
       - name: Deploy to Vercel (dispatch preview)
         if: github.event_name == 'workflow_dispatch' && inputs.environment == 'preview'
         run: vercel deploy --prebuilt --token "$VERCEL_TOKEN"
-
-      - name: Deploy to Vercel (PR preview)
-        if: github.event_name == 'pull_request'
-        id: deploy_preview
-        run: |
-          set -euo pipefail
-          URL=$(vercel deploy --prebuilt --token "$VERCEL_TOKEN")
-          echo "url=$URL" >> "$GITHUB_OUTPUT"
-
-      - name: Comment preview URL on PR
-        if: github.event_name == 'pull_request'
-        uses: actions/github-script@v7
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const url = core.getInput('url');
-            const pr = context.payload.pull_request.number;
-            await github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: pr,
-              body: `Vercel Preview: ${url}`
-            });
-        env:
-          url: ${{ steps.deploy_preview.outputs.url }}
 
       - name: Output preview/prod URL
         run: |

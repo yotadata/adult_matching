@@ -1,11 +1,6 @@
 name: Deploy DB Migrations (Supabase)
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - 'supabase/migrations/**'
   pull_request:
     paths:
       - 'supabase/migrations/**'
@@ -81,6 +76,7 @@ jobs:
           done
 
   deploy:
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     env:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}

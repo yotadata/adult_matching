@@ -12,8 +12,11 @@ export interface CardData {
   description: string;
   videoUrl: string;
   thumbnail_url: string; // 追加
+  sampleVideoUrl?: string; // 追加: 直接再生用
+  embedUrl?: string; // 追加: iframe用
   performers?: { id: string; name: string; }[]; // 追加
   tags?: { id: string; name: string; }[]; // 追加
+  product_released_at?: string; // 追加: 発売日
 }
 
 export interface SwipeCardHandle {
@@ -100,20 +103,37 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwi
         ) : null}
 
         {showVideo && (
-          <iframe
-            src={cardData.videoUrl} // FANZA埋め込みURLがここに渡されることを想定
-            title="FANZA Video Player" // タイトルを修正
-            frameBorder="0"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" // 必要に応じてallow属性を調整
-            allowFullScreen
-            className="absolute top-0 left-0 w-full h-full" // classNameに変更
-          ></iframe>
+          cardData.sampleVideoUrl ? (
+            <video
+              src={cardData.sampleVideoUrl}
+              poster={cardData.thumbnail_url || undefined}
+              controls
+              autoPlay
+              muted
+              playsInline
+              className="absolute top-0 left-0 w-full h-full"
+            />
+          ) : (
+            <iframe
+              src={cardData.embedUrl || cardData.videoUrl}
+              title="Embedded Video Player"
+              frameBorder="0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
+              allowFullScreen
+              className="absolute top-0 left-0 w-full h-full"
+            />
+          )
         )}
       </div>
       
       {/* 下部: テキスト情報エリア（PC表示では高さ40%） */}
       <div className="flex flex-col text-gray-700 p-4 overflow-y-auto h-[40%]">
         <h2 className="text-lg font-bold">{cardData.title}</h2>
+        {cardData.product_released_at && (
+          <p className="text-sm text-gray-500 mt-1">
+            発売日: {new Date(cardData.product_released_at).toLocaleDateString('ja-JP')}
+          </p>
+        )}
         {cardData.performers && cardData.performers.length > 0 && (
           <div className="grid grid-cols-[auto_1fr] items-baseline gap-x-2 mt-2">
             <div className="flex flex-shrink-0 items-center pt-0.5 text-sm text-gray-500">
