@@ -19,6 +19,8 @@ interface VideoFromApi {
   external_id: string;
   thumbnail_url: string;
   sample_video_url?: string;
+  preview_video_url?: string;
+  product_url?: string;
   product_released_at?: string;
   performers: { id: string; name: string }[];
   tags: { id: string; name: string }[];
@@ -67,20 +69,27 @@ export default function Home() {
       
       // APIレスポンスをCardData形式に変換
       const fetchedCards: CardData[] = data.map((video: VideoFromApi) => {
-        // サンプル動画URLがあれば<video>優先、なければFANZAの埋め込みを使う
-        const fanzaEmbedUrl = `https://www.dmm.co.jp/litevideo/-/part/=/affi_id=${process.env.FANZA_AFFILIATE_ID}/cid=${video.external_id}/size=1280_720/&autoplay=1&muted=1&playsinline=1`;
+        // サンプルURLは使わず、基本はFANZAの埋め込み（litevideo）へ統一
+        const fanzaEmbedUrl = `https://www.dmm.co.jp/litevideo/-/part/=/affi_id=${process.env.NEXT_PUBLIC_FANZA_AFFILIATE_ID}/cid=${video.external_id}/size=1280_720/`;
+        // Mixed Content 対策: http のサンプル動画URLを https に昇格（今後の拡張用に保持）
+        const normalizeHttps = (u?: string) => u?.startsWith('http://') ? u.replace('http://', 'https://') : u;
+        const normalizedSampleUrl = normalizeHttps(video.sample_video_url);
+        const normalizedPreviewUrl = normalizeHttps(video.preview_video_url);
+
         return {
           id: video.id,
           title: video.title,
           genre: video.tags.map((tag: { id: string; name: string }) => tag.name), // `tags`オブジェクトの配列から`name`の配列を生成
           description: video.description,
-          videoUrl: fanzaEmbedUrl, // 互換のため残す（未使用でも可）
-          sampleVideoUrl: video.sample_video_url, // 追加: 直接再生できる場合に使用
-          embedUrl: fanzaEmbedUrl, // 追加: iframe用URL
+          videoUrl: fanzaEmbedUrl,
+          sampleVideoUrl: normalizedSampleUrl || normalizedPreviewUrl,
+          embedUrl: fanzaEmbedUrl,
           thumbnail_url: video.thumbnail_url, // サムネイルURLを追加
           product_released_at: video.product_released_at,
           performers: video.performers, // APIが整形済みの配列を返す
           tags: video.tags, // APIが整形済みの配列を返す
+          // 補助リンク（サンプルがない場合の一発再生用に外部タブを推奨）
+          productUrl: normalizeHttps(video.product_url) || undefined,
         };
       });
 

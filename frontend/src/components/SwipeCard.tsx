@@ -1,8 +1,8 @@
 'use client';
 
 import { motion, useAnimation, PanInfo } from 'framer-motion';
-import { forwardRef, useImperativeHandle, useState } from 'react';
-import { Play, User, Tag } from 'lucide-react'; // Userアイコンをインポート
+import { forwardRef, useImperativeHandle, useState, useEffect, useRef } from 'react';
+import { Play, User, Tag, Calendar } from 'lucide-react'; // アイコンをインポート
 
 // カードデータの型定義
 export interface CardData {
@@ -17,6 +17,7 @@ export interface CardData {
   performers?: { id: string; name: string; }[]; // 追加
   tags?: { id: string; name: string; }[]; // 追加
   product_released_at?: string; // 追加: 発売日
+  productUrl?: string; // 追加: 外部再生リンク
 }
 
 export interface SwipeCardHandle {
@@ -35,6 +36,20 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwi
   const controls = useAnimation();
   
   const [showVideo, setShowVideo] = useState(false);
+  const [showOverlay, setShowOverlay] = useState(true);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const overlayHideTimer = useRef<number | null>(null);
+  const overlayHideDelayMs = 700; // iframe読込後も少しサムネイルを維持
+
+  // Reset iframe fallback when card changes
+  useEffect(() => {
+    setShowVideo(false);
+    setShowOverlay(true);
+    if (overlayHideTimer.current) {
+      clearTimeout(overlayHideTimer.current);
+      overlayHideTimer.current = null;
+    }
+  }, [cardData.id]);
 
   
 
@@ -65,8 +80,31 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwi
   };
 
   const handlePlayClick = () => {
+    // デバッグ: どの再生パスか確認（開発のみ）
+    if (process.env.NODE_ENV !== 'production') {
+      if (cardData.sampleVideoUrl) {
+        console.warn('[SwipeCard] Using <video> src:', cardData.sampleVideoUrl);
+      } else {
+        console.warn('[SwipeCard] Using <iframe> src:', cardData.embedUrl || cardData.videoUrl);
+      }
+    }
     setShowVideo(true);
   };
+
+  useEffect(() => {
+    if (showVideo && videoRef.current) {
+      const v = videoRef.current;
+      // iOS/Android 対策: タップ直後に明示的に再生
+      const playPromise = v.play();
+      if (playPromise && typeof playPromise.then === 'function') {
+        playPromise.catch((err) => {
+          if (process.env.NODE_ENV !== 'production') {
+            console.warn('[SwipeCard] Autoplay failed, waiting for user gesture.', err);
+          }
+        });
+      }
+    }
+  }, [showVideo]);
 
   return (
     <motion.div 
@@ -83,46 +121,48 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwi
     >
       {/* 上部: 動画エリア（PC表示では高さ60%） */}
       <div className="relative w-full h-[60%] bg-black flex items-center justify-center">
-        {!showVideo && cardData.thumbnail_url ? (
+        {showOverlay && (
           <div
-            className="absolute inset-0 w-full h-full bg-contain bg-no-repeat bg-center cursor-pointer flex items-center justify-center"
-            style={{ backgroundImage: `url(${cardData.thumbnail_url})` }}
-            onClick={handlePlayClick}
+            className="absolute inset-0 w-full h-full bg-contain bg-no-repeat bg-center flex items-center justify-center z-10"
+            style={{ backgroundImage: cardData.thumbnail_url ? `url(${cardData.thumbnail_url})` : undefined, backgroundColor: cardData.thumbnail_url ? undefined : '#1f2937' }}
+            onClick={() => {
+              // iframe再生に統一。オーバーレイを即時非表示
+              setShowOverlay(false);
+            }}
           >
             <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center">
               <Play className="text-white w-16 h-16 opacity-80" fill="white" />
             </div>
+            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 text-[10px] sm:text-xs text-white/80 bg-black/40 px-2 py-0.5 rounded">
+              注: 再生には最大2回のクリックが必要な場合があります
+            </div>
           </div>
-        ) : !showVideo && !cardData.thumbnail_url ? (
-          <div
-            className="absolute inset-0 w-full h-full bg-gray-800 flex items-center justify-center text-white text-lg"
-            onClick={handlePlayClick}
+        )}
+        {/* iframe 埋め込み（litevideo） */}
+        <iframe
+          src={cardData.embedUrl || cardData.videoUrl}
+          title="Embedded Video Player"
+          frameBorder="0"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
+          loading="eager"
+          onLoad={() => {
+            if (overlayHideTimer.current) clearTimeout(overlayHideTimer.current);
+            overlayHideTimer.current = window.setTimeout(() => {
+              setShowOverlay(false);
+              overlayHideTimer.current = null;
+            }, overlayHideDelayMs);
+          }}
+          className="absolute top-0 left-0 w-full h-full"
+        />
+        {cardData.productUrl && (
+          <a
+            href={cardData.productUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="absolute bottom-2 right-2 z-10 text-xs text-white bg-black/50 px-2 py-1 rounded"
           >
-            <Play className="text-white w-16 h-16 opacity-80" fill="white" />
-          </div>
-        ) : null}
-
-        {showVideo && (
-          cardData.sampleVideoUrl ? (
-            <video
-              src={cardData.sampleVideoUrl}
-              poster={cardData.thumbnail_url || undefined}
-              controls
-              autoPlay
-              muted
-              playsInline
-              className="absolute top-0 left-0 w-full h-full"
-            />
-          ) : (
-            <iframe
-              src={cardData.embedUrl || cardData.videoUrl}
-              title="Embedded Video Player"
-              frameBorder="0"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
-              allowFullScreen
-              className="absolute top-0 left-0 w-full h-full"
-            />
-          )
+            新しいタブで再生
+          </a>
         )}
       </div>
       
@@ -130,13 +170,21 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwi
       <div className="flex flex-col text-gray-700 p-4 overflow-y-auto h-[40%]">
         <h2 className="text-lg font-bold">{cardData.title}</h2>
         {cardData.product_released_at && (
-          <p className="text-sm text-gray-500 mt-1">
-            発売日: {new Date(cardData.product_released_at).toLocaleDateString('ja-JP')}
-          </p>
+          <div className="grid grid-cols-[auto_1fr] items-start gap-x-2 mt-2">
+            <div className="flex w-18 flex-shrink-0 items-center text-sm text-gray-500">
+              <Calendar className="mr-1 h-4 w-4" />
+              <span>発売日:</span>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <span className="rounded-full bg-blue-300 px-2 py-1 text-xs font-bold text-white">
+                {new Date(cardData.product_released_at).toLocaleDateString('ja-JP')}
+              </span>
+            </div>
+          </div>
         )}
         {cardData.performers && cardData.performers.length > 0 && (
-          <div className="grid grid-cols-[auto_1fr] items-baseline gap-x-2 mt-2">
-            <div className="flex flex-shrink-0 items-center pt-0.5 text-sm text-gray-500">
+          <div className="grid grid-cols-[auto_1fr] items-start gap-x-2 mt-2">
+            <div className="flex w-18 flex-shrink-0 items-center text-sm text-gray-500">
               <User className="mr-1 h-4 w-4" />
               <span>出演:</span>
             </div>
@@ -150,9 +198,9 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwi
           </div>
         )}
         {cardData.tags && cardData.tags.length > 0 && (
-          <div className="grid grid-cols-[auto_1fr] items-baseline gap-x-2 mt-2">
+          <div className="grid grid-cols-[auto_1fr] items-start gap-x-2 mt-2">
             {/* Grid Column 1: Label */}
-            <div className="flex flex-shrink-0 items-center pt-0.5 text-sm text-gray-500">
+            <div className="flex w-18 flex-shrink-0 items-center text-sm text-gray-500">
               <Tag className="mr-1 h-4 w-4" />
               <span>タグ:</span>
             </div>

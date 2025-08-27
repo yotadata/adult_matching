@@ -8,7 +8,7 @@ import { supabase } from '@/lib/supabase';
 import { User as SupabaseUser } from '@supabase/supabase-js';
 import { Menu } from '@headlessui/react';
 import Link from 'next/link';
-import { Heart, User } from 'lucide-react';
+import { Heart, User, UserPlus } from 'lucide-react';
 import LikedVideosDrawer from './LikedVideosDrawer'; // ドロワーコンポーネントをインポート
 
 const Header = ({ cardWidth }: { cardWidth: number | undefined }) => {
@@ -50,8 +50,8 @@ const Header = ({ cardWidth }: { cardWidth: number | undefined }) => {
         <Image
           src="/seiheki_lab.png"
           alt="Seiheki Lab Logo"
-          width={180}
-          height={78}
+          width={isMobile ? 140 : 180}
+          height={isMobile ? 60 : 78}
           priority
           draggable="false"
           style={{ filter: 'drop-shadow(0 0 0.5rem rgba(0, 0, 0, 0.1))' }}
@@ -119,10 +119,13 @@ const Header = ({ cardWidth }: { cardWidth: number | undefined }) => {
           authChecked ? (
             <button
               onClick={handleOpenModal}
-              className="p-4 py-2 mx-2 text-sm font-bold text-white rounded-xl bg-transparent border border-white hover:bg-purple-500 hover:text-white shadow-lg transition-all duration-300"
+              className={`flex items-center gap-2 ${isMobile ? 'px-2 py-2' : 'px-4 py-2'} mx-2 text-sm font-bold text-white rounded-xl bg-transparent border border-white hover:bg-purple-500 hover:text-white shadow-lg transition-all duration-300`}
               style={{ filter: 'drop-shadow(0 0 0.5rem rgba(0, 0, 0, 0.1))' }}
+              aria-label="ログインまたは新規登録"
             >
-              ログイン
+              <UserPlus size={18} className="opacity-90" />
+              <span className="hidden sm:inline">ログイン / 新規登録</span>
+              <span className="sm:hidden">ログイン</span>
             </button>
           ) : null
         )}
