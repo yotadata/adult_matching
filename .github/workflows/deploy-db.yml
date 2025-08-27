@@ -81,6 +81,7 @@ jobs:
     env:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -95,7 +96,7 @@ jobs:
         run: |
           PROJECT_REF=${{ inputs.target != '' && inputs.target || env.SUPABASE_PROJECT_ID }}
           echo "Linking to project: $PROJECT_REF"
-          supabase link --project-ref "$PROJECT_REF"
+          supabase link --project-ref "$PROJECT_REF" --password "$SUPABASE_DB_PASSWORD"
 
       - name: Push migrations (push to main)
         if: github.event_name == 'push'
@@ -119,5 +120,5 @@ jobs:
           supabase db push
 
     # Notes:
-    # - Configure repo secrets: SUPABASE_ACCESS_TOKEN, SUPABASE_PROJECT_ID
+    # - Configure repo secrets: SUPABASE_ACCESS_TOKEN, SUPABASE_PROJECT_ID, SUPABASE_DB_PASSWORD
     # - Uses 'supabase db push' to apply migrations in supabase/migrations to the linked project.
