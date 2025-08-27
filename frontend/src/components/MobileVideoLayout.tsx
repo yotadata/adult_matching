@@ -29,11 +29,13 @@ const MobileVideoLayout: React.FC<MobileVideoLayoutProps> = ({ cardData, onSkip,
   }, [cardData?.id]);
 
   const handlePlayClick = () => {
-    // デバッグ: どの再生パスか確認
-    if (cardData.sampleVideoUrl) {
-      console.warn('[MobileVideoLayout] Using <video> src:', cardData.sampleVideoUrl);
-    } else {
-      console.warn('[MobileVideoLayout] Using <iframe> src:', cardData.embedUrl || cardData.videoUrl);
+    // デバッグ: どの再生パスか確認（開発のみ）
+    if (process.env.NODE_ENV !== 'production') {
+      if (cardData.sampleVideoUrl) {
+        console.warn('[MobileVideoLayout] Using <video> src:', cardData.sampleVideoUrl);
+      } else {
+        console.warn('[MobileVideoLayout] Using <iframe> src:', cardData.embedUrl || cardData.videoUrl);
+      }
     }
     setShowVideo(true);
   };
@@ -44,7 +46,9 @@ const MobileVideoLayout: React.FC<MobileVideoLayoutProps> = ({ cardData, onSkip,
       const playPromise = v.play();
       if (playPromise && typeof playPromise.then === 'function') {
         playPromise.catch((err) => {
-          console.warn('[MobileVideoLayout] Autoplay failed, waiting for user gesture.', err);
+          if (process.env.NODE_ENV !== 'production') {
+            console.warn('[MobileVideoLayout] Autoplay failed, waiting for user gesture.', err);
+          }
         });
       }
     }

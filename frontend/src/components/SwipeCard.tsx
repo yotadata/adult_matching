@@ -80,11 +80,13 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwi
   };
 
   const handlePlayClick = () => {
-    // デバッグ: どの再生パスか確認
-    if (cardData.sampleVideoUrl) {
-      console.warn('[SwipeCard] Using <video> src:', cardData.sampleVideoUrl);
-    } else {
-      console.warn('[SwipeCard] Using <iframe> src:', cardData.embedUrl || cardData.videoUrl);
+    // デバッグ: どの再生パスか確認（開発のみ）
+    if (process.env.NODE_ENV !== 'production') {
+      if (cardData.sampleVideoUrl) {
+        console.warn('[SwipeCard] Using <video> src:', cardData.sampleVideoUrl);
+      } else {
+        console.warn('[SwipeCard] Using <iframe> src:', cardData.embedUrl || cardData.videoUrl);
+      }
     }
     setShowVideo(true);
   };
@@ -96,7 +98,9 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwi
       const playPromise = v.play();
       if (playPromise && typeof playPromise.then === 'function') {
         playPromise.catch((err) => {
-          console.warn('[SwipeCard] Autoplay failed, waiting for user gesture.', err);
+          if (process.env.NODE_ENV !== 'production') {
+            console.warn('[SwipeCard] Autoplay failed, waiting for user gesture.', err);
+          }
         });
       }
     }

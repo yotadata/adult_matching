@@ -1,4 +1,6 @@
 -- Expand get_videos_feed to include videos without sample_video_url
+-- NOTE: Changing the return row type of a function requires dropping it first.
+drop function if exists public.get_videos_feed(integer);
 create or replace function public.get_videos_feed(page_limit int default 20)
 returns table (
   id uuid,
@@ -85,4 +87,3 @@ end;
 $$;
 
 grant execute on function public.get_videos_feed(int) to anon, authenticated;
-
