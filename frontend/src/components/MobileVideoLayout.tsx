@@ -91,16 +91,7 @@ const MobileVideoLayout: React.FC<MobileVideoLayoutProps> = ({ cardData, onSkip,
           }}
           className="absolute inset-0 w-full h-full"
         />
-        {cardData.productUrl && (
-          <a
-            href={cardData.productUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="absolute bottom-2 right-2 z-10 text-xs text-white bg-black/50 px-2 py-1 rounded"
-          >
-            新しいタブで再生
-          </a>
-        )}
+        {/* 外部タブ再生リンクは非表示にする */}
       </div>
 
       {/* テキスト情報エリア */}
