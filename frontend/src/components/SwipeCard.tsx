@@ -12,6 +12,8 @@ export interface CardData {
   description: string;
   videoUrl: string;
   thumbnail_url: string; // 追加
+  sampleVideoUrl?: string; // 追加: 直接再生用
+  embedUrl?: string; // 追加: iframe用
   performers?: { id: string; name: string; }[]; // 追加
   tags?: { id: string; name: string; }[]; // 追加
 }
@@ -100,14 +102,26 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwi
         ) : null}
 
         {showVideo && (
-          <iframe
-            src={cardData.videoUrl} // FANZA埋め込みURLがここに渡されることを想定
-            title="FANZA Video Player" // タイトルを修正
-            frameBorder="0"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" // 必要に応じてallow属性を調整
-            allowFullScreen
-            className="absolute top-0 left-0 w-full h-full" // classNameに変更
-          ></iframe>
+          cardData.sampleVideoUrl ? (
+            <video
+              src={cardData.sampleVideoUrl}
+              poster={cardData.thumbnail_url || undefined}
+              controls
+              autoPlay
+              muted
+              playsInline
+              className="absolute top-0 left-0 w-full h-full"
+            />
+          ) : (
+            <iframe
+              src={cardData.embedUrl || cardData.videoUrl}
+              title="Embedded Video Player"
+              frameBorder="0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
+              allowFullScreen
+              className="absolute top-0 left-0 w-full h-full"
+            />
+          )
         )}
       </div>
       

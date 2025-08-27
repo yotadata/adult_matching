@@ -18,6 +18,7 @@ interface VideoFromApi {
   description: string;
   external_id: string;
   thumbnail_url: string;
+  sample_video_url?: string;
   performers: { id: string; name: string }[];
   tags: { id: string; name: string }[];
 }
@@ -65,13 +66,16 @@ export default function Home() {
       
       // APIレスポンスをCardData形式に変換
       const fetchedCards: CardData[] = data.map((video: VideoFromApi) => {
-        const fanzaEmbedUrl = `https://www.dmm.co.jp/litevideo/-/part/=/affi_id=${process.env.FANZA_AFFILIATE_ID}/cid=${video.external_id}/size=1280_720/&autoplay=1`; // FANZA埋め込みURLを生成
+        // サンプル動画URLがあれば<video>優先、なければFANZAの埋め込みを使う
+        const fanzaEmbedUrl = `https://www.dmm.co.jp/litevideo/-/part/=/affi_id=${process.env.FANZA_AFFILIATE_ID}/cid=${video.external_id}/size=1280_720/&autoplay=1&muted=1&playsinline=1`;
         return {
           id: video.id,
           title: video.title,
           genre: video.tags.map((tag: { id: string; name: string }) => tag.name), // `tags`オブジェクトの配列から`name`の配列を生成
           description: video.description,
-          videoUrl: fanzaEmbedUrl, // 生成したURLをセット
+          videoUrl: fanzaEmbedUrl, // 互換のため残す（未使用でも可）
+          sampleVideoUrl: video.sample_video_url, // 追加: 直接再生できる場合に使用
+          embedUrl: fanzaEmbedUrl, // 追加: iframe用URL
           thumbnail_url: video.thumbnail_url, // サムネイルURLを追加
           performers: video.performers, // APIが整形済みの配列を返す
           tags: video.tags, // APIが整形済みの配列を返す

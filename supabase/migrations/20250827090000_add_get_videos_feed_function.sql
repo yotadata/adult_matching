@@ -6,6 +6,7 @@ returns table (
   description text,
   external_id text,
   thumbnail_url text,
+  sample_video_url text,
   performers jsonb,
   tags jsonb
 )
@@ -43,6 +44,7 @@ begin
     v.description,
     v.external_id,
     v.thumbnail_url,
+    v.sample_video_url,
     coalesce(
       (
         select jsonb_agg(jsonb_build_object('id', p.id, 'name', p.name) order by p.name)
@@ -78,4 +80,3 @@ end;
 $$;
 
 grant execute on function public.get_videos_feed(int) to anon, authenticated;
-

@@ -42,14 +42,26 @@ const MobileVideoLayout: React.FC<MobileVideoLayoutProps> = ({ cardData, onSkip,
         ) : null}
 
         {showVideo && (
-          <iframe
-            src={cardData.videoUrl}
-            title="YouTube video player"
-            frameBorder="0"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-            allowFullScreen
-            className="absolute inset-0 w-full h-full"
-          ></iframe>
+          cardData.sampleVideoUrl ? (
+            <video
+              src={cardData.sampleVideoUrl}
+              poster={cardData.thumbnail_url || undefined}
+              controls
+              autoPlay
+              muted
+              playsInline
+              className="absolute inset-0 w-full h-full"
+            />
+          ) : (
+            <iframe
+              src={cardData.embedUrl || cardData.videoUrl}
+              title="Embedded video"
+              frameBorder="0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
+              allowFullScreen
+              className="absolute inset-0 w-full h-full"
+            />
+          )
         )}
       </div>
 
