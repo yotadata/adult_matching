@@ -65,8 +65,8 @@ begin
     ) as tags
   from public.videos v
   where v.id in (
-    select id from (
-      select id from public.videos v2
+    select s.id from (
+      select v2.id as id from public.videos v2
       where v2.sample_video_url is not null
         and not exists (
           select 1 from public.user_video_decisions uvd2
