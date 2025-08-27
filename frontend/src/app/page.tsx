@@ -19,6 +19,7 @@ interface VideoFromApi {
   external_id: string;
   thumbnail_url: string;
   sample_video_url?: string;
+  product_released_at?: string;
   performers: { id: string; name: string }[];
   tags: { id: string; name: string }[];
 }
@@ -77,6 +78,7 @@ export default function Home() {
           sampleVideoUrl: video.sample_video_url, // 追加: 直接再生できる場合に使用
           embedUrl: fanzaEmbedUrl, // 追加: iframe用URL
           thumbnail_url: video.thumbnail_url, // サムネイルURLを追加
+          product_released_at: video.product_released_at,
           performers: video.performers, // APIが整形済みの配列を返す
           tags: video.tags, // APIが整形済みの配列を返す
         };

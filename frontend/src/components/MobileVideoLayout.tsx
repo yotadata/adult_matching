@@ -68,6 +68,11 @@ const MobileVideoLayout: React.FC<MobileVideoLayoutProps> = ({ cardData, onSkip,
       {/* テキスト情報エリア */}
       <div className="p-4 text-gray-700 flex-grow overflow-y-auto">
         <h2 className="text-xl font-bold">{cardData.title}</h2>
+        {cardData.product_released_at && (
+          <p className="text-sm text-gray-500 mt-1">
+            発売日: {new Date(cardData.product_released_at).toLocaleDateString('ja-JP')}
+          </p>
+        )}
         {cardData.performers && cardData.performers.length > 0 && (
           <p className="text-sm text-gray-500 mt-1">
             出演: {cardData.performers.map(p => p.name).join(', ')}

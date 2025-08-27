@@ -16,6 +16,7 @@ export interface CardData {
   embedUrl?: string; // 追加: iframe用
   performers?: { id: string; name: string; }[]; // 追加
   tags?: { id: string; name: string; }[]; // 追加
+  product_released_at?: string; // 追加: 発売日
 }
 
 export interface SwipeCardHandle {
@@ -128,6 +129,11 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwi
       {/* 下部: テキスト情報エリア（PC表示では高さ40%） */}
       <div className="flex flex-col text-gray-700 p-4 overflow-y-auto h-[40%]">
         <h2 className="text-lg font-bold">{cardData.title}</h2>
+        {cardData.product_released_at && (
+          <p className="text-sm text-gray-500 mt-1">
+            発売日: {new Date(cardData.product_released_at).toLocaleDateString('ja-JP')}
+          </p>
+        )}
         {cardData.performers && cardData.performers.length > 0 && (
           <div className="grid grid-cols-[auto_1fr] items-baseline gap-x-2 mt-2">
             <div className="flex flex-shrink-0 items-center pt-0.5 text-sm text-gray-500">

@@ -7,6 +7,7 @@ returns table (
   external_id text,
   thumbnail_url text,
   sample_video_url text,
+  product_released_at timestamptz,
   performers jsonb,
   tags jsonb
 )
@@ -45,6 +46,7 @@ begin
     v.external_id,
     v.thumbnail_url,
     v.sample_video_url,
+    v.product_released_at,
     coalesce(
       (
         select jsonb_agg(jsonb_build_object('id', p.id, 'name', p.name) order by p.name)
