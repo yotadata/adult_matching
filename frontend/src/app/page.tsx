@@ -214,16 +214,28 @@ export default function Home() {
       style={{ background: currentGradient }}
       transition={{ duration: 0.3 }}
     >
-      <Header cardWidth={cardWidth} />
-      {/* 進捗ゲージ（ヘッダー直下） */}
-      <div className="w-full flex justify-center px-4 mt-2 mb-4">
-        <ProgressGauges
-          decisionCount={decisionCount}
-          personalizeTarget={personalizeTarget}
-          diagnosisTarget={diagnosisTarget}
-          widthPx={cardWidth}
-        />
-      </div>
+      <Header 
+        cardWidth={cardWidth}
+        mobileGauge={isMobile ? (
+          <ProgressGauges
+            decisionCount={decisionCount}
+            personalizeTarget={personalizeTarget}
+            diagnosisTarget={diagnosisTarget}
+            // モバイルはヘッダー内で全幅にするため幅指定はしない
+          />
+        ) : undefined}
+      />
+      {/* デスクトップはヘッダー下にゲージを表示 */}
+      {!isMobile && (
+        <div className="w-full flex justify-center px-4 mt-2 mb-4">
+          <ProgressGauges
+            decisionCount={decisionCount}
+            personalizeTarget={personalizeTarget}
+            diagnosisTarget={diagnosisTarget}
+            widthPx={cardWidth}
+          />
+        </div>
+      )}
       <main
         ref={mainRef}
         className={`flex-grow flex w-full relative ${isMobile ? 'flex-col bg-white h-full' : 'items-center justify-center'}`}
