@@ -119,7 +119,7 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwi
       initial={false}
       whileTap={{ cursor: "grabbing" }}
     >
-      {/* 上部: 動画エリア（PC表示では高さ60%） */}
+      {/* 上部: 動画エリア（PC表示では高さ3/5） */}
       <div className="relative w-full h-[60%] bg-black flex items-center justify-center">
         {showOverlay && (
           <div
@@ -157,7 +157,7 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwi
         {/* 外部タブ再生リンクは非表示にする */}
       </div>
       
-      {/* 下部: テキスト情報エリア（PC表示では高さ40%） */}
+      {/* 下部: テキスト情報エリア（PC表示では高さ2/5） */}
       <div className="flex flex-col text-gray-700 p-4 overflow-y-auto h-[40%]">
         <h2 className="text-lg font-bold">{cardData.title}</h2>
         {cardData.product_released_at && (
