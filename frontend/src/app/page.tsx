@@ -10,6 +10,7 @@ import useMediaQuery from "@/hooks/useMediaQuery";
 import useWindowSize from "@/hooks/useWindowSize";
 import MobileVideoLayout from "@/components/MobileVideoLayout";
 import { supabase } from "@/lib/supabase"; // supabaseクライアントをインポート
+import ProgressGauges from "@/components/ProgressGauges";
 
 // APIから受け取るvideoオブジェクトの型定義
 interface VideoFromApi {
@@ -41,7 +42,18 @@ export default function Home() {
   const isMobile = useMediaQuery('(max-width: 639px)');
   const { width: windowWidth, height: windowHeight } = useWindowSize();
   const [cardWidth, setCardWidth] = useState<number | undefined>(400); // cardWidthをstateとして管理し、デフォルト値を400に設定
-  const videoAspectRatio = 21 / 20;
+  const getVideoAspectRatio = () => {
+    return 16 / 13; // デフォルトを 4:3 に変更
+  };
+  const videoAspectRatio = getVideoAspectRatio();
+  const [decisionCount, setDecisionCount] = useState<number>(0);
+  const personalizeTarget = Number(process.env.NEXT_PUBLIC_PERSONALIZE_TARGET || 10);
+  const diagnosisTarget = Number(process.env.NEXT_PUBLIC_DIAGNOSIS_TARGET || 30);
+  const mainRef = useRef<HTMLDivElement | null>(null);
+  const debugResetGauge = (() => {
+    const v = (process.env.NEXT_PUBLIC_DEBUG_RESET_GAUGE || '').toString().toLowerCase();
+    return v === '1' || v === 'true' || v === 'yes';
+  })();
   
 
   const activeCard = activeIndex < cards.length ? cards[activeIndex] : null; // activeCard の宣言を移動
@@ -102,14 +114,53 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    if (windowHeight) {
-      // PC版: 動画エリアを画面の3/5に変更し、それに合わせてカード横幅を計算
-      // モバイルは従来の1/2のまま（MobileVideoLayout使用のため見た目には影響なし）
-      const targetVideoHeight = (!isMobile ? windowHeight * (3 / 5) : windowHeight / 2);
-      const calculatedCardWidth = targetVideoHeight * videoAspectRatio;
-      setCardWidth(calculatedCardWidth);
-    }
+    // メイン領域の実寸高さからカード横幅を算出（デスクトップ）
+    // 動画はカード高さの 3/5 を占めるため、その高さを基準に幅を決定
+    const recalc = () => {
+      if (!isMobile) {
+        const mainH = mainRef.current?.clientHeight;
+        if (mainH && mainH > 0) {
+          const targetVideoHeight = mainH * (3 / 5);
+          const calculatedCardWidth = targetVideoHeight * videoAspectRatio;
+          setCardWidth(calculatedCardWidth);
+          return;
+        }
+      }
+      // フォールバック（モバイルや未取得時）
+      if (windowHeight) {
+        const targetVideoHeight = (!isMobile ? windowHeight * (3 / 5) : windowHeight / 2);
+        const calculatedCardWidth = targetVideoHeight * videoAspectRatio;
+        setCardWidth(calculatedCardWidth);
+      }
+    };
+    recalc();
   }, [windowHeight, videoAspectRatio, isMobile]);
+
+  // 初期の判断数を読み込む（ログイン済みならサーバーから、未ログインなら 0）
+  useEffect(() => {
+    const loadDecisionCount = async () => {
+      // デバッグ: リロード時にゲージを常に 0 にリセット
+      if (debugResetGauge) {
+        setDecisionCount(0);
+        return;
+      }
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        setDecisionCount(0);
+        return;
+      }
+      const { count, error } = await supabase
+        .from('user_video_decisions')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id);
+      if (error) {
+        console.error('Error fetching decision count:', error);
+        return;
+      }
+      setDecisionCount(count || 0);
+    };
+    loadDecisionCount();
+  }, []);
 
   
 
@@ -130,6 +181,7 @@ export default function Home() {
     }
     setActiveIndex((prev) => prev + 1);
     setCurrentGradient(ORIGINAL_GRADIENT);
+    setDecisionCount((c) => c + 1);
   };
 
   const triggerSwipe = (direction: 'left' | 'right') => {
@@ -163,7 +215,17 @@ export default function Home() {
       transition={{ duration: 0.3 }}
     >
       <Header cardWidth={cardWidth} />
+      {/* 進捗ゲージ（ヘッダー直下） */}
+      <div className="w-full flex justify-center px-4 mt-2 mb-4">
+        <ProgressGauges
+          decisionCount={decisionCount}
+          personalizeTarget={personalizeTarget}
+          diagnosisTarget={diagnosisTarget}
+          widthPx={cardWidth}
+        />
+      </div>
       <main
+        ref={mainRef}
         className={`flex-grow flex w-full relative ${isMobile ? 'flex-col bg-white h-full' : 'items-center justify-center'}`}
         style={isMobile ? { paddingTop: `0px` } : {}}
       >

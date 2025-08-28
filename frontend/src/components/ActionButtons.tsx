@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { ThumbsDown, ThumbsUp } from 'lucide-react';
 
 interface ActionButtonsProps {
   onSkip: () => void;
@@ -33,11 +34,14 @@ const ActionButtons = ({ onSkip, onLike, nopeColor, likeColor, isMobileLayout = 
       <button 
         onClick={onSkip} 
         onMouseEnter={() => setIsNopeHovered(true)}
-        onMouseLeave={() => setIsLikeHovered(false)}
+        onMouseLeave={() => setIsNopeHovered(false)}
         className={`${buttonBaseClasses} ${isMobileLayout ? 'w-1/2' : 'w-40'} ${isMobileLayout ? 'rounded-none' : 'rounded-2xl'} ${!isMobileLayout ? 'hover:scale-105 active:scale-95 shadow-lg' : ''}`}
         style={nopeButtonStyle}
+        aria-label="イマイチ"
+        title="イマイチ"
       >
-        NOPE
+        <ThumbsDown size={22} className="mr-2" />
+        イマイチ
       </button>
       {/* LIKE Button */}
       <button 
@@ -46,8 +50,11 @@ const ActionButtons = ({ onSkip, onLike, nopeColor, likeColor, isMobileLayout = 
         onMouseLeave={() => setIsLikeHovered(false)}
         className={`${buttonBaseClasses} ${isMobileLayout ? 'w-1/2' : 'w-40'} ${isMobileLayout ? 'rounded-none' : 'rounded-2xl'} ${!isMobileLayout ? 'hover:scale-105 active:scale-95 shadow-lg' : ''}`}
         style={likeButtonStyle}
+        aria-label="好み"
+        title="好み"
       >
-        LIKE
+        <ThumbsUp size={22} className="mr-2" />
+        好み
       </button>
     </div>
   );
