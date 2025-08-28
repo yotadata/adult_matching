@@ -29,13 +29,13 @@ const ActionButtons = ({ onSkip, onLike, nopeColor, likeColor, isMobileLayout = 
   const buttonBaseClasses = "flex items-center justify-center h-14 font-bold tracking-wider text-lg text-white border-2";
 
   return (
-    <div className="flex items-center justify-between mx-auto" style={{ width: cardWidth ? `${cardWidth}px` : 'auto' }}>
+    <div className={`flex items-center ${isMobileLayout ? 'w-full' : 'justify-between'} ${isMobileLayout ? '' : 'mx-auto'}`} style={!isMobileLayout && cardWidth ? { width: `${cardWidth}px` } : {}}>
       {/* NOPE Button */}
       <button 
         onClick={onSkip} 
         onMouseEnter={() => setIsNopeHovered(true)}
         onMouseLeave={() => setIsNopeHovered(false)}
-        className={`${buttonBaseClasses} ${isMobileLayout ? 'w-1/2' : 'w-40'} ${isMobileLayout ? 'rounded-none' : 'rounded-2xl'} ${!isMobileLayout ? 'hover:scale-105 active:scale-95 shadow-lg' : ''}`}
+        className={`${buttonBaseClasses} ${isMobileLayout ? 'flex-1' : 'w-40'} ${isMobileLayout ? 'rounded-none' : 'rounded-2xl'} ${!isMobileLayout ? 'hover:scale-105 active:scale-95 shadow-lg' : ''}`}
         style={nopeButtonStyle}
         aria-label="イマイチ"
         title="イマイチ"
@@ -48,8 +48,8 @@ const ActionButtons = ({ onSkip, onLike, nopeColor, likeColor, isMobileLayout = 
         onClick={onLike} 
         onMouseEnter={() => setIsLikeHovered(true)}
         onMouseLeave={() => setIsLikeHovered(false)}
-        className={`${buttonBaseClasses} ${isMobileLayout ? 'w-1/2' : 'w-40'} ${isMobileLayout ? 'rounded-none' : 'rounded-2xl'} ${!isMobileLayout ? 'hover:scale-105 active:scale-95 shadow-lg' : ''}`}
-        style={likeButtonStyle}
+        className={`${buttonBaseClasses} ${isMobileLayout ? 'flex-1' : 'w-40'} ${isMobileLayout ? 'rounded-none' : 'rounded-2xl'} ${!isMobileLayout ? 'hover:scale-105 active:scale-95 shadow-lg' : ''}`}
+      style={likeButtonStyle}
         aria-label="好み"
         title="好み"
       >

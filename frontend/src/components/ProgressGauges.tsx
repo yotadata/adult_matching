@@ -33,11 +33,11 @@ const ProgressGauges: React.FC<Props> = ({
 
   return (
     <div
-      className="mx-auto rounded-xl border border-white/60 bg-white/50 backdrop-blur px-3 py-2"
+      className="w-full sm:w-auto max-w-full rounded-none sm:rounded-xl px-3 py-2 bg-white/70 backdrop-blur border-none sm:border sm:border-white/60"
       style={{ width: widthPx ? `${widthPx}px` : undefined }}
       aria-label="スワイプ進捗ゲージ（コンパクト）"
     >
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 min-w-0">
         {/* Single compact bar */}
         <div className="relative h-2.5 flex-1 rounded-full bg-white/65 border border-white/70 overflow-hidden">
           {/* fill */}
@@ -62,7 +62,7 @@ const ProgressGauges: React.FC<Props> = ({
         </div>
 
         {/* Next milestone text */}
-        <div className="text-[11px] sm:text-xs text-gray-700 whitespace-nowrap select-none">
+        <div className="text-[11px] sm:text-xs text-gray-700 whitespace-nowrap select-none overflow-hidden text-ellipsis">
           {nextLabel}
         </div>
       </div>

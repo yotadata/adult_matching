@@ -55,7 +55,7 @@ const MobileVideoLayout: React.FC<MobileVideoLayoutProps> = ({ cardData, onSkip,
   }, [showVideo]);
 
   return (
-    <div className="flex flex-col w-full h-full">
+    <div className="relative flex flex-col w-full h-full">
       {/* 動画表示エリア */}
       <div className="w-full overflow-hidden relative aspect-[494/370] bg-black flex items-center justify-center">
         {showOverlay && (
@@ -95,8 +95,8 @@ const MobileVideoLayout: React.FC<MobileVideoLayoutProps> = ({ cardData, onSkip,
       </div>
 
       {/* テキスト情報エリア */}
-      <div className="p-4 text-gray-700 flex-grow overflow-y-auto">
-        <h2 className="text-xl font-bold">{cardData.title}</h2>
+      <div className="p-4 pb-[calc(56px+env(safe-area-inset-bottom,0px))] text-gray-700 flex-grow overflow-y-auto">
+        <h2 className="text-base sm:text-xl font-bold">{cardData.title}</h2>
         {cardData.product_released_at && (
           <div className="grid grid-cols-[auto_1fr] items-start gap-x-2 mt-2">
             <div className="flex w-24 flex-shrink-0 items-center text-sm text-gray-500">
@@ -145,14 +145,14 @@ const MobileVideoLayout: React.FC<MobileVideoLayoutProps> = ({ cardData, onSkip,
         )}
       </div>
 
-      {/* フッターボタンエリア */}
-      <div className="w-full">
+      {/* フッターボタンエリア（モバイル固定・余白なし） */}
+      <div className="fixed left-0 right-0 bottom-0 z-50 bg-white/95 backdrop-blur border-t border-gray-200 shadow-[0_-4px_10px_rgba(0,0,0,0.05)]">
         <ActionButtons
           onSkip={onSkip}
           onLike={onLike}
           nopeColor="#A78BFA"
           likeColor="#FBBF24"
-        isMobileLayout={true} // 追加
+          isMobileLayout={true}
         />
       </div>
     </div>
