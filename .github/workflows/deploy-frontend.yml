@@ -52,18 +52,30 @@ jobs:
 
       - name: Build (Vercel build)
         run: vercel build --token "$VERCEL_TOKEN"
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
 
       - name: Deploy to Vercel (prod)
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: vercel deploy --prebuilt --prod --token "$VERCEL_TOKEN"
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
 
       - name: Deploy to Vercel (dispatch prod)
         if: github.event_name == 'workflow_dispatch' && inputs.environment == 'production'
         run: vercel deploy --prebuilt --prod --token "$VERCEL_TOKEN"
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
 
       - name: Deploy to Vercel (dispatch preview)
         if: github.event_name == 'workflow_dispatch' && inputs.environment == 'preview'
         run: vercel deploy --prebuilt --token "$VERCEL_TOKEN"
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
 
       - name: Output preview/prod URL
         run: |
