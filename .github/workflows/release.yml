@@ -101,8 +101,8 @@ jobs:
       - name: Pull Vercel env (production)
         run: vercel pull --yes --environment=production --token "$VERCEL_TOKEN"
 
-      - name: Build
-        run: vercel build --token "$VERCEL_TOKEN"
+      - name: Build (production)
+        run: vercel build --prod --token "$VERCEL_TOKEN"
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
