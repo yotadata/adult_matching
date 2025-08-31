@@ -152,37 +152,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-  /likes:
-    get:
-      summary: 自分がLIKEした動画リスト取得
-      responses:
-        '200':
-          description: LIKEした動画リスト
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Video'
-        '400':
-          description: 不正なリクエスト
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '401':
-          description: 認証失敗
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '500':
-          description: サーバー内部エラー
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
   /delete_account:
     delete:
       summary: アカウント削除
