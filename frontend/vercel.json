@@ -1,0 +1,4 @@
+{
+  "ignoreCommand": "echo 'Vercel deploy disabled for this project' && exit 0"
+}
+
