@@ -50,7 +50,16 @@ jobs:
         if: github.event_name == 'workflow_dispatch' && inputs.environment == 'preview'
         run: vercel pull --yes --environment=preview --token "$VERCEL_TOKEN"
 
-      - name: Build (Vercel build)
+      - name: Build (production)
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' || (github.event_name == 'workflow_dispatch' && inputs.environment == 'production')
+        run: vercel build --prod --token "$VERCEL_TOKEN"
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+      - name: Build (preview)
+        if: github.event_name == 'workflow_dispatch' && inputs.environment == 'preview'
         run: vercel build --token "$VERCEL_TOKEN"
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
