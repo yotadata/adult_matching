@@ -7,164 +7,181 @@ import { useState, useRef, useEffect } from "react";
 import { AnimatePresence, motion, PanInfo } from "framer-motion";
 import HowToUseCard from "@/components/HowToUseCard";
 import useMediaQuery from "@/hooks/useMediaQuery";
+import useWindowSize from "@/hooks/useWindowSize";
 import MobileVideoLayout from "@/components/MobileVideoLayout";
-import { createClient } from "@supabase/supabase-js";
+import { supabase } from "@/lib/supabase"; // supabaseクライアントをインポート
+import ProgressGauges from "@/components/ProgressGauges";
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-const supabase = createClient(supabaseUrl, supabaseKey);
+// APIから受け取るvideoオブジェクトの型定義
+interface VideoFromApi {
+  id: number;
+  title: string;
+  description: string;
+  external_id: string;
+  thumbnail_url: string;
+  sample_video_url?: string;
+  preview_video_url?: string;
+  product_url?: string;
+  product_released_at?: string;
+  performers: { id: string; name: string }[];
+  tags: { id: string; name: string }[];
+}
 
 const ORIGINAL_GRADIENT = 'linear-gradient(to right, #C4C8E3, #D7D1E3, #F7D7E0, #F8DBB9)';
 const LEFT_SWIPE_GRADIENT = 'linear-gradient(to right, #AEB4EB, #D7D1E3, #F7D7E0,#F8DBB9)'; // 左端を明るく
 const RIGHT_SWIPE_GRADIENT = 'linear-gradient(to right, #C4C8E3,  #D7D1E3, #F7D7E0,#F9CFA0)'; // 右端を明るく
 
 export default function Home() {
+  
+
+  const [cards, setCards] = useState<CardData[]>([]); // APIからのデータを保持するstate
   const [activeIndex, setActiveIndex] = useState(0);
   const cardRef = useRef<SwipeCardHandle>(null);
   const [currentGradient, setCurrentGradient] = useState(ORIGINAL_GRADIENT);
   const [showHowToUse, setShowHowToUse] = useState(true);
   const isMobile = useMediaQuery('(max-width: 639px)');
-  const [headerHeight, setHeaderHeight] = useState(0);
-  const [videos, setVideos] = useState<CardData[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [currentPhase, setCurrentPhase] = useState<'discovery' | 'recommendation'>('discovery');
-  const [batchProgress, setBatchProgress] = useState(0);
-  const [batchSize, setBatchSize] = useState(20);
-  const [isTransitioning, setIsTransitioning] = useState(false);
+  const { width: windowWidth, height: windowHeight } = useWindowSize();
+  const [cardWidth, setCardWidth] = useState<number | undefined>(400); // cardWidthをstateとして管理し、デフォルト値を400に設定
+  const getVideoAspectRatio = () => {
+    return 16 / 13; // デフォルトを 4:3 に変更
+  };
+  const videoAspectRatio = getVideoAspectRatio();
+  const [decisionCount, setDecisionCount] = useState<number>(0);
+  const personalizeTarget = Number(process.env.NEXT_PUBLIC_PERSONALIZE_TARGET || 10);
+  const diagnosisTarget = Number(process.env.NEXT_PUBLIC_DIAGNOSIS_TARGET || 30);
+  const mainRef = useRef<HTMLDivElement | null>(null);
+  const debugResetGauge = (() => {
+    const v = (process.env.NEXT_PUBLIC_DEBUG_RESET_GAUGE || '').toString().toLowerCase();
+    return v === '1' || v === 'true' || v === 'yes';
+  })();
+  
 
+  const activeCard = activeIndex < cards.length ? cards[activeIndex] : null; // activeCard の宣言を移動
+
+  
+
+  // APIから動画データを取得する
   useEffect(() => {
-    if (isMobile) {
-      const headerElement = document.getElementById('main-header');
-      if (headerElement) {
-        setHeaderHeight(headerElement.offsetHeight);
+    const fetchVideos = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+
+      const headers: HeadersInit = {};
+      if (session?.access_token) {
+        headers.Authorization = `Bearer ${session.access_token}`;
       }
-    } else {
-      setHeaderHeight(0);
-    }
-  }, [isMobile]);
 
-  useEffect(() => {
-    fetchInitialVideos();
+      const { data, error } = await supabase.functions.invoke('videos-feed', {
+        headers,
+      });
+
+      if (error) {
+        console.error('Error fetching videos:', error);
+        return;
+      }
+      
+      // APIレスポンスをCardData形式に変換
+      const fetchedCards: CardData[] = data.map((video: VideoFromApi) => {
+        // サンプルURLは使わず、基本はFANZAの埋め込み（litevideo）へ統一
+        const fanzaEmbedUrl = `https://www.dmm.co.jp/litevideo/-/part/=/affi_id=${process.env.NEXT_PUBLIC_FANZA_AFFILIATE_ID}/cid=${video.external_id}/size=1280_720/`;
+        // Mixed Content 対策: http のサンプル動画URLを https に昇格（今後の拡張用に保持）
+        const normalizeHttps = (u?: string) => u?.startsWith('http://') ? u.replace('http://', 'https://') : u;
+        const normalizedSampleUrl = normalizeHttps(video.sample_video_url);
+        const normalizedPreviewUrl = normalizeHttps(video.preview_video_url);
+
+        return {
+          id: video.id,
+          title: video.title,
+          genre: video.tags.map((tag: { id: string; name: string }) => tag.name), // `tags`オブジェクトの配列から`name`の配列を生成
+          description: video.description,
+          videoUrl: fanzaEmbedUrl,
+          sampleVideoUrl: normalizedSampleUrl || normalizedPreviewUrl,
+          embedUrl: fanzaEmbedUrl,
+          thumbnail_url: video.thumbnail_url, // サムネイルURLを追加
+          product_released_at: video.product_released_at,
+          performers: video.performers, // APIが整形済みの配列を返す
+          tags: video.tags, // APIが整形済みの配列を返す
+          // 補助リンク（サンプルがない場合の一発再生用に外部タブを推奨）
+          productUrl: normalizeHttps(video.product_url) || undefined,
+        };
+      });
+
+      
+
+      setCards(fetchedCards);
+    };
+
+    fetchVideos();
   }, []);
-  
-  const fetchInitialVideos = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      setCurrentPhase('discovery');
-      setBatchProgress(0);
-      setBatchSize(20);
-      
-      // Always start with discovery phase (20 random items)
-      console.log('Fetching discovery phase videos...');
-      const response = await supabase.functions.invoke('feed_explore', {
-        body: { limit: 20 }
-      });
-      
-      if (response.error) {
-        console.error('API Error:', response.error);
-        setError('動画の取得に失敗しました');
-        return;
-      }
-      
-      const videoList = response.data?.videos || [];
-      
-      if (videoList.length > 0) {
-        const formattedVideos = videoList.map((video: any) => ({
-          ...video,
-          videoUrl: video.sample_video_url || video.preview_video_url || '',
-        }));
-        setVideos(formattedVideos);
-        
-        console.log(`Loaded ${formattedVideos.length} discovery videos`);
-        if (response.data?.phase === 'discovery') {
-          console.log('Discovery phase initiated');
-        }
-      } else {
-        setError('表示する動画がありません');
-      }
-      
-    } catch (err) {
-      console.error('Fetch error:', err);
-      setError('動画の取得中にエラーが発生しました');
-    } finally {
-      setLoading(false);
-    }
-  };
-  
-  const fetchRecommendationVideos = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      setCurrentPhase('recommendation');
-      setBatchProgress(0);
-      setBatchSize(100);
-      
-      console.log('Fetching recommendation phase videos...');
-      const response = await supabase.functions.invoke('recommendations', {
-        body: { limit: 100, exclude_liked: true }
-      });
-      
-      if (response.error) {
-        console.error('Recommendations API Error:', response.error);
-        setError('推奨動画の取得に失敗しました');
-        return;
-      }
-      
-      const videoList = response.data?.recommendations || [];
-      
-      if (videoList.length > 0) {
-        const formattedVideos = videoList.map((video: any) => ({
-          ...video,
-          videoUrl: video.sample_video_url || video.preview_video_url || '',
-        }));
-        setVideos(formattedVideos);
-        
-        console.log(`Loaded ${formattedVideos.length} recommendation videos`);
-        if (response.data?.phase === 'recommendation') {
-          console.log('Recommendation phase initiated');
-        }
-      } else {
-        setError('推奨動画がありません');
-      }
-      
-    } catch (err) {
-      console.error('Recommendations fetch error:', err);
-      setError('推奨動画の取得中にエラーが発生しました');
-    } finally {
-      setLoading(false);
-    }
-  };
 
-  const handleSwipe = async (direction?: 'left' | 'right') => {
-    const currentCard = activeIndex < videos.length ? videos[activeIndex] : null;
-    
-    // 右スワイプ（いいね）の場合、APIを呼び出す
-    if (direction === 'right' && currentCard) {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session) {
-          // Add like
-          await supabase.functions.invoke('likes', {
-            body: { video_id: currentCard.id },
-          });
+  useEffect(() => {
+    // メイン領域の実寸高さからカード横幅を算出（デスクトップ）
+    // 動画はカード高さの 3/5 を占めるため、その高さを基準に幅を決定
+    const recalc = () => {
+      if (!isMobile) {
+        const mainH = mainRef.current?.clientHeight;
+        if (mainH && mainH > 0) {
+          const targetVideoHeight = mainH * (3 / 5);
+          const calculatedCardWidth = targetVideoHeight * videoAspectRatio;
+          setCardWidth(calculatedCardWidth);
+          return;
         }
-      } catch (error) {
-        console.error('Failed to add like:', error);
+      }
+      // フォールバック（モバイルや未取得時）
+      if (windowHeight) {
+        const targetVideoHeight = (!isMobile ? windowHeight * (3 / 5) : windowHeight / 2);
+        const calculatedCardWidth = targetVideoHeight * videoAspectRatio;
+        setCardWidth(calculatedCardWidth);
+      }
+    };
+    recalc();
+  }, [windowHeight, videoAspectRatio, isMobile]);
+
+  // 初期の判断数を読み込む（ログイン済みならサーバーから、未ログインなら 0）
+  useEffect(() => {
+    const loadDecisionCount = async () => {
+      // デバッグ: リロード時にゲージを常に 0 にリセット
+      if (debugResetGauge) {
+        setDecisionCount(0);
+        return;
+      }
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        setDecisionCount(0);
+        return;
+      }
+      const { count, error } = await supabase
+        .from('user_video_decisions')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id);
+      if (error) {
+        console.error('Error fetching decision count:', error);
+        return;
+      }
+      setDecisionCount(count || 0);
+    };
+    loadDecisionCount();
+  }, []);
+
+  
+
+  const handleSwipe = async (direction: 'left' | 'right') => {
+    if (activeCard) { // activeCard が存在する場合のみ処理
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const decisionType = direction === 'right' ? 'like' : 'nope';
+        const { error } = await supabase.from('user_video_decisions').insert({
+          user_id: user.id,
+          video_id: activeCard.id,
+          decision_type: decisionType,
+        });
+        if (error) {
+          console.error(`Error inserting ${decisionType} decision:`, error);
+        }
       }
     }
-    
-    // Update progress
-    const newProgress = batchProgress + 1;
-    setBatchProgress(newProgress);
     setActiveIndex((prev) => prev + 1);
     setCurrentGradient(ORIGINAL_GRADIENT);
-    
-    // Check if batch is completed
-    if (newProgress >= batchSize) {
-      await handleBatchCompletion(newProgress);
-    }
+    setDecisionCount((c) => c + 1);
   };
   
   const handleBatchCompletion = async (completedItems: number) => {
@@ -218,8 +235,6 @@ export default function Home() {
     cardRef.current?.swipe(direction);
   };
 
-  const activeCard = activeIndex < videos.length ? videos[activeIndex] : null;
-
   const handleDrag = (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
     if (info.offset.x > 50) {
       setCurrentGradient(RIGHT_SWIPE_GRADIENT);
@@ -246,43 +261,33 @@ export default function Home() {
       style={{ background: currentGradient }}
       transition={{ duration: 0.3 }}
     >
-      <Header />
+      <Header 
+        cardWidth={cardWidth}
+        mobileGauge={isMobile ? (
+          <ProgressGauges
+            decisionCount={decisionCount}
+            personalizeTarget={personalizeTarget}
+            diagnosisTarget={diagnosisTarget}
+            // モバイルはヘッダー内で全幅にするため幅指定はしない
+          />
+        ) : undefined}
+      />
+      {/* デスクトップはヘッダー下にゲージを表示 */}
+      {!isMobile && (
+        <div className="w-full flex justify-center px-4 mt-2 mb-4">
+          <ProgressGauges
+            decisionCount={decisionCount}
+            personalizeTarget={personalizeTarget}
+            diagnosisTarget={diagnosisTarget}
+            widthPx={cardWidth}
+          />
+        </div>
+      )}
       <main
+        ref={mainRef}
         className={`flex-grow flex w-full relative ${isMobile ? 'flex-col bg-white h-full' : 'items-center justify-center'}`}
-        style={isMobile ? { paddingTop: `${headerHeight}px` } : {}} // headerHeight を使って paddingTop を動的に設定
+        style={isMobile ? { paddingTop: `0px` } : {}}
       >
-        {/* Progress Indicator */}
-        {!loading && !error && (
-          <div className="absolute top-4 left-4 right-4 z-10">
-            <div className="bg-white/20 backdrop-blur-sm rounded-lg p-3">
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-white text-sm font-medium">
-                  {currentPhase === 'discovery' ? 'ディスカバリーフェーズ' : 'レコメンドフェーズ'}
-                </span>
-                <span className="text-white text-sm">
-                  {batchProgress}/{batchSize}
-                </span>
-              </div>
-              <div className="w-full bg-white/30 rounded-full h-2">
-                <div 
-                  className="bg-white rounded-full h-2 transition-all duration-300"
-                  style={{ width: `${(batchProgress / batchSize) * 100}%` }}
-                />
-              </div>
-              {currentPhase === 'discovery' && (
-                <p className="text-white text-xs mt-1 opacity-75">
-                  あなたの好みを学習中です。すべての動画を評価してください。
-                </p>
-              )}
-              {currentPhase === 'recommendation' && (
-                <p className="text-white text-xs mt-1 opacity-75">
-                  あなたにおすすめの動画です。
-                </p>
-              )}
-            </div>
-          </div>
-        )}
-        
         <AnimatePresence mode="wait">
           {loading || isTransitioning ? (
             <div className="flex flex-col items-center justify-center">
@@ -316,20 +321,29 @@ export default function Home() {
                 onSwipe={handleSwipe}
                 onDrag={handleDrag}
                 onDragEnd={handleDragEnd}
+                cardWidth={cardWidth}
               />
             )
           ) : (
-            <p className="text-white font-bold text-2xl">動画がありません</p>
+            // ローディング表示（サークル型スピナー）
+            <div className="flex items-center justify-center w-full h-full">
+              <div
+                className="w-12 h-12 rounded-full border-4 border-gray-300 border-t-violet-500 animate-spin"
+                role="status"
+                aria-label="Loading videos"
+              />
+            </div>
           )}
         </AnimatePresence>
       </main>
       {!isMobile && (
-        <footer className="w-full max-w-md mx-auto py-8">
+        <footer className="py-8 mx-auto" style={{ width: cardWidth ? `${cardWidth}px` : 'auto' }}>
           {activeCard && <ActionButtons
             onSkip={() => triggerSwipe('left')}
             onLike={() => triggerSwipe('right')}
             nopeColor="#A78BFA"
             likeColor="#FBBF24"
+            cardWidth={cardWidth}
           />}
         </footer>
       )}

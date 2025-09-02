@@ -18,7 +18,6 @@ create table public.videos (
   series text,
   maker text,
   label text,
-  genre text,
   price numeric,
   distribution_started_at timestamptz,
   product_released_at timestamptz,
@@ -26,6 +25,7 @@ create table public.videos (
   image_urls text[],
   source text not null,
   published_at timestamptz,
+  product_url text, -- 追加
   created_at timestamptz default now(),
   unique (source, distribution_code, maker_code)
 );
@@ -53,7 +53,8 @@ create table public.video_tags (
 -- 出演者
 create table public.performers (
   id uuid primary key default gen_random_uuid(),
-  name text not null
+  name text not null,
+  fanza_actress_id TEXT UNIQUE
 );
 
 -- 動画出演者
@@ -120,6 +121,11 @@ create policy "read videos"
 on public.videos for select
 to anon, authenticated
 using (true);
+
+create policy "insert videos"
+on public.videos for insert
+to anon, authenticated
+with check (true); -- 全ての挿入を許可
 
 alter table public.video_embeddings enable row level security;
 create policy "read embeddings"

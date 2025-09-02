@@ -28,10 +28,10 @@ logger = logging.getLogger(__name__)
 class TwoTowerTrainer:
     def __init__(self, 
                  db_url: str,
-                 embedding_dim: int = 768,
+                 embedding_dim: int = 64,  # Reduced from 768 for efficiency
                  learning_rate: float = 0.001,
-                 batch_size: int = 32,
-                 epochs: int = 10):
+                 batch_size: int = 512,    # Increased for better training
+                 epochs: int = 20):
         self.db_url = db_url
         self.embedding_dim = embedding_dim
         self.learning_rate = learning_rate
@@ -217,17 +217,25 @@ class TwoTowerTrainer:
         user_emb = self.user_tower(user_input)
         item_emb = self.item_tower(item_input)
         
-        # Cosine similarity
+        # Dot product for similarity (Two-Tower standard)
         similarity = tf.keras.layers.Dot(axes=1, normalize=False)([user_emb, item_emb])
-        output = tf.keras.layers.Dense(1, activation='sigmoid')(tf.expand_dims(similarity, -1))
+        # Apply sigmoid to convert to probability
+        output = tf.keras.activations.sigmoid(similarity)
         
-        self.full_model = tf.keras.Model(inputs=[user_input, item_input], outputs=output, name='two_tower_model')
+        self.full_model = tf.keras.Model(inputs=[user_input, item_input], 
+                                        outputs=tf.expand_dims(output, -1), 
+                                        name='two_tower_model')
         
-        # Compile model
+        # Compile model with custom metrics
         self.full_model.compile(
             optimizer=tf.keras.optimizers.Adam(learning_rate=self.learning_rate),
             loss='binary_crossentropy',
-            metrics=['accuracy', 'precision', 'recall']
+            metrics=[
+                'accuracy', 
+                tf.keras.metrics.Precision(name='precision'),
+                tf.keras.metrics.Recall(name='recall'),
+                tf.keras.metrics.AUC(name='auc')
+            ]
         )
         
         logger.info("Model architecture:")
@@ -344,6 +352,33 @@ class TwoTowerTrainer:
         except ImportError:
             logger.warning("TensorFlow.js not available, skipping JS export")
         
+        # Convert to ONNX format
+        try:
+            import tf2onnx
+            import onnx
+            
+            # Convert user tower to ONNX
+            user_onnx_model, _ = tf2onnx.convert.from_keras(
+                self.user_tower,
+                input_signature=None,
+                opset=13
+            )
+            onnx.save(user_onnx_model, f'{output_dir}/user_tower.onnx')
+            
+            # Convert item tower to ONNX
+            item_onnx_model, _ = tf2onnx.convert.from_keras(
+                self.item_tower,
+                input_signature=None,
+                opset=13
+            )
+            onnx.save(item_onnx_model, f'{output_dir}/item_tower.onnx')
+            
+            logger.info("Exported ONNX models")
+        except ImportError:
+            logger.warning("tf2onnx not available, skipping ONNX export")
+        except Exception as e:
+            logger.warning(f"ONNX export failed: {e}")
+        
         # Save preprocessing artifacts
         preprocessing = {
             'text_vectorizer': self.text_vectorizer,
@@ -457,6 +492,11 @@ def main():
             trainer.generate_embeddings(video_features, user_features, videos_df, users_df)
         
         logger.info("Training completed successfully!")
+        logger.info("Next steps:")
+        logger.info("1. Review model metrics and validation results")  
+        logger.info("2. Test inference with Edge Functions integration")
+        logger.info("3. Deploy to production with A/B testing")
+        logger.info(f"4. Models saved to: {args.output_dir}")
         
     except Exception as e:
         logger.error(f"Training failed: {e}")

@@ -8,19 +8,21 @@ import { supabase } from '@/lib/supabase';
 import { User as SupabaseUser } from '@supabase/supabase-js';
 import { Menu } from '@headlessui/react';
 import Link from 'next/link';
-import { Heart, User } from 'lucide-react';
+import { Heart, User, UserPlus } from 'lucide-react';
 import LikedVideosDrawer from './LikedVideosDrawer'; // ドロワーコンポーネントをインポート
 
-const Header = () => {
+const Header = ({ cardWidth, mobileGauge }: { cardWidth: number | undefined; mobileGauge?: React.ReactNode }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false); // ドロワー用のstate
   const [user, setUser] = useState<SupabaseUser | null>(null);
+  const [authChecked, setAuthChecked] = useState(false);
   const isMobile = useMediaQuery('(max-width: 639px)');
 
   useEffect(() => {
     const getSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       setUser(session?.user || null);
+      setAuthChecked(true);
     };
     getSession();
 
@@ -43,13 +45,13 @@ const Header = () => {
   };
 
   return (
-    <header id="main-header" className={`w-full ${isMobile ? 'fixed top-0 left-0 right-0 z-40 p-4 bg-gradient-to-r from-[#C4C8E3] via-[#D7D1E3] to-[#F7D7E0] to-[#F8DBB9] shadow-md' : 'max-w-md mx-auto mt-4 mb-2'}`}>
-      <div className="flex justify-between items-center text-white max-w-md mx-auto">
+    <header id="main-header" className={`mx-auto ${isMobile ? 'sticky top-0 z-50 pt-2 pb-0 bg-gradient-to-r from-[#C4C8E3] via-[#D7D1E3] to-[#F7D7E0] to-[#F8DBB9] shadow-md w-full' : 'mt-4 mb-2'}`} style={!isMobile ? { width: cardWidth ? `${cardWidth}px` : 'auto' } : {}}>
+      <div className={`relative z-10 flex justify-between items-center text-white mx-auto ${isMobile ? 'px-3 border-b border-white/40' : ''}`} style={!isMobile ? { width: cardWidth ? `${cardWidth}px` : 'auto' } : {}}>
         <Image
           src="/seiheki_lab.png"
           alt="Seiheki Lab Logo"
-          width={180}
-          height={78}
+          width={isMobile ? 120 : 180}
+          height={isMobile ? 50 : 78}
           priority
           draggable="false"
           style={{ filter: 'drop-shadow(0 0 0.5rem rgba(0, 0, 0, 0.1))' }}
@@ -114,15 +116,25 @@ const Header = () => {
             </Menu>
           </div>
         ) : (
-          <button
-            onClick={handleOpenModal}
-            className="p-4 py-2 mx-2 text-sm font-bold text-white rounded-xl bg-transparent border border-white hover:bg-purple-500 hover:text-white shadow-lg transition-all duration-300"
-            style={{ filter: 'drop-shadow(0 0 0.5rem rgba(0, 0, 0, 0.1))' }}
-          >
-            ログイン
-          </button>
+          authChecked ? (
+            <button
+              onClick={handleOpenModal}
+              className={`flex items-center gap-2 ${isMobile ? 'px-2 py-1.5' : 'px-4 py-2'} mx-2 text-sm font-bold text-white rounded-xl bg-transparent border border-white hover:bg-purple-500 hover:text-white shadow-lg transition-all duration-300`}
+              style={{ filter: 'drop-shadow(0 0 0.5rem rgba(0, 0, 0, 0.1))' }}
+              aria-label="ログインまたは新規登録"
+            >
+              <UserPlus size={18} className="opacity-90" />
+              <span className="hidden sm:inline">ログイン / 新規登録</span>
+              <span className="sm:hidden">ログイン</span>
+            </button>
+          ) : null
         )}
       </div>
+      {isMobile && mobileGauge ? (
+        <div className="relative z-0 mt-0">
+          {mobileGauge}
+        </div>
+      ) : null}
       <AuthModal isOpen={isModalOpen} onClose={handleCloseModal} />
       <LikedVideosDrawer isOpen={isDrawerOpen} onClose={handleCloseDrawer} />
     </header>

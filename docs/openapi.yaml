@@ -49,22 +49,36 @@ components:
           properties:
             score: { type: number }
             reasons: { type: array, items: { type: string } }
+    ErrorResponse:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+          description: 'エラーコード (例: "BAD_REQUEST", "UNAUTHORIZED", "NOT_FOUND", "INTERNAL_SERVER_ERROR")'
+        message:
+          type: string
+          description: エラーメッセージ
+        details:
+          type: object
+          description: エラーの詳細情報 (バリデーションエラーのフィールドなど)
 
 paths:
-  /feed_explore:
+  /videos/feed:
     get:
-      summary: 初回ばらつき含んだ動画リストを取得
-      description: 新規ユーザー用にタグ分散・人気・新着を混ぜた動画を返す
+      summary: 動画フィード取得
+      description: ユーザーの認証状態と学習状態に応じて、レコメンドまたは多様性を考慮した動画リストを返します。非ログインユーザーも利用可能です。
+      security:
+        - bearerAuth: []
       parameters:
         - name: limit
           in: query
-          schema: { type: integer, default: 24 }
-        - name: seed
-          in: query
-          schema: { type: number }
-        - name: exclude_liked
-          in: query
-          schema: { type: boolean, default: true }
+          schema:
+            type: integer
+            default: 20
+            description: 取得する動画の最大数
       responses:
         '200':
           description: 動画リスト
@@ -74,6 +88,24 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/VideoWithScore'
+        '400':
+          description: 不正なリクエスト
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: 認証失敗（トークンが無効、または有効期限切れ）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: サーバー内部エラー
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   /update_user_embedding:
     post:
@@ -101,37 +133,24 @@ paths:
                 type: object
                 properties:
                   status: { type: string }
-
-  /recommendations:
-    get:
-      summary: レコメンド動画取得
-      description: Two-Towerモデル + ユーザーembeddingに基づいて動画を返す
-      parameters:
-        - name: limit
-          in: query
-          schema: { type: integer, default: 20 }
-      responses:
-        '200':
-          description: 動画リスト
+        '400':
+          description: 不正なリクエスト
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/VideoWithScore'
-
-  /likes:
-    get:
-      summary: 自分がLIKEした動画リスト取得
-      responses:
-        '200':
-          description: LIKEした動画リスト
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: 認証失敗
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Video'
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: サーバー内部エラー
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   /delete_account:
     delete:
@@ -146,3 +165,21 @@ paths:
                 type: object
                 properties:
                   status: { type: string }
+        '400':
+          description: 不正なリクエスト
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: 認証失敗
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: サーバー内部エラー
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'

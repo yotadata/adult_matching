@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { ThumbsDown, ThumbsUp } from 'lucide-react';
 
 interface ActionButtonsProps {
   onSkip: () => void;
@@ -6,9 +7,10 @@ interface ActionButtonsProps {
   nopeColor: string;
   likeColor: string;
   isMobileLayout?: boolean; // 追加
+  cardWidth?: number; // 追加
 }
 
-const ActionButtons = ({ onSkip, onLike, nopeColor, likeColor, isMobileLayout = false }: ActionButtonsProps) => {
+const ActionButtons = ({ onSkip, onLike, nopeColor, likeColor, isMobileLayout = false, cardWidth }: ActionButtonsProps) => {
   const [isNopeHovered, setIsNopeHovered] = useState(false);
   const [isLikeHovered, setIsLikeHovered] = useState(false);
 
@@ -27,26 +29,32 @@ const ActionButtons = ({ onSkip, onLike, nopeColor, likeColor, isMobileLayout = 
   const buttonBaseClasses = "flex items-center justify-center h-14 font-bold tracking-wider text-lg text-white border-2";
 
   return (
-    <div className={`flex items-center w-full ${!isMobileLayout ? 'justify-between' : ''}`}> {/* justify-between を条件付きで追加 */}
+    <div className={`flex items-center ${isMobileLayout ? 'w-full' : 'justify-between'} ${isMobileLayout ? '' : 'mx-auto'}`} style={!isMobileLayout && cardWidth ? { width: `${cardWidth}px` } : {}}>
       {/* NOPE Button */}
       <button 
         onClick={onSkip} 
         onMouseEnter={() => setIsNopeHovered(true)}
-        onMouseLeave={() => setIsLikeHovered(false)}
-        className={`${buttonBaseClasses} ${isMobileLayout ? 'w-1/2' : 'w-40'} ${isMobileLayout ? 'rounded-none' : 'rounded-2xl'} ${!isMobileLayout ? 'hover:scale-105 active:scale-95 shadow-lg' : ''}`}
+        onMouseLeave={() => setIsNopeHovered(false)}
+        className={`${buttonBaseClasses} ${isMobileLayout ? 'flex-1' : 'w-40'} ${isMobileLayout ? 'rounded-none' : 'rounded-2xl'} ${!isMobileLayout ? 'hover:scale-105 active:scale-95 shadow-lg' : ''}`}
         style={nopeButtonStyle}
+        aria-label="イマイチ"
+        title="イマイチ"
       >
-        NOPE
+        <ThumbsDown size={22} className="mr-2" />
+        イマイチ
       </button>
       {/* LIKE Button */}
       <button 
         onClick={onLike} 
         onMouseEnter={() => setIsLikeHovered(true)}
         onMouseLeave={() => setIsLikeHovered(false)}
-        className={`${buttonBaseClasses} ${isMobileLayout ? 'w-1/2' : 'w-40'} ${isMobileLayout ? 'rounded-none' : 'rounded-2xl'} ${!isMobileLayout ? 'hover:scale-105 active:scale-95 shadow-lg' : ''}`}
-        style={likeButtonStyle}
+        className={`${buttonBaseClasses} ${isMobileLayout ? 'flex-1' : 'w-40'} ${isMobileLayout ? 'rounded-none' : 'rounded-2xl'} ${!isMobileLayout ? 'hover:scale-105 active:scale-95 shadow-lg' : ''}`}
+      style={likeButtonStyle}
+        aria-label="好み"
+        title="好み"
       >
-        LIKE
+        <ThumbsUp size={22} className="mr-2" />
+        好み
       </button>
     </div>
   );
