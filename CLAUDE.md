@@ -21,6 +21,40 @@ This is an adult video matching application built with Next.js and Supabase. The
 **Data Ingestion:**
 - `scripts/fanza_ingest.ts` - Script for ingesting video data from FANZA
 
+**Python Environment (Two-Tower Model):**
+- `uv sync` - Install Python dependencies for Two-Tower model training
+- `uv run python scripts/train_two_tower_model.py` - Train Two-Tower recommendation model
+- `uv run python scripts/batch_embedding_update.py` - Update embeddings in batch
+- `bash scripts/run_batch_update.sh` - Run batch embedding update script
+- Python 3.12.3 environment located in `.venv/` (managed by uv v0.8.11)
+
+### Python Environment Details
+**Configuration Files:**
+- `/pyproject.toml` - Main project configuration with dependencies
+- `/scripts/requirements.txt` - Detailed requirements with additional ML packages
+- `/uv.lock` - Dependency lock file for reproducible builds
+
+**Key Dependencies:**
+- **ML Frameworks:** tensorflow>=2.16.0, scikit-learn>=1.3.0, torch>=2.0.0
+- **Data Processing:** numpy>=1.24.0, pandas>=2.0.0, scipy>=1.10.0  
+- **Database:** psycopg2-binary>=2.9.0 (PostgreSQL connectivity)
+- **Model Deployment:** onnx, onnxruntime, tf2onnx, tensorflowjs
+- **Development:** jupyter>=1.0.0, ipython>=8.0.0
+- **Visualization:** matplotlib>=3.7.0, seaborn>=0.12.0, plotly>=5.15.0
+- **Testing:** pytest>=7.4.0, pytest-cov>=4.1.0
+- **Utilities:** python-dotenv, tqdm, pyyaml
+
+**Virtual Environment:**
+- Location: `.venv/` directory
+- Python Version: 3.12.3
+- System Site Packages: Disabled
+- Editable Installation: Project installed as `adult-matching-two-tower`
+
+**Usage:**
+- Environment is automatically activated when using `uv run`
+- For direct activation: `source .venv/bin/activate`
+- Package management: `uv add <package>`, `uv remove <package>`
+
 ## Architecture
 
 ### Frontend Structure
