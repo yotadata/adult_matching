@@ -39,8 +39,20 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onClose }) => {
         throw new Error(result.error || '登録に失敗しました');
       }
 
-      toast.success('確認メールを送信しました。メールボックスをご確認ください。');
-      onClose();
+      // autoConfirm（メール確認不要）がONのプロジェクトでは session が返るので、自動ログインする
+      if (result.session && result.access_token) {
+        const { supabase } = await import('@/lib/supabase');
+        await supabase.auth.setSession({
+          access_token: result.access_token,
+          refresh_token: result.session.refresh_token,
+        });
+        toast.success('登録してログインしました！');
+        onClose();
+      } else {
+        // メール確認が必要な設定では従来通りの案内
+        toast.success('確認メールを送信しました。メールボックスをご確認ください。');
+        onClose();
+      }
     } catch (error: unknown) {
       let errorMessage = '予期せぬエラーが発生しました';
       if (error instanceof Error) {
