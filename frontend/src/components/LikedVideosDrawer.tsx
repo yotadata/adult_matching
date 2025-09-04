@@ -40,6 +40,17 @@ const LikedVideosDrawer: React.FC<LikedVideosDrawerProps> = ({ isOpen, onClose }
   const [likedVideos, setLikedVideos] = useState<VideoRecord[]>([]);
   const [loading, setLoading] = useState(false);
 
+  // DMM/FANZA アフィリエイトリンクへ変換（既にal.fanza.co.jpならそのまま）
+  const toFanzaAffiliate = (raw: string | undefined | null): string | undefined => {
+    if (!raw) return undefined;
+    if (raw.startsWith('https://al.fanza.co.jp/')) return raw;
+    const afId = process.env.NEXT_PUBLIC_FANZA_AFFILIATE_ID || '';
+    if (!afId) return raw; // 環境変数未設定時は生URLを返す
+    const lurl = encodeURIComponent(raw);
+    const aid = encodeURIComponent(afId);
+    return `https://al.fanza.co.jp/?lurl=${lurl}&af_id=${aid}&ch=link_tool&ch_id=link`;
+  };
+
   useEffect(() => {
     const fetchLikedVideos = async () => {
       if (!isOpen) return;
@@ -137,7 +148,7 @@ const LikedVideosDrawer: React.FC<LikedVideosDrawerProps> = ({ isOpen, onClose }
                                   <p className="text-md font-bold text-amber-500">
                                     {video.price ? `￥${video.price.toLocaleString()}~` : '価格情報なし'}
                                   </p>
-                                  <Link href={video.product_url || '#'} passHref target="_blank" rel="noopener noreferrer">
+                                  <Link href={toFanzaAffiliate(video.product_url) || '#'} passHref target="_blank" rel="noopener noreferrer">
                                     <button className="bg-transparent border border-amber-400 text-amber-400 hover:bg-amber-400 hover:text-white font-bold py-1 px-3 rounded-md transition-all duration-300 text-sm">
                                       見る
                                     </button>
