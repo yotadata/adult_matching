@@ -13,6 +13,8 @@ import LikedVideosDrawer from './LikedVideosDrawer'; // ドロワーコンポー
 
 const Header = ({ cardWidth, mobileGauge }: { cardWidth: number | undefined; mobileGauge?: React.ReactNode }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [authInitialTab, setAuthInitialTab] = useState<'login' | 'register'>('login');
+  const [showRegisterNotice, setShowRegisterNotice] = useState(false);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false); // ドロワー用のstate
   const [user, setUser] = useState<SupabaseUser | null>(null);
   const [authChecked, setAuthChecked] = useState(false);
@@ -30,8 +32,24 @@ const Header = ({ cardWidth, mobileGauge }: { cardWidth: number | undefined; mob
       setUser(session?.user || null);
     });
 
+    // Allow other components to request opening the auth modal
+    const openHandler = () => {
+      setAuthInitialTab('login');
+      setShowRegisterNotice(false);
+      setIsModalOpen(true);
+    };
+    const openRegisterHandler = () => {
+      setAuthInitialTab('register');
+      setShowRegisterNotice(true);
+      setIsModalOpen(true);
+    };
+    window.addEventListener('open-auth-modal', openHandler as EventListener);
+    window.addEventListener('open-register-modal', openRegisterHandler as EventListener);
+
     return () => {
       authListener.subscription.unsubscribe();
+      window.removeEventListener('open-auth-modal', openHandler as EventListener);
+      window.removeEventListener('open-register-modal', openRegisterHandler as EventListener);
     };
   }, []);
 
@@ -135,7 +153,17 @@ const Header = ({ cardWidth, mobileGauge }: { cardWidth: number | undefined; mob
           {mobileGauge}
         </div>
       ) : null}
-      <AuthModal isOpen={isModalOpen} onClose={handleCloseModal} />
+      <AuthModal
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+        initialTab={authInitialTab}
+        registerNotice={showRegisterNotice ? (
+          <>
+            <p className="mb-1">・捨てアドレスでの登録で大丈夫です。</p>
+            <p>・個人情報やクレジットカード情報の取得意図は一切ありません。</p>
+          </>
+        ) : undefined}
+      />
       <LikedVideosDrawer isOpen={isDrawerOpen} onClose={handleCloseDrawer} />
     </header>
   );

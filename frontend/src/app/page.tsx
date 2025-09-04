@@ -5,12 +5,13 @@ import SwipeCard, { CardData, SwipeCardHandle } from "@/components/SwipeCard";
 import ActionButtons from "@/components/ActionButtons";
 import { useState, useRef, useEffect } from "react";
 import { AnimatePresence, motion, PanInfo } from "framer-motion";
-import HowToUseCard from "@/components/HowToUseCard";
+import dynamic from "next/dynamic";
+const HowToUseCard = dynamic(() => import("@/components/HowToUseCard"), { ssr: false });
 import useMediaQuery from "@/hooks/useMediaQuery";
 import useWindowSize from "@/hooks/useWindowSize";
 import MobileVideoLayout from "@/components/MobileVideoLayout";
-import { supabase } from "@/lib/supabase"; // supabaseクライアントをインポート
-import ProgressGauges from "@/components/ProgressGauges";
+import { supabase } from "@/lib/supabase"; // supabaseクライアントをインポート;
+const ProgressGauges = dynamic(() => import("@/components/ProgressGauges"), { ssr: false });
 
 // APIから受け取るvideoオブジェクトの型定義
 interface VideoFromApi {
@@ -42,12 +43,27 @@ export default function Home() {
   const isMobile = useMediaQuery('(max-width: 639px)');
   const { width: windowWidth, height: windowHeight } = useWindowSize();
   const [cardWidth, setCardWidth] = useState<number | undefined>(400); // cardWidthをstateとして管理し、デフォルト値を400に設定
+  const [layoutReady, setLayoutReady] = useState(false); // 初期レイアウト完了フラグ
   const getVideoAspectRatio = () => {
     return 16 / 13; // デフォルトを 4:3 に変更
   };
   const videoAspectRatio = getVideoAspectRatio();
-  const [decisionCount, setDecisionCount] = useState<number>(0);
-  const personalizeTarget = Number(process.env.NEXT_PUBLIC_PERSONALIZE_TARGET || 10);
+  const initialGuestCount = (() => {
+    if (typeof window === 'undefined') return 0;
+    try {
+      const raw = localStorage.getItem('guest_decisions_v1');
+      const arr = raw ? JSON.parse(raw) : [];
+      return Array.isArray(arr) ? arr.length : 0;
+    } catch {
+      return 0;
+    }
+  })();
+  const [decisionCount, setDecisionCount] = useState<number>(initialGuestCount);
+  const [guestDecisionCount, setGuestDecisionCount] = useState<number>(initialGuestCount);
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
+  const guestLimit = Number(process.env.NEXT_PUBLIC_GUEST_DECISIONS_LIMIT || 20);
+  const [mounted, setMounted] = useState(false);
+  const personalizeTarget = Number(process.env.NEXT_PUBLIC_PERSONALIZE_TARGET || 20);
   const diagnosisTarget = Number(process.env.NEXT_PUBLIC_DIAGNOSIS_TARGET || 30);
   const mainRef = useRef<HTMLDivElement | null>(null);
   const debugResetGauge = (() => {
@@ -62,8 +78,10 @@ export default function Home() {
 
   // APIから動画データを取得する
   useEffect(() => {
+    setMounted(true);
     const fetchVideos = async () => {
       const { data: { session } } = await supabase.auth.getSession();
+      setIsLoggedIn(!!session?.user);
 
       const headers: HeadersInit = {};
       if (session?.access_token) {
@@ -113,6 +131,17 @@ export default function Home() {
     fetchVideos();
   }, []);
 
+  // できるだけ早くゲスト件数を反映（Supabase判定を待たない早期反映）
+  useEffect(() => {
+    if (debugResetGauge) return;
+    try {
+      const raw = typeof window !== 'undefined' ? localStorage.getItem('guest_decisions_v1') : null;
+      const arr = raw ? JSON.parse(raw) : [];
+      if (Array.isArray(arr)) setGuestDecisionCount(arr.length);
+      if (!isLoggedIn && Array.isArray(arr)) setDecisionCount(arr.length);
+    } catch {}
+  }, []);
+
   useEffect(() => {
     // メイン領域の実寸高さからカード横幅を算出（デスクトップ）
     // 動画はカード高さの 3/5 を占めるため、その高さを基準に幅を決定
@@ -123,6 +152,7 @@ export default function Home() {
           const targetVideoHeight = mainH * (3 / 5);
           const calculatedCardWidth = targetVideoHeight * videoAspectRatio;
           setCardWidth(calculatedCardWidth);
+          setLayoutReady(true);
           return;
         }
       }
@@ -131,12 +161,13 @@ export default function Home() {
         const targetVideoHeight = (!isMobile ? windowHeight * (3 / 5) : windowHeight / 2);
         const calculatedCardWidth = targetVideoHeight * videoAspectRatio;
         setCardWidth(calculatedCardWidth);
+        setLayoutReady(true);
       }
     };
     recalc();
   }, [windowHeight, videoAspectRatio, isMobile]);
 
-  // 初期の判断数を読み込む（ログイン済みならサーバーから、未ログインなら 0）
+  // 初期の判断数を読み込む（ログイン済みならDB、未ログインならLocalStorage）
   useEffect(() => {
     const loadDecisionCount = async () => {
       // デバッグ: リロード時にゲージを常に 0 にリセット
@@ -146,7 +177,15 @@ export default function Home() {
       }
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        setDecisionCount(0);
+        try {
+          const raw = localStorage.getItem('guest_decisions_v1');
+          const arr = raw ? JSON.parse(raw) : [];
+          const n = Array.isArray(arr) ? arr.length : 0;
+          setGuestDecisionCount(n);
+          setDecisionCount(n);
+        } catch {
+          setDecisionCount(0);
+        }
         return;
       }
       const { count, error } = await supabase
@@ -161,6 +200,65 @@ export default function Home() {
     };
     loadDecisionCount();
   }, []);
+
+  // ログイン状態の変化を監視し、ゲスト分をフラッシュ
+  useEffect(() => {
+    const { data: authListener } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      const loggedIn = !!session?.user;
+      setIsLoggedIn(loggedIn);
+      if (loggedIn) {
+        await flushGuestDecisions();
+      }
+    });
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
+  }, []);
+
+  // 初回マウント時、既ログインならローカルの決定をフラッシュ
+  useEffect(() => {
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) await flushGuestDecisions();
+    })();
+  }, []);
+
+  const getGuestDecisions = (): { video_id: number; decision_type: 'like' | 'nope'; created_at: string }[] => {
+    try {
+      const raw = localStorage.getItem('guest_decisions_v1');
+      const arr = raw ? JSON.parse(raw) : [];
+      return Array.isArray(arr) ? arr : [];
+    } catch {
+      return [];
+    }
+  };
+
+  const setGuestDecisions = (arr: { video_id: number; decision_type: 'like' | 'nope'; created_at: string }[]) => {
+    localStorage.setItem('guest_decisions_v1', JSON.stringify(arr));
+    setGuestDecisionCount(arr.length);
+  };
+
+  const flushGuestDecisions = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    const items = getGuestDecisions();
+    if (!items.length) return;
+    const batchSize = 100;
+    for (let i = 0; i < items.length; i += batchSize) {
+      const chunk = items.slice(i, i + batchSize).map((d) => ({
+        user_id: user.id,
+        video_id: d.video_id,
+        decision_type: d.decision_type,
+      }));
+      const { error } = await supabase.from('user_video_decisions').insert(chunk);
+      if (error) {
+        console.error('Error flushing guest decisions:', error);
+        return;
+      }
+    }
+    setGuestDecisions([]);
+    setGuestDecisionCount(0);
+  };
 
   
 
@@ -177,11 +275,26 @@ export default function Home() {
         if (error) {
           console.error(`Error inserting ${decisionType} decision:`, error);
         }
+      } else {
+        const current = getGuestDecisions();
+        if (current.length >= guestLimit) {
+          try { window.dispatchEvent(new Event('open-register-modal')); } catch {}
+          return;
+        }
+        const decisionType = direction === 'right' ? 'like' : 'nope';
+        current.push({ video_id: activeCard.id, decision_type: decisionType, created_at: new Date().toISOString() });
+        setGuestDecisions(current);
       }
     }
     setActiveIndex((prev) => prev + 1);
     setCurrentGradient(ORIGINAL_GRADIENT);
     setDecisionCount((c) => c + 1);
+    if (!isLoggedIn) {
+      const current = getGuestDecisions();
+      if (current.length >= guestLimit) {
+        try { window.dispatchEvent(new Event('open-register-modal')); } catch {}
+      }
+    }
   };
 
   const triggerSwipe = (direction: 'left' | 'right') => {
@@ -214,11 +327,12 @@ export default function Home() {
       style={{ background: currentGradient }}
       transition={{ duration: 0.3 }}
     >
+      { /* ゲージ用に、ログイン時はDBカウント、ゲスト時はlocalStorageのカウントを使用 */ }
       <Header 
         cardWidth={cardWidth}
-        mobileGauge={isMobile ? (
+        mobileGauge={isMobile && mounted ? (
           <ProgressGauges
-            decisionCount={decisionCount}
+            decisionCount={isLoggedIn ? decisionCount : guestDecisionCount}
             personalizeTarget={personalizeTarget}
             diagnosisTarget={diagnosisTarget}
             // モバイルはヘッダー内で全幅にするため幅指定はしない
@@ -226,10 +340,10 @@ export default function Home() {
         ) : undefined}
       />
       {/* デスクトップはヘッダー下にゲージを表示 */}
-      {!isMobile && (
+      {!isMobile && mounted && (
         <div className="w-full flex justify-center px-4 mt-2 mb-4">
           <ProgressGauges
-            decisionCount={decisionCount}
+            decisionCount={isLoggedIn ? decisionCount : guestDecisionCount}
             personalizeTarget={personalizeTarget}
             diagnosisTarget={diagnosisTarget}
             widthPx={cardWidth}
@@ -258,6 +372,7 @@ export default function Home() {
                 onDrag={handleDrag}
                 onDragEnd={handleDragEnd}
                 cardWidth={cardWidth}
+                canSwipe={isLoggedIn || decisionCount < guestLimit}
               />
             )
           ) : (
@@ -284,7 +399,7 @@ export default function Home() {
         </footer>
       )}
       <AnimatePresence>
-        {showHowToUse && (
+        {showHowToUse && layoutReady && mounted && !!activeCard && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}

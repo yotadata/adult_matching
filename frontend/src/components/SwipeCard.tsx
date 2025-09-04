@@ -30,9 +30,10 @@ interface SwipeCardProps {
   onDrag?: (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => void;
   onDragEnd?: (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => void;
   cardWidth: number | undefined; // cardWidth propを追加
+  canSwipe?: boolean; // 追加: ゲスト制限時にスワイプを抑制
 }
 
-const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwipe, onDrag, onDragEnd, cardWidth }, ref) => {
+const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwipe, onDrag, onDragEnd, cardWidth, canSwipe = true }, ref) => {
   const controls = useAnimation();
   
   const [showVideo, setShowVideo] = useState(false);
@@ -54,6 +55,10 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwi
   
 
   const swipe = async (direction: 'left' | 'right') => {
+    if (!canSwipe) {
+      await controls.start({ x: 0 });
+      return;
+    }
     const swipeWidth = cardWidth || 448; // cardWidthが未定義の場合のフォールバック
     const x = direction === 'right' ? `calc(100vw + ${swipeWidth}px)` : `calc(-100vw - ${swipeWidth}px)`;
     await controls.start({ x, opacity: 0, transition: { duration: 0.6 } }); 
@@ -69,6 +74,11 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwi
   };
 
   const handleDragEnd = (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+    if (!canSwipe) {
+      controls.start({ x: 0 });
+      onDragEnd?.(event, info);
+      return;
+    }
     if (info.offset.x > 100) {
       swipe('right');
     } else if (info.offset.x < -100) {

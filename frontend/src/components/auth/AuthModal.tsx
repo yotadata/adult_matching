@@ -9,9 +9,11 @@ import { X } from 'lucide-react';
 interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
+  initialTab?: 'login' | 'register';
+  registerNotice?: React.ReactNode;
 }
 
-const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
+const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, initialTab = 'login', registerNotice }) => {
   return (
     <Dialog as="div" className="relative z-50" open={isOpen} onClose={onClose}>
       {/* Backdrop */}
@@ -23,7 +25,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
             <button onClick={onClose} className='absolute top-4 right-4 text-gray-600 hover:text-gray-900 transition-colors'>
               <X size={24} />
             </button>
-            <Tab.Group>
+            <Tab.Group defaultIndex={initialTab === 'register' ? 1 : 0}>
               <Tab.List className="flex space-x-1 rounded-xl bg-gray-100 p-1 mb-6">
                 {['ログイン', '新規登録'].map((tab) => (
                   <Tab as={Fragment} key={tab}>
@@ -45,6 +47,11 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                   <LoginForm onClose={onClose} />
                 </Tab.Panel>
                 <Tab.Panel className="focus:outline-none">
+                  {registerNotice ? (
+                    <div className="mb-4 p-3 rounded-lg bg-amber-50 text-amber-700 text-xs leading-relaxed">
+                      {registerNotice}
+                    </div>
+                  ) : null}
                   <RegisterForm onClose={onClose} />
                 </Tab.Panel>
               </Tab.Panels>
