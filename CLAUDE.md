@@ -18,15 +18,20 @@ This is an adult video matching application built with Next.js and Supabase. The
 - Migration files located in `/db/migrations/`
 - Initial schema: `/db/migrations/20250818000000000_initial.sql`
 
+**Data Processing & ML Pipeline:**
+- `make setup` - Initial project setup and environment preparation
+- `make data-collect` - Collect review data using web scraping (requires cookie setup)
+- `make data-clean` - Clean and preprocess collected data  
+- `make data-embed` - Generate embedding vectors from processed text
+- `make train` - Train Two-Tower recommendation model
+- `make train-full` - Full pipeline: data collection → cleaning → embedding → training
+- `make status` - Check project status and data availability
+- Python 3.12.3 environment located in `.venv/` (managed by uv v0.8.11)
+
 **Data Ingestion:**
 - `scripts/fanza_ingest.ts` - Script for ingesting video data from FANZA
-
-**Python Environment (Two-Tower Model):**
-- `uv sync` - Install Python dependencies for Two-Tower model training
-- `uv run python scripts/train_two_tower_model.py` - Train Two-Tower recommendation model
-- `uv run python scripts/batch_embedding_update.py` - Update embeddings in batch
-- `bash scripts/run_batch_update.sh` - Run batch embedding update script
-- Python 3.12.3 environment located in `.venv/` (managed by uv v0.8.11)
+- `data_processing/scraping/` - Web scraping modules for initial data collection
+- `ml_pipeline/training/` - Machine learning model training pipeline
 
 ### Python Environment Details
 **Configuration Files:**

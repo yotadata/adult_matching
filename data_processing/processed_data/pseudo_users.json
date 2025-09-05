@@ -1,0 +1,305 @@
+[
+  {
+    "user_id": "72952ba34e0d333a650f4749387fea1044bfeeee60a85fc0a234b46f9387331b",
+    "original_reviewer_id": "1a239b6d5f5c",
+    "profile": {
+      "review_count": 1,
+      "avg_rating": 3.0,
+      "rating_std": 0.0,
+      "avg_review_length": 54.0,
+      "review_length_std": 0.0,
+      "genre_preferences": {},
+      "sentiment_profile": {
+        "avg_sentiment": 0.0,
+        "sentiment_variance": 0.0,
+        "positive_ratio": 0.0,
+        "negative_ratio": 0.0
+      },
+      "temporal_pattern": {
+        "activity_span_days": 364,
+        "avg_reviews_per_month": 0.08333333333333333,
+        "seasonal_preference": "spring",
+        "time_preference": "night"
+      },
+      "engagement_level": 0.079,
+      "expertise_level": 0.0
+    },
+    "actions": [
+      {
+        "user_id": "72952ba34e0d333a650f4749387fea1044bfeeee60a85fc0a234b46f9387331b",
+        "video_id": "video_7ff5653d",
+        "action": "like",
+        "confidence": 0.9,
+        "timestamp": "2025-02-24T19:15:09.622350",
+        "session_id": "session_8870",
+        "source": "review_conversion",
+        "metadata": {
+          "original_rating": null,
+          "sentiment_score": 0.0,
+          "like_probability": 0.5,
+          "review_length": 54
+        }
+      },
+      {
+        "user_id": "72952ba34e0d333a650f4749387fea1044bfeeee60a85fc0a234b46f9387331b",
+        "video_id": "video_29287",
+        "action": "skip",
+        "confidence": 0.6,
+        "timestamp": "2025-01-06T15:50:09.622478",
+        "session_id": "session_7410",
+        "source": "preference_inference",
+        "metadata": {
+          "preference_match_score": 0.37912839115150193,
+          "based_on_review": true,
+          "inference_confidence": 0.6
+        }
+      },
+      {
+        "user_id": "72952ba34e0d333a650f4749387fea1044bfeeee60a85fc0a234b46f9387331b",
+        "video_id": "video_96491",
+        "action": "like",
+        "confidence": 0.6,
+        "timestamp": "2025-06-08T21:11:09.622499",
+        "session_id": "session_7840",
+        "source": "preference_inference",
+        "metadata": {
+          "preference_match_score": 0.3245785646649191,
+          "based_on_review": true,
+          "inference_confidence": 0.6
+        }
+      },
+      {
+        "user_id": "72952ba34e0d333a650f4749387fea1044bfeeee60a85fc0a234b46f9387331b",
+        "video_id": "video_88119",
+        "action": "skip",
+        "confidence": 0.6,
+        "timestamp": "2025-01-05T00:16:09.622511",
+        "session_id": "session_1992",
+        "source": "preference_inference",
+        "metadata": {
+          "preference_match_score": 0.7922253019738817,
+          "based_on_review": true,
+          "inference_confidence": 0.6
+        }
+      },
+      {
+        "user_id": "72952ba34e0d333a650f4749387fea1044bfeeee60a85fc0a234b46f9387331b",
+        "video_id": "video_90467",
+        "action": "like",
+        "confidence": 0.6,
+        "timestamp": "2025-05-30T17:29:09.622522",
+        "session_id": "session_1683",
+        "source": "preference_inference",
+        "metadata": {
+          "preference_match_score": 0.4820611804253118,
+          "based_on_review": true,
+          "inference_confidence": 0.6
+        }
+      }
+    ],
+    "confidence_score": 0.08975000000000001,
+    "review_count": 1
+  },
+  {
+    "user_id": "6e8ac3807c24f84a695e88d9b2436b6b2fe7200fb96ddf2e1b1ded47b3535d92",
+    "original_reviewer_id": "48eb8cd09b67",
+    "profile": {
+      "review_count": 1,
+      "avg_rating": 3.0,
+      "rating_std": 0.0,
+      "avg_review_length": 41.0,
+      "review_length_std": 0.0,
+      "genre_preferences": {},
+      "sentiment_profile": {
+        "avg_sentiment": 0.0,
+        "sentiment_variance": 0.0,
+        "positive_ratio": 0.0,
+        "negative_ratio": 0.0
+      },
+      "temporal_pattern": {
+        "activity_span_days": 245,
+        "avg_reviews_per_month": 0.08333333333333333,
+        "seasonal_preference": "autumn",
+        "time_preference": "evening"
+      },
+      "engagement_level": 0.066,
+      "expertise_level": 0.0
+    },
+    "actions": [
+      {
+        "user_id": "6e8ac3807c24f84a695e88d9b2436b6b2fe7200fb96ddf2e1b1ded47b3535d92",
+        "video_id": "video_8f629a6b",
+        "action": "like",
+        "confidence": 0.9,
+        "timestamp": "2025-02-02T18:02:09.622829",
+        "session_id": "session_1630",
+        "source": "review_conversion",
+        "metadata": {
+          "original_rating": null,
+          "sentiment_score": 0.0,
+          "like_probability": 0.5,
+          "review_length": 41
+        }
+      },
+      {
+        "user_id": "6e8ac3807c24f84a695e88d9b2436b6b2fe7200fb96ddf2e1b1ded47b3535d92",
+        "video_id": "video_20333",
+        "action": "like",
+        "confidence": 0.6,
+        "timestamp": "2025-04-30T03:36:09.622894",
+        "session_id": "session_4629",
+        "source": "preference_inference",
+        "metadata": {
+          "preference_match_score": 0.6219630397555231,
+          "based_on_review": true,
+          "inference_confidence": 0.6
+        }
+      },
+      {
+        "user_id": "6e8ac3807c24f84a695e88d9b2436b6b2fe7200fb96ddf2e1b1ded47b3535d92",
+        "video_id": "video_36385",
+        "action": "like",
+        "confidence": 0.6,
+        "timestamp": "2024-11-17T11:37:09.622908",
+        "session_id": "session_5539",
+        "source": "preference_inference",
+        "metadata": {
+          "preference_match_score": 0.6836485302208513,
+          "based_on_review": true,
+          "inference_confidence": 0.6
+        }
+      },
+      {
+        "user_id": "6e8ac3807c24f84a695e88d9b2436b6b2fe7200fb96ddf2e1b1ded47b3535d92",
+        "video_id": "video_78462",
+        "action": "like",
+        "confidence": 0.6,
+        "timestamp": "2024-09-20T05:03:09.622918",
+        "session_id": "session_4859",
+        "source": "preference_inference",
+        "metadata": {
+          "preference_match_score": 0.566022844573413,
+          "based_on_review": true,
+          "inference_confidence": 0.6
+        }
+      },
+      {
+        "user_id": "6e8ac3807c24f84a695e88d9b2436b6b2fe7200fb96ddf2e1b1ded47b3535d92",
+        "video_id": "video_10327",
+        "action": "skip",
+        "confidence": 0.6,
+        "timestamp": "2025-03-26T08:28:09.622927",
+        "session_id": "session_5046",
+        "source": "preference_inference",
+        "metadata": {
+          "preference_match_score": 0.31121945981401333,
+          "based_on_review": true,
+          "inference_confidence": 0.6
+        }
+      }
+    ],
+    "confidence_score": 0.07566666666666666,
+    "review_count": 1
+  },
+  {
+    "user_id": "7597d57a5a2d8dac6780f561ee29ec0249bb3750e24ba3eb494f7be9cbd95079",
+    "original_reviewer_id": "4ba7333c5cec",
+    "profile": {
+      "review_count": 1,
+      "avg_rating": 3.0,
+      "rating_std": 0.0,
+      "avg_review_length": 22.0,
+      "review_length_std": 0.0,
+      "genre_preferences": {},
+      "sentiment_profile": {
+        "avg_sentiment": 0.0,
+        "sentiment_variance": 0.0,
+        "positive_ratio": 0.0,
+        "negative_ratio": 0.0
+      },
+      "temporal_pattern": {
+        "activity_span_days": 225,
+        "avg_reviews_per_month": 0.08333333333333333,
+        "seasonal_preference": "autumn",
+        "time_preference": "morning"
+      },
+      "engagement_level": 0.047,
+      "expertise_level": 0.0
+    },
+    "actions": [
+      {
+        "user_id": "7597d57a5a2d8dac6780f561ee29ec0249bb3750e24ba3eb494f7be9cbd95079",
+        "video_id": "video_6c39709a",
+        "action": "like",
+        "confidence": 0.9,
+        "timestamp": "2025-03-07T02:48:09.623208",
+        "session_id": "session_6391",
+        "source": "review_conversion",
+        "metadata": {
+          "original_rating": null,
+          "sentiment_score": 0.0,
+          "like_probability": 0.5,
+          "review_length": 22
+        }
+      },
+      {
+        "user_id": "7597d57a5a2d8dac6780f561ee29ec0249bb3750e24ba3eb494f7be9cbd95079",
+        "video_id": "video_44384",
+        "action": "like",
+        "confidence": 0.6,
+        "timestamp": "2025-04-03T21:17:09.623249",
+        "session_id": "session_2575",
+        "source": "preference_inference",
+        "metadata": {
+          "preference_match_score": 0.35075841188035367,
+          "based_on_review": true,
+          "inference_confidence": 0.6
+        }
+      },
+      {
+        "user_id": "7597d57a5a2d8dac6780f561ee29ec0249bb3750e24ba3eb494f7be9cbd95079",
+        "video_id": "video_14565",
+        "action": "skip",
+        "confidence": 0.6,
+        "timestamp": "2025-02-01T23:24:09.623262",
+        "session_id": "session_7913",
+        "source": "preference_inference",
+        "metadata": {
+          "preference_match_score": 0.37839897430341246,
+          "based_on_review": true,
+          "inference_confidence": 0.6
+        }
+      },
+      {
+        "user_id": "7597d57a5a2d8dac6780f561ee29ec0249bb3750e24ba3eb494f7be9cbd95079",
+        "video_id": "video_59499",
+        "action": "like",
+        "confidence": 0.6,
+        "timestamp": "2025-08-07T18:04:09.623273",
+        "session_id": "session_1476",
+        "source": "preference_inference",
+        "metadata": {
+          "preference_match_score": 0.7047524876141531,
+          "based_on_review": true,
+          "inference_confidence": 0.6
+        }
+      },
+      {
+        "user_id": "7597d57a5a2d8dac6780f561ee29ec0249bb3750e24ba3eb494f7be9cbd95079",
+        "video_id": "video_93218",
+        "action": "like",
+        "confidence": 0.6,
+        "timestamp": "2025-07-10T14:51:09.623284",
+        "session_id": "session_2366",
+        "source": "preference_inference",
+        "metadata": {
+          "preference_match_score": 0.5354826595894646,
+          "based_on_review": true,
+          "inference_confidence": 0.6
+        }
+      }
+    ],
+    "confidence_score": 0.05508333333333333,
+    "review_count": 1
+  }
+]
