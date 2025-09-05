@@ -45,8 +45,8 @@ const LikedVideosDrawer: React.FC<LikedVideosDrawerProps> = ({ isOpen, onClose }
   // Filters and sorting (in-drawer)
   const [sort, setSort] = useState<'liked_at' | 'released' | 'price' | 'title'>('liked_at');
   const [order, setOrder] = useState<'desc' | 'asc'>('desc');
-  const [tagOptions, setTagOptions] = useState<{ id: string; name: string }[]>([]);
-  const [performerOptions, setPerformerOptions] = useState<{ id: string; name: string }[]>([]);
+  const [tagOptions, setTagOptions] = useState<{ id: string; name: string; cnt?: number }[]>([]);
+  const [performerOptions, setPerformerOptions] = useState<{ id: string; name: string; cnt?: number }[]>([]);
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
   const [selectedPerformerIds, setSelectedPerformerIds] = useState<string[]>([]);
   const pageSize = 40;
@@ -67,17 +67,21 @@ const LikedVideosDrawer: React.FC<LikedVideosDrawerProps> = ({ isOpen, onClose }
     [isOpen, sort, order, selectedTagIds, selectedPerformerIds]
   );
 
-  // Fetch filter options (tags/performers) when opening
+  // Fetch facet options (tags/performers across ALL likes) when opening
   useEffect(() => {
     if (!isOpen) return;
     (async () => {
       try {
-        const [{ data: tags }, { data: perfs }] = await Promise.all([
-          supabase.from('tags').select('id, name').order('name', { ascending: true }).limit(200),
-          supabase.from('performers').select('id, name').order('name', { ascending: true }).limit(200),
+        const [{ data: tags, error: te }, { data: perfs, error: pe }] = await Promise.all([
+          supabase.rpc('get_user_liked_tags'),
+          supabase.rpc('get_user_liked_performers'),
         ]);
-        setTagOptions((tags as any[])?.filter(Boolean) || []);
-        setPerformerOptions((perfs as any[])?.filter(Boolean) || []);
+        if (te) console.warn('facet tags error', te.message);
+        if (pe) console.warn('facet performers error', pe.message);
+        const tagRows = (tags as any[])?.filter(Boolean) || [];
+        const perfRows = (perfs as any[])?.filter(Boolean) || [];
+        setTagOptions(tagRows);
+        setPerformerOptions(perfRows);
       } catch (e) {
         // ignore
       }
@@ -114,7 +118,8 @@ const LikedVideosDrawer: React.FC<LikedVideosDrawerProps> = ({ isOpen, onClose }
         console.error('Error fetching liked videos:', error);
         setError(error.message);
       } else {
-        setLikedVideos((data as any[]) || []);
+        const rows = (data as any[]) || [];
+        setLikedVideos(rows);
       }
       setLoading(false);
     };
@@ -171,13 +176,13 @@ const LikedVideosDrawer: React.FC<LikedVideosDrawerProps> = ({ isOpen, onClose }
                       {/* Inline filters */}
                       <div className="mt-4 grid grid-cols-1 md:grid-cols-12 gap-2">
                         <div className="md:col-span-5 flex items-center gap-2">
-                          <select className="border rounded-lg px-2 py-2" value={sort} onChange={(e) => setSort(e.target.value as any)}>
+                          <select className="border border-gray-300 rounded-lg px-2 py-2 bg-white text-gray-800" value={sort} onChange={(e) => setSort(e.target.value as any)}>
                             <option value="liked_at">いいね日時</option>
                             <option value="released">発売日</option>
                             <option value="price">価格</option>
                             <option value="title">タイトル</option>
                           </select>
-                          <select className="border rounded-lg px-2 py-2" value={order} onChange={(e) => setOrder(e.target.value as any)}>
+                          <select className="border border-gray-300 rounded-lg px-2 py-2 bg-white text-gray-800" value={order} onChange={(e) => setOrder(e.target.value as any)}>
                             <option value="desc">降順</option>
                             <option value="asc">昇順</option>
                           </select>
@@ -188,7 +193,7 @@ const LikedVideosDrawer: React.FC<LikedVideosDrawerProps> = ({ isOpen, onClose }
                           <label className="block text-xs text-gray-600 mb-1">タグで絞り込み</label>
                           <select
                             multiple
-                            className="w-full border rounded-lg px-2 py-2 h-28"
+                            className="w-full border border-gray-300 rounded-lg px-2 py-2 h-28 bg-white text-gray-800"
                             value={selectedTagIds}
                             onChange={(e) => {
                               const opts = Array.from(e.target.selectedOptions).map(o => o.value);
@@ -196,7 +201,7 @@ const LikedVideosDrawer: React.FC<LikedVideosDrawerProps> = ({ isOpen, onClose }
                             }}
                           >
                             {tagOptions.map((t) => (
-                              <option key={t.id} value={t.id}>{t.name}</option>
+                              <option key={t.id} value={t.id}>{t.name}{typeof t.cnt === 'number' ? ` (${t.cnt})` : ''}</option>
                             ))}
                           </select>
                         </div>
@@ -205,7 +210,7 @@ const LikedVideosDrawer: React.FC<LikedVideosDrawerProps> = ({ isOpen, onClose }
                           <label className="block text-xs text-gray-600 mb-1">出演で絞り込み</label>
                           <select
                             multiple
-                            className="w-full border rounded-lg px-2 py-2 h-28"
+                            className="w-full border border-gray-300 rounded-lg px-2 py-2 h-28 bg-white text-gray-800"
                             value={selectedPerformerIds}
                             onChange={(e) => {
                               const opts = Array.from(e.target.selectedOptions).map(o => o.value);
@@ -213,7 +218,7 @@ const LikedVideosDrawer: React.FC<LikedVideosDrawerProps> = ({ isOpen, onClose }
                             }}
                           >
                             {performerOptions.map((p) => (
-                              <option key={p.id} value={p.id}>{p.name}</option>
+                              <option key={p.id} value={p.id}>{p.name}{typeof p.cnt === 'number' ? ` (${p.cnt})` : ''}</option>
                             ))}
                           </select>
                         </div>
