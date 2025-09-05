@@ -101,7 +101,7 @@ serve(async (req: Request) => {
     console.log('Calling DMM API:', dmmApiUrl.toString().replace(api_id, '***'));
 
     // DMM API呼び出し（テスト用の条件分岐を追加）
-    const isTestMode = api_id.includes('test') || api_id === 'kG4AFzXp15PTK3R52MFc';
+    const isTestMode = api_id.includes('test'); // 実API呼び出しのため kG4AFzXp15PTK3R52MFc 条件を削除
     let data: DMMApiResponse;
 
     if (isTestMode) {

@@ -24,12 +24,18 @@ help:
 	@echo "  collect-logs          - 収集ログ確認"
 	@echo "  collect-watch         - 収集監視（連続）"
 	@echo ""
+	@echo "=== データ処理・疑似ユーザー生成 ==="
+	@echo "  integrate-batch-data  - バッチデータ統合・クリーニング"
+	@echo "  generate-rating-users - 評価ベース疑似ユーザー生成（4+→Like）"
+	@echo "  generate-pseudo-users - 疑似ユーザー生成（従来版）"
+	@echo "  data-clean            - データクリーニング（従来版）"
+	@echo ""
 	@echo "=== ML学習パイプライン ==="
-	@echo "  data-clean            - データのクリーニング・前処理"
-	@echo "  generate-pseudo-users - 疑似ユーザー生成"
+	@echo "  train-rating          - 評価ベースTwo-Towerモデル訓練"
+	@echo "  train-full-rating     - 評価ベースフル学習パイプライン"
+	@echo "  train                 - Two-Towerモデル訓練（従来版）"
+	@echo "  train-full            - フル学習パイプライン（従来版）"
 	@echo "  data-embed            - 埋め込みベクトル生成"
-	@echo "  train                 - Two-Towerモデルの訓練"
-	@echo "  train-full            - フル学習パイプライン（大規模データ対応）"
 	@echo ""
 	@echo "=== 開発・運用 ==="
 	@echo "  setup                 - プロジェクト環境のセットアップ"
@@ -137,13 +143,28 @@ data-embed:
 	cd $(ML_DIR)/preprocessing && $(PYTHON) review_to_embeddings.py
 	@echo "埋め込みベクトル生成完了！"
 
-# モデル訓練
+# 従来モデル訓練
 train:
-	@echo "=== Two-Towerモデル訓練開始 ==="
+	@echo "=== Two-Towerモデル訓練開始（従来版） ==="
 	cd $(ML_DIR)/training && $(PYTHON) train_two_tower_model.py
 	@echo "モデル訓練完了！"
 
-# フル学習パイプライン（大規模データ収集対応）
+# 評価ベースモデル訓練（パターン1）
+train-rating:
+	@echo "=== 評価ベースTwo-Towerモデル訓練開始 ==="
+	@if [ ! -f "$(DATA_DIR)/processed_data/rating_based_pseudo_users.json" ]; then \
+		echo "エラー: 評価ベース疑似ユーザーデータが見つかりません"; \
+		echo "make generate-rating-users を先に実行してください"; \
+		exit 1; \
+	fi
+	cd $(ML_DIR)/training && $(PYTHON) rating_based_two_tower_trainer.py
+	@echo "評価ベースモデル訓練完了！"
+
+# フル学習パイプライン（評価ベース・パターン1）
+train-full-rating: collect-all integrate-batch-data generate-rating-users train-rating
+	@echo "=== 評価ベースフル学習パイプライン完了 ==="
+
+# フル学習パイプライン（大規模データ収集対応・従来版）
 train-full: collect-all data-clean generate-pseudo-users data-embed train
 	@echo "=== フル学習パイプライン完了 ==="
 

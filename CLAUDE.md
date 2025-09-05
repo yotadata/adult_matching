@@ -105,10 +105,95 @@ The app has responsive design with different layouts:
 - **Desktop:** Card-based swipe interface with action buttons
 - **Mobile:** Full-screen video layout optimized for mobile gestures
 
+## Data Specifications & Documentation
+
+### 📚 Complete Specification Library
+**Location**: `docs/specifications/data/`
+
+#### **Core Index**
+- **[docs/specifications/data/README.md](docs/specifications/data/README.md)** - Main data specification index with data flow overview
+
+#### **Database Specifications** (`docs/specifications/data/database/`)
+- **[schema.md](docs/specifications/data/database/schema.md)** - Complete PostgreSQL schema, RLS policies, indexes
+- **[migrations.md](docs/specifications/data/database/migrations.md)** - Database migration management guidelines
+- **[rls_policies.md](docs/specifications/data/database/rls_policies.md)** - Row Level Security detailed policies
+
+#### **Scraped Data Specifications** (`docs/specifications/data/scraped/`)
+- **[reviews_format.md](docs/specifications/data/scraped/reviews_format.md)** - Review data format and structure
+- **[batch_collection_process.md](docs/specifications/data/scraped/batch_collection_process.md)** - Large-scale data collection process
+- **[data_quality_standards.md](docs/specifications/data/scraped/data_quality_standards.md)** - Data quality validation and standards
+
+#### **API Integration Specifications** (`docs/specifications/data/api/`)
+- **[dmm_fanza_integration.md](docs/specifications/data/api/dmm_fanza_integration.md)** - DMM/FANZA API integration specs
+- **[supabase_functions.md](docs/specifications/data/api/supabase_functions.md)** - Supabase Edge Functions documentation
+- **[external_apis.md](docs/specifications/data/api/external_apis.md)** - External API integration patterns
+
+#### **Machine Learning Specifications** (`docs/specifications/data/ml/`)
+- **[training_data_specs.md](docs/specifications/data/ml/training_data_specs.md)** - Complete ML training data specifications
+- **[pseudo_user_generation.md](docs/specifications/data/ml/pseudo_user_generation.md)** - Pseudo-user generation methodology
+- **[embeddings_management.md](docs/specifications/data/ml/embeddings_management.md)** - Vector embeddings management
+- **[model_artifacts.md](docs/specifications/data/ml/model_artifacts.md)** - ML model file management
+
+#### **Data Format Specifications** (`docs/specifications/data/formats/`)
+- **[json_schemas.md](docs/specifications/data/formats/json_schemas.md)** - JSON file format definitions
+- **[file_system_organization.md](docs/specifications/data/formats/file_system_organization.md)** - File system structure
+- **[data_flow_diagrams.md](docs/specifications/data/formats/data_flow_diagrams.md)** - Data flow architecture diagrams
+
+### 🔧 Development Requirements - MANDATORY SPECIFICATION REFERENCE
+
+**CRITICAL: When working on any development task, you MUST reference the appropriate specifications:**
+
+#### **Database Work** → Reference:
+- `docs/specifications/data/database/schema.md` for table structures
+- `docs/specifications/data/database/rls_policies.md` for security policies
+- `docs/specifications/data/database/migrations.md` for schema changes
+
+#### **Data Processing** → Reference:
+- `docs/specifications/data/scraped/reviews_format.md` for review data structure
+- `docs/specifications/data/scraped/batch_collection_process.md` for collection workflows
+- `docs/specifications/data/scraped/data_quality_standards.md` for validation rules
+
+#### **API Development** → Reference:
+- `docs/specifications/data/api/dmm_fanza_integration.md` for external API work
+- `docs/specifications/data/api/supabase_functions.md` for Edge Function development
+- `docs/specifications/data/api/external_apis.md` for API integration patterns
+
+#### **ML Pipeline Work** → Reference:
+- `docs/specifications/data/ml/training_data_specs.md` for data format requirements
+- `docs/specifications/data/ml/pseudo_user_generation.md` for user data conversion
+- `docs/specifications/data/ml/embeddings_management.md` for vector operations
+
+#### **File Format Work** → Reference:
+- `docs/specifications/data/formats/json_schemas.md` for JSON structure validation
+- `docs/specifications/data/formats/file_system_organization.md` for file placement
+- `docs/specifications/data/formats/data_flow_diagrams.md` for architecture understanding
+
+### ⚠️ Specification Compliance Rules
+
+1. **BEFORE** starting any data-related task, read the relevant specification documents
+2. **DURING** development, validate all changes against specification requirements  
+3. **AFTER** implementation, update specifications if data structures or processes change
+4. **NEVER** implement data changes without consulting the appropriate specification first
+5. **ALWAYS** maintain consistency between code implementation and specification documentation
+
+### 🎯 **CRITICAL DATA POLICY - API-First Video Data**
+
+**MANDATORY VIDEO DATA POLICY:**
+- **Video Data Source**: ONLY use API-retrieved data from DMM/FANZA APIs stored in PostgreSQL `videos` table
+- **Scraped Review Data**: Use ONLY for Content ID linking and pseudo-user generation
+- **ML Training**: Combine API video features + review-derived pseudo-user interactions
+- **NO** use of scraped video metadata for training or recommendations
+
+**Implementation Requirements:**
+- Item features MUST come from `videos` table (API data)
+- Content ID matching between reviews and API videos is required
+- All video metadata for ML must be API-sourced
+- Review data serves as behavioral signal only, not content metadata
+
 ## Important Notes
 - Uses vector similarity search for video recommendations
 - Implements Row Level Security (RLS) for user data protection  
 - Supports both online and batch embedding updates
 - Video data is ingested from external sources (FANZA)
 - Authentication managed through Supabase Auth
-- Environment variables required: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`/
+- Environment variables required: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`
