@@ -315,8 +315,8 @@ inspector_port = 8083
 deno_version = 1
 
 [edge_runtime.secrets]
-DMM_API_ID = "kG4AFzXp15PTK3R52MFc"
-DMM_AFFILIATE_ID = "rocqe9nnn-001"
+DMM_API_ID = "W63Kd4A4ym2DaycFcXSU"
+DMM_AFFILIATE_ID = "yotadata2-990"
 
 [analytics]
 enabled = true

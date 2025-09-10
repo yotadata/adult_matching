@@ -1,0 +1,15 @@
+{
+  "model_type": "comprehensive_two_tower",
+  "pattern": "pattern1_rating_based_comprehensive",
+  "like_threshold": 4.0,
+  "skip_threshold": 3.0,
+  "user_embedding_dim": 32,
+  "item_embedding_dim": 32,
+  "hidden_units": [
+    64,
+    32
+  ],
+  "training_samples": 7435,
+  "trained_at": "2025-09-08T19:58:33.770325",
+  "source_data": "comprehensive_pseudo_users.json"
+}

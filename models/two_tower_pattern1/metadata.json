@@ -1,0 +1,15 @@
+{
+  "model_type": "two_tower",
+  "pattern": "pattern1_rating_based",
+  "like_threshold": 4.0,
+  "skip_threshold": 3.0,
+  "user_embedding_dim": 64,
+  "item_embedding_dim": 64,
+  "hidden_units": [
+    128,
+    64,
+    32
+  ],
+  "trained_at": "2025-09-08T19:53:18.498500",
+  "training_samples": 118
+}

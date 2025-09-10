@@ -1,0 +1,66 @@
+{
+  "training_session": {
+    "start_time": "2025-09-09T22:41:53.767427",
+    "end_time": "2025-09-09T22:41:58.723676",
+    "duration_minutes": 0.08260383333333333,
+    "samples": 10000,
+    "embedding_dim": 768
+  },
+  "final_metrics": {
+    "loss": 0.612721860408783,
+    "accuracy": 0.6984999775886536,
+    "auc_roc": 0.4797557592391968,
+    "auc_pr": 0.2877274751663208,
+    "val_loss": 0.5935807824134827,
+    "val_accuracy": 0.7204999923706055,
+    "val_auc_roc": 0.5022445321083069,
+    "val_auc_pr": 0.28193700313568115
+  },
+  "model_files": {
+    "user_tower": "/tmp/two_tower_models_wt1x1s3f/user_tower.keras",
+    "item_tower": "/tmp/two_tower_models_wt1x1s3f/item_tower.keras",
+    "full_model": "/tmp/two_tower_models_wt1x1s3f/two_tower_model.keras"
+  },
+  "validation": {
+    "user_tower": {
+      "loadable": true,
+      "output_shape": [
+        10,
+        768
+      ],
+      "embedding_dim": 768,
+      "embeddings_normalized": true
+    },
+    "item_tower": {
+      "loadable": true,
+      "output_shape": [
+        10,
+        768
+      ],
+      "embedding_dim": 768,
+      "embeddings_normalized": true
+    },
+    "similarity": {
+      "range": [
+        0.9281587600708008,
+        0.9354298710823059
+      ],
+      "mean": 0.9322347640991211,
+      "std": 0.0018679886125028133
+    },
+    "overall": {
+      "both_towers_loadable": true,
+      "consistent_embedding_dim": true,
+      "embeddings_normalized": true
+    }
+  },
+  "success_criteria": {
+    "training_completed": true,
+    "models_saved": true,
+    "validation_passed": true,
+    "768_dim_embeddings": true,
+    "embeddings_normalized": true,
+    "reasonable_performance": false
+  },
+  "overall_success": false
+}

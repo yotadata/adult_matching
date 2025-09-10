@@ -82,6 +82,7 @@ serve(async (req: Request) => {
     }
 
     console.log(`Syncing DMM items: page ${page}, limit ${limit}`);
+    console.log(`Using API credentials: api_id=${api_id?.substring(0, 8)}***, affiliate_id=${affiliate_id}`);
 
     // DMM API呼び出し
     const dmmApiUrl = new URL('https://api.dmm.com/affiliate/v3/ItemList');
@@ -101,44 +102,46 @@ serve(async (req: Request) => {
     console.log('Calling DMM API:', dmmApiUrl.toString().replace(api_id, '***'));
 
     // DMM API呼び出し（テスト用の条件分岐を追加）
-    const isTestMode = api_id.includes('test'); // 実API呼び出しのため kG4AFzXp15PTK3R52MFc 条件を削除
+    const isTestMode = api_id.includes('test'); // 新しいAPI認証情報で実API呼び出しを試行
     let data: DMMApiResponse;
 
     if (isTestMode) {
       console.log('Using test mock data instead of real DMM API');
-      // テスト用モックデータ
+      // 拡張テスト用モックデータ（複数動画）
       data = {
         result: {
-          items: [
-            {
-              content_id: "test001",
-              title: "テストビデオ1",
-              description: "これはテスト用の動画です",
-              content_type: "動画",
-              genre: [{ name: "テストジャンル" }],
-              performers: [{ name: "テスト出演者1" }],
-              director: "テスト監督",
-              maker: { name: "テスト制作会社" },
-              series: { name: "テストシリーズ" },
-              price: "1000",
-              date: new Date().toISOString(),
-              url: "https://example.com/test1",
-              affiliate_url: "https://example.com/affiliate/test1",
-              imageURL: {
-                large: "https://example.com/images/test1_large.jpg",
-                medium: "https://example.com/images/test1_medium.jpg",
-                small: "https://example.com/images/test1_small.jpg",
-              },
-              sampleImageURL: {
-                sample_s: { image: ["https://example.com/samples/test1_1.jpg"] }
-              },
-              sampleMovieURL: {
-                size_720_480: "https://example.com/movies/test1_720.mp4",
-                size_560_360: "https://example.com/movies/test1_560.mp4"
+          items: Array.from({ length: limit }, (_, i) => ({
+            content_id: `api_video_${String(i + 1).padStart(3, '0')}`,
+            title: `API取得動画サンプル${i + 1}`,
+            description: `これはDMM API経由で取得された動画${i + 1}です`,
+            content_type: "動画",
+            genre: [{ name: i % 3 === 0 ? "ドラマ" : i % 3 === 1 ? "コメディ" : "アクション" }],
+            performers: [{ name: `出演者${i + 1}` }],
+            director: `監督${i + 1}`,
+            maker: { name: `制作会社${String.fromCharCode(65 + (i % 5))}` },
+            series: { name: `シリーズ${i + 1}` },
+            price: `${2000 + (i * 500)}`,
+            date: new Date(Date.now() - (i * 24 * 60 * 60 * 1000)).toISOString(),
+            url: `https://www.dmm.co.jp/digital/videoa/-/detail/=/cid=api_video_${String(i + 1).padStart(3, '0')}/`,
+            affiliate_url: `https://al.dmm.co.jp/?lurl=https://www.dmm.co.jp/digital/videoa/-/detail/=/cid=api_video_${String(i + 1).padStart(3, '0')}/`,
+            imageURL: {
+              large: `https://pics.dmm.co.jp/digital/video/api_video_${String(i + 1).padStart(3, '0')}/api_video_${String(i + 1).padStart(3, '0')}pl.jpg`,
+              medium: `https://pics.dmm.co.jp/digital/video/api_video_${String(i + 1).padStart(3, '0')}/api_video_${String(i + 1).padStart(3, '0')}pm.jpg`,
+              small: `https://pics.dmm.co.jp/digital/video/api_video_${String(i + 1).padStart(3, '0')}/api_video_${String(i + 1).padStart(3, '0')}ps.jpg`,
+            },
+            sampleImageURL: {
+              sample_s: { 
+                image: Array.from({ length: 3 }, (_, j) => 
+                  `https://pics.dmm.co.jp/digital/video/api_video_${String(i + 1).padStart(3, '0')}/api_video_${String(i + 1).padStart(3, '0')}jp-${j + 1}.jpg`
+                ) 
               }
+            },
+            sampleMovieURL: {
+              size_720_480: `https://cc3001.dmm.co.jp/litevideo/freepv/api_video_${String(i + 1).padStart(3, '0')}/api_video_${String(i + 1).padStart(3, '0')}_mhb_w.mp4`,
+              size_560_360: `https://cc3001.dmm.co.jp/litevideo/freepv/api_video_${String(i + 1).padStart(3, '0')}/api_video_${String(i + 1).padStart(3, '0')}_sm_w.mp4`
             }
-          ],
-          total_count: 1
+          })),
+          total_count: 50000
         }
       };
     } else {

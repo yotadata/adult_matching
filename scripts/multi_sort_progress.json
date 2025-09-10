@@ -1,0 +1,44 @@
+{
+  "strategies": [
+    {
+      "sort": "date",
+      "currentPage": 201,
+      "maxPages": 200,
+      "completed": true,
+      "inserted": 18001,
+      "skipped": 1999,
+      "errors": 0
+    },
+    {
+      "sort": "price",
+      "currentPage": 151,
+      "maxPages": 150,
+      "completed": true,
+      "inserted": 8204,
+      "skipped": 6796,
+      "errors": 0
+    },
+    {
+      "sort": "review",
+      "currentPage": 101,
+      "maxPages": 100,
+      "completed": true,
+      "inserted": 8671,
+      "skipped": 1329,
+      "errors": 0
+    },
+    {
+      "sort": "rank",
+      "currentPage": 51,
+      "maxPages": 50,
+      "completed": true,
+      "inserted": 1174,
+      "skipped": 3826,
+      "errors": 0
+    }
+  ],
+  "startedAt": "2025-09-07T10:02:35.046Z",
+  "lastSaveAt": "2025-09-07T11:14:23.788Z",
+  "completedAt": "2025-09-07T11:14:23.788Z",
+  "totalDuration": 4308.803
+}

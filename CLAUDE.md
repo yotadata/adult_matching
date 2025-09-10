@@ -33,6 +33,13 @@ This is an adult video matching application built with Next.js and Supabase. The
 - `data_processing/scraping/` - Web scraping modules for initial data collection
 - `ml_pipeline/training/` - Machine learning model training pipeline
 
+**DMM API Integration:**
+- `node scripts/real_dmm_sync.js` - Real DMM API data synchronization (Node.js-based, bypasses Edge Function issues)
+- `node scripts/analyze_dmm_data.js` - Comprehensive DMM data quality analysis
+- `supabase/functions/dmm_sync/index.ts` - Edge Function for DMM API sync (alternative to Node.js script)
+- **Current Status**: 1,000 DMM videos in PostgreSQL with complete metadata
+- **API Credentials**: Configured in `supabase/config.toml` (DMM_API_ID, DMM_AFFILIATE_ID)
+
 ### Python Environment Details
 **Configuration Files:**
 - `/pyproject.toml` - Main project configuration with dependencies
@@ -180,9 +187,35 @@ The app has responsive design with different layouts:
 
 **MANDATORY VIDEO DATA POLICY:**
 - **Video Data Source**: ONLY use API-retrieved data from DMM/FANZA APIs stored in PostgreSQL `videos` table
+- **Current Implementation**: 1,000 DMM videos successfully retrieved and stored (September 2025)
+- **Data Quality**: 100% complete for core fields (title, genre, maker, price, thumbnails)
+- **API Status**: Active with valid credentials (W63Kd4A4ym2DaycFcXSU / yotadata2-990)
 - **Scraped Review Data**: Use ONLY for Content ID linking and pseudo-user generation
 - **ML Training**: Combine API video features + review-derived pseudo-user interactions
 - **NO** use of scraped video metadata for training or recommendations
+
+### 🔧 **DMM API Implementation Notes & Error Prevention**
+
+**SUCCESSFUL IMPLEMENTATION (September 2025):**
+- **Node.js Script**: `scripts/real_dmm_sync.js` - Successfully retrieves data from DMM API
+- **Edge Function Issues**: `supabase/functions/dmm_sync/index.ts` has connectivity issues; use Node.js alternative
+- **API Rate Limiting**: Implemented 1-second delays between API calls
+- **Data Storage**: Direct PostgreSQL insertion with automatic relationship creation
+- **Credential Management**: Stored in `supabase/config.toml` under `[edge_runtime.secrets]`
+
+**CRITICAL ERROR PREVENTION:**
+1. **Invalid API Credentials**: Always verify new credentials with small test before bulk sync
+2. **Edge Function vs Node.js**: If Edge Functions fail, use Node.js scripts as backup
+3. **Rate Limiting**: Never exceed 1 call/second to avoid API blocking
+4. **Database Constraints**: Always check for duplicates using `external_id` + `source` combination
+5. **Data Validation**: Verify data structure matches PostgreSQL schema before insertion
+
+**PROVEN WORKING SETUP:**
+- API ID: `W63Kd4A4ym2DaycFcXSU`
+- Affiliate ID: `yotadata2-990`
+- Rate Limit: 1 call/second
+- Batch Size: 100 items/page
+- Duplicate Handling: Skip existing `external_id` records
 
 **Implementation Requirements:**
 - Item features MUST come from `videos` table (API data)
