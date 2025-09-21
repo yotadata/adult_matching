@@ -39,8 +39,20 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onClose }) => {
         throw new Error(result.error || '登録に失敗しました');
       }
 
-      toast.success('確認メールを送信しました。メールボックスをご確認ください。');
-      onClose();
+      // autoConfirm（メール確認不要）がONのプロジェクトでは session が返るので、自動ログインする
+      if (result.session && result.access_token) {
+        const { supabase } = await import('@/lib/supabase');
+        await supabase.auth.setSession({
+          access_token: result.access_token,
+          refresh_token: result.session.refresh_token,
+        });
+        toast.success('登録してログインしました！');
+        onClose();
+      } else {
+        // メール確認が必要な設定では従来通りの案内
+        toast.success('確認メールを送信しました。メールボックスをご確認ください。');
+        onClose();
+      }
     } catch (error: unknown) {
       let errorMessage = '予期せぬエラーが発生しました';
       if (error instanceof Error) {
@@ -107,7 +119,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onClose }) => {
 
       <button
         type="submit"
-        className="w-full py-3 px-4 bg-transparent border border-purple-500 text-purple-500 hover:bg-purple-500 hover:text-white font-bold rounded-lg transition-all duration-300 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+        className="w-full py-3 px-4 bg-transparent border border-[#FF6B81] text-[#FF6B81] hover:bg-[#FF6B81] hover:text-white font-bold rounded-lg transition-all duration-300 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
         disabled={isLoading}
       >
         {isLoading ? '登録中...' : '利用規約に同意して登録'}

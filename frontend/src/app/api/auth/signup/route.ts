@@ -14,5 +14,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
 
-  return NextResponse.json({ message: 'User registered successfully', user: data.user });
+  // data.session が返るのは、Supabase 側でメール確認不要（autoConfirm）設定の場合のみ
+  return NextResponse.json({
+    message: 'User registered successfully',
+    user: data.user,
+    session: data.session,
+    access_token: data.session?.access_token,
+  });
 }

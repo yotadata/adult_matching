@@ -1,4 +1,7 @@
 {
+  "scripts": {
+    "backfill:affiliate": "node scripts/backfillAffiliateLinks.mjs"
+  },
   "dependencies": {
     "@supabase/supabase-js": "^2.56.0",
     "@tailwindcss/aspect-ratio": "^0.4.2",

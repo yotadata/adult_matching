@@ -4,7 +4,7 @@ import React from 'react';
 
 type Props = {
   decisionCount: number;
-  personalizeTarget?: number; // デフォルト 10
+  personalizeTarget?: number; // デフォルト 20
   diagnosisTarget?: number; // デフォルト 30
   widthPx?: number; // カード幅に合わせる
 };
@@ -13,7 +13,7 @@ const clamp = (n: number, min = 0, max = 100) => Math.max(min, Math.min(max, n))
 
 const ProgressGauges: React.FC<Props> = ({
   decisionCount,
-  personalizeTarget = 10,
+  personalizeTarget = 20,
   diagnosisTarget = 30,
   widthPx,
 }) => {

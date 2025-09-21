@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
-import Header from '@/components/Header';
 
 export default function AccountManagementPage() {
   const [email, setEmail] = useState<string | null>(null);
@@ -94,8 +93,7 @@ export default function AccountManagementPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col">
-      <Header cardWidth={undefined} />
+    <div className="min-h-screen flex flex-col">
       <main className="flex-grow container mx-auto px-4 py-8">
         <h1 className="text-3xl font-bold text-gray-800 mb-8">アカウント管理</h1>
         <div className="bg-white p-6 rounded-lg shadow-md max-w-md mx-auto">

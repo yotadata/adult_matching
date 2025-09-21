@@ -7,25 +7,36 @@ dotenv.config({ path: '.env.remote' });
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 const fanzaApiId = process.env.FANZA_API_ID;
-const fanzaAffiliateId = process.env.FANZA_AFFILIATE_ID;
+// API用とリンク用でアフィリエイトIDを分離（後方互換のためFANZA_AFFILIATE_IDも許容）
+const fanzaApiAffiliateId = process.env.FANZA_API_AFFILIATE_ID || process.env.FANZA_AFFILIATE_ID; // 例: yotadata2-990
+const fanzaLinkAffiliateId = process.env.FANZA_LINK_AFFILIATE_ID || process.env.FANZA_AFFILIATE_ID; // 例: yotadata2-001
 
 if (!supabaseUrl || !supabaseAnonKey) {
   console.error('Supabase URL or Anon Key is not set.');
   process.exit(1);
 }
 
-if (!fanzaApiId || !fanzaAffiliateId) {
-  console.error('FANZA_API_ID or FANZA_AFFILIATE_ID is not set in .env.local');
+if (!fanzaApiId || !fanzaApiAffiliateId) {
+  console.error('FANZA_API_ID or FANZA_API_AFFILIATE_ID is not set in .env.remote');
   process.exit(1);
 }
 
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
+function toFanzaAffiliate(rawUrl: string | null | undefined, affiliateId: string | undefined | null): string | null {
+  if (!rawUrl) return null;
+  if (rawUrl.startsWith('https://al.fanza.co.jp/')) return rawUrl;
+  if (!affiliateId) return rawUrl;
+  const lurl = encodeURIComponent(rawUrl);
+  const aid = encodeURIComponent(affiliateId);
+  return `https://al.fanza.co.jp/?lurl=${lurl}&af_id=${aid}&ch=link_tool&ch_id=link`;
+}
+
 async function fetchFanzaApiItems(queryParams: any) {
   const apiUrl = 'https://api.dmm.com/affiliate/v3/ItemList';
   const params = {
     api_id: fanzaApiId,
-    affiliate_id: fanzaAffiliateId,
+    affiliate_id: fanzaApiAffiliateId,
     site: 'FANZA',
     service: 'digital',
     floor: 'videoa',
@@ -286,7 +297,8 @@ async function main() {
         label,
         genres,
         actresses: actressesRaw, // 後段でIDも考慮して処理
-        product_url: item.URL,
+        // 表示用リンクはリンク用アフィリエイトIDでラップ
+        product_url: toFanzaAffiliate(item.URL, fanzaLinkAffiliateId),
         price: parsedPrice,
         image_urls: imageUrls,
         published_at: null,

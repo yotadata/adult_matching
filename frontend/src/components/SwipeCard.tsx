@@ -30,9 +30,10 @@ interface SwipeCardProps {
   onDrag?: (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => void;
   onDragEnd?: (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => void;
   cardWidth: number | undefined; // cardWidth propを追加
+  canSwipe?: boolean; // 追加: ゲスト制限時にスワイプを抑制
 }
 
-const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwipe, onDrag, onDragEnd, cardWidth }, ref) => {
+const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwipe, onDrag, onDragEnd, cardWidth, canSwipe = true }, ref) => {
   const controls = useAnimation();
   
   const [showVideo, setShowVideo] = useState(false);
@@ -54,6 +55,10 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwi
   
 
   const swipe = async (direction: 'left' | 'right') => {
+    if (!canSwipe) {
+      await controls.start({ x: 0 });
+      return;
+    }
     const swipeWidth = cardWidth || 448; // cardWidthが未定義の場合のフォールバック
     const x = direction === 'right' ? `calc(100vw + ${swipeWidth}px)` : `calc(-100vw - ${swipeWidth}px)`;
     await controls.start({ x, opacity: 0, transition: { duration: 0.6 } }); 
@@ -69,6 +74,11 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwi
   };
 
   const handleDragEnd = (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+    if (!canSwipe) {
+      controls.start({ x: 0 });
+      onDragEnd?.(event, info);
+      return;
+    }
     if (info.offset.x > 100) {
       swipe('right');
     } else if (info.offset.x < -100) {
@@ -108,7 +118,7 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwi
 
   return (
     <motion.div 
-      className="absolute h-full rounded-2xl bg-white backdrop-blur-lg border border-white/60 shadow-2xl flex flex-col p-4 cursor-grab overflow-hidden"
+      className="absolute h-full rounded-2xl bg-white/15 backdrop-blur-xl border border-white/30 shadow-[0_20px_60px_rgba(0,0,0,0.25)] flex flex-col p-4 cursor-grab overflow-hidden"
       style={{ width: cardWidth ? `${cardWidth}px` : 'auto' }}
       drag="x"
       dragConstraints={{ left: 0, right: 0 }}
@@ -120,7 +130,7 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwi
       whileTap={{ cursor: "grabbing" }}
     >
       {/* 上部: 動画エリア（PC表示では高さ3/5） */}
-      <div className="relative w-full h-[60%] bg-black flex items-center justify-center">
+      <div className="relative w-full h-[60%] bg-black/90 flex items-center justify-center rounded-xl overflow-hidden">
         {showOverlay && (
           <div
             className="absolute inset-0 w-full h-full bg-contain bg-no-repeat bg-center flex items-center justify-center z-10"
@@ -158,8 +168,8 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwi
       </div>
       
       {/* 下部: テキスト情報エリア（PC表示では高さ2/5） */}
-      <div className="flex flex-col text-gray-700 p-4 overflow-y-auto h-[40%]">
-        <h2 className="text-lg font-bold">{cardData.title}</h2>
+      <div className="flex flex-col text-gray-800 p-4 overflow-y-auto h-[40%]">
+        <h2 className="text-lg font-extrabold tracking-tight">{cardData.title}</h2>
         {cardData.product_released_at && (
           <div className="grid grid-cols-[auto_1fr] items-start gap-x-2 mt-2">
             <div className="flex w-18 flex-shrink-0 items-center text-sm text-gray-500">
@@ -167,7 +177,7 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwi
               <span>発売日:</span>
             </div>
             <div className="flex flex-wrap gap-2">
-              <span className="rounded-full bg-blue-300 px-2 py-1 text-xs font-bold text-white">
+              <span className="rounded-full bg-blue-500/70 px-2 py-1 text-[11px] font-bold text-white">
                 {new Date(cardData.product_released_at).toLocaleDateString('ja-JP')}
               </span>
             </div>
@@ -181,7 +191,7 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwi
             </div>
             <div className="flex flex-wrap gap-2">
               {cardData.performers.map((performer) => (
-                <span key={performer.id} className="rounded-full bg-pink-300 px-2 py-1 text-xs font-bold text-white">
+                <span key={performer.id} className="rounded-full bg-pink-500/70 px-2 py-1 text-[11px] font-bold text-white">
                   {performer.name}
                 </span>
               ))}
@@ -198,7 +208,7 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwi
             {/* Grid Column 2: Tags container */}
             <div className="flex flex-wrap gap-2">
               {cardData.tags.map((tag) => (
-                <span key={tag.id} className="rounded-full bg-purple-300 px-2 py-1 text-xs font-bold text-white">
+                <span key={tag.id} className="rounded-full bg-purple-600/60 px-2 py-1 text-[11px] font-bold text-white">
                   {tag.name}
                 </span>
               ))}
