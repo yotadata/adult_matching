@@ -55,16 +55,31 @@ export default function VideoDetailPage() {
           .from('video_performers')
           .select('performers(id, name)')
           .eq('video_id', id);
-        const performers: Performer[] = (perf || []).map((r: any) => r.performers).filter(Boolean);
+        const performersRows = (perf || []) as { performers: Performer | Performer[] | null }[];
+        const performers: Performer[] = performersRows.flatMap((r) => {
+          const p = r.performers;
+          if (Array.isArray(p)) return p.filter(Boolean);
+          return p ? [p] : [];
+        });
         // Fetch tags
         const { data: tg } = await supabase
           .from('video_tags')
           .select('tags(id, name)')
           .eq('video_id', id);
-        const tags: Tag[] = (tg || []).map((r: any) => r.tags).filter(Boolean);
+        const tagRows = (tg || []) as { tags: Tag | Tag[] | null }[];
+        const tags: Tag[] = tagRows.flatMap((r) => {
+          const t = r.tags;
+          if (Array.isArray(t)) return t.filter(Boolean);
+          return t ? [t] : [];
+        });
         setVideo({ ...v, performers, tags });
-      } catch (e: any) {
-        setError(e?.message || '読み込みエラー');
+      } catch (e: unknown) {
+        let message = '読み込みエラー';
+        if (typeof e === 'string') message = e;
+        else if (e && typeof e === 'object' && 'message' in e && typeof (e as { message?: unknown }).message === 'string') {
+          message = (e as { message: string }).message;
+        }
+        setError(message);
       } finally {
         setLoading(false);
       }
@@ -138,4 +153,3 @@ export default function VideoDetailPage() {
     </div>
   );
 }
-

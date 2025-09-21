@@ -6,7 +6,6 @@ import { X, Filter } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { supabase } from '@/lib/supabase';
-import { PostgrestError } from '@supabase/supabase-js';
 import VideoDetailModal from './VideoDetailModal';
 
 interface VideoRecord {
@@ -82,11 +81,11 @@ const LikedVideosDrawer: React.FC<LikedVideosDrawerProps> = ({ isOpen, onClose }
         ]);
         if (te) console.warn('facet tags error', te.message);
         if (pe) console.warn('facet performers error', pe.message);
-        const tagRows = (tags as any[])?.filter(Boolean) || [];
-        const perfRows = (perfs as any[])?.filter(Boolean) || [];
+        const tagRows = (tags as { id: string; name: string; cnt?: number }[] | null)?.filter(Boolean) || [];
+        const perfRows = (perfs as { id: string; name: string; cnt?: number }[] | null)?.filter(Boolean) || [];
         setTagOptions(tagRows);
         setPerformerOptions(perfRows);
-      } catch (e) {
+      } catch {
         // ignore
       }
     })();
@@ -122,7 +121,7 @@ const LikedVideosDrawer: React.FC<LikedVideosDrawerProps> = ({ isOpen, onClose }
         console.error('Error fetching liked videos:', error);
         setError(error.message);
       } else {
-        const rows = (data as any[]) || [];
+        const rows = (data as VideoRecord[]) || [];
         setLikedVideos(rows);
       }
       setLoading(false);
@@ -202,13 +201,13 @@ const LikedVideosDrawer: React.FC<LikedVideosDrawerProps> = ({ isOpen, onClose }
                         <div className="p-3 border-b bg-gray-50">
                           {/* 並び替え */}
                           <div className="flex items-center gap-2 mb-3">
-                            <select className="flex-1 border border-gray-300 rounded-lg px-2 py-2 bg-white text-gray-800" value={sort} onChange={(e) => setSort(e.target.value as any)}>
+                            <select className="flex-1 border border-gray-300 rounded-lg px-2 py-2 bg-white text-gray-800" value={sort} onChange={(e) => setSort(e.target.value as 'liked_at' | 'released' | 'price' | 'title')}>
                               <option value="liked_at">いいね日時</option>
                               <option value="released">発売日</option>
                               <option value="price">価格</option>
                               <option value="title">タイトル</option>
                             </select>
-                            <select className="w-28 border border-gray-300 rounded-lg px-2 py-2 bg-white text-gray-800" value={order} onChange={(e) => setOrder(e.target.value as any)}>
+                            <select className="w-28 border border-gray-300 rounded-lg px-2 py-2 bg-white text-gray-800" value={order} onChange={(e) => setOrder(e.target.value as 'desc' | 'asc')}>
                               <option value="desc">降順</option>
                               <option value="asc">昇順</option>
                             </select>
@@ -378,13 +377,13 @@ const LikedVideosDrawer: React.FC<LikedVideosDrawerProps> = ({ isOpen, onClose }
                       {/* Inline filters */}
                       <div className="mt-4 grid grid-cols-1 md:grid-cols-12 gap-2">
                         <div className="md:col-span-5 flex items-center gap-2">
-                          <select className="border border-gray-300 rounded-lg px-2 py-2 bg-white text-gray-800" value={sort} onChange={(e) => setSort(e.target.value as any)}>
+                          <select className="border border-gray-300 rounded-lg px-2 py-2 bg-white text-gray-800" value={sort} onChange={(e) => setSort(e.target.value as 'liked_at' | 'released' | 'price' | 'title')}>
                             <option value="liked_at">いいね日時</option>
                             <option value="released">発売日</option>
                             <option value="price">価格</option>
                             <option value="title">タイトル</option>
                           </select>
-                          <select className="border border-gray-300 rounded-lg px-2 py-2 bg-white text-gray-800" value={order} onChange={(e) => setOrder(e.target.value as any)}>
+                          <select className="border border-gray-300 rounded-lg px-2 py-2 bg-white text-gray-800" value={order} onChange={(e) => setOrder(e.target.value as 'desc' | 'asc')}>
                             <option value="desc">降順</option>
                             <option value="asc">昇順</option>
                           </select>
