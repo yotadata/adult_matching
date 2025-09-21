@@ -75,9 +75,14 @@ export default function LikesPage() {
           p_performer_ids: null,
         });
         if (error) throw error;
-        setItems((data as any[]) || []);
-      } catch (e: any) {
-        setError(e?.message || '読み込みに失敗しました');
+        setItems((data as LikedVideo[]) || []);
+      } catch (e: unknown) {
+        let message = '読み込みに失敗しました';
+        if (typeof e === 'string') message = e;
+        else if (e && typeof e === 'object' && 'message' in e && typeof (e as { message?: unknown }).message === 'string') {
+          message = (e as { message: string }).message;
+        }
+        setError(message);
       } finally {
         setLoading(false);
       }
@@ -113,13 +118,13 @@ export default function LikesPage() {
         />
         <div className="md:col-span-3 flex items-center gap-2">
           <label className="text-sm text-gray-600">並び替え</label>
-          <select className="border rounded-lg px-2 py-2" value={sort} onChange={(e) => { setPage(0); setSort(e.target.value as any); }}>
+          <select className="border rounded-lg px-2 py-2" value={sort} onChange={(e) => { setPage(0); setSort(e.target.value as 'liked_at' | 'released' | 'price' | 'title'); }}>
             <option value="liked_at">いいね日時</option>
             <option value="released">発売日</option>
             <option value="price">価格</option>
             <option value="title">タイトル</option>
           </select>
-          <select className="border rounded-lg px-2 py-2" value={order} onChange={(e) => { setPage(0); setOrder(e.target.value as any); }}>
+          <select className="border rounded-lg px-2 py-2" value={order} onChange={(e) => { setPage(0); setOrder(e.target.value as 'desc' | 'asc'); }}>
             <option value="desc">降順</option>
             <option value="asc">昇順</option>
           </select>

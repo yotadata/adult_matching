@@ -6,9 +6,8 @@ import AuthModal from './auth/AuthModal';
 import useMediaQuery from '@/hooks/useMediaQuery';
 import { supabase } from '@/lib/supabase';
 import { User as SupabaseUser } from '@supabase/supabase-js';
-import { Menu as HeadlessMenu, Dialog, Transition } from '@headlessui/react';
-import Link from 'next/link';
-import { Heart, User, UserPlus, Menu as MenuIcon, X, Home as HomeIcon, Sparkles, BarChart2, Brain } from 'lucide-react';
+import { Dialog, Transition } from '@headlessui/react';
+import { UserPlus, Menu as MenuIcon, X, Home as HomeIcon, Sparkles, BarChart2, Brain } from 'lucide-react';
 import { useRouter, usePathname } from 'next/navigation';
 import LikedVideosDrawer from './LikedVideosDrawer'; // ドロワーコンポーネントをインポート
 import { toast } from 'react-hot-toast';
@@ -23,10 +22,8 @@ const Header = ({ cardWidth, mobileGauge }: { cardWidth: number | undefined; mob
   const isMobile = useMediaQuery('(max-width: 639px)');
   const [isMenuDrawerOpen, setIsMenuDrawerOpen] = useState(false);
   const mobileCloseBtnRef = useRef<HTMLButtonElement | null>(null);
-  const desktopCloseBtnRef = useRef<HTMLButtonElement | null>(null);
   const router = useRouter();
   const pathname = usePathname();
-  const isHome = pathname === '/';
   const [decisionCount, setDecisionCount] = useState<number>(0);
   const personalizeTarget = Number(process.env.NEXT_PUBLIC_PERSONALIZE_TARGET || 20);
   const diagnosisTarget = Number(process.env.NEXT_PUBLIC_DIAGNOSIS_TARGET || 30);
@@ -93,7 +90,7 @@ const Header = ({ cardWidth, mobileGauge }: { cardWidth: number | undefined; mob
 
   const handleOpenModal = () => setIsModalOpen(true);
   const handleCloseModal = () => setIsModalOpen(false);
-  const handleOpenDrawer = () => setIsDrawerOpen(true);
+  // const handleOpenDrawer = () => setIsDrawerOpen(true);
   const handleCloseDrawer = () => setIsDrawerOpen(false);
 
   const handleLogout = async () => {
@@ -103,7 +100,7 @@ const Header = ({ cardWidth, mobileGauge }: { cardWidth: number | undefined; mob
       setIsDrawerOpen(false);
       toast.success('ログアウトしました');
       try { router.push('/'); } catch {}
-    } catch (e) {
+    } catch {
       toast.error('ログアウトに失敗しました');
     }
   };
@@ -243,7 +240,7 @@ const Header = ({ cardWidth, mobileGauge }: { cardWidth: number | undefined; mob
             </Transition>
           </>
         ) : (
-          // デスクトップ: ロゴ中央＋右ハンバーガー
+          // デスクトップ: ロゴ中央。ハンバーガーは廃止（左固定ナビに移行）
           <div className="grid grid-cols-3 items-center text-white">
             <div />
             <div className="flex justify-center">
@@ -259,16 +256,7 @@ const Header = ({ cardWidth, mobileGauge }: { cardWidth: number | undefined; mob
             </div>
             <div className="flex justify-end">
               {user ? (
-                <>
-                  <button
-                    type="button"
-                    onClick={() => setIsMenuDrawerOpen(true)}
-                    className="p-2 rounded-md hover:bg-white/20 transition-colors"
-                    aria-label="メニュー"
-                  >
-                    <MenuIcon className="text-white" size={24} />
-                  </button>
-                </>
+                null
               ) : (
                 authChecked ? (
                   <button
@@ -291,67 +279,7 @@ const Header = ({ cardWidth, mobileGauge }: { cardWidth: number | undefined; mob
           {mobileGauge}
         </div>
       ) : null}
-      {/* Desktop right-side drawer (hamburger menu) */}
-      {!isMobile && (
-      <Transition appear show={isMenuDrawerOpen} as={Fragment}>
-        <Dialog as="div" className="relative z-50" onClose={() => setIsMenuDrawerOpen(false)} initialFocus={desktopCloseBtnRef}>
-          <Transition.Child as={Fragment} enter="ease-out duration-200" enterFrom="opacity-0" enterTo="opacity-100" leave="ease-in duration-150" leaveFrom="opacity-100" leaveTo="opacity-0">
-            <div className="fixed inset-0 bg-black/30" />
-          </Transition.Child>
-          <div className="fixed inset-0 overflow-hidden">
-            <div className="absolute inset-0 overflow-hidden">
-              <div className="pointer-events-none fixed inset-y-0 right-0 flex max-w-full">
-                <Transition.Child as={Fragment} enter="transform transition ease-in-out duration-300" enterFrom="translate-x-full" enterTo="translate-x-0" leave="transform transition ease-in-out duration-300" leaveFrom="translate-x-0" leaveTo="translate-x-full">
-                  <Dialog.Panel className="pointer-events-auto w-screen max-w-xs h-full bg-white text-gray-800 shadow-xl flex flex-col">
-                    <div className="p-4 border-b flex items-center justify-between">
-                      <Dialog.Title className="text-base font-bold text-gray-900">メニュー</Dialog.Title>
-                      <button ref={desktopCloseBtnRef} aria-label="閉じる" onClick={() => setIsMenuDrawerOpen(false)} className="p-1 text-gray-600 hover:text-gray-800">
-                        <X size={20} />
-                      </button>
-                    </div>
-                    <div className="flex-1 flex flex-col">
-                      <div className="flex-1 flex flex-col divide-y divide-gray-200 overflow-y-auto">
-                        <button className="w-full flex items-center gap-3 text-left px-4 py-3 text-gray-800 hover:bg-gray-100" onClick={() => { setIsMenuDrawerOpen(false); router.push('/'); }}>
-                          <HomeIcon size={18} />
-                          <span>ホーム画面</span>
-                        </button>
-                        <button className="w-full text-left px-4 py-3 text-gray-800 hover:bg-gray-100" onClick={() => { setIsMenuDrawerOpen(false); router.push('/ai-recommend'); }}>
-                          <div className="flex items-center gap-3 text-gray-800 mb-2">
-                            <Sparkles size={18} />
-                            <span>AIレコメンド</span>
-                          </div>
-                          <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
-                            <div className="h-full rounded-full" style={{ width: `${Math.min(decisionCount / personalizeTarget, 1) * 100}%`, background: 'linear-gradient(90deg, #ADB4E3 0%, #C8BAE3 33.333%, #F7BECE 66.666%, #F9B1C4 100%)' }} />
-                          </div>
-                          <div className="mt-1 text-xs text-gray-600 text-right">パーソナライズまであと{Math.max(personalizeTarget - decisionCount, 0)}枚</div>
-                        </button>
-                        <button className="w-full flex items-center gap-3 text-left px-4 py-3 text-gray-800 hover:bg-gray-100" onClick={() => { setIsMenuDrawerOpen(false); router.push('/analysis-results'); }}>
-                          <BarChart2 size={18} />
-                          <span>性癖分析</span>
-                        </button>
-                        <button className="w-full text-left px-4 py-3 text-gray-800 hover:bg-gray-100" onClick={() => { setIsMenuDrawerOpen(false); router.push('/personality'); }}>
-                          <div className="flex items-center gap-3 text-gray-800 mb-2">
-                            <Brain size={18} />
-                            <span>性癖パーソナリティ診断</span>
-                          </div>
-                          <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
-                            <div className="h-full rounded-full" style={{ width: `${Math.min(decisionCount / diagnosisTarget, 1) * 100}%`, background: 'linear-gradient(90deg, #ADB4E3 0%, #C8BAE3 33.333%, #F7BECE 66.666%, #F9B1C4 100%)' }} />
-                          </div>
-                          <div className="mt-1 text-xs text-gray-600 text-right">診断まであと{Math.max(diagnosisTarget - decisionCount, 0)}枚</div>
-                        </button>
-                      </div>
-                      <div className="border-t px-4 py-3">
-                        <button onClick={handleLogout} className="w-full text-left text-gray-800 hover:bg-gray-100 rounded-md px-3 py-2">ログアウト</button>
-                      </div>
-                    </div>
-                  </Dialog.Panel>
-                </Transition.Child>
-              </div>
-            </div>
-          </div>
-        </Dialog>
-      </Transition>
-      )}
+      {/* Desktop hamburger drawer removed in favor of fixed left sidebar */}
       <AuthModal
         isOpen={isModalOpen}
         onClose={handleCloseModal}

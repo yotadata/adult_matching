@@ -55,16 +55,25 @@ export default function VideoDetailPage() {
           .from('video_performers')
           .select('performers(id, name)')
           .eq('video_id', id);
-        const performers: Performer[] = (perf || []).map((r: any) => r.performers).filter(Boolean);
+        const performers: Performer[] = (perf || [])
+          .map((r: { performers: Performer | null }) => r.performers)
+          .filter((p): p is Performer => Boolean(p));
         // Fetch tags
         const { data: tg } = await supabase
           .from('video_tags')
           .select('tags(id, name)')
           .eq('video_id', id);
-        const tags: Tag[] = (tg || []).map((r: any) => r.tags).filter(Boolean);
+        const tags: Tag[] = (tg || [])
+          .map((r: { tags: Tag | null }) => r.tags)
+          .filter((t): t is Tag => Boolean(t));
         setVideo({ ...v, performers, tags });
-      } catch (e: any) {
-        setError(e?.message || '読み込みエラー');
+      } catch (e: unknown) {
+        let message = '読み込みエラー';
+        if (typeof e === 'string') message = e;
+        else if (e && typeof e === 'object' && 'message' in e && typeof (e as { message?: unknown }).message === 'string') {
+          message = (e as { message: string }).message;
+        }
+        setError(message);
       } finally {
         setLoading(false);
       }
@@ -138,4 +147,3 @@ export default function VideoDetailPage() {
     </div>
   );
 }
-
