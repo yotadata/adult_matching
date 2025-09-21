@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import { useState, useEffect, Fragment } from 'react';
+import { useState, useEffect, useRef, Fragment } from 'react';
 import AuthModal from './auth/AuthModal';
 import useMediaQuery from '@/hooks/useMediaQuery';
 import { supabase } from '@/lib/supabase';
@@ -22,6 +22,8 @@ const Header = ({ cardWidth, mobileGauge }: { cardWidth: number | undefined; mob
   const [authChecked, setAuthChecked] = useState(false);
   const isMobile = useMediaQuery('(max-width: 639px)');
   const [isMenuDrawerOpen, setIsMenuDrawerOpen] = useState(false);
+  const mobileCloseBtnRef = useRef<HTMLButtonElement | null>(null);
+  const desktopCloseBtnRef = useRef<HTMLButtonElement | null>(null);
   const router = useRouter();
   const pathname = usePathname();
   const isHome = pathname === '/';
@@ -109,11 +111,7 @@ const Header = ({ cardWidth, mobileGauge }: { cardWidth: number | undefined; mob
   return (
     <header
       id="main-header"
-      className={`mx-auto ${
-        isMobile
-          ? 'sticky top-0 z-50 pt-2 pb-0 bg-gradient-to-r from-[#C4C8E3] via-[#D7D1E3] to-[#F7D7E0] to-[#F9C9D6] shadow-md w-full'
-          : 'w-full py-2'
-      }`}
+      className={`mx-auto ${isMobile ? 'sticky top-0 z-50 pt-2 pb-0 w-full' : 'w-full py-2'}`}
       style={!isMobile ? { width: cardWidth ? `${cardWidth}px` : 'auto' } : {}}
     >
       {/* Glass bar over gradient bg */}
@@ -121,35 +119,68 @@ const Header = ({ cardWidth, mobileGauge }: { cardWidth: number | undefined; mob
         className={`relative z-10 mx-auto ${isMobile ? 'px-3' : ''}`}
         style={!isMobile ? { width: cardWidth ? `${cardWidth}px` : 'auto' } : {}}
       >
-        {/* モバイル: 中央ロゴ＋右ハンバーガー */}
+        {/* モバイル: ログイン状態でUIを分岐 */}
         {isMobile ? (
           <>
-            <div className="grid grid-cols-3 items-center text-white">
-              <div />
-              <div className="flex justify-center">
-                <Image
-                  src="/seiheki_lab.png"
-                  alt="Seiheki Lab Logo"
-                  width={120}
-                  height={50}
-                  priority
-                  draggable="false"
-                  style={{ filter: 'drop-shadow(0 0 0.5rem rgba(0, 0, 0, 0.1))' }}
-                />
+            {user ? (
+              // ログイン時: 中央ロゴ＋右ハンバーガー
+              <div className="grid grid-cols-3 items-center text-white">
+                <div />
+                <div className="flex justify-center">
+                  <Image
+                    src="/seiheki_lab.png"
+                    alt="Seiheki Lab Logo"
+                    width={120}
+                    height={50}
+                    priority
+                    draggable="false"
+                    style={{ filter: 'drop-shadow(0 0 0.5rem rgba(0, 0, 0, 0.1))' }}
+                  />
+                </div>
+                <div className="flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => setIsMenuDrawerOpen(true)}
+                    className="p-2 rounded-md hover:bg-white/20 transition-colors"
+                    aria-label="メニュー"
+                  >
+                    <MenuIcon className="text-white" size={24} />
+                  </button>
+                </div>
               </div>
-              <div className="flex justify-end">
-                <button
-                  onClick={() => setIsMenuDrawerOpen(true)}
-                  className="p-2 rounded-md hover:bg-white/20 transition-colors"
-                  aria-label="メニュー"
-                >
-                  <MenuIcon className="text-white" size={24} />
-                </button>
+            ) : (
+              // 未ログイン時: 左寄せロゴ＋右端ログインボタン
+              <div className="grid grid-cols-3 items-center text-white">
+                <div className="flex justify-start">
+                  <Image
+                    src="/seiheki_lab.png"
+                    alt="Seiheki Lab Logo"
+                    width={120}
+                    height={50}
+                    priority
+                    draggable="false"
+                    style={{ filter: 'drop-shadow(0 0 0.5rem rgba(0, 0, 0, 0.1))' }}
+                  />
+                </div>
+                <div />
+                <div className="flex justify-end">
+                  {authChecked ? (
+                    <button
+                      onClick={handleOpenModal}
+                      className={`flex items-center gap-2 px-3 py-1.5 text-xs font-bold text-white rounded-full backdrop-blur-md bg-white/10 border border-white/30 hover:bg-[#FF6B81] hover:text-white shadow-md transition-all duration-300`}
+                      style={{ filter: 'drop-shadow(0 0 0.5rem rgba(0, 0, 0, 0.1))' }}
+                      aria-label="ログインまたは新規登録"
+                    >
+                      <UserPlus size={16} className="opacity-90" />
+                      <span>ログイン</span>
+                    </button>
+                  ) : null}
+                </div>
               </div>
-            </div>
+            )}
             {/* Mobile right-side drawer */}
             <Transition appear show={isMenuDrawerOpen} as={Fragment}>
-              <Dialog as="div" className="relative z-50 sm:hidden" onClose={() => setIsMenuDrawerOpen(false)}>
+              <Dialog as="div" className="relative z-50 sm:hidden" onClose={() => setIsMenuDrawerOpen(false)} initialFocus={mobileCloseBtnRef}>
                 <Transition.Child as={Fragment} enter="ease-out duration-200" enterFrom="opacity-0" enterTo="opacity-100" leave="ease-in duration-150" leaveFrom="opacity-100" leaveTo="opacity-0">
                   <div className="fixed inset-0 bg-black/30" />
                 </Transition.Child>
@@ -160,7 +191,7 @@ const Header = ({ cardWidth, mobileGauge }: { cardWidth: number | undefined; mob
                         <Dialog.Panel className="pointer-events-auto w-screen max-w-xs h-full bg-white text-gray-800 shadow-xl flex flex-col">
                           <div className="p-4 border-b flex items-center justify-between">
                             <Dialog.Title className="text-base font-bold text-gray-900">メニュー</Dialog.Title>
-                            <button aria-label="閉じる" onClick={() => setIsMenuDrawerOpen(false)} className="p-1 text-gray-600 hover:text-gray-800">
+                            <button ref={mobileCloseBtnRef} aria-label="閉じる" onClick={() => setIsMenuDrawerOpen(false)} className="p-1 text-gray-600 hover:text-gray-800">
                               <X size={20} />
                             </button>
                           </div>
@@ -230,6 +261,7 @@ const Header = ({ cardWidth, mobileGauge }: { cardWidth: number | undefined; mob
               {user ? (
                 <>
                   <button
+                    type="button"
                     onClick={() => setIsMenuDrawerOpen(true)}
                     className="p-2 rounded-md hover:bg-white/20 transition-colors"
                     aria-label="メニュー"
@@ -260,8 +292,9 @@ const Header = ({ cardWidth, mobileGauge }: { cardWidth: number | undefined; mob
         </div>
       ) : null}
       {/* Desktop right-side drawer (hamburger menu) */}
+      {!isMobile && (
       <Transition appear show={isMenuDrawerOpen} as={Fragment}>
-        <Dialog as="div" className="relative z-50 hidden sm:block" onClose={() => setIsMenuDrawerOpen(false)}>
+        <Dialog as="div" className="relative z-50" onClose={() => setIsMenuDrawerOpen(false)} initialFocus={desktopCloseBtnRef}>
           <Transition.Child as={Fragment} enter="ease-out duration-200" enterFrom="opacity-0" enterTo="opacity-100" leave="ease-in duration-150" leaveFrom="opacity-100" leaveTo="opacity-0">
             <div className="fixed inset-0 bg-black/30" />
           </Transition.Child>
@@ -272,7 +305,7 @@ const Header = ({ cardWidth, mobileGauge }: { cardWidth: number | undefined; mob
                   <Dialog.Panel className="pointer-events-auto w-screen max-w-xs h-full bg-white text-gray-800 shadow-xl flex flex-col">
                     <div className="p-4 border-b flex items-center justify-between">
                       <Dialog.Title className="text-base font-bold text-gray-900">メニュー</Dialog.Title>
-                      <button aria-label="閉じる" onClick={() => setIsMenuDrawerOpen(false)} className="p-1 text-gray-600 hover:text-gray-800">
+                      <button ref={desktopCloseBtnRef} aria-label="閉じる" onClick={() => setIsMenuDrawerOpen(false)} className="p-1 text-gray-600 hover:text-gray-800">
                         <X size={20} />
                       </button>
                     </div>
@@ -318,6 +351,7 @@ const Header = ({ cardWidth, mobileGauge }: { cardWidth: number | undefined; mob
           </div>
         </Dialog>
       </Transition>
+      )}
       <AuthModal
         isOpen={isModalOpen}
         onClose={handleCloseModal}
