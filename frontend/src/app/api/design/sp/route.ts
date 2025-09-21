@@ -6,7 +6,7 @@ export async function GET() {
   try {
     // Resolve the path to the repo-level docs/sp_design.svg
     const svgPath = path.resolve(process.cwd(), '..', 'docs', 'sp_design.svg');
-    const data = await fs.readFile(svgPath);
+    const data = await fs.readFile(svgPath, 'utf-8');
     return new NextResponse(data, {
       status: 200,
       headers: {
@@ -14,8 +14,7 @@ export async function GET() {
         'Cache-Control': 'public, max-age=3600',
       },
     });
-  } catch (err) {
+  } catch {
     return NextResponse.json({ error: 'SVG not found' }, { status: 404 });
   }
 }
-

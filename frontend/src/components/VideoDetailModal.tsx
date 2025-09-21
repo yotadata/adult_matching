@@ -60,13 +60,21 @@ export default function VideoDetailModal({ isOpen, onClose, videoId }: { isOpen:
           supabase.from('video_tags').select('tags(id, name)').eq('video_id', videoId),
         ]);
         setVideo(v as VideoRow);
-        setPerformers(((perf || []) as { performers: Performer | null }[])
-          .map(r => r.performers)
-          .filter((p): p is Performer => Boolean(p))
+        const perfRows = ((perf || []) as { performers: Performer | Performer[] | null }[]);
+        setPerformers(
+          perfRows.flatMap(r => {
+            const p = r.performers;
+            if (Array.isArray(p)) return p.filter(Boolean);
+            return p ? [p] : [];
+          })
         );
-        setTags(((tg || []) as { tags: Tag | null }[])
-          .map(r => r.tags)
-          .filter((t): t is Tag => Boolean(t))
+        const tagRows = ((tg || []) as { tags: Tag | Tag[] | null }[]);
+        setTags(
+          tagRows.flatMap(r => {
+            const t = r.tags;
+            if (Array.isArray(t)) return t.filter(Boolean);
+            return t ? [t] : [];
+          })
         );
       } catch (e: unknown) {
         let message = '読み込みに失敗しました';

@@ -55,17 +55,23 @@ export default function VideoDetailPage() {
           .from('video_performers')
           .select('performers(id, name)')
           .eq('video_id', id);
-        const performers: Performer[] = (perf || [])
-          .map((r: { performers: Performer | null }) => r.performers)
-          .filter((p): p is Performer => Boolean(p));
+        const performersRows = (perf || []) as { performers: Performer | Performer[] | null }[];
+        const performers: Performer[] = performersRows.flatMap((r) => {
+          const p = r.performers;
+          if (Array.isArray(p)) return p.filter(Boolean);
+          return p ? [p] : [];
+        });
         // Fetch tags
         const { data: tg } = await supabase
           .from('video_tags')
           .select('tags(id, name)')
           .eq('video_id', id);
-        const tags: Tag[] = (tg || [])
-          .map((r: { tags: Tag | null }) => r.tags)
-          .filter((t): t is Tag => Boolean(t));
+        const tagRows = (tg || []) as { tags: Tag | Tag[] | null }[];
+        const tags: Tag[] = tagRows.flatMap((r) => {
+          const t = r.tags;
+          if (Array.isArray(t)) return t.filter(Boolean);
+          return t ? [t] : [];
+        });
         setVideo({ ...v, performers, tags });
       } catch (e: unknown) {
         let message = '読み込みエラー';
