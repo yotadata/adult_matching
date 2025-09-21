@@ -100,7 +100,7 @@ export default function LikesPage() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-6">
+    <main className="max-w-6xl mx-auto px-4 py-6">
       <h1 className="text-xl font-bold mb-4">いいね一覧</h1>
 
       {/* Controls */}
@@ -204,6 +204,6 @@ export default function LikesPage() {
           次へ
         </button>
       </div>
-    </div>
+    </main>
   );
 }

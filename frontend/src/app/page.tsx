@@ -1,17 +1,16 @@
 'use client';
 
-import Header from "@/components/Header";
 import SwipeCard, { CardData, SwipeCardHandle } from "@/components/SwipeCard";
 import ActionButtons from "@/components/ActionButtons";
 import { useState, useRef, useEffect } from "react";
 import { AnimatePresence, motion, PanInfo } from "framer-motion";
+// 使い方カードは一旦非表示（読み込みも停止）
 import dynamic from "next/dynamic";
-const HowToUseCard = dynamic(() => import("@/components/HowToUseCard"), { ssr: false });
 import useMediaQuery from "@/hooks/useMediaQuery";
 import useWindowSize from "@/hooks/useWindowSize";
 import MobileVideoLayout from "@/components/MobileVideoLayout";
 import { supabase } from "@/lib/supabase"; // supabaseクライアントをインポート;
-const ProgressGauges = dynamic(() => import("@/components/ProgressGauges"), { ssr: false });
+// ゲージ表示は当面非表示のため読み込まない
 
 // APIから受け取るvideoオブジェクトの型定義
 interface VideoFromApi {
@@ -28,9 +27,10 @@ interface VideoFromApi {
   tags: { id: string; name: string }[];
 }
 
-const ORIGINAL_GRADIENT = 'linear-gradient(to right, #C4C8E3, #D7D1E3, #F7D7E0, #F8DBB9)';
-const LEFT_SWIPE_GRADIENT = 'linear-gradient(to right, #AEB4EB, #D7D1E3, #F7D7E0,#F8DBB9)'; // 左端を明るく
-const RIGHT_SWIPE_GRADIENT = 'linear-gradient(to right, #C4C8E3,  #D7D1E3, #F7D7E0,#F9CFA0)'; // 右端を明るく
+// 背景グラデーション: 左から C4C8E3, D7D1E3, F7D7E0, F9C9D6 を等間隔
+const ORIGINAL_GRADIENT = 'linear-gradient(90deg, #C4C8E3 0%, #D7D1E3 33.333%, #F7D7E0 66.666%, #F9C9D6 100%)';
+const LEFT_SWIPE_GRADIENT = ORIGINAL_GRADIENT;
+const RIGHT_SWIPE_GRADIENT = ORIGINAL_GRADIENT;
 
 export default function Home() {
   
@@ -39,13 +39,15 @@ export default function Home() {
   const [activeIndex, setActiveIndex] = useState(0);
   const cardRef = useRef<SwipeCardHandle>(null);
   const [currentGradient, setCurrentGradient] = useState(ORIGINAL_GRADIENT);
-  const [showHowToUse, setShowHowToUse] = useState(true);
+  // 使い方カードは表示しない
+  const [showHowToUse, setShowHowToUse] = useState(false);
   const isMobile = useMediaQuery('(max-width: 639px)');
   const { width: windowWidth, height: windowHeight } = useWindowSize();
   const [cardWidth, setCardWidth] = useState<number | undefined>(400); // cardWidthをstateとして管理し、デフォルト値を400に設定
   const [layoutReady, setLayoutReady] = useState(false); // 初期レイアウト完了フラグ
   const getVideoAspectRatio = () => {
-    return 16 / 13; // デフォルトを 4:3 に変更
+    // 4:3 に統一（デザインに合わせる）
+    return 4 / 3;
   };
   const videoAspectRatio = getVideoAspectRatio();
   const initialGuestCount = (() => {
@@ -63,8 +65,7 @@ export default function Home() {
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
   const guestLimit = Number(process.env.NEXT_PUBLIC_GUEST_DECISIONS_LIMIT || 20);
   const [mounted, setMounted] = useState(false);
-  const personalizeTarget = Number(process.env.NEXT_PUBLIC_PERSONALIZE_TARGET || 20);
-  const diagnosisTarget = Number(process.env.NEXT_PUBLIC_DIAGNOSIS_TARGET || 30);
+  // ゲージのターゲット値は未使用（非表示）
   const mainRef = useRef<HTMLDivElement | null>(null);
   const debugResetGauge = (() => {
     const v = (process.env.NEXT_PUBLIC_DEBUG_RESET_GAUGE || '').toString().toLowerCase();
@@ -317,9 +318,7 @@ export default function Home() {
     }
   };
 
-  const handleCloseHowToUse = () => {
-    setShowHowToUse(false);
-  };
+  const handleCloseHowToUse = () => {};
 
   return (
     <motion.div
@@ -327,32 +326,11 @@ export default function Home() {
       style={{ background: currentGradient }}
       transition={{ duration: 0.3 }}
     >
-      { /* ゲージ用に、ログイン時はDBカウント、ゲスト時はlocalStorageのカウントを使用 */ }
-      <Header 
-        cardWidth={cardWidth}
-        mobileGauge={isMobile && mounted ? (
-          <ProgressGauges
-            decisionCount={isLoggedIn ? decisionCount : guestDecisionCount}
-            personalizeTarget={personalizeTarget}
-            diagnosisTarget={diagnosisTarget}
-            // モバイルはヘッダー内で全幅にするため幅指定はしない
-          />
-        ) : undefined}
-      />
-      {/* デスクトップはヘッダー下にゲージを表示 */}
-      {!isMobile && mounted && (
-        <div className="w-full flex justify-center px-4 mt-2 mb-4">
-          <ProgressGauges
-            decisionCount={isLoggedIn ? decisionCount : guestDecisionCount}
-            personalizeTarget={personalizeTarget}
-            diagnosisTarget={diagnosisTarget}
-            widthPx={cardWidth}
-          />
-        </div>
-      )}
+      {/* Header はレイアウトで表示 */}
+      {/* ゲージは非表示 */}
       <main
         ref={mainRef}
-        className={`flex-grow flex w-full relative ${isMobile ? 'flex-col bg-white h-full' : 'items-center justify-center'}`}
+        className={`flex-grow flex w-full relative ${isMobile ? 'flex-col h-full' : 'items-center justify-center'}`}
         style={isMobile ? { paddingTop: `0px` } : {}}
       >
         <AnimatePresence mode="wait">
@@ -395,22 +373,11 @@ export default function Home() {
             nopeColor="#A78BFA"
             likeColor="#FBBF24"
             cardWidth={cardWidth}
+            includeCenter={true}
           />}
         </footer>
       )}
-      <AnimatePresence>
-        {showHowToUse && layoutReady && mounted && !!activeCard && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 20 }}
-            transition={{ duration: 0.3 }}
-            className="fixed bottom-0 left-0 z-50"
-          >
-            <HowToUseCard onClose={handleCloseHowToUse} />
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* 使い方カードは非表示 */}
     </motion.div>
   );
 }
