@@ -118,7 +118,7 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwi
 
   return (
     <motion.div 
-      className="absolute h-full rounded-2xl bg-white/15 backdrop-blur-xl border border-white/30 shadow-[0_20px_60px_rgba(0,0,0,0.25)] flex flex-col p-4 cursor-grab overflow-hidden"
+      className="absolute h-full rounded-2xl bg-white border border-gray-200 shadow-xl flex flex-col p-4 cursor-grab overflow-hidden"
       style={{ width: cardWidth ? `${cardWidth}px` : 'auto' }}
       drag="x"
       dragConstraints={{ left: 0, right: 0 }}
