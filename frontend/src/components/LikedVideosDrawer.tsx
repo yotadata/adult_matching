@@ -168,9 +168,9 @@ const LikedVideosDrawer: React.FC<LikedVideosDrawerProps> = ({ isOpen, onClose }
                 >
                   <div className="w-full rounded-t-2xl bg-white shadow-2xl">
                     <div className="mx-auto mt-2 mb-1 h-1.5 w-12 rounded-full bg-gray-300" />
-                    <div className="h-[92vh] overflow-hidden flex flex-col">
+                    <div className="max-h-[90dvh] overflow-hidden flex flex-col">
                       {/* Header: left X, center title, right filter toggle */}
-                      <div className="px-3 py-2 grid grid-cols-[auto_1fr_auto] items-center border-b">
+                      <div className="sticky top-0 z-10 bg-white px-3 py-2 grid grid-cols-[auto_1fr_auto] items-center border-b">
                         <div className="flex justify-start">
                           <button
                             type="button"
@@ -290,7 +290,7 @@ const LikedVideosDrawer: React.FC<LikedVideosDrawerProps> = ({ isOpen, onClose }
 
                       {/* Scrollable content: list only */}
                       <div className="flex-1 overflow-y-auto">
-                        <div className="p-4">
+                        <div className="p-4 pb-[calc(8px+env(safe-area-inset-bottom,0px))]">
                           {error && (
                             <div className="mb-2 text-sm text-red-600">{error}</div>
                           )}

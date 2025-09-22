@@ -10,6 +10,7 @@ import useMediaQuery from "@/hooks/useMediaQuery";
 import useWindowSize from "@/hooks/useWindowSize";
 import MobileVideoLayout from "@/components/MobileVideoLayout";
 import { supabase } from "@/lib/supabase"; // supabaseクライアントをインポート;
+import { ThumbsDown, Heart, List } from "lucide-react";
 // ゲージ表示は当面非表示のため読み込まない
 
 // APIから受け取るvideoオブジェクトの型定義
@@ -330,7 +331,7 @@ export default function Home() {
       {/* ゲージは非表示 */}
       <main
         ref={mainRef}
-        className={`flex-grow flex w-full relative ${isMobile ? 'flex-col h-full' : 'items-center justify-center'}`}
+        className={`flex-grow flex w-full relative ${isMobile ? 'flex-col h-full' : 'items-center justify-center pt-10'}`}
         style={isMobile ? { paddingTop: `0px` } : {}}
       >
         <AnimatePresence mode="wait">
@@ -367,14 +368,37 @@ export default function Home() {
       </main>
       {!isMobile && (
         <footer className="py-8 mx-auto" style={{ width: cardWidth ? `${cardWidth}px` : 'auto' }}>
-          {activeCard && <ActionButtons
-            onSkip={() => triggerSwipe('left')}
-            onLike={() => triggerSwipe('right')}
-            nopeColor="#A78BFA"
-            likeColor="#FBBF24"
-            cardWidth={cardWidth}
-            includeCenter={true}
-          />}
+          {activeCard && (
+            <div className="mx-auto w-full flex items-center justify-center gap-6 py-3">
+              {/* NOPE (thumb_down, #6C757D) */}
+              <button
+                onClick={() => triggerSwipe('left')}
+                className="w-20 h-20 rounded-full bg-[#6C757D] shadow-lg active:scale-95 transition flex items-center justify-center leading-none"
+                aria-label="イマイチ"
+                title="イマイチ"
+              >
+                <ThumbsDown size={36} className="text-white" />
+              </button>
+              {/* Liked list */}
+              <button
+                onClick={() => { try { window.dispatchEvent(new Event('open-liked-drawer')); } catch {} }}
+                className="w-[60px] h-[60px] rounded-full bg-[#BEBEBE] shadow-lg active:scale-95 transition flex items-center justify-center leading-none"
+                aria-label="お気に入りリスト"
+                title="お気に入りリスト"
+              >
+                <List size={28} className="text-white" />
+              </button>
+              {/* GOOD (heart, #FF6B81) */}
+              <button
+                onClick={() => triggerSwipe('right')}
+                className="w-20 h-20 rounded-full bg-[#FF6B81] shadow-lg active:scale-95 transition flex items-center justify-center leading-none"
+                aria-label="好み"
+                title="好み"
+              >
+                <Heart size={36} className="text-white" />
+              </button>
+            </div>
+          )}
         </footer>
       )}
       {/* 使い方カードは非表示 */}
