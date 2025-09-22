@@ -17,7 +17,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
       {/* Desktop fixed left sidebar */}
       {!isMobile && <DesktopSidebar />}
       <div className={!isMobile ? 'pl-56' : ''}>
-        <Header cardWidth={undefined} />
+        {isMobile && <Header cardWidth={undefined} />}
         {children}
       </div>
     </div>
