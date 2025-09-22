@@ -130,6 +130,8 @@ const LikedVideosDrawer: React.FC<LikedVideosDrawerProps> = ({ isOpen, onClose }
     fetchLikedVideos();
   }, [depsKey]);
 
+  // Disable Headless UI's default outside-click close to avoid mobile mis-detection.
+  // We explicitly close via overlay onClick and the X buttons.
   const handleDialogClose = () => {};
   return (
     <Transition appear show={isOpen} as={Fragment}>
@@ -143,13 +145,13 @@ const LikedVideosDrawer: React.FC<LikedVideosDrawerProps> = ({ isOpen, onClose }
           leaveFrom="opacity-100"
           leaveTo="opacity-0"
         >
-          <div className="fixed inset-0 bg-black/30 backdrop-blur-sm" onClick={onClose} />
+          <div className="fixed inset-0 bg-black/40 z-10" onClick={onClose} />
         </Transition.Child>
 
-        <div className="fixed inset-0 overflow-hidden">
+        <div className="fixed inset-0 overflow-hidden z-50">
           <div className="absolute inset-0 overflow-hidden">
             {/* Mobile bottom sheet */}
-            <div className="pointer-events-none fixed inset-x-0 bottom-0 flex justify-center sm:hidden">
+            <div className="pointer-events-none fixed inset-x-0 bottom-0 flex justify-center sm:hidden z-50">
               <Transition.Child
                 as={Fragment}
                 enter="transform transition ease-in-out duration-500"
@@ -160,7 +162,7 @@ const LikedVideosDrawer: React.FC<LikedVideosDrawerProps> = ({ isOpen, onClose }
                 leaveTo="translate-y-full"
               >
                 <Dialog.Panel
-                  className="pointer-events-auto w-screen"
+                  className="pointer-events-auto w-screen relative z-[100]"
                   onMouseDown={(e) => e.stopPropagation()}
                   onPointerDown={(e) => e.stopPropagation()}
                   onTouchStart={(e) => e.stopPropagation()}
@@ -168,7 +170,7 @@ const LikedVideosDrawer: React.FC<LikedVideosDrawerProps> = ({ isOpen, onClose }
                 >
                   <div className="w-full rounded-t-2xl bg-white shadow-2xl">
                     <div className="mx-auto mt-2 mb-1 h-1.5 w-12 rounded-full bg-gray-300" />
-                    <div className="max-h-[90dvh] overflow-hidden flex flex-col">
+                    <div className="h-[90dvh] overflow-hidden flex flex-col">
                       {/* Header: left X, center title, right filter toggle */}
                       <div className="sticky top-0 z-10 bg-white px-3 py-2 grid grid-cols-[auto_1fr_auto] items-center border-b">
                         <div className="flex justify-start">
@@ -289,7 +291,7 @@ const LikedVideosDrawer: React.FC<LikedVideosDrawerProps> = ({ isOpen, onClose }
                       )}
 
                       {/* Scrollable content: list only */}
-                      <div className="flex-1 overflow-y-auto">
+                      <div className="flex-1 overflow-y-auto overscroll-contain touch-pan-y">
                         <div className="p-4 pb-[calc(8px+env(safe-area-inset-bottom,0px))]">
                           {error && (
                             <div className="mb-2 text-sm text-red-600">{error}</div>
@@ -339,7 +341,7 @@ const LikedVideosDrawer: React.FC<LikedVideosDrawerProps> = ({ isOpen, onClose }
             </div>
 
             {/* Desktop/Tablet side drawer */}
-            <div className="pointer-events-none fixed inset-y-0 right-0 hidden sm:flex max-w-full pl-10 sm:pl-16">
+            <div className="pointer-events-none fixed inset-y-0 right-0 hidden sm:flex max-w-full pl-10 sm:pl-16 z-50">
               <Transition.Child
                 as={Fragment}
                 enter="transform transition ease-in-out duration-500 sm:duration-700"
@@ -350,7 +352,7 @@ const LikedVideosDrawer: React.FC<LikedVideosDrawerProps> = ({ isOpen, onClose }
                 leaveTo="translate-x-full"
               >
                 <Dialog.Panel
-                  className="pointer-events-auto w-screen max-w-3xl md:max-w-4xl"
+                  className="pointer-events-auto w-screen max-w-3xl md:max-w-4xl relative z-[100]"
                   onMouseDown={(e) => e.stopPropagation()}
                   onPointerDown={(e) => e.stopPropagation()}
                   onTouchStart={(e) => e.stopPropagation()}
