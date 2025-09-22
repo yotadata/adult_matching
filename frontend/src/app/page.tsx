@@ -10,7 +10,7 @@ import useMediaQuery from "@/hooks/useMediaQuery";
 import useWindowSize from "@/hooks/useWindowSize";
 import MobileVideoLayout from "@/components/MobileVideoLayout";
 import { supabase } from "@/lib/supabase"; // supabaseクライアントをインポート;
-import { ThumbsDown, Heart } from "lucide-react";
+import { ThumbsDown, Heart, List } from "lucide-react";
 // ゲージ表示は当面非表示のため読み込まない
 
 // APIから受け取るvideoオブジェクトの型定義
@@ -386,7 +386,7 @@ export default function Home() {
                 aria-label="お気に入りリスト"
                 title="お気に入りリスト"
               >
-                <Heart size={28} className="text-white" />
+                <List size={28} className="text-white" />
               </button>
               {/* GOOD (heart, #FF6B81) */}
               <button

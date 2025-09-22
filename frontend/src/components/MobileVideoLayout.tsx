@@ -3,7 +3,7 @@
 import { CardData } from '@/components/SwipeCard';
 import ActionButtons from '@/components/ActionButtons';
 import { useEffect, useRef, useState } from 'react';
-import { Play, Calendar, User, Tag, ThumbsDown, ThumbsUp, Heart } from 'lucide-react';
+import { Play, Calendar, User, Tag, ThumbsDown, ThumbsUp, Heart, List } from 'lucide-react';
 
 interface MobileVideoLayoutProps {
   cardData: CardData;
@@ -175,7 +175,7 @@ const MobileVideoLayout: React.FC<MobileVideoLayoutProps> = ({ cardData, onSkip,
             aria-label="お気に入りリスト"
             title="お気に入りリスト"
           >
-            <Heart size={28} className="text-white" />
+            <List size={28} className="text-white" />
           </button>
           {/* GOOD (heart, #FF6B81) */}
           <button
