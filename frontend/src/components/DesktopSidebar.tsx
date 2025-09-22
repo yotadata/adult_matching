@@ -77,7 +77,6 @@ export default function DesktopSidebar() {
           <NavButton label="AIレコメンド" icon={Sparkles} href="/ai-recommend" disabled={!isLoggedIn} />
           <NavButton label="性癖分析" icon={BarChart2} href="/analysis-results" disabled={!isLoggedIn} />
           <NavButton label="性癖パーソナリティ診断" icon={Brain} href="/personality" disabled={!isLoggedIn} />
-          {isLoggedIn && <NavButton label="アカウント管理" icon={User} href="/account-management" />}
         </nav>
         {isLoggedIn && (
           <div className="p-3 border-t border-white/30">

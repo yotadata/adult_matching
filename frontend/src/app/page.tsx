@@ -10,6 +10,7 @@ import useMediaQuery from "@/hooks/useMediaQuery";
 import useWindowSize from "@/hooks/useWindowSize";
 import MobileVideoLayout from "@/components/MobileVideoLayout";
 import { supabase } from "@/lib/supabase"; // supabaseクライアントをインポート;
+import { ThumbsDown, Heart } from "lucide-react";
 // ゲージ表示は当面非表示のため読み込まない
 
 // APIから受け取るvideoオブジェクトの型定義
@@ -330,7 +331,7 @@ export default function Home() {
       {/* ゲージは非表示 */}
       <main
         ref={mainRef}
-        className={`flex-grow flex w-full relative ${isMobile ? 'flex-col h-full' : 'items-center justify-center'}`}
+        className={`flex-grow flex w-full relative ${isMobile ? 'flex-col h-full' : 'items-center justify-center pt-10'}`}
         style={isMobile ? { paddingTop: `0px` } : {}}
       >
         <AnimatePresence mode="wait">
@@ -372,35 +373,29 @@ export default function Home() {
               {/* NOPE (thumb_down, #6C757D) */}
               <button
                 onClick={() => triggerSwipe('left')}
-                className="w-20 h-20 rounded-full bg-[#6C757D] shadow-lg active:scale-95 transition flex items-center justify-center"
+                className="w-20 h-20 rounded-full bg-[#6C757D] shadow-lg active:scale-95 transition flex items-center justify-center leading-none"
                 aria-label="イマイチ"
                 title="イマイチ"
               >
-                <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7L3 12a3 3 0 0 0 3 3z" />
-                </svg>
+                <ThumbsDown size={36} className="text-white" />
               </button>
               {/* Liked list */}
               <button
                 onClick={() => { try { window.dispatchEvent(new Event('open-liked-drawer')); } catch {} }}
-                className="w-[60px] h-[60px] rounded-full bg-[#BEBEBE] shadow-lg active:scale-95 transition flex items-center justify-center"
+                className="w-[60px] h-[60px] rounded-full bg-[#BEBEBE] shadow-lg active:scale-95 transition flex items-center justify-center leading-none"
                 aria-label="お気に入りリスト"
                 title="お気に入りリスト"
               >
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="white" aria-hidden="true">
-                  <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 6 3.99 4 6.5 4 8.04 4 9.54 4.81 10.35 6.09 11.16 4.81 12.66 4 14.2 4 16.71 4 18.7 6 18.7 8.5c0 3.78-3.4 6.86-8.05 11.54L12 21.35z" />
-                </svg>
+                <Heart size={28} className="text-white" />
               </button>
               {/* GOOD (heart, #FF6B81) */}
               <button
                 onClick={() => triggerSwipe('right')}
-                className="w-20 h-20 rounded-full bg-[#FF6B81] shadow-lg active:scale-95 transition flex items-center justify-center"
+                className="w-20 h-20 rounded-full bg-[#FF6B81] shadow-lg active:scale-95 transition flex items-center justify-center leading-none"
                 aria-label="好み"
                 title="好み"
               >
-                <svg width="36" height="36" viewBox="0 0 24 24" fill="white" aria-hidden="true">
-                  <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 6 3.99 4 6.5 4 8.04 4 9.54 4.81 10.35 6.09 11.16 4.81 12.66 4 14.2 4 16.71 4 18.7 6 18.7 8.5c0 3.78-3.4 6.86-8.05 11.54L12 21.35z" />
-                </svg>
+                <Heart size={36} className="text-white" />
               </button>
             </div>
           )}

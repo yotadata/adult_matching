@@ -117,20 +117,22 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwi
   }, [showVideo]);
 
   return (
-    <motion.div 
-      className="absolute h-full rounded-2xl bg-white border border-gray-200 shadow-xl flex flex-col p-4 cursor-grab overflow-hidden"
-      style={{ width: cardWidth ? `${cardWidth}px` : 'auto' }}
-      drag="x"
-      dragConstraints={{ left: 0, right: 0 }}
-      onDragStart={(event, info) => onDrag?.(event, info)} // onDragStart も追加
-      onDrag={handleDrag}
-      onDragEnd={handleDragEnd}
-      animate={controls}
-      initial={false}
-      whileTap={{ cursor: "grabbing" }}
-    >
-      {/* 上部: 動画エリア（PC表示では高さ3/5） */}
-      <div className="relative w-full h-[60%] bg-black/90 flex items-center justify-center rounded-xl overflow-hidden">
+    <div className="absolute h-full" style={{ width: cardWidth ? `${cardWidth}px` : 'auto' }}>
+      {/* 背面のグレー帯（次カードプレビュー） */}
+      <div className="absolute inset-x-4 -bottom-3 h-6 bg-gray-200/90 rounded-2xl shadow-md pointer-events-none z-0" />
+      <motion.div 
+        className="relative z-10 h-full rounded-2xl bg-white border border-gray-200 shadow-xl flex flex-col p-4 cursor-grab overflow-hidden"
+        drag="x"
+        dragConstraints={{ left: 0, right: 0 }}
+        onDragStart={(event, info) => onDrag?.(event, info)} // onDragStart も追加
+        onDrag={handleDrag}
+        onDragEnd={handleDragEnd}
+        animate={controls}
+        initial={false}
+        whileTap={{ cursor: "grabbing" }}
+      >
+      {/* 上部: 動画エリア（PC版は4:3のアスペクト比） */}
+      <div className="relative w-full aspect-[4/3] bg-black/90 flex items-center justify-center rounded-xl overflow-hidden">
         {showOverlay && (
           <div
             className="absolute inset-0 w-full h-full bg-contain bg-no-repeat bg-center flex items-center justify-center z-10"
@@ -166,9 +168,9 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwi
         />
         {/* 外部タブ再生リンクは非表示にする */}
       </div>
-      
-      {/* 下部: テキスト情報エリア（PC表示では高さ2/5） */}
-      <div className="flex flex-col text-gray-800 p-4 overflow-y-auto h-[40%]">
+
+      {/* 下部: テキスト情報エリア（残り領域にフィット） */}
+      <div className="flex flex-col text-gray-800 p-4 overflow-y-auto flex-1">
         <h2 className="text-lg font-extrabold tracking-tight">{cardData.title}</h2>
         {cardData.product_released_at && (
           <div className="grid grid-cols-[auto_1fr] items-start gap-x-2 mt-2">
@@ -216,7 +218,8 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwi
           </div>
         )}
       </div>
-    </motion.div>
+      </motion.div>
+    </div>
   );
 });
 

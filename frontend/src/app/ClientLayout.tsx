@@ -3,6 +3,7 @@
 import Header from '@/components/Header';
 import DesktopSidebar from '@/components/DesktopSidebar';
 import useMediaQuery from '@/hooks/useMediaQuery';
+import GlobalModals from '@/components/GlobalModals';
 import { usePathname } from 'next/navigation';
 
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
@@ -17,7 +18,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
       {/* Desktop fixed left sidebar */}
       {!isMobile && <DesktopSidebar />}
       <div className={!isMobile ? 'pl-56' : ''}>
-        {isMobile && <Header cardWidth={undefined} />}
+        {isMobile ? <Header cardWidth={undefined} /> : <GlobalModals />}
         {children}
       </div>
     </div>
