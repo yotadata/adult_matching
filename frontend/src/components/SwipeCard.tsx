@@ -133,8 +133,8 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwi
 
   return (
     <div className="absolute h-full" style={{ width: cardWidth ? `${cardWidth}px` : 'auto' }}>
-      {/* 背面のグレー帯（次カードプレビュー） */}
-      <div className="absolute inset-x-4 -bottom-3 h-6 bg-gray-200/90 rounded-2xl shadow-md pointer-events-none z-0" />
+      {/* 背面のグレー“カード”：白カードより少し小さい高さで、下側だけ少しはみ出す */}
+      <div className="absolute inset-x-4 top-4 -bottom-2 bg-gray-200/90 rounded-2xl shadow-md pointer-events-none z-0" />
       <motion.div 
         className="relative z-10 h-full rounded-2xl bg-white border border-gray-200 shadow-xl flex flex-col p-4 cursor-grab overflow-hidden"
         drag="x"
