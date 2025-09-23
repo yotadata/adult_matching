@@ -21,6 +21,7 @@ export default function AnalysisResultsPage() {
     } catch {}
   };
   return (
+<<<<<<< HEAD
     <main className="w-full min-h-screen px-0 sm:px-4 py-8 flex items-start justify-center">
       <section
         className="w-full max-w-none mx-0 rounded-none sm:rounded-2xl bg-white/20 backdrop-blur-xl border border-white/30 shadow-[0_20px_60px_rgba(0,0,0,0.25)] px-4 sm:px-8 py-6 sm:py-8 text-white"
@@ -52,6 +53,11 @@ export default function AnalysisResultsPage() {
           </section>
         </div>
       </section>
+=======
+    <main className="container mx-auto px-4 py-8">
+      <h1 className="text-2xl font-bold mb-4 text-gray-800">性癖分析結果</h1>
+      <p className="text-gray-700">ここに性癖分析の結果が表示されます。</p>
+>>>>>>> ea197fe (feat: 田中リファクタリング (LFS対応版))
     </main>
   );
 }

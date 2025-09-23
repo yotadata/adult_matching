@@ -1,0 +1,21 @@
+{
+  "id": "approval_1758537413028_kscovksze",
+  "title": "Supabaseバックエンド整合性確認 - タスク分解",
+  "filePath": ".spec-workflow/specs/frontend-backend-consistency/tasks.md",
+  "type": "document",
+  "status": "needs-revision",
+  "createdAt": "2025-09-22T10:36:53.028Z",
+  "category": "spec",
+  "categoryName": "frontend-backend-consistency",
+  "response": "Feedback Summary (1 comments):\n\nGeneral Comments:\n1. これはすでにどこかで実装されていたりしないですか？\nないなら作成してほしいが。\nまた、今後も利用できる汎用性のある形で作ってほしい\n\n",
+  "annotations": "{\n  \"decision\": \"needs-revision\",\n  \"comments\": [\n    {\n      \"type\": \"general\",\n      \"comment\": \"これはすでにどこかで実装されていたりしないですか？\\nないなら作成してほしいが。\\nまた、今後も利用できる汎用性のある形で作ってほしい\",\n      \"timestamp\": \"2025-09-22T10:42:25.092Z\",\n      \"id\": \"comment_1758537745092_bnyb3b8k3\"\n    }\n  ],\n  \"summary\": \"Feedback Summary (1 comments):\\n\\nGeneral Comments:\\n1. これはすでにどこかで実装されていたりしないですか？\\nないなら作成してほしいが。\\nまた、今後も利用できる汎用性のある形で作ってほしい\\n\\n\",\n  \"timestamp\": \"2025-09-22T10:42:28.572Z\"\n}",
+  "respondedAt": "2025-09-22T10:42:28.025Z",
+  "comments": [
+    {
+      "type": "general",
+      "comment": "これはすでにどこかで実装されていたりしないですか？\nないなら作成してほしいが。\nまた、今後も利用できる汎用性のある形で作ってほしい",
+      "timestamp": "2025-09-22T10:42:25.092Z",
+      "id": "comment_1758537745092_bnyb3b8k3"
+    }
+  ]
+}

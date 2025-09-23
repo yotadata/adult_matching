@@ -1,0 +1,134 @@
+# 開発環境用設定
+# 既存のconfig.tomlを拡張した開発専用設定
+
+project_id = "adult_matching_dev"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[api.tls]
+enabled = false
+
+[db]
+port = 54322
+shadow_port = 54320
+major_version = 17
+
+[db.pooler]
+enabled = true   # 開発環境でもパフォーマンステスト用に有効化
+port = 54329
+pool_mode = "transaction"
+default_pool_size = 20   # 開発環境: 適度な設定
+max_client_conn = 100    # 開発環境: 基本設定
+
+# 開発環境パフォーマンス設定
+[db.settings]
+# 開発環境用の軽量設定（パフォーマンステスト可能）
+shared_buffers = "128MB"              # 開発環境: 軽量設定
+work_mem = "32MB"                     # 開発環境: 基本メモリ
+maintenance_work_mem = "64MB"         # 開発環境: インデックス作成
+effective_cache_size = "512MB"        # 開発環境: 小規模キャッシュ
+
+# 開発環境デバッグ設定
+max_parallel_workers_per_gather = 2   # 開発環境: 限定並列処理
+random_page_cost = 1.1                # 開発環境: 標準設定
+effective_io_concurrency = 100        # 開発環境: 基本I/O設定
+
+[db.migrations]
+enabled = true
+schema_paths = ["./migrations"]
+
+[db.seed]
+enabled = true
+sql_paths = ["./seed.sql"]
+
+[realtime]
+enabled = true
+
+[studio]
+enabled = true
+port = 54323
+api_url = "http://127.0.0.1"
+openai_api_key = "env(OPENAI_API_KEY)"
+
+[inbucket]
+enabled = true
+port = 54324
+
+[storage]
+enabled = true
+file_size_limit = "50MiB"
+
+[auth]
+enabled = true
+site_url = "http://127.0.0.1:3000"
+additional_redirect_urls = [
+  "http://127.0.0.1:3000",
+  "http://localhost:3000"
+]
+jwt_expiry = 3600
+enable_refresh_token_rotation = true
+refresh_token_reuse_interval = 10
+enable_signup = true
+enable_anonymous_sign_ins = false
+enable_manual_linking = false
+minimum_password_length = 6
+
+[auth.rate_limit]
+email_sent = 10  # 開発環境では制限を緩和
+sms_sent = 30
+anonymous_users = 30
+token_refresh = 150
+sign_in_sign_ups = 60  # 開発環境では制限を緩和
+token_verifications = 60
+web3 = 30
+
+[auth.email]
+enable_signup = true
+double_confirm_changes = false  # 開発環境では簡略化
+enable_confirmations = false    # 開発環境では簡略化
+secure_password_change = false
+max_frequency = "1s"
+otp_length = 6
+otp_expiry = 3600
+
+[auth.sms]
+enable_signup = false
+enable_confirmations = false
+template = "Your code is {{ .Code }}"
+max_frequency = "5s"
+
+[auth.mfa]
+max_enrolled_factors = 10
+
+[auth.mfa.totp]
+enroll_enabled = false
+verify_enabled = false
+
+[auth.mfa.phone]
+enroll_enabled = false
+verify_enabled = false
+otp_length = 6
+template = "Your code is {{ .Code }}"
+max_frequency = "5s"
+
+[edge_runtime]
+enabled = true
+policy = "oneshot"  # 開発環境ではホットリロード有効
+inspector_port = 8083
+deno_version = 1
+
+# 開発環境用シークレット（環境変数から読み込み）
+[edge_runtime.secrets]
+DMM_API_ID = "env(DMM_API_ID_DEV)"
+DMM_AFFILIATE_ID = "env(DMM_AFFILIATE_ID_DEV)"
+OPENAI_API_KEY = "env(OPENAI_API_KEY)"
+
+[analytics]
+enabled = true
+port = 54327
+backend = "postgres"

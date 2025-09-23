@@ -1,5 +1,9 @@
 'use client';
+<<<<<<< HEAD
 import { RotateCcw, Heart } from 'lucide-react';
+=======
+import { RotateCcw } from 'lucide-react';
+>>>>>>> ea197fe (feat: 田中リファクタリング (LFS対応版))
 
 export default function AiRecommendPage() {
   const handleReset = () => {
@@ -31,6 +35,7 @@ export default function AiRecommendPage() {
 
         {/* プレースホルダー（とりあえず10枠）*/}
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 sm:gap-4">
+<<<<<<< HEAD
           {Array.from({ length: 10 }).map((_, i) => (
             <div key={i} className="rounded-xl bg-white shadow-md p-3 flex flex-col text-gray-800">
               <div className="relative w-full aspect-[16/9] rounded-lg bg-gray-200 overflow-hidden" />
@@ -44,6 +49,10 @@ export default function AiRecommendPage() {
                 </button>
               </div>
             </div>
+=======
+          {[...Array(10)].map((_, i) => (
+            <div key={i} className="aspect-[4/3] rounded-xl bg-white/30 border border-white/40 backdrop-blur-sm shadow-inner" />
+>>>>>>> ea197fe (feat: 田中リファクタリング (LFS対応版))
           ))}
         </div>
       </section>
@@ -58,6 +67,7 @@ export default function AiRecommendPage() {
           <p className="text-sm text-white/80 mt-1">サイト全体の直近トレンド（プレースホルダー）。</p>
         </header>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 sm:gap-4">
+<<<<<<< HEAD
           {Array.from({ length: 10 }).map((_, i) => (
             <div key={i} className="rounded-xl bg-white shadow-md p-3 flex flex-col text-gray-800">
               <div className="relative w-full aspect-[16/9] rounded-lg bg-gray-200 overflow-hidden" />
@@ -71,6 +81,10 @@ export default function AiRecommendPage() {
                 </button>
               </div>
             </div>
+=======
+          {[...Array(10)].map((_, i) => (
+            <div key={i} className="aspect-[4/3] rounded-xl bg-white/30 border border-white/40 backdrop-blur-sm shadow-inner" />
+>>>>>>> ea197fe (feat: 田中リファクタリング (LFS対応版))
           ))}
         </div>
       </section>

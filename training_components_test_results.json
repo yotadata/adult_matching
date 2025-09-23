@@ -1,0 +1,34 @@
+{
+  "test_session": {
+    "start_time": "2025-09-09T22:39:31.042748",
+    "mock_data_stats": {
+      "users": 1000,
+      "videos": 5000,
+      "decisions": 50000
+    }
+  },
+  "feature_extractors": {
+    "user_extractor": {
+      "success": false,
+      "error": "'RealUserFeatureExtractor' object has no attribute 'extract_user_features'"
+    },
+    "item_processor": {
+      "success": false,
+      "error": "'EnhancedItemFeatureProcessor' object has no attribute 'process_video_features'"
+    }
+  },
+  "model_architecture": {
+    "error": "Model architecture test failed: TrainingConfiguration.__init__() got an unexpected keyword argument 'user_tower_hidden_dims'"
+  },
+  "training_pipeline": {
+    "success": false,
+    "error": "Requested the deserialization of a `Lambda` layer whose `function` is a Python lambda. This carries a potential risk of arbitrary code execution and thus it is disallowed by default. If you trust the source of the artifact, you can override this error by passing `safe_mode=False` to the loading function, or calling `keras.config.enable_unsafe_deserialization()."
+  },
+  "overall": {
+    "tests_passed": 0,
+    "total_tests": 3,
+    "success_rate": 0.0,
+    "overall_success": false,
+    "test_duration_minutes": 0.10039198333333334
+  }
+}

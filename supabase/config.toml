@@ -15,7 +15,7 @@ schemas = ["public", "graphql_public"]
 extra_search_path = ["public", "extensions"]
 # The maximum number of rows returns from a view, table, or stored procedure. Limits payload size
 # for accidental or malicious requests.
-max_rows = 1000
+max_rows = 500  # セキュリティ強化: 制限を厳格化
 
 [api.tls]
 # Enable HTTPS endpoints locally using a self-signed certificate.
@@ -30,17 +30,32 @@ shadow_port = 54320
 # server_version;` on the remote database to check.
 major_version = 17
 
+# パフォーマンス最適化: 接続プール設定
 [db.pooler]
-enabled = false
+enabled = true  # パフォーマンス向上のため有効化
 # Port to use for the local connection pooler.
 port = 54329
 # Specifies when a server connection can be reused by other clients.
 # Configure one of the supported pooler modes: `transaction`, `session`.
-pool_mode = "transaction"
+pool_mode = "transaction"  # ベクター検索に最適
 # How many server connections to allow per user/database pair.
-default_pool_size = 20
+default_pool_size = 50   # 768次元ベクター処理用に増加
 # Maximum number of client connections allowed.
-max_client_conn = 100
+max_client_conn = 200    # 高負荷対応のため増加
+
+# パフォーマンス最適化: pgvector専用設定
+[db.settings]
+# 768次元ベクター操作に最適化されたPostgreSQL設定
+# 大きなベクター処理のためのメモリ設定
+shared_buffers = "256MB"           # ベクターデータ用バッファ増加
+work_mem = "64MB"                  # ベクター演算用メモリ増加  
+maintenance_work_mem = "128MB"     # インデックス作成用メモリ
+effective_cache_size = "1GB"       # キャッシュサイズ最適化
+
+# pgvector特有の設定
+max_parallel_workers_per_gather = 4  # 並列ベクター検索
+# random_page_cost = 1.1               # SSD用最適化 (CLI v2.40+で対応)
+# effective_io_concurrency = 200       # 並列I/O向上 (CLI v2.40+で対応)
 
 # [db.vault]
 # secret_key = "env(SECRET_VALUE)"
@@ -59,15 +74,16 @@ enabled = true
 # Supports glob patterns relative to supabase directory: "./seeds/*.sql"
 sql_paths = ["./seed.sql"]
 
+# セキュリティ強化: ネットワーク制限を有効化（本番環境では必須）
 [db.network_restrictions]
 # Enable management of network restrictions.
-enabled = false
+enabled = false  # 開発環境では無効（本番環境では有効化）
 # List of IPv4 CIDR blocks allowed to connect to the database.
-# Defaults to allow all IPv4 connections. Set empty array to block all IPs.
-allowed_cidrs = ["0.0.0.0/0"]
+# 本番環境では信頼できるIPレンジのみを設定
+allowed_cidrs = ["0.0.0.0/0"]  # 開発環境用（本番では制限）
 # List of IPv6 CIDR blocks allowed to connect to the database.
-# Defaults to allow all IPv6 connections. Set empty array to block all IPs.
-allowed_cidrs_v6 = ["::/0"]
+# 本番環境では信頼できるIPv6レンジのみを設定  
+allowed_cidrs_v6 = ["::/0"]  # 開発環境用（本番では制限）
 
 [realtime]
 enabled = true
@@ -123,8 +139,9 @@ additional_redirect_urls = [
   "http://127.0.0.1:3000",
   "http://localhost:3000"
 ]
+# セキュリティ強化: JWT有効期限を短縮
 # How long tokens are valid for, in seconds. Defaults to 3600 (1 hour), maximum 604,800 (1 week).
-jwt_expiry = 3600
+jwt_expiry = 1800  # 強化: 30分に短縮
 # Path to JWT signing key. DO NOT commit your signing keys file to git.
 # signing_keys_path = "./signing_keys.json"
 # If disabled, the refresh token will never expire.
@@ -138,33 +155,36 @@ enable_signup = true
 enable_anonymous_sign_ins = false
 # Allow/disallow testing manual linking of accounts
 enable_manual_linking = false
+# セキュリティ強化: パスワード要件を厳格化
 # Passwords shorter than this value will be rejected as weak. Minimum 6, recommended 8 or more.
-minimum_password_length = 6
+minimum_password_length = 8  # 強化: 最小8文字に変更
 # Passwords that do not meet the following requirements will be rejected as weak. Supported values
 # are: `letters_digits`, `lower_upper_letters_digits`, `lower_upper_letters_digits_symbols`
-password_requirements = ""
+password_requirements = "lower_upper_letters_digits"  # 強化: 大小文字・数字必須
 
 [auth.rate_limit]
+# セキュリティ強化: レート制限を厳格化
 # Number of emails that can be sent per hour. Requires auth.email.smtp to be enabled.
-email_sent = 2
+email_sent = 1  # 強化: 1件/時間に制限
 # Number of SMS messages that can be sent per hour. Requires auth.sms to be enabled.
-sms_sent = 30
+sms_sent = 10   # 強化: 10件/時間に制限
 # Number of anonymous sign-ins that can be made per hour per IP address. Requires enable_anonymous_sign_ins = true.
-anonymous_users = 30
+anonymous_users = 5  # 強化: 匿名アクセスを大幅制限
 # Number of sessions that can be refreshed in a 5 minute interval per IP address.
-token_refresh = 150
+token_refresh = 50   # 強化: リフレッシュ制限を厳格化
 # Number of sign up and sign-in requests that can be made in a 5 minute interval per IP address (excludes anonymous users).
-sign_in_sign_ups = 30
+sign_in_sign_ups = 10  # 強化: サインアップ・ログイン制限
 # Number of OTP / Magic link verifications that can be made in a 5 minute interval per IP address.
-token_verifications = 30
+token_verifications = 10  # 強化: OTP検証制限
 # Number of Web3 logins that can be made in a 5 minute interval per IP address.
-web3 = 30
+web3 = 10  # 強化: Web3ログイン制限
 
+# セキュリティ強化: CAPTCHA設定（本番環境で有効化推奨）
 # Configure one of the supported captcha providers: `hcaptcha`, `turnstile`.
-# [auth.captcha]
-# enabled = true
-# provider = "hcaptcha"
-# secret = ""
+[auth.captcha]
+enabled = false  # 開発環境では無効（本番環境では有効化推奨）
+provider = "hcaptcha"  # hCaptcha推奨
+secret = "env(CAPTCHA_SECRET)"  # 本番環境では環境変数から読み込み
 
 [auth.email]
 # Allow/disallow new user signups via email to your project.
@@ -314,8 +334,9 @@ inspector_port = 8083
 # The Deno major version to use.
 deno_version = 1
 
-# [edge_runtime.secrets]
-# secret_key = "env(SECRET_VALUE)"
+[edge_runtime.secrets]
+DMM_API_ID = "W63Kd4A4ym2DaycFcXSU"
+DMM_AFFILIATE_ID = "yotadata2-990"
 
 [analytics]
 enabled = true
