@@ -292,7 +292,7 @@ const LikedVideosDrawer: React.FC<LikedVideosDrawerProps> = ({ isOpen, onClose }
                       )}
 
                       {/* Scrollable content: list only */}
-                      <div className="flex-1 overflow-y-auto overscroll-contain touch-pan-y" style={{ WebkitOverflowScrolling: 'touch' as any }}>
+                      <div className="flex-1 overflow-y-auto overscroll-contain touch-pan-y" style={{ WebkitOverflowScrolling: 'touch' }}>
                         <div className="p-4 pb-[calc(8px+env(safe-area-inset-bottom,0px))]">
                           {error && (
                             <div className="mb-2 text-sm text-red-600">{error}</div>
