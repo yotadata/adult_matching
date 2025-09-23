@@ -57,12 +57,16 @@ const LikedVideosDrawer: React.FC<LikedVideosDrawerProps> = ({ isOpen, onClose }
   // DMM/FANZA アフィリエイトリンクへ変換（既にal.fanza.co.jpならそのまま）
   const toFanzaAffiliate = (raw: string | undefined | null): string | undefined => {
     if (!raw) return undefined;
-    if (raw.startsWith('https://al.fanza.co.jp/')) return raw;
-    const afId = process.env.NEXT_PUBLIC_FANZA_AFFILIATE_ID || '';
-    if (!afId) return raw; // 環境変数未設定時は生URLを返す
+    const AF_ID = 'yotadata2-001';
+    try {
+      if (raw.startsWith('https://al.fanza.co.jp/')) {
+        const url = new URL(raw);
+        url.searchParams.set('af_id', AF_ID);
+        return url.toString();
+      }
+    } catch {}
     const lurl = encodeURIComponent(raw);
-    const aid = encodeURIComponent(afId);
-    return `https://al.fanza.co.jp/?lurl=${lurl}&af_id=${aid}&ch=link_tool&ch_id=link`;
+    return `https://al.fanza.co.jp/?lurl=${lurl}&af_id=${encodeURIComponent(AF_ID)}&ch=link_tool&ch_id=link`;
   };
 
   const depsKey = useMemo(

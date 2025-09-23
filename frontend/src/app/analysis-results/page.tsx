@@ -36,11 +36,20 @@ export default function AnalysisResultsPage() {
             <Share2 size={18} />
           </button>
         </header>
-        {/* プレースホルダー領域（分析結果が入ります） */}
+        {/* 強めの白カードで3セクション */}
         <div className="grid grid-cols-1 gap-4">
-          <div className="rounded-xl bg-white/10 border border-white/30 backdrop-blur p-4">
-            <p className="text-sm text-white/90">分析結果の内容がここに表示されます。（プレースホルダー）</p>
-          </div>
+          <section className="rounded-xl bg-white/70 backdrop-blur-md shadow-lg border border-white/40 p-4 text-gray-900">
+            <h2 className="text-base font-bold mb-2">あなたの好きなタグ</h2>
+            <div className="h-24 rounded-md bg-white/40"></div>
+          </section>
+          <section className="rounded-xl bg-white/70 backdrop-blur-md shadow-lg border border-white/40 p-4 text-gray-900">
+            <h2 className="text-base font-bold mb-2">あなたの好きな女優</h2>
+            <div className="h-24 rounded-md bg-white/40"></div>
+          </section>
+          <section className="rounded-xl bg-white/70 backdrop-blur-md shadow-lg border border-white/40 p-4 text-gray-900">
+            <h2 className="text-base font-bold mb-2">LIKE比率</h2>
+            <div className="h-24 rounded-md bg-white/40"></div>
+          </section>
         </div>
       </section>
     </main>
