@@ -12,8 +12,15 @@ interface AccountManagementDrawerProps {
 
 const AccountManagementDrawer: React.FC<AccountManagementDrawerProps> = ({ isOpen, onClose }) => {
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    onClose(); // ログアウト後にドロワーを閉じる
+    try {
+      await supabase.auth.getSession();
+      const { error } = await supabase.auth.signOut({ scope: 'global' });
+      if (error) console.error('signOut error:', error.message);
+    } catch (e) {
+      console.error('logout exception', e);
+    }
+    onClose();
+    try { if (typeof window !== 'undefined') window.location.assign('/'); } catch {}
   };
 
   return (

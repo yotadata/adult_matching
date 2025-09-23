@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { Home as HomeIcon, Sparkles, BarChart2, Brain, User, UserPlus, LogOut } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { forceClearSupabaseAuth } from '@/lib/authUtils';
 
 export default function DesktopSidebar() {
   const router = useRouter();
@@ -56,7 +57,21 @@ export default function DesktopSidebar() {
   };
 
   const handleLogout = async () => {
-    try { await supabase.auth.signOut(); } catch {}
+    try {
+      // セッションを確実にロードしてからサインアウト
+      await supabase.auth.getSession();
+      const { error } = await supabase.auth.signOut({ scope: 'global' });
+      if (error) console.error('signOut error:', error.message);
+    } catch (e) {
+      console.error('logout exception', e);
+    }
+    // 即時にUIへ反映
+    setIsLoggedIn(false);
+    try { forceClearSupabaseAuth(); } catch {}
+    try { router.push('/'); } catch {}
+    try { router.refresh(); } catch {}
+    // 最後の砦: ハードリロード
+    try { setTimeout(() => { if (typeof window !== 'undefined') window.location.assign('/'); }, 100); } catch {}
   };
 
   const NavButton = ({
