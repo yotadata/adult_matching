@@ -11,6 +11,7 @@ import { UserPlus, Menu as MenuIcon, X, Home as HomeIcon, Sparkles, BarChart2, B
 import { useRouter, usePathname } from 'next/navigation';
 import LikedVideosDrawer from './LikedVideosDrawer'; // ドロワーコンポーネントをインポート
 import { toast } from 'react-hot-toast';
+import { forceClearSupabaseAuth } from '@/lib/authUtils';
 
 const Header = ({ cardWidth, mobileGauge }: { cardWidth: number | undefined; mobileGauge?: React.ReactNode }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -95,15 +96,23 @@ const Header = ({ cardWidth, mobileGauge }: { cardWidth: number | undefined; mob
 
   const handleLogout = async () => {
     try {
-      await supabase.auth.signOut({ scope: 'global' });
-      setIsMenuDrawerOpen(false);
-      setIsDrawerOpen(false);
-      toast.success('ログアウトしました');
-      try { router.push('/'); } catch {}
-      try { router.refresh(); } catch {}
-    } catch {
-      toast.error('ログアウトに失敗しました');
+      // セッションを確実に初期化してからサインアウト
+      await supabase.auth.getSession();
+      const { error } = await supabase.auth.signOut({ scope: 'global' });
+      if (error) console.error('signOut error:', error.message);
+    } catch (e) {
+      console.error('logout exception', e);
     }
+    setIsMenuDrawerOpen(false);
+    setIsDrawerOpen(false);
+    // 即時にUIへ反映
+    setUser(null);
+    setAuthChecked(true);
+    toast.success('ログアウトしました');
+    try { forceClearSupabaseAuth(); } catch {}
+    try { router.push('/'); } catch {}
+    try { router.refresh(); } catch {}
+    try { setTimeout(() => { if (typeof window !== 'undefined') window.location.assign('/'); }, 100); } catch {}
   };
 
   return (
