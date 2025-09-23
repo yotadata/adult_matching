@@ -91,6 +91,19 @@ export default function VideoDetailPage() {
   if (error) return <div className="max-w-4xl mx-auto px-4 py-8 text-red-600">{error}</div>;
   if (!video) return null;
 
+  const toFanzaAffiliate = (raw: string | null | undefined): string | undefined => {
+    if (!raw) return undefined;
+    const AF_ID = 'yotadata2-001';
+    try {
+      if (raw.startsWith('https://al.fanza.co.jp/')) {
+        const url = new URL(raw);
+        url.searchParams.set('af_id', AF_ID);
+        return url.toString();
+      }
+    } catch {}
+    return `https://al.fanza.co.jp/?lurl=${encodeURIComponent(raw)}&af_id=${encodeURIComponent(AF_ID)}&ch=link_tool&ch_id=link`;
+  };
+
   const fanzaEmbedUrl = `https://www.dmm.co.jp/litevideo/-/part/=/affi_id=${process.env.NEXT_PUBLIC_FANZA_AFFILIATE_ID}/cid=${video.external_id}/size=1280_720/`;
 
   return (
@@ -144,7 +157,7 @@ export default function VideoDetailPage() {
         <div>
           <div className="border rounded-lg p-3">
             <div className="text-sm text-gray-700 mb-2">外部サイトで見る</div>
-            <Link href={video.product_url || '#'} target="_blank" className="block w-full text-center bg-amber-500 text-white font-bold rounded-lg py-2">
+            <Link href={toFanzaAffiliate(video.product_url) || '#'} target="_blank" className="block w-full text-center bg-amber-500 text-white font-bold rounded-lg py-2">
               商品ページへ
             </Link>
           </div>

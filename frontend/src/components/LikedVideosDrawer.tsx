@@ -57,12 +57,16 @@ const LikedVideosDrawer: React.FC<LikedVideosDrawerProps> = ({ isOpen, onClose }
   // DMM/FANZA アフィリエイトリンクへ変換（既にal.fanza.co.jpならそのまま）
   const toFanzaAffiliate = (raw: string | undefined | null): string | undefined => {
     if (!raw) return undefined;
-    if (raw.startsWith('https://al.fanza.co.jp/')) return raw;
-    const afId = process.env.NEXT_PUBLIC_FANZA_AFFILIATE_ID || '';
-    if (!afId) return raw; // 環境変数未設定時は生URLを返す
+    const AF_ID = 'yotadata2-001';
+    try {
+      if (raw.startsWith('https://al.fanza.co.jp/')) {
+        const url = new URL(raw);
+        url.searchParams.set('af_id', AF_ID);
+        return url.toString();
+      }
+    } catch {}
     const lurl = encodeURIComponent(raw);
-    const aid = encodeURIComponent(afId);
-    return `https://al.fanza.co.jp/?lurl=${lurl}&af_id=${aid}&ch=link_tool&ch_id=link`;
+    return `https://al.fanza.co.jp/?lurl=${lurl}&af_id=${encodeURIComponent(AF_ID)}&ch=link_tool&ch_id=link`;
   };
 
   const depsKey = useMemo(
@@ -130,8 +134,9 @@ const LikedVideosDrawer: React.FC<LikedVideosDrawerProps> = ({ isOpen, onClose }
     fetchLikedVideos();
   }, [depsKey]);
 
-  // Disable Headless UI's default outside-click close to avoid mobile mis-detection.
-  // We explicitly close via overlay onClick and the X buttons.
+  // ここではオーバーレイは常時クリック可能とし、パネル側で stopPropagation して外側判定を防ぐ。
+
+  // オーバーレイ押下で閉じないポリシー（Xボタンのみで閉じる）
   const handleDialogClose = () => {};
   return (
     <Transition appear show={isOpen} as={Fragment}>
@@ -145,13 +150,15 @@ const LikedVideosDrawer: React.FC<LikedVideosDrawerProps> = ({ isOpen, onClose }
           leaveFrom="opacity-100"
           leaveTo="opacity-0"
         >
-          <div className="fixed inset-0 bg-black/40 z-10" onClick={onClose} />
+          <div
+            className="fixed inset-0 bg-black/40 z-40 pointer-events-auto"
+          />
         </Transition.Child>
 
-        <div className="fixed inset-0 overflow-hidden z-50">
+        <div className="fixed inset-0 overflow-hidden z-[60] isolate">
           <div className="absolute inset-0 overflow-hidden">
             {/* Mobile bottom sheet */}
-            <div className="pointer-events-none fixed inset-x-0 bottom-0 flex justify-center sm:hidden z-50">
+            <div className="pointer-events-none fixed inset-x-0 bottom-0 flex justify-center sm:hidden z-[60]">
               <Transition.Child
                 as={Fragment}
                 enter="transform transition ease-in-out duration-500"
@@ -161,16 +168,10 @@ const LikedVideosDrawer: React.FC<LikedVideosDrawerProps> = ({ isOpen, onClose }
                 leaveFrom="translate-y-0"
                 leaveTo="translate-y-full"
               >
-                <Dialog.Panel
-                  className="pointer-events-auto w-screen relative z-[100]"
-                  onMouseDown={(e) => e.stopPropagation()}
-                  onPointerDown={(e) => e.stopPropagation()}
-                  onTouchStart={(e) => e.stopPropagation()}
-                  onClick={(e) => e.stopPropagation()}
-                >
+                <Dialog.Panel className="pointer-events-auto w-screen relative z-[70]">
                   <div className="w-full rounded-t-2xl bg-white shadow-2xl">
                     <div className="mx-auto mt-2 mb-1 h-1.5 w-12 rounded-full bg-gray-300" />
-                    <div className="h-[90dvh] overflow-hidden flex flex-col">
+                    <div className="h-[90dvh] max-h-[90svh] overflow-hidden flex flex-col">
                       {/* Header: left X, center title, right filter toggle */}
                       <div className="sticky top-0 z-10 bg-white px-3 py-2 grid grid-cols-[auto_1fr_auto] items-center border-b">
                         <div className="flex justify-start">
@@ -291,7 +292,7 @@ const LikedVideosDrawer: React.FC<LikedVideosDrawerProps> = ({ isOpen, onClose }
                       )}
 
                       {/* Scrollable content: list only */}
-                      <div className="flex-1 overflow-y-auto overscroll-contain touch-pan-y">
+                      <div className="flex-1 overflow-y-auto overscroll-contain touch-pan-y" style={{ WebkitOverflowScrolling: 'touch' as any }}>
                         <div className="p-4 pb-[calc(8px+env(safe-area-inset-bottom,0px))]">
                           {error && (
                             <div className="mb-2 text-sm text-red-600">{error}</div>
@@ -341,7 +342,7 @@ const LikedVideosDrawer: React.FC<LikedVideosDrawerProps> = ({ isOpen, onClose }
             </div>
 
             {/* Desktop/Tablet side drawer */}
-            <div className="pointer-events-none fixed inset-y-0 right-0 hidden sm:flex max-w-full pl-10 sm:pl-16 z-50">
+            <div className="pointer-events-none fixed inset-y-0 right-0 hidden sm:flex max-w-full pl-10 sm:pl-16 z-[60]">
               <Transition.Child
                 as={Fragment}
                 enter="transform transition ease-in-out duration-500 sm:duration-700"
@@ -352,11 +353,7 @@ const LikedVideosDrawer: React.FC<LikedVideosDrawerProps> = ({ isOpen, onClose }
                 leaveTo="translate-x-full"
               >
                 <Dialog.Panel
-                  className="pointer-events-auto w-screen max-w-3xl md:max-w-4xl relative z-[100]"
-                  onMouseDown={(e) => e.stopPropagation()}
-                  onPointerDown={(e) => e.stopPropagation()}
-                  onTouchStart={(e) => e.stopPropagation()}
-                  onClick={(e) => e.stopPropagation()}
+                  className="pointer-events-auto w-screen max-w-3xl md:max-w-4xl relative z-[70]"
                 >
                   <div className="flex h-full flex-col bg-white shadow-xl">
                     <div className="p-6 sticky top-0 bg-white z-10 border-b">

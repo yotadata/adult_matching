@@ -1,5 +1,5 @@
 'use client';
-import { RotateCcw } from 'lucide-react';
+import { RotateCcw, Heart } from 'lucide-react';
 
 export default function AiRecommendPage() {
   const handleReset = () => {
@@ -31,8 +31,19 @@ export default function AiRecommendPage() {
 
         {/* プレースホルダー（とりあえず10枠）*/}
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 sm:gap-4">
-          {[...Array(10)].map((_, i) => (
-            <div key={i} className="aspect-[4/3] rounded-xl bg-white/30 border border-white/40 backdrop-blur-sm shadow-inner" />
+          {Array.from({ length: 10 }).map((_, i) => (
+            <div key={i} className="rounded-xl bg-white shadow-md p-3 flex flex-col text-gray-800">
+              <div className="relative w-full aspect-[16/9] rounded-lg bg-gray-200 overflow-hidden" />
+              <div className="mt-2 text-sm font-bold line-clamp-2 text-gray-900">タイトル（プレースホルダー）</div>
+              <div className="mt-2 flex items-center justify-between">
+                <button className="text-xs font-bold px-3 py-1.5 rounded-md text-[#FF6B81] border border-[#FF6B81] transition hover:bg-[#FF6B81]/10 active:scale-95">
+                  見る
+                </button>
+                <button aria-label="お気に入り" className="w-9 h-9 rounded-full flex items-center justify-center text-[#FF6B81] transition hover:bg-[#FF6B81]/10 active:scale-95">
+                  <Heart size={16} className="text-[#FF6B81]" />
+                </button>
+              </div>
+            </div>
           ))}
         </div>
       </section>
@@ -47,8 +58,19 @@ export default function AiRecommendPage() {
           <p className="text-sm text-white/80 mt-1">サイト全体の直近トレンド（プレースホルダー）。</p>
         </header>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 sm:gap-4">
-          {[...Array(10)].map((_, i) => (
-            <div key={i} className="aspect-[4/3] rounded-xl bg-white/30 border border-white/40 backdrop-blur-sm shadow-inner" />
+          {Array.from({ length: 10 }).map((_, i) => (
+            <div key={i} className="rounded-xl bg-white shadow-md p-3 flex flex-col text-gray-800">
+              <div className="relative w-full aspect-[16/9] rounded-lg bg-gray-200 overflow-hidden" />
+              <div className="mt-2 text-sm font-bold line-clamp-2 text-gray-900">タイトル（プレースホルダー）</div>
+              <div className="mt-2 flex items-center justify-between">
+                <button className="text-xs font-bold px-3 py-1.5 rounded-md text-[#FF6B81] border border-[#FF6B81] transition hover:bg-[#FF6B81]/10 active:scale-95">
+                  見る
+                </button>
+                <button aria-label="お気に入り" className="w-9 h-9 rounded-full flex items-center justify-center text-[#FF6B81] transition hover:bg-[#FF6B81]/10 active:scale-95">
+                  <Heart size={16} className="text-[#FF6B81]" />
+                </button>
+              </div>
+            </div>
           ))}
         </div>
       </section>

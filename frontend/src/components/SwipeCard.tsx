@@ -2,7 +2,7 @@
 
 import { motion, useAnimation, PanInfo } from 'framer-motion';
 import { forwardRef, useImperativeHandle, useState, useEffect, useRef } from 'react';
-import { Play, User, Tag, Calendar } from 'lucide-react'; // アイコンをインポート
+import { Play, User, Tag, Calendar, Share2 } from 'lucide-react'; // アイコンをインポート
 
 // カードデータの型定義
 export interface CardData {
@@ -101,6 +101,21 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwi
     setShowVideo(true);
   };
 
+  const toAffiliateUrl = (raw?: string) => {
+    const AF_ID = 'yotadata2-001';
+    try {
+      if (raw && raw.startsWith('https://al.fanza.co.jp/')) {
+        const u = new URL(raw);
+        u.searchParams.set('af_id', AF_ID);
+        return u.toString();
+      }
+    } catch {}
+    if (raw) {
+      return `https://al.fanza.co.jp/?lurl=${encodeURIComponent(raw)}&af_id=${encodeURIComponent(AF_ID)}&ch=link_tool&ch_id=link`;
+    }
+    try { return window.location.href; } catch { return ''; }
+  };
+
   useEffect(() => {
     if (showVideo && videoRef.current) {
       const v = videoRef.current;
@@ -172,19 +187,36 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwi
       {/* 下部: テキスト情報エリア（残り領域にフィット） */}
       <div className="flex flex-col text-gray-800 p-4 overflow-y-auto flex-1">
         <h2 className="text-lg font-extrabold tracking-tight">{cardData.title}</h2>
-        {cardData.product_released_at && (
-          <div className="grid grid-cols-[auto_1fr] items-start gap-x-2 mt-2">
-            <div className="flex w-18 flex-shrink-0 items-center text-sm text-gray-500">
-              <Calendar className="mr-1 h-4 w-4" />
-              <span>発売日:</span>
+          {cardData.product_released_at && (
+            <div className="grid grid-cols-[auto_1fr_auto] items-center gap-x-2 mt-2">
+              <div className="flex w-18 flex-shrink-0 items-center text-sm text-gray-500">
+                <Calendar className="mr-1 h-4 w-4" />
+                <span>発売日:</span>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <span className="rounded-full bg-blue-500/70 px-2 py-1 text-[11px] font-bold text-white">
+                  {new Date(cardData.product_released_at).toLocaleDateString('ja-JP')}
+                </span>
+              </div>
+              <div className="flex justify-end">
+                <button
+                  onClick={() => {
+                    try {
+                      const text = cardData.title || '';
+                      const url = toAffiliateUrl(cardData.productUrl);
+                      const shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
+                      window.open(shareUrl, '_blank', 'noopener,noreferrer');
+                    } catch {}
+                  }}
+                  className="p-1.5 rounded-full bg-black text-white hover:opacity-90"
+                  aria-label="Xで共有"
+                  title="Xで共有"
+                >
+                  <Share2 size={14} />
+                </button>
+              </div>
             </div>
-            <div className="flex flex-wrap gap-2">
-              <span className="rounded-full bg-blue-500/70 px-2 py-1 text-[11px] font-bold text-white">
-                {new Date(cardData.product_released_at).toLocaleDateString('ja-JP')}
-              </span>
-            </div>
-          </div>
-        )}
+          )}
         {cardData.performers && cardData.performers.length > 0 && (
           <div className="grid grid-cols-[auto_1fr] items-start gap-x-2 mt-2">
             <div className="flex w-18 flex-shrink-0 items-center text-sm text-gray-500">
