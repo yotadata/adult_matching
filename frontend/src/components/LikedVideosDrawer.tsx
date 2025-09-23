@@ -130,7 +130,9 @@ const LikedVideosDrawer: React.FC<LikedVideosDrawerProps> = ({ isOpen, onClose }
     fetchLikedVideos();
   }, [depsKey]);
 
-  // Use parent onClose so ESC/Back works. Overlay tap calls onClose too.
+  // ここではオーバーレイは常時クリック可能とし、パネル側で stopPropagation して外側判定を防ぐ。
+
+  // ESC/Back でも閉じられるよう HeadlessUI の onClose を有効化
   const handleDialogClose = onClose;
   return (
     <Transition appear show={isOpen} as={Fragment}>
@@ -144,13 +146,16 @@ const LikedVideosDrawer: React.FC<LikedVideosDrawerProps> = ({ isOpen, onClose }
           leaveFrom="opacity-100"
           leaveTo="opacity-0"
         >
-          <div className="fixed inset-0 bg-black/40 z-10" onClick={onClose} />
+          <div
+            className="fixed inset-0 bg-black/40 z-40 pointer-events-auto"
+            onClick={onClose}
+          />
         </Transition.Child>
 
-        <div className="fixed inset-0 overflow-hidden z-50">
+        <div className="fixed inset-0 overflow-hidden z-[60] isolate">
           <div className="absolute inset-0 overflow-hidden">
             {/* Mobile bottom sheet */}
-            <div className="pointer-events-none fixed inset-x-0 bottom-0 flex justify-center sm:hidden z-50">
+            <div className="pointer-events-none fixed inset-x-0 bottom-0 flex justify-center sm:hidden z-[60]">
               <Transition.Child
                 as={Fragment}
                 enter="transform transition ease-in-out duration-500"
@@ -160,7 +165,17 @@ const LikedVideosDrawer: React.FC<LikedVideosDrawerProps> = ({ isOpen, onClose }
                 leaveFrom="translate-y-0"
                 leaveTo="translate-y-full"
               >
-                <Dialog.Panel className="pointer-events-auto w-screen relative z-[100]">
+                <Dialog.Panel
+                  className="pointer-events-auto w-screen relative z-[70]"
+                  onMouseDown={(e) => e.stopPropagation()}
+                  onMouseDownCapture={(e) => e.stopPropagation()}
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onPointerDownCapture={(e) => e.stopPropagation()}
+                  onTouchStart={(e) => e.stopPropagation()}
+                  onTouchStartCapture={(e) => e.stopPropagation()}
+                  onClick={(e) => e.stopPropagation()}
+                  onClickCapture={(e) => e.stopPropagation()}
+                >
                   <div className="w-full rounded-t-2xl bg-white shadow-2xl">
                     <div className="mx-auto mt-2 mb-1 h-1.5 w-12 rounded-full bg-gray-300" />
                     <div className="h-[90dvh] max-h-[90svh] overflow-hidden flex flex-col">
@@ -334,7 +349,7 @@ const LikedVideosDrawer: React.FC<LikedVideosDrawerProps> = ({ isOpen, onClose }
             </div>
 
             {/* Desktop/Tablet side drawer */}
-            <div className="pointer-events-none fixed inset-y-0 right-0 hidden sm:flex max-w-full pl-10 sm:pl-16 z-50">
+            <div className="pointer-events-none fixed inset-y-0 right-0 hidden sm:flex max-w-full pl-10 sm:pl-16 z-[60]">
               <Transition.Child
                 as={Fragment}
                 enter="transform transition ease-in-out duration-500 sm:duration-700"
@@ -344,7 +359,9 @@ const LikedVideosDrawer: React.FC<LikedVideosDrawerProps> = ({ isOpen, onClose }
                 leaveFrom="translate-x-0"
                 leaveTo="translate-x-full"
               >
-                <Dialog.Panel className="pointer-events-auto w-screen max-w-3xl md:max-w-4xl relative z-[100]">
+                <Dialog.Panel
+                  className="pointer-events-auto w-screen max-w-3xl md:max-w-4xl relative z-[70]"
+                >
                   <div className="flex h-full flex-col bg-white shadow-xl">
                     <div className="p-6 sticky top-0 bg-white z-10 border-b">
                       <div className="flex items-start justify-between">
