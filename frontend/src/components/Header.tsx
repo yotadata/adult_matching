@@ -95,11 +95,12 @@ const Header = ({ cardWidth, mobileGauge }: { cardWidth: number | undefined; mob
 
   const handleLogout = async () => {
     try {
-      await supabase.auth.signOut();
+      await supabase.auth.signOut({ scope: 'global' });
       setIsMenuDrawerOpen(false);
       setIsDrawerOpen(false);
       toast.success('ログアウトしました');
       try { router.push('/'); } catch {}
+      try { router.refresh(); } catch {}
     } catch {
       toast.error('ログアウトに失敗しました');
     }

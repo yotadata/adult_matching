@@ -56,7 +56,11 @@ export default function DesktopSidebar() {
   };
 
   const handleLogout = async () => {
-    try { await supabase.auth.signOut(); } catch {}
+    try {
+      await supabase.auth.signOut({ scope: 'global' });
+    } catch {}
+    try { router.push('/'); } catch {}
+    try { router.refresh(); } catch {}
   };
 
   const NavButton = ({
