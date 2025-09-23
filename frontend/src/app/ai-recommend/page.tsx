@@ -36,8 +36,10 @@ export default function AiRecommendPage() {
               <div className="relative w-full aspect-[16/9] rounded-lg bg-gray-200 overflow-hidden" />
               <div className="mt-2 text-sm font-bold line-clamp-2 text-gray-900">タイトル（プレースホルダー）</div>
               <div className="mt-2 flex items-center justify-between">
-                <button className="text-xs font-bold px-3 py-1.5 rounded-md text-[#FF6B81] border border-[#FF6B81] transition">見る</button>
-                <button aria-label="お気に入り" className="w-9 h-9 rounded-full flex items-center justify-center text-[#FF6B81] transition">
+                <button className="text-xs font-bold px-3 py-1.5 rounded-md text-[#FF6B81] border border-[#FF6B81] transition hover:bg-[#FF6B81]/10 active:scale-95">
+                  見る
+                </button>
+                <button aria-label="お気に入り" className="w-9 h-9 rounded-full flex items-center justify-center text-[#FF6B81] transition hover:bg-[#FF6B81]/10 active:scale-95">
                   <Heart size={16} className="text-[#FF6B81]" />
                 </button>
               </div>
@@ -61,8 +63,10 @@ export default function AiRecommendPage() {
               <div className="relative w-full aspect-[16/9] rounded-lg bg-gray-200 overflow-hidden" />
               <div className="mt-2 text-sm font-bold line-clamp-2 text-gray-900">タイトル（プレースホルダー）</div>
               <div className="mt-2 flex items-center justify-between">
-                <button className="text-xs font-bold px-3 py-1.5 rounded-md text-[#FF6B81] border border-[#FF6B81] transition">見る</button>
-                <button aria-label="お気に入り" className="w-9 h-9 rounded-full flex items-center justify-center text-[#FF6B81] transition">
+                <button className="text-xs font-bold px-3 py-1.5 rounded-md text-[#FF6B81] border border-[#FF6B81] transition hover:bg-[#FF6B81]/10 active:scale-95">
+                  見る
+                </button>
+                <button aria-label="お気に入り" className="w-9 h-9 rounded-full flex items-center justify-center text-[#FF6B81] transition hover:bg-[#FF6B81]/10 active:scale-95">
                   <Heart size={16} className="text-[#FF6B81]" />
                 </button>
               </div>
