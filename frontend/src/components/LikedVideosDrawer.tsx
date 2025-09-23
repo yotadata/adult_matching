@@ -130,9 +130,8 @@ const LikedVideosDrawer: React.FC<LikedVideosDrawerProps> = ({ isOpen, onClose }
     fetchLikedVideos();
   }, [depsKey]);
 
-  // Disable Headless UI's default outside-click close to avoid mobile mis-detection.
-  // We explicitly close via overlay onClick and the X buttons.
-  const handleDialogClose = () => {};
+  // Use parent onClose so ESC/Back works. Overlay tap calls onClose too.
+  const handleDialogClose = onClose;
   return (
     <Transition appear show={isOpen} as={Fragment}>
       <Dialog as="div" className="relative z-50" onClose={handleDialogClose}>
@@ -161,16 +160,10 @@ const LikedVideosDrawer: React.FC<LikedVideosDrawerProps> = ({ isOpen, onClose }
                 leaveFrom="translate-y-0"
                 leaveTo="translate-y-full"
               >
-                <Dialog.Panel
-                  className="pointer-events-auto w-screen relative z-[100]"
-                  onMouseDown={(e) => e.stopPropagation()}
-                  onPointerDown={(e) => e.stopPropagation()}
-                  onTouchStart={(e) => e.stopPropagation()}
-                  onClick={(e) => e.stopPropagation()}
-                >
+                <Dialog.Panel className="pointer-events-auto w-screen relative z-[100]">
                   <div className="w-full rounded-t-2xl bg-white shadow-2xl">
                     <div className="mx-auto mt-2 mb-1 h-1.5 w-12 rounded-full bg-gray-300" />
-                    <div className="h-[90dvh] overflow-hidden flex flex-col">
+                    <div className="h-[90dvh] max-h-[90svh] overflow-hidden flex flex-col">
                       {/* Header: left X, center title, right filter toggle */}
                       <div className="sticky top-0 z-10 bg-white px-3 py-2 grid grid-cols-[auto_1fr_auto] items-center border-b">
                         <div className="flex justify-start">
@@ -291,7 +284,7 @@ const LikedVideosDrawer: React.FC<LikedVideosDrawerProps> = ({ isOpen, onClose }
                       )}
 
                       {/* Scrollable content: list only */}
-                      <div className="flex-1 overflow-y-auto overscroll-contain touch-pan-y">
+                      <div className="flex-1 overflow-y-auto overscroll-contain touch-pan-y" style={{ WebkitOverflowScrolling: 'touch' as any }}>
                         <div className="p-4 pb-[calc(8px+env(safe-area-inset-bottom,0px))]">
                           {error && (
                             <div className="mb-2 text-sm text-red-600">{error}</div>
@@ -351,13 +344,7 @@ const LikedVideosDrawer: React.FC<LikedVideosDrawerProps> = ({ isOpen, onClose }
                 leaveFrom="translate-x-0"
                 leaveTo="translate-x-full"
               >
-                <Dialog.Panel
-                  className="pointer-events-auto w-screen max-w-3xl md:max-w-4xl relative z-[100]"
-                  onMouseDown={(e) => e.stopPropagation()}
-                  onPointerDown={(e) => e.stopPropagation()}
-                  onTouchStart={(e) => e.stopPropagation()}
-                  onClick={(e) => e.stopPropagation()}
-                >
+                <Dialog.Panel className="pointer-events-auto w-screen max-w-3xl md:max-w-4xl relative z-[100]">
                   <div className="flex h-full flex-col bg-white shadow-xl">
                     <div className="p-6 sticky top-0 bg-white z-10 border-b">
                       <div className="flex items-start justify-between">
