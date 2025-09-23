@@ -132,8 +132,8 @@ const LikedVideosDrawer: React.FC<LikedVideosDrawerProps> = ({ isOpen, onClose }
 
   // ここではオーバーレイは常時クリック可能とし、パネル側で stopPropagation して外側判定を防ぐ。
 
-  // ESC/Back でも閉じられるよう HeadlessUI の onClose を有効化
-  const handleDialogClose = onClose;
+  // オーバーレイ押下で閉じないポリシー（Xボタンのみで閉じる）
+  const handleDialogClose = () => {};
   return (
     <Transition appear show={isOpen} as={Fragment}>
       <Dialog as="div" className="relative z-50" onClose={handleDialogClose}>
@@ -148,7 +148,6 @@ const LikedVideosDrawer: React.FC<LikedVideosDrawerProps> = ({ isOpen, onClose }
         >
           <div
             className="fixed inset-0 bg-black/40 z-40 pointer-events-auto"
-            onClick={onClose}
           />
         </Transition.Child>
 
@@ -165,17 +164,7 @@ const LikedVideosDrawer: React.FC<LikedVideosDrawerProps> = ({ isOpen, onClose }
                 leaveFrom="translate-y-0"
                 leaveTo="translate-y-full"
               >
-                <Dialog.Panel
-                  className="pointer-events-auto w-screen relative z-[70]"
-                  onMouseDown={(e) => e.stopPropagation()}
-                  onMouseDownCapture={(e) => e.stopPropagation()}
-                  onPointerDown={(e) => e.stopPropagation()}
-                  onPointerDownCapture={(e) => e.stopPropagation()}
-                  onTouchStart={(e) => e.stopPropagation()}
-                  onTouchStartCapture={(e) => e.stopPropagation()}
-                  onClick={(e) => e.stopPropagation()}
-                  onClickCapture={(e) => e.stopPropagation()}
-                >
+                <Dialog.Panel className="pointer-events-auto w-screen relative z-[70]">
                   <div className="w-full rounded-t-2xl bg-white shadow-2xl">
                     <div className="mx-auto mt-2 mb-1 h-1.5 w-12 rounded-full bg-gray-300" />
                     <div className="h-[90dvh] max-h-[90svh] overflow-hidden flex flex-col">
