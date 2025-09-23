@@ -1,0 +1,5 @@
+{
+  "imports": {
+    "@tensorflow/tfjs": "https://cdn.skypack.dev/@tensorflow/tfjs"
+  }
+}

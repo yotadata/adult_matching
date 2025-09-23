@@ -1,92 +1,307 @@
 'use client';
 
-import Header from "@/components/Header";
 import SwipeCard, { CardData, SwipeCardHandle } from "@/components/SwipeCard";
 import ActionButtons from "@/components/ActionButtons";
-import { useState, useRef, useEffect } from "react"; // useEffect をインポート
+import { useState, useRef, useEffect } from "react";
 import { AnimatePresence, motion, PanInfo } from "framer-motion";
-import HowToUseCard from "@/components/HowToUseCard";
+// 使い方カードは一旦非表示（読み込みも停止）
+import dynamic from "next/dynamic";
 import useMediaQuery from "@/hooks/useMediaQuery";
+import useWindowSize from "@/hooks/useWindowSize";
 import MobileVideoLayout from "@/components/MobileVideoLayout";
+import { supabase } from "@/lib/supabase"; // supabaseクライアントをインポート;
+import { ThumbsDown, Heart, List } from "lucide-react";
+// ゲージ表示は当面非表示のため読み込まない
 
-// ダミーデータ
-const DUMMY_CARDS: CardData[] = [
-  {
-    id: 1,
-    title: '【VR】VR専用機材じゃないとダメなんでしょ？って思ってた時期が俺にもありました。',
-    tags: ['#VR', '#高画質', '#素人'],
-    description:
-      'これは非常に長い説明文のサンプルです。スクロール機能が正しく実装されているかを確認するために、このテキストはカードの表示領域を超える長さを持つ必要があります。繰り返しになりますが、これはスクロールのテスト用です。これは非常に長い説明文のサンプルです。スクロール機能が正しく実装されているかを確認するために、このテキストはカードの表示領域を超える長さを持つ必要があります。繰り返しになりますが、これはスクロールのテスト用です。これは非常に長い説明文のサンプルです。スクロール機能が正しく実装されているかを確認するために、このテキストはカードの表示領域を超える長さを持つ必要があります。繰り返しになりますが、これはスクロールのテスト用です。',
-    videoUrl:
-      'https://www.youtube.com/embed/k7Kf89f9KAw?autoplay=1&mute=1&loop=1&playlist=k7Kf89f9KAw',
-  },
-  {
-    id: 2,
-    title: '新人グラビアアイドル！初めての撮影で緊張…！',
-    tags: ['#新人', '#グラビア', '#アイドル'],
-    description: 'サンプルテキスト。サンプルテキスト。サンプルテキスト。',
-    videoUrl:
-      'https://www.youtube.com/embed/k7Kf89f9KAw?autoplay=1&mute=1&loop=1&playlist=k7Kf89f9KAw',
-  },
-  {
-    id: 3,
-    title: '会社の美人上司と禁断の社内恋愛',
-    tags: ['#上司', '#OL', '#ドラマ'],
-    description: 'サンプルテキスト。サンプルテキスト。サンプルテキスト。',
-    videoUrl:
-      'https://www.youtube.com/embed/k7Kf89f9KAw?autoplay=1&mute=1&loop=1&playlist=k7Kf89f9KAw',
-  },
-  {
-    id: 4,
-    title: 'ギャルで人妻とかいうパワーワード',
-    tags: ['#ギャル', '#人妻', '#ドキュメンタリー'],
-    description: 'サンプルテキスト。サンプルテキスト。サンプルテキスト。',
-    videoUrl:
-      'https://www.youtube.com/embed/k7Kf89f9KAw?autoplay=1&mute=1&loop=1&playlist=k7Kf89f9KAw',
-  },
-  {
-    id: 5,
-    title: '田舎で育った純朴な彼女との初体験',
-    tags: ['#田舎', '#純朴', '#初体験'],
-    description: 'サンプルテキスト。サンプルテキスト。サンプルテキスト。',
-    videoUrl:
-      'https://www.youtube.com/embed/k7Kf89f9KAw?autoplay=1&mute=1&loop=1&playlist=k7Kf89f9KAw',
-  },
-];
+// APIから受け取るvideoオブジェクトの型定義
+interface VideoFromApi {
+  id: number;
+  title: string;
+  description: string;
+  external_id: string;
+  thumbnail_url: string;
+  sample_video_url?: string;
+  preview_video_url?: string;
+  product_url?: string;
+  product_released_at?: string;
+  performers: { id: string; name: string }[];
+  tags: { id: string; name: string }[];
+}
 
-const ORIGINAL_GRADIENT = 'linear-gradient(to right, #C4C8E3, #D7D1E3, #F7D7E0, #F8DBB9)';
-const LEFT_SWIPE_GRADIENT = 'linear-gradient(to right, #AEB4EB, #D7D1E3, #F7D7E0,#F8DBB9)'; // 左端を明るく
-const RIGHT_SWIPE_GRADIENT = 'linear-gradient(to right, #C4C8E3,  #D7D1E3, #F7D7E0,#F9CFA0)'; // 右端を明るく
+// 背景グラデーション: 左から C4C8E3, D7D1E3, F7D7E0, F9C9D6 を等間隔
+const ORIGINAL_GRADIENT = 'linear-gradient(90deg, #C4C8E3 0%, #D7D1E3 33.333%, #F7D7E0 66.666%, #F9C9D6 100%)';
+const LEFT_SWIPE_GRADIENT = ORIGINAL_GRADIENT;
+const RIGHT_SWIPE_GRADIENT = ORIGINAL_GRADIENT;
 
 export default function Home() {
+  
+
+  const [cards, setCards] = useState<CardData[]>([]); // APIからのデータを保持するstate
   const [activeIndex, setActiveIndex] = useState(0);
   const cardRef = useRef<SwipeCardHandle>(null);
   const [currentGradient, setCurrentGradient] = useState(ORIGINAL_GRADIENT);
-  const [showHowToUse, setShowHowToUse] = useState(true);
-  const isMobile = useMediaQuery('(max-width: 639px)'); // Tailwind CSS の sm (640px) 未満をモバイルとする
-  const [headerHeight, setHeaderHeight] = useState(0); // headerHeight state を追加
+  // 使い方カードは表示しない
+  const [showHowToUse, setShowHowToUse] = useState(false);
+  const isMobile = useMediaQuery('(max-width: 639px)');
+  const { width: windowWidth, height: windowHeight } = useWindowSize();
+  const [cardWidth, setCardWidth] = useState<number | undefined>(400); // cardWidthをstateとして管理し、デフォルト値を400に設定
+  const [layoutReady, setLayoutReady] = useState(false); // 初期レイアウト完了フラグ
+  const getVideoAspectRatio = () => {
+    // 4:3 に統一（デザインに合わせる）
+    return 4 / 3;
+  };
+  const videoAspectRatio = getVideoAspectRatio();
+  const initialGuestCount = (() => {
+    if (typeof window === 'undefined') return 0;
+    try {
+      const raw = localStorage.getItem('guest_decisions_v1');
+      const arr = raw ? JSON.parse(raw) : [];
+      return Array.isArray(arr) ? arr.length : 0;
+    } catch {
+      return 0;
+    }
+  })();
+  const [decisionCount, setDecisionCount] = useState<number>(initialGuestCount);
+  const [guestDecisionCount, setGuestDecisionCount] = useState<number>(initialGuestCount);
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
+  const guestLimit = Number(process.env.NEXT_PUBLIC_GUEST_DECISIONS_LIMIT || 20);
+  const [mounted, setMounted] = useState(false);
+  // ゲージのターゲット値は未使用（非表示）
+  const mainRef = useRef<HTMLDivElement | null>(null);
+  const debugResetGauge = (() => {
+    const v = (process.env.NEXT_PUBLIC_DEBUG_RESET_GAUGE || '').toString().toLowerCase();
+    return v === '1' || v === 'true' || v === 'yes';
+  })();
+  
+
+  const activeCard = activeIndex < cards.length ? cards[activeIndex] : null; // activeCard の宣言を移動
+
+  
+
+  // APIから動画データを取得する
+  useEffect(() => {
+    setMounted(true);
+    const fetchVideos = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      setIsLoggedIn(!!session?.user);
+
+      const headers: HeadersInit = {};
+      if (session?.access_token) {
+        headers.Authorization = `Bearer ${session.access_token}`;
+      }
+
+      const { data, error } = await supabase.functions.invoke('videos-feed', {
+        headers,
+      });
+
+      if (error) {
+        console.error('Error fetching videos:', error);
+        return;
+      }
+      
+      // APIレスポンスをCardData形式に変換
+      const fetchedCards: CardData[] = data.map((video: VideoFromApi) => {
+        // サンプルURLは使わず、基本はFANZAの埋め込み（litevideo）へ統一
+        const fanzaEmbedUrl = `https://www.dmm.co.jp/litevideo/-/part/=/affi_id=${process.env.NEXT_PUBLIC_FANZA_AFFILIATE_ID}/cid=${video.external_id}/size=1280_720/`;
+        // Mixed Content 対策: http のサンプル動画URLを https に昇格（今後の拡張用に保持）
+        const normalizeHttps = (u?: string) => u?.startsWith('http://') ? u.replace('http://', 'https://') : u;
+        const normalizedSampleUrl = normalizeHttps(video.sample_video_url);
+        const normalizedPreviewUrl = normalizeHttps(video.preview_video_url);
+
+        return {
+          id: video.id,
+          title: video.title,
+          genre: video.tags.map((tag: { id: string; name: string }) => tag.name), // `tags`オブジェクトの配列から`name`の配列を生成
+          description: video.description,
+          videoUrl: fanzaEmbedUrl,
+          sampleVideoUrl: normalizedSampleUrl || normalizedPreviewUrl,
+          embedUrl: fanzaEmbedUrl,
+          thumbnail_url: video.thumbnail_url, // サムネイルURLを追加
+          product_released_at: video.product_released_at,
+          performers: video.performers, // APIが整形済みの配列を返す
+          tags: video.tags, // APIが整形済みの配列を返す
+          // 補助リンク（サンプルがない場合の一発再生用に外部タブを推奨）
+          productUrl: normalizeHttps(video.product_url) || undefined,
+        };
+      });
+
+      
+
+      setCards(fetchedCards);
+    };
+
+    fetchVideos();
+  }, []);
+
+  // できるだけ早くゲスト件数を反映（Supabase判定を待たない早期反映）
+  useEffect(() => {
+    if (debugResetGauge) return;
+    try {
+      const raw = typeof window !== 'undefined' ? localStorage.getItem('guest_decisions_v1') : null;
+      const arr = raw ? JSON.parse(raw) : [];
+      if (Array.isArray(arr)) setGuestDecisionCount(arr.length);
+      if (!isLoggedIn && Array.isArray(arr)) setDecisionCount(arr.length);
+    } catch {}
+  }, []);
 
   useEffect(() => {
-    if (isMobile) { // モバイルの場合のみヘッダーの高さを取得
-      const headerElement = document.getElementById('main-header');
-      if (headerElement) {
-        setHeaderHeight(headerElement.offsetHeight);
+    // メイン領域の実寸高さからカード横幅を算出（デスクトップ）
+    // 動画はカード高さの 3/5 を占めるため、その高さを基準に幅を決定
+    const recalc = () => {
+      if (!isMobile) {
+        const mainH = mainRef.current?.clientHeight;
+        if (mainH && mainH > 0) {
+          const targetVideoHeight = mainH * (3 / 5);
+          const calculatedCardWidth = targetVideoHeight * videoAspectRatio;
+          setCardWidth(calculatedCardWidth);
+          setLayoutReady(true);
+          return;
+        }
       }
-    } else {
-      setHeaderHeight(0); // モバイルではない場合は0にリセット
-    }
-  }, [isMobile]); // isMobile が変更されたときに実行
+      // フォールバック（モバイルや未取得時）
+      if (windowHeight) {
+        const targetVideoHeight = (!isMobile ? windowHeight * (3 / 5) : windowHeight / 2);
+        const calculatedCardWidth = targetVideoHeight * videoAspectRatio;
+        setCardWidth(calculatedCardWidth);
+        setLayoutReady(true);
+      }
+    };
+    recalc();
+  }, [windowHeight, videoAspectRatio, isMobile]);
 
-  const handleSwipe = () => {
+  // 初期の判断数を読み込む（ログイン済みならDB、未ログインならLocalStorage）
+  useEffect(() => {
+    const loadDecisionCount = async () => {
+      // デバッグ: リロード時にゲージを常に 0 にリセット
+      if (debugResetGauge) {
+        setDecisionCount(0);
+        return;
+      }
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        try {
+          const raw = localStorage.getItem('guest_decisions_v1');
+          const arr = raw ? JSON.parse(raw) : [];
+          const n = Array.isArray(arr) ? arr.length : 0;
+          setGuestDecisionCount(n);
+          setDecisionCount(n);
+        } catch {
+          setDecisionCount(0);
+        }
+        return;
+      }
+      const { count, error } = await supabase
+        .from('user_video_decisions')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id);
+      if (error) {
+        console.error('Error fetching decision count:', error);
+        return;
+      }
+      setDecisionCount(count || 0);
+    };
+    loadDecisionCount();
+  }, []);
+
+  // ログイン状態の変化を監視し、ゲスト分をフラッシュ
+  useEffect(() => {
+    const { data: authListener } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      const loggedIn = !!session?.user;
+      setIsLoggedIn(loggedIn);
+      if (loggedIn) {
+        await flushGuestDecisions();
+      }
+    });
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
+  }, []);
+
+  // 初回マウント時、既ログインならローカルの決定をフラッシュ
+  useEffect(() => {
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) await flushGuestDecisions();
+    })();
+  }, []);
+
+  const getGuestDecisions = (): { video_id: number; decision_type: 'like' | 'nope'; created_at: string }[] => {
+    try {
+      const raw = localStorage.getItem('guest_decisions_v1');
+      const arr = raw ? JSON.parse(raw) : [];
+      return Array.isArray(arr) ? arr : [];
+    } catch {
+      return [];
+    }
+  };
+
+  const setGuestDecisions = (arr: { video_id: number; decision_type: 'like' | 'nope'; created_at: string }[]) => {
+    localStorage.setItem('guest_decisions_v1', JSON.stringify(arr));
+    setGuestDecisionCount(arr.length);
+  };
+
+  const flushGuestDecisions = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    const items = getGuestDecisions();
+    if (!items.length) return;
+    const batchSize = 100;
+    for (let i = 0; i < items.length; i += batchSize) {
+      const chunk = items.slice(i, i + batchSize).map((d) => ({
+        user_id: user.id,
+        video_id: d.video_id,
+        decision_type: d.decision_type,
+      }));
+      const { error } = await supabase.from('user_video_decisions').insert(chunk);
+      if (error) {
+        console.error('Error flushing guest decisions:', error);
+        return;
+      }
+    }
+    setGuestDecisions([]);
+    setGuestDecisionCount(0);
+  };
+
+  
+
+  const handleSwipe = async (direction: 'left' | 'right') => {
+    if (activeCard) { // activeCard が存在する場合のみ処理
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const decisionType = direction === 'right' ? 'like' : 'nope';
+        const { error } = await supabase.from('user_video_decisions').insert({
+          user_id: user.id,
+          video_id: activeCard.id,
+          decision_type: decisionType,
+        });
+        if (error) {
+          console.error(`Error inserting ${decisionType} decision:`, error);
+        }
+      } else {
+        const current = getGuestDecisions();
+        if (current.length >= guestLimit) {
+          try { window.dispatchEvent(new Event('open-register-modal')); } catch {}
+          return;
+        }
+        const decisionType = direction === 'right' ? 'like' : 'nope';
+        current.push({ video_id: activeCard.id, decision_type: decisionType, created_at: new Date().toISOString() });
+        setGuestDecisions(current);
+      }
+    }
     setActiveIndex((prev) => prev + 1);
-    setCurrentGradient(ORIGINAL_GRADIENT); // スワイプ完了後、元のグラデーションに戻す
+    setCurrentGradient(ORIGINAL_GRADIENT);
+    setDecisionCount((c) => c + 1);
+    if (!isLoggedIn) {
+      const current = getGuestDecisions();
+      if (current.length >= guestLimit) {
+        try { window.dispatchEvent(new Event('open-register-modal')); } catch {}
+      }
+    }
   };
 
   const triggerSwipe = (direction: 'left' | 'right') => {
     cardRef.current?.swipe(direction);
   };
-
-  const activeCard = activeIndex < DUMMY_CARDS.length ? DUMMY_CARDS[activeIndex] : null;
 
   const handleDrag = (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
     if (info.offset.x > 50) {
@@ -104,9 +319,7 @@ export default function Home() {
     }
   };
 
-  const handleCloseHowToUse = () => {
-    setShowHowToUse(false);
-  };
+  const handleCloseHowToUse = () => {};
 
   return (
     <motion.div
@@ -114,18 +327,20 @@ export default function Home() {
       style={{ background: currentGradient }}
       transition={{ duration: 0.3 }}
     >
-      <Header />
+      {/* Header はレイアウトで表示 */}
+      {/* ゲージは非表示 */}
       <main
-        className={`flex-grow flex w-full relative ${isMobile ? 'flex-col bg-white h-full' : 'items-center justify-center'}`}
-        style={isMobile ? { paddingTop: `${headerHeight}px` } : {}} // headerHeight を使って paddingTop を動的に設定
+        ref={mainRef}
+        className={`flex-grow flex w-full relative ${isMobile ? 'flex-col h-full' : 'items-center justify-center pt-10'}`}
+        style={isMobile ? { paddingTop: `0px` } : {}}
       >
         <AnimatePresence mode="wait">
           {activeCard ? (
             isMobile ? (
               <MobileVideoLayout
                 cardData={activeCard}
-                onSkip={() => handleSwipe()}
-                onLike={() => handleSwipe()}
+                onSkip={() => handleSwipe('left')}
+                onLike={() => handleSwipe('right')}
               />
             ) : (
               <SwipeCard
@@ -135,36 +350,58 @@ export default function Home() {
                 onSwipe={handleSwipe}
                 onDrag={handleDrag}
                 onDragEnd={handleDragEnd}
+                cardWidth={cardWidth}
+                canSwipe={isLoggedIn || decisionCount < guestLimit}
               />
             )
           ) : (
-            <p className="text-white font-bold text-2xl">No more cards</p>
+            // ローディング表示（サークル型スピナー）
+            <div className="flex items-center justify-center w-full h-full">
+              <div
+                className="w-12 h-12 rounded-full border-4 border-gray-300 border-t-violet-500 animate-spin"
+                role="status"
+                aria-label="Loading videos"
+              />
+            </div>
           )}
         </AnimatePresence>
       </main>
       {!isMobile && (
-        <footer className="w-full max-w-md mx-auto py-8">
-          {activeCard && <ActionButtons
-            onSkip={() => triggerSwipe('left')}
-            onLike={() => triggerSwipe('right')}
-            nopeColor="#A78BFA"
-            likeColor="#FBBF24"
-          />}
+        <footer className="py-8 mx-auto" style={{ width: cardWidth ? `${cardWidth}px` : 'auto' }}>
+          {activeCard && (
+            <div className="mx-auto w-full flex items-center justify-center gap-6 py-3">
+              {/* NOPE (thumb_down, #6C757D) */}
+              <button
+                onClick={() => triggerSwipe('left')}
+                className="w-20 h-20 rounded-full bg-[#6C757D] shadow-lg active:scale-95 transition flex items-center justify-center leading-none"
+                aria-label="イマイチ"
+                title="イマイチ"
+              >
+                <ThumbsDown size={36} className="text-white" />
+              </button>
+              {/* Liked list */}
+              <button
+                onClick={() => { try { window.dispatchEvent(new Event('open-liked-drawer')); } catch {} }}
+                className="w-[60px] h-[60px] rounded-full bg-[#BEBEBE] shadow-lg active:scale-95 transition flex items-center justify-center leading-none"
+                aria-label="お気に入りリスト"
+                title="お気に入りリスト"
+              >
+                <List size={28} className="text-white" />
+              </button>
+              {/* GOOD (heart, #FF6B81) */}
+              <button
+                onClick={() => triggerSwipe('right')}
+                className="w-20 h-20 rounded-full bg-[#FF6B81] shadow-lg active:scale-95 transition flex items-center justify-center leading-none"
+                aria-label="好み"
+                title="好み"
+              >
+                <Heart size={36} className="text-white" />
+              </button>
+            </div>
+          )}
         </footer>
       )}
-      <AnimatePresence>
-        {showHowToUse && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 20 }}
-            transition={{ duration: 0.3 }}
-            className="fixed bottom-0 left-0 z-50"
-          >
-            <HowToUseCard onClose={handleCloseHowToUse} />
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* 使い方カードは非表示 */}
     </motion.div>
   );
 }

@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="4" failures="0" skipped="1" tests="5" time="6.192" timestamp="2025-09-15T22:58:25.847979+09:00" hostname="SoinkPad"><testcase classname="" name="unit.data.test_data_cleaner" time="0.000"><skipped message="collection skipped">('/home/devel/dev/adult_matching/backend/tests/unit/data/test_data_cleaner.py', 22, 'Skipped: Data processing modules not found')</skipped></testcase><testcase classname="" name="unit.ml.test_embedding_manager" time="0.000"><error message="collection failure">../.venv/lib/python3.12/site-packages/_pytest/python.py:498: in importtestmodule
+    mod = import_path(
+../.venv/lib/python3.12/site-packages/_pytest/pathlib.py:587: in import_path
+    importlib.import_module(module_name)
+/usr/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+&lt;frozen importlib._bootstrap&gt;:1387: in _gcd_import
+    ???
+&lt;frozen importlib._bootstrap&gt;:1360: in _find_and_load
+    ???
+&lt;frozen importlib._bootstrap&gt;:1331: in _find_and_load_unlocked
+    ???
+&lt;frozen importlib._bootstrap&gt;:935: in _load_unlocked
+    ???
+../.venv/lib/python3.12/site-packages/_pytest/assertion/rewrite.py:186: in exec_module
+    exec(co, module.__dict__)
+tests/unit/ml/test_embedding_manager.py:15: in &lt;module&gt;
+    from backend.ml.preprocessing.embeddings.embedding_manager import EmbeddingManager
+E   SyntaxError: source code string cannot contain null bytes</error></testcase><testcase classname="" name="unit.test_data_components" time="0.000"><error message="collection failure">ImportError while importing test module '/home/devel/dev/adult_matching/backend/tests/unit/test_data_components.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/unit/test_data_components.py:19: in &lt;module&gt;
+    from backend.data.ingestion.data_ingestion_manager import (
+data/ingestion/__init__.py:7: in &lt;module&gt;
+    from .data_ingestion_manager import (
+data/ingestion/data_ingestion_manager.py:22: in &lt;module&gt;
+    from backend.ml.utils.logger import get_ml_logger
+ml/utils/logger.py:12: in &lt;module&gt;
+    from backend.ml import PACKAGE_ROOT
+E   ImportError: cannot import name 'PACKAGE_ROOT' from 'backend.ml' (/home/devel/dev/adult_matching/backend/ml/__init__.py)</error></testcase><testcase classname="" name="unit.test_ml_components" time="0.000"><error message="collection failure">../.venv/lib/python3.12/site-packages/_pytest/python.py:498: in importtestmodule
+    mod = import_path(
+../.venv/lib/python3.12/site-packages/_pytest/pathlib.py:587: in import_path
+    importlib.import_module(module_name)
+/usr/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+&lt;frozen importlib._bootstrap&gt;:1387: in _gcd_import
+    ???
+&lt;frozen importlib._bootstrap&gt;:1360: in _find_and_load
+    ???
+&lt;frozen importlib._bootstrap&gt;:1331: in _find_and_load_unlocked
+    ???
+&lt;frozen importlib._bootstrap&gt;:935: in _load_unlocked
+    ???
+../.venv/lib/python3.12/site-packages/_pytest/assertion/rewrite.py:186: in exec_module
+    exec(co, module.__dict__)
+tests/unit/test_ml_components.py:17: in &lt;module&gt;
+    from backend.ml.preprocessing.features.user_feature_processor import UserFeatureProcessor
+E   SyntaxError: source code string cannot contain null bytes</error></testcase><testcase classname="" name="unit.test_shared_utils" time="0.000"><error message="collection failure">ImportError while importing test module '/home/devel/dev/adult_matching/backend/tests/unit/test_shared_utils.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/unit/test_shared_utils.py:19: in &lt;module&gt;
+    from edge_functions.shared.database import create_supabase_client, execute_query
+E   ModuleNotFoundError: No module named 'edge_functions'</error></testcase></testsuite></testsuites>

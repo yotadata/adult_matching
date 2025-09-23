@@ -1,0 +1,33 @@
+{
+  "id": "approval_1758533368897_3yzf4yvs5",
+  "title": "フロントエンド・バックエンド整合性確認 - 設計書（マージ後更新版）",
+  "filePath": ".spec-workflow/specs/frontend-backend-consistency/design.md",
+  "type": "document",
+  "status": "needs-revision",
+  "createdAt": "2025-09-22T09:29:28.897Z",
+  "category": "spec",
+  "categoryName": "frontend-backend-consistency",
+  "response": "Feedback Summary (2 comments):\n\nGeneral Comments:\n1. 何度も申し訳ないが、再度mergeしたのでもう一度frontendの中身を確認してほしい\n\nSpecific Text Comments:\n1. \"**1. 未定義変数問題（frontend/src/app/page.tsx）**\n- `loadi...\": この変数は何？ほかのところで定義されていたりしない？\n",
+  "annotations": "{\n  \"decision\": \"needs-revision\",\n  \"comments\": [\n    {\n      \"type\": \"general\",\n      \"comment\": \"何度も申し訳ないが、再度mergeしたのでもう一度frontendの中身を確認してほしい\",\n      \"timestamp\": \"2025-09-22T10:15:54.790Z\",\n      \"id\": \"comment_1758536154790_8g5jz0f6p\"\n    },\n    {\n      \"type\": \"selection\",\n      \"comment\": \"この変数は何？ほかのところで定義されていたりしない？\",\n      \"timestamp\": \"2025-09-22T10:16:25.449Z\",\n      \"selectedText\": \"**1. 未定義変数問題（frontend/src/app/page.tsx）**\\n- `loading` - 385行目で使用されているが定義されていない\\n- `isTransitioning` - 304行目で`setIsTransitioning(true)`を設定、385行目で参照されているが`useState`定義なし\\n- `currentPhase` - 303行目、311行目、314行目、322行目、392行目で使用されているが定義されていない\\n- `fetchInitialVideos` - 332行目、338行目で呼び出されているが関数定義なし\\n- `fetchRecommendationVideos` - 327行目で呼び出されているが関数定義なし\\n- `error` - 398行目、400行目で使用されているが`useState`定義なし\",\n      \"highlightColor\": {\n        \"bg\": \"rgba(255, 235, 59, 0.3)\",\n        \"border\": \"#FFEB3B\",\n        \"name\": \"#ffeb3b\"\n      },\n      \"id\": \"comment_1758536185449_dr8wy35uq\"\n    }\n  ],\n  \"summary\": \"Feedback Summary (2 comments):\\n\\nGeneral Comments:\\n1. 何度も申し訳ないが、再度mergeしたのでもう一度frontendの中身を確認してほしい\\n\\nSpecific Text Comments:\\n1. \\\"**1. 未定義変数問題（frontend/src/app/page.tsx）**\\n- `loadi...\\\": この変数は何？ほかのところで定義されていたりしない？\\n\",\n  \"timestamp\": \"2025-09-22T10:16:34.999Z\"\n}",
+  "respondedAt": "2025-09-22T10:16:34.742Z",
+  "comments": [
+    {
+      "type": "general",
+      "comment": "何度も申し訳ないが、再度mergeしたのでもう一度frontendの中身を確認してほしい",
+      "timestamp": "2025-09-22T10:15:54.790Z",
+      "id": "comment_1758536154790_8g5jz0f6p"
+    },
+    {
+      "type": "selection",
+      "comment": "この変数は何？ほかのところで定義されていたりしない？",
+      "timestamp": "2025-09-22T10:16:25.449Z",
+      "selectedText": "**1. 未定義変数問題（frontend/src/app/page.tsx）**\n- `loading` - 385行目で使用されているが定義されていない\n- `isTransitioning` - 304行目で`setIsTransitioning(true)`を設定、385行目で参照されているが`useState`定義なし\n- `currentPhase` - 303行目、311行目、314行目、322行目、392行目で使用されているが定義されていない\n- `fetchInitialVideos` - 332行目、338行目で呼び出されているが関数定義なし\n- `fetchRecommendationVideos` - 327行目で呼び出されているが関数定義なし\n- `error` - 398行目、400行目で使用されているが`useState`定義なし",
+      "highlightColor": {
+        "bg": "rgba(255, 235, 59, 0.3)",
+        "border": "#FFEB3B",
+        "name": "#ffeb3b"
+      },
+      "id": "comment_1758536185449_dr8wy35uq"
+    }
+  ]
+}

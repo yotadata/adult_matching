@@ -1,0 +1,33 @@
+{
+  "id": "approval_1758536275469_3139lwebj",
+  "title": "フロントエンド・バックエンド整合性確認 - 設計書（最新マージ反映版）",
+  "filePath": ".spec-workflow/specs/frontend-backend-consistency/design.md",
+  "type": "document",
+  "status": "needs-revision",
+  "createdAt": "2025-09-22T10:17:55.469Z",
+  "category": "spec",
+  "categoryName": "frontend-backend-consistency",
+  "response": "Feedback Summary (2 comments):\n\nGeneral Comments:\n1. 基本的にfrontendは私の開発範囲ではない。supabaseとの整合性を取る部分のみ改変を許す。その前提で設計しなおして\n\nSpecific Text Comments:\n1. \"1. **型定義の統一**\n   - `CardData`インターフェースの明示的な定義追加\n   ...\": frontendは開発範囲ではないので、あまりいじらないでほしい\n",
+  "annotations": "{\n  \"decision\": \"needs-revision\",\n  \"comments\": [\n    {\n      \"type\": \"selection\",\n      \"comment\": \"frontendは開発範囲ではないので、あまりいじらないでほしい\",\n      \"timestamp\": \"2025-09-22T10:25:51.074Z\",\n      \"selectedText\": \"1. **型定義の統一**\\n   - `CardData`インターフェースの明示的な定義追加\\n   - `VideoFromApi` vs `VideoRecord`の統一または使い分けの明確化\\n\\n2. **不要コードの整理**\\n   - 使用されていないバッチ処理関連のコード削除\\n   - `handleBatchCompletion`, `currentPhase`, `fetchInitialVideos`, `fetchRecommendationVideos`の整理\",\n      \"highlightColor\": {\n        \"bg\": \"rgba(255, 235, 59, 0.3)\",\n        \"border\": \"#FFEB3B\",\n        \"name\": \"#ffeb3b\"\n      },\n      \"id\": \"comment_1758536751074_g6ksw46jf\"\n    },\n    {\n      \"type\": \"general\",\n      \"comment\": \"基本的にfrontendは私の開発範囲ではない。supabaseとの整合性を取る部分のみ改変を許す。その前提で設計しなおして\",\n      \"timestamp\": \"2025-09-22T10:26:34.141Z\",\n      \"id\": \"comment_1758536794141_bl4g1wa5n\"\n    }\n  ],\n  \"summary\": \"Feedback Summary (2 comments):\\n\\nGeneral Comments:\\n1. 基本的にfrontendは私の開発範囲ではない。supabaseとの整合性を取る部分のみ改変を許す。その前提で設計しなおして\\n\\nSpecific Text Comments:\\n1. \\\"1. **型定義の統一**\\n   - `CardData`インターフェースの明示的な定義追加\\n   ...\\\": frontendは開発範囲ではないので、あまりいじらないでほしい\\n\",\n  \"timestamp\": \"2025-09-22T10:26:35.649Z\"\n}",
+  "respondedAt": "2025-09-22T10:26:34.340Z",
+  "comments": [
+    {
+      "type": "selection",
+      "comment": "frontendは開発範囲ではないので、あまりいじらないでほしい",
+      "timestamp": "2025-09-22T10:25:51.074Z",
+      "selectedText": "1. **型定義の統一**\n   - `CardData`インターフェースの明示的な定義追加\n   - `VideoFromApi` vs `VideoRecord`の統一または使い分けの明確化\n\n2. **不要コードの整理**\n   - 使用されていないバッチ処理関連のコード削除\n   - `handleBatchCompletion`, `currentPhase`, `fetchInitialVideos`, `fetchRecommendationVideos`の整理",
+      "highlightColor": {
+        "bg": "rgba(255, 235, 59, 0.3)",
+        "border": "#FFEB3B",
+        "name": "#ffeb3b"
+      },
+      "id": "comment_1758536751074_g6ksw46jf"
+    },
+    {
+      "type": "general",
+      "comment": "基本的にfrontendは私の開発範囲ではない。supabaseとの整合性を取る部分のみ改変を許す。その前提で設計しなおして",
+      "timestamp": "2025-09-22T10:26:34.141Z",
+      "id": "comment_1758536794141_bl4g1wa5n"
+    }
+  ]
+}
