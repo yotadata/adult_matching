@@ -3,7 +3,7 @@
 import { CardData } from '@/components/SwipeCard';
 import ActionButtons from '@/components/ActionButtons';
 import { useEffect, useRef, useState } from 'react';
-import { Play, Calendar, User, Tag, ThumbsDown, ThumbsUp, Heart, List } from 'lucide-react';
+import { Play, Calendar, User, Tag, ThumbsDown, ThumbsUp, Heart, List, Share2 } from 'lucide-react';
 
 interface MobileVideoLayoutProps {
   cardData: CardData;
@@ -38,6 +38,21 @@ const MobileVideoLayout: React.FC<MobileVideoLayoutProps> = ({ cardData, onSkip,
       }
     }
     setShowVideo(true);
+  };
+
+  const toAffiliateUrl = (raw?: string) => {
+    const AF_ID = 'yotadata2-001';
+    try {
+      if (raw && raw.startsWith('https://al.fanza.co.jp/')) {
+        const u = new URL(raw);
+        u.searchParams.set('af_id', AF_ID);
+        return u.toString();
+      }
+    } catch {}
+    if (raw) {
+      return `https://al.fanza.co.jp/?lurl=${encodeURIComponent(raw)}&af_id=${encodeURIComponent(AF_ID)}&ch=link_tool&ch_id=link`;
+    }
+    try { return window.location.href; } catch { return ''; }
   };
 
   useEffect(() => {
@@ -107,7 +122,7 @@ const MobileVideoLayout: React.FC<MobileVideoLayoutProps> = ({ cardData, onSkip,
           <div className="px-4 pb-4 text-gray-800">
             <h2 className="text-base sm:text-xl font-extrabold tracking-tight">{cardData.title}</h2>
         {cardData.product_released_at && (
-          <div className="grid grid-cols-[auto_1fr] items-start gap-x-2 mt-2">
+          <div className="grid grid-cols-[auto_1fr_auto] items-center gap-x-2 mt-2">
             <div className="flex w-24 flex-shrink-0 items-center text-sm text-gray-500">
               <Calendar className="mr-1 h-4 w-4" />
               <span>発売日:</span>
@@ -116,6 +131,23 @@ const MobileVideoLayout: React.FC<MobileVideoLayoutProps> = ({ cardData, onSkip,
               <span className="rounded-full bg-blue-500/70 px-2 py-1 text-[11px] font-bold text-white">
                 {new Date(cardData.product_released_at).toLocaleDateString('ja-JP')}
               </span>
+            </div>
+            <div className="flex justify-end">
+              <button
+                onClick={() => {
+                  try {
+                    const text = cardData.title || '';
+                    const url = toAffiliateUrl(cardData.productUrl);
+                    const shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
+                    window.open(shareUrl, '_blank', 'noopener,noreferrer');
+                  } catch {}
+                }}
+                className="p-1.5 rounded-full bg-black text-white hover:opacity-90"
+                aria-label="Xで共有"
+                title="Xで共有"
+              >
+                <Share2 size={14} />
+              </button>
             </div>
           </div>
         )}
@@ -162,7 +194,7 @@ const MobileVideoLayout: React.FC<MobileVideoLayoutProps> = ({ cardData, onSkip,
           {/* NOPE (thumb_down, #6C757D) */}
           <button
             onClick={onSkip}
-            className="w-20 h-20 rounded-full bg-[#6C757D] shadow-lg active:scale-95 transition flex items-center justify-center"
+            className="w-20 h-20 rounded-full bg-[#6C757D] shadow-2xl drop-shadow-xl active:scale-95 transition flex items-center justify-center"
             aria-label="イマイチ"
             title="イマイチ"
           >
@@ -171,7 +203,7 @@ const MobileVideoLayout: React.FC<MobileVideoLayoutProps> = ({ cardData, onSkip,
           {/* Liked list */}
           <button
             onClick={() => { try { window.dispatchEvent(new Event('open-liked-drawer')); } catch {} }}
-            className="w-[60px] h-[60px] rounded-full bg-[#BEBEBE] shadow-lg active:scale-95 transition flex items-center justify-center"
+            className="w-[60px] h-[60px] rounded-full bg-[#BEBEBE] shadow-2xl drop-shadow-xl active:scale-95 transition flex items-center justify-center"
             aria-label="お気に入りリスト"
             title="お気に入りリスト"
           >
@@ -180,7 +212,7 @@ const MobileVideoLayout: React.FC<MobileVideoLayoutProps> = ({ cardData, onSkip,
           {/* GOOD (heart, #FF6B81) */}
           <button
             onClick={onLike}
-            className="w-20 h-20 rounded-full bg-[#FF6B81] shadow-lg active:scale-95 transition flex items-center justify-center"
+            className="w-20 h-20 rounded-full bg-[#FF6B81] shadow-2xl drop-shadow-xl active:scale-95 transition flex items-center justify-center"
             aria-label="好み"
             title="好み"
           >

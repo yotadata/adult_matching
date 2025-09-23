@@ -141,18 +141,8 @@ export default function DesktopSidebar() {
             caption={`パーソナライズまであと${Math.max(personalizeTarget - decisionCount, 0)}枚`}
           />
           <NavButton label="性癖分析" icon={BarChart2} href="/analysis-results" disabled={!isLoggedIn} />
-          {/* 性癖パーソナリティ診断: グレーアウト＋準備中表示 */}
-          <button
-            disabled
-            className="w-full text-left min-w-0 px-3 py-2 rounded-md text-sm opacity-50 cursor-not-allowed text-gray-400"
-            title="性癖パーソナリティ診断（準備中）"
-          >
-            <div className="flex items-center gap-3">
-              <Brain size={18} className="shrink-0" />
-              <span className="truncate">性癖パーソナリティ診断</span>
-            </div>
-            <div className="mt-2 pr-1 text-[10px] text-gray-500 text-right">準備中</div>
-          </button>
+          {/* 性癖パーソナリティ診断: 準備中表記・disableを解除 */}
+          <NavButton label="性癖パーソナリティ診断" icon={Brain} href="/personality" />
         </nav>
         {isLoggedIn && (
           <div className="p-3 border-t border-white/30">

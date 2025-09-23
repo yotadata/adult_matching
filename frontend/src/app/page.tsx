@@ -38,6 +38,8 @@ export default function Home() {
 
   const [cards, setCards] = useState<CardData[]>([]); // APIからのデータを保持するstate
   const [activeIndex, setActiveIndex] = useState(0);
+  const [isFetchingVideos, setIsFetchingVideos] = useState(false);
+  const [noMore, setNoMore] = useState(false);
   const cardRef = useRef<SwipeCardHandle>(null);
   const [currentGradient, setCurrentGradient] = useState(ORIGINAL_GRADIENT);
   // 使い方カードは表示しない
@@ -76,61 +78,53 @@ export default function Home() {
 
   const activeCard = activeIndex < cards.length ? cards[activeIndex] : null; // activeCard の宣言を移動
 
-  
-
-  // APIから動画データを取得する
-  useEffect(() => {
-    setMounted(true);
-    const fetchVideos = async () => {
+  // 再取得（将来は user-embedding 更新後に呼ぶ想定）
+  const refetchVideos = async () => {
+    try {
+      setIsFetchingVideos(true);
+      setNoMore(false);
       const { data: { session } } = await supabase.auth.getSession();
       setIsLoggedIn(!!session?.user);
-
       const headers: HeadersInit = {};
-      if (session?.access_token) {
-        headers.Authorization = `Bearer ${session.access_token}`;
-      }
-
-      const { data, error } = await supabase.functions.invoke('videos-feed', {
-        headers,
-      });
-
+      if (session?.access_token) headers.Authorization = `Bearer ${session.access_token}`;
+      const { data, error } = await supabase.functions.invoke('videos-feed', { headers });
       if (error) {
-        console.error('Error fetching videos:', error);
+        console.error('Error refetching videos:', error);
         return;
       }
-      
-      // APIレスポンスをCardData形式に変換
-      const fetchedCards: CardData[] = data.map((video: VideoFromApi) => {
-        // サンプルURLは使わず、基本はFANZAの埋め込み（litevideo）へ統一
+      const normalizeHttps = (u?: string) => u?.startsWith('http://') ? u.replace('http://', 'https://') : u;
+      const fetchedCards: CardData[] = (data as VideoFromApi[]).map((video) => {
         const fanzaEmbedUrl = `https://www.dmm.co.jp/litevideo/-/part/=/affi_id=${process.env.NEXT_PUBLIC_FANZA_AFFILIATE_ID}/cid=${video.external_id}/size=1280_720/`;
-        // Mixed Content 対策: http のサンプル動画URLを https に昇格（今後の拡張用に保持）
-        const normalizeHttps = (u?: string) => u?.startsWith('http://') ? u.replace('http://', 'https://') : u;
         const normalizedSampleUrl = normalizeHttps(video.sample_video_url);
         const normalizedPreviewUrl = normalizeHttps(video.preview_video_url);
-
         return {
           id: video.id,
           title: video.title,
-          genre: video.tags.map((tag: { id: string; name: string }) => tag.name), // `tags`オブジェクトの配列から`name`の配列を生成
+          genre: video.tags.map((tag) => tag.name),
           description: video.description,
           videoUrl: fanzaEmbedUrl,
           sampleVideoUrl: normalizedSampleUrl || normalizedPreviewUrl,
           embedUrl: fanzaEmbedUrl,
-          thumbnail_url: video.thumbnail_url, // サムネイルURLを追加
+          thumbnail_url: video.thumbnail_url,
           product_released_at: video.product_released_at,
-          performers: video.performers, // APIが整形済みの配列を返す
-          tags: video.tags, // APIが整形済みの配列を返す
-          // 補助リンク（サンプルがない場合の一発再生用に外部タブを推奨）
+          performers: video.performers,
+          tags: video.tags,
           productUrl: normalizeHttps(video.product_url) || undefined,
         };
       });
-
-      
-
       setCards(fetchedCards);
-    };
+      setActiveIndex(0);
+      if (fetchedCards.length === 0) setNoMore(true);
+    } finally {
+      setIsFetchingVideos(false);
+    }
+  };
+  
 
-    fetchVideos();
+  // 初回取得
+  useEffect(() => {
+    setMounted(true);
+    refetchVideos();
   }, []);
 
   // できるだけ早くゲスト件数を反映（Supabase判定を待たない早期反映）
@@ -321,6 +315,13 @@ export default function Home() {
 
   const handleCloseHowToUse = () => {};
 
+  // 全件スワイプ後は自動で再取得（空が返る場合は手動ボタン表示）
+  useEffect(() => {
+    if (cards.length > 0 && activeIndex >= cards.length && !isFetchingVideos) {
+      refetchVideos();
+    }
+  }, [activeIndex, cards.length]);
+
   return (
     <motion.div
       className="flex flex-col items-center h-screen overflow-hidden"
@@ -355,14 +356,25 @@ export default function Home() {
               />
             )
           ) : (
-            // ローディング表示（サークル型スピナー）
-            <div className="flex items-center justify-center w-full h-full">
-              <div
-                className="w-12 h-12 rounded-full border-4 border-gray-300 border-t-violet-500 animate-spin"
-                role="status"
-                aria-label="Loading videos"
-              />
-            </div>
+            isFetchingVideos ? (
+              <div className="flex items-center justify-center w-full h-full">
+                <div
+                  className="w-12 h-12 rounded-full border-4 border-gray-300 border-t-violet-500 animate-spin"
+                  role="status"
+                  aria-label="Loading videos"
+                />
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center w-full h-full text-white/90">
+                <p className="mb-3">おすすめ候補は以上です。</p>
+                <button
+                  onClick={refetchVideos}
+                  className="px-4 py-2 rounded-md bg-white/20 hover:bg-white/30 backdrop-blur border border-white/40"
+                >
+                  おすすめを再取得
+                </button>
+              </div>
+            )
           )}
         </AnimatePresence>
       </main>
@@ -373,7 +385,7 @@ export default function Home() {
               {/* NOPE (thumb_down, #6C757D) */}
               <button
                 onClick={() => triggerSwipe('left')}
-                className="w-20 h-20 rounded-full bg-[#6C757D] shadow-lg active:scale-95 transition flex items-center justify-center leading-none"
+                className="w-20 h-20 rounded-full bg-[#6C757D] shadow-2xl drop-shadow-xl active:scale-95 transition flex items-center justify-center leading-none"
                 aria-label="イマイチ"
                 title="イマイチ"
               >
@@ -382,7 +394,7 @@ export default function Home() {
               {/* Liked list */}
               <button
                 onClick={() => { try { window.dispatchEvent(new Event('open-liked-drawer')); } catch {} }}
-                className="w-[60px] h-[60px] rounded-full bg-[#BEBEBE] shadow-lg active:scale-95 transition flex items-center justify-center leading-none"
+                className="w-[60px] h-[60px] rounded-full bg-[#BEBEBE] shadow-2xl drop-shadow-xl active:scale-95 transition flex items-center justify-center leading-none"
                 aria-label="お気に入りリスト"
                 title="お気に入りリスト"
               >
@@ -391,7 +403,7 @@ export default function Home() {
               {/* GOOD (heart, #FF6B81) */}
               <button
                 onClick={() => triggerSwipe('right')}
-                className="w-20 h-20 rounded-full bg-[#FF6B81] shadow-lg active:scale-95 transition flex items-center justify-center leading-none"
+                className="w-20 h-20 rounded-full bg-[#FF6B81] shadow-2xl drop-shadow-xl active:scale-95 transition flex items-center justify-center leading-none"
                 aria-label="好み"
                 title="好み"
               >
