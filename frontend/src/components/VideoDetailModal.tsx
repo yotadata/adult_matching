@@ -26,7 +26,6 @@ type VideoRow = {
 
 function toFanzaAffiliate(raw: string | null | undefined): string | undefined {
   if (!raw) return undefined;
-<<<<<<< HEAD
   const AF_ID = 'yotadata2-001';
   try {
     if (raw.startsWith('https://al.fanza.co.jp/')) {
@@ -36,12 +35,6 @@ function toFanzaAffiliate(raw: string | null | undefined): string | undefined {
     }
   } catch {}
   return `https://al.fanza.co.jp/?lurl=${encodeURIComponent(raw)}&af_id=${encodeURIComponent(AF_ID)}&ch=link_tool&ch_id=link`;
-=======
-  if (raw.startsWith('https://al.fanza.co.jp/')) return raw;
-  const afId = process.env.NEXT_PUBLIC_FANZA_AFFILIATE_ID || '';
-  if (!afId) return raw;
-  return `https://al.fanza.co.jp/?lurl=${encodeURIComponent(raw)}&af_id=${encodeURIComponent(afId)}&ch=link_tool&ch_id=link`;
->>>>>>> ea197fe (feat: 田中リファクタリング (LFS対応版))
 }
 
 export default function VideoDetailModal({ isOpen, onClose, videoId }: { isOpen: boolean; onClose: () => void; videoId: string | null; }) {

@@ -2,11 +2,7 @@
 
 import { motion, useAnimation, PanInfo } from 'framer-motion';
 import { forwardRef, useImperativeHandle, useState, useEffect, useRef } from 'react';
-<<<<<<< HEAD
 import { Play, User, Tag, Calendar, Share2 } from 'lucide-react'; // アイコンをインポート
-=======
-import { Play, User, Tag, Calendar } from 'lucide-react'; // アイコンをインポート
->>>>>>> ea197fe (feat: 田中リファクタリング (LFS対応版))
 
 // カードデータの型定義
 export interface CardData {
@@ -105,7 +101,6 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwi
     setShowVideo(true);
   };
 
-<<<<<<< HEAD
   const toAffiliateUrl = (raw?: string) => {
     const AF_ID = 'yotadata2-001';
     try {
@@ -121,8 +116,6 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwi
     try { return window.location.href; } catch { return ''; }
   };
 
-=======
->>>>>>> ea197fe (feat: 田中リファクタリング (LFS対応版))
   useEffect(() => {
     if (showVideo && videoRef.current) {
       const v = videoRef.current;
@@ -140,13 +133,8 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwi
 
   return (
     <div className="absolute h-full" style={{ width: cardWidth ? `${cardWidth}px` : 'auto' }}>
-<<<<<<< HEAD
       {/* 背面のグレー“カード”：白カードより少し小さい高さで、下側だけ少しはみ出す */}
       <div className="absolute inset-x-4 top-4 -bottom-2 bg-gray-200/90 rounded-2xl shadow-md pointer-events-none z-0" />
-=======
-      {/* 背面のグレー帯（次カードプレビュー） */}
-      <div className="absolute inset-x-4 -bottom-3 h-6 bg-gray-200/90 rounded-2xl shadow-md pointer-events-none z-0" />
->>>>>>> ea197fe (feat: 田中リファクタリング (LFS対応版))
       <motion.div 
         className="relative z-10 h-full rounded-2xl bg-white border border-gray-200 shadow-xl flex flex-col p-4 cursor-grab overflow-hidden"
         drag="x"
@@ -199,7 +187,6 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwi
       {/* 下部: テキスト情報エリア（残り領域にフィット） */}
       <div className="flex flex-col text-gray-800 p-4 overflow-y-auto flex-1">
         <h2 className="text-lg font-extrabold tracking-tight">{cardData.title}</h2>
-<<<<<<< HEAD
           {cardData.product_released_at && (
             <div className="grid grid-cols-[auto_1fr_auto] items-center gap-x-2 mt-2">
               <div className="flex w-18 flex-shrink-0 items-center text-sm text-gray-500">
@@ -230,21 +217,6 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwi
               </div>
             </div>
           )}
-=======
-        {cardData.product_released_at && (
-          <div className="grid grid-cols-[auto_1fr] items-start gap-x-2 mt-2">
-            <div className="flex w-18 flex-shrink-0 items-center text-sm text-gray-500">
-              <Calendar className="mr-1 h-4 w-4" />
-              <span>発売日:</span>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <span className="rounded-full bg-blue-500/70 px-2 py-1 text-[11px] font-bold text-white">
-                {new Date(cardData.product_released_at).toLocaleDateString('ja-JP')}
-              </span>
-            </div>
-          </div>
-        )}
->>>>>>> ea197fe (feat: 田中リファクタリング (LFS対応版))
         {cardData.performers && cardData.performers.length > 0 && (
           <div className="grid grid-cols-[auto_1fr] items-start gap-x-2 mt-2">
             <div className="flex w-18 flex-shrink-0 items-center text-sm text-gray-500">

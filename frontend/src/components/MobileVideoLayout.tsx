@@ -3,11 +3,7 @@
 import { CardData } from '@/components/SwipeCard';
 import ActionButtons from '@/components/ActionButtons';
 import { useEffect, useRef, useState } from 'react';
-<<<<<<< HEAD
 import { Play, Calendar, User, Tag, ThumbsDown, ThumbsUp, Heart, List, Share2 } from 'lucide-react';
-=======
-import { Play, Calendar, User, Tag, ThumbsDown, ThumbsUp, Heart, List } from 'lucide-react';
->>>>>>> ea197fe (feat: 田中リファクタリング (LFS対応版))
 
 interface MobileVideoLayoutProps {
   cardData: CardData;
@@ -44,7 +40,6 @@ const MobileVideoLayout: React.FC<MobileVideoLayoutProps> = ({ cardData, onSkip,
     setShowVideo(true);
   };
 
-<<<<<<< HEAD
   const toAffiliateUrl = (raw?: string) => {
     const AF_ID = 'yotadata2-001';
     try {
@@ -60,8 +55,6 @@ const MobileVideoLayout: React.FC<MobileVideoLayoutProps> = ({ cardData, onSkip,
     try { return window.location.href; } catch { return ''; }
   };
 
-=======
->>>>>>> ea197fe (feat: 田中リファクタリング (LFS対応版))
   useEffect(() => {
     if (showVideo && videoRef.current) {
       const v = videoRef.current;
@@ -129,11 +122,7 @@ const MobileVideoLayout: React.FC<MobileVideoLayoutProps> = ({ cardData, onSkip,
           <div className="px-4 pb-4 text-gray-800">
             <h2 className="text-base sm:text-xl font-extrabold tracking-tight">{cardData.title}</h2>
         {cardData.product_released_at && (
-<<<<<<< HEAD
           <div className="grid grid-cols-[auto_1fr_auto] items-center gap-x-2 mt-2">
-=======
-          <div className="grid grid-cols-[auto_1fr] items-start gap-x-2 mt-2">
->>>>>>> ea197fe (feat: 田中リファクタリング (LFS対応版))
             <div className="flex w-24 flex-shrink-0 items-center text-sm text-gray-500">
               <Calendar className="mr-1 h-4 w-4" />
               <span>発売日:</span>
@@ -143,7 +132,6 @@ const MobileVideoLayout: React.FC<MobileVideoLayoutProps> = ({ cardData, onSkip,
                 {new Date(cardData.product_released_at).toLocaleDateString('ja-JP')}
               </span>
             </div>
-<<<<<<< HEAD
             <div className="flex justify-end">
               <button
                 onClick={() => {
@@ -161,8 +149,6 @@ const MobileVideoLayout: React.FC<MobileVideoLayoutProps> = ({ cardData, onSkip,
                 <Share2 size={14} />
               </button>
             </div>
-=======
->>>>>>> ea197fe (feat: 田中リファクタリング (LFS対応版))
           </div>
         )}
         {cardData.performers && cardData.performers.length > 0 && (
@@ -208,11 +194,7 @@ const MobileVideoLayout: React.FC<MobileVideoLayoutProps> = ({ cardData, onSkip,
           {/* NOPE (thumb_down, #6C757D) */}
           <button
             onClick={onSkip}
-<<<<<<< HEAD
             className="w-20 h-20 rounded-full bg-[#6C757D] shadow-2xl drop-shadow-xl active:scale-95 transition flex items-center justify-center"
-=======
-            className="w-20 h-20 rounded-full bg-[#6C757D] shadow-lg active:scale-95 transition flex items-center justify-center"
->>>>>>> ea197fe (feat: 田中リファクタリング (LFS対応版))
             aria-label="イマイチ"
             title="イマイチ"
           >
@@ -221,11 +203,7 @@ const MobileVideoLayout: React.FC<MobileVideoLayoutProps> = ({ cardData, onSkip,
           {/* Liked list */}
           <button
             onClick={() => { try { window.dispatchEvent(new Event('open-liked-drawer')); } catch {} }}
-<<<<<<< HEAD
             className="w-[60px] h-[60px] rounded-full bg-[#BEBEBE] shadow-2xl drop-shadow-xl active:scale-95 transition flex items-center justify-center"
-=======
-            className="w-[60px] h-[60px] rounded-full bg-[#BEBEBE] shadow-lg active:scale-95 transition flex items-center justify-center"
->>>>>>> ea197fe (feat: 田中リファクタリング (LFS対応版))
             aria-label="お気に入りリスト"
             title="お気に入りリスト"
           >
@@ -234,11 +212,7 @@ const MobileVideoLayout: React.FC<MobileVideoLayoutProps> = ({ cardData, onSkip,
           {/* GOOD (heart, #FF6B81) */}
           <button
             onClick={onLike}
-<<<<<<< HEAD
             className="w-20 h-20 rounded-full bg-[#FF6B81] shadow-2xl drop-shadow-xl active:scale-95 transition flex items-center justify-center"
-=======
-            className="w-20 h-20 rounded-full bg-[#FF6B81] shadow-lg active:scale-95 transition flex items-center justify-center"
->>>>>>> ea197fe (feat: 田中リファクタリング (LFS対応版))
             aria-label="好み"
             title="好み"
           >
