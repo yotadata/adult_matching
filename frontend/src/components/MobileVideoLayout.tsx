@@ -142,7 +142,7 @@ const MobileVideoLayout: React.FC<MobileVideoLayoutProps> = ({ cardData, onSkip,
                     window.open(shareUrl, '_blank', 'noopener,noreferrer');
                   } catch {}
                 }}
-                className="p-1.5 rounded-full bg-black text-white hover:opacity-90"
+                className="w-8 h-8 flex items-center justify-center rounded-full bg-white text-black border border-gray-300 shadow-sm hover:bg-gray-50"
                 aria-label="Xで共有"
                 title="Xで共有"
               >

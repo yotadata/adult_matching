@@ -87,7 +87,13 @@ export default function Home() {
       setIsLoggedIn(!!session?.user);
       const headers: HeadersInit = {};
       if (session?.access_token) headers.Authorization = `Bearer ${session.access_token}`;
-      const { data, error } = await supabase.functions.invoke('videos-feed', { headers });
+      // Debug: log just before invoking the Edge Function to confirm code path
+      try { console.log('[Home] invoking videos-feed with auth:', !!session?.access_token); } catch {}
+      // Add a timeout guard so the UI never hangs forever if the request is blocked
+      const timeoutMs = 12000;
+      const timeoutPromise = new Promise<never>((_, reject) => setTimeout(() => reject(new Error('videos-feed timeout')), timeoutMs));
+      const invokePromise = supabase.functions.invoke('videos-feed', { headers, body: {} });
+      const { data, error } = await Promise.race([invokePromise, timeoutPromise]);
       if (error) {
         console.error('Error refetching videos:', error);
         return;
@@ -115,6 +121,8 @@ export default function Home() {
       setCards(fetchedCards);
       setActiveIndex(0);
       if (fetchedCards.length === 0) setNoMore(true);
+    } catch (err) {
+      console.error('[Home] refetchVideos failed:', err);
     } finally {
       setIsFetchingVideos(false);
     }
