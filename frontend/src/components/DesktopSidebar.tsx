@@ -1,6 +1,7 @@
 'use client';
 
 import Image from 'next/image';
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { Home as HomeIcon, Sparkles, BarChart2, Brain, User, UserPlus, LogOut } from 'lucide-react';
@@ -130,7 +131,9 @@ export default function DesktopSidebar() {
       <div className="h-full flex flex-col">
         <div className="px-4 py-4 border-b border-white/30">
           <div className="flex items-center gap-2">
-            <Image src="/seiheki_lab.png" alt="Seiheki Lab Logo" width={120} height={40} priority draggable="false" />
+            <Link href="/" aria-label="ホームへ移動" className="inline-flex">
+              <Image src="/seiheki_lab.png" alt="Seiheki Lab Logo" width={120} height={40} priority draggable="false" className="cursor-pointer" />
+            </Link>
           </div>
           {!isLoggedIn && (
             <div className="mt-3">
