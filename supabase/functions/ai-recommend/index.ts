@@ -7,7 +7,7 @@ const corsHeaders = {
 };
 
 type Video = {
-  id: number;
+  id: string; // videos.id is uuid
   title: string;
   description: string | null;
   external_id: string | null;
@@ -52,30 +52,28 @@ Deno.serve(async (req) => {
     // Trending: top 10 by likes in the past 3 days
     const since = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
 
-    // Fetch like events in the window; group on the edge
-    const { data: likeRows, error: likesErr } = await supabase
-      .from('user_video_decisions')
-      .select('video_id')
-      .eq('decision_type', 'like')
-      .gte('created_at', since)
-      .limit(20000);
+    // Use materialized view to avoid RLS on individual decisions
+    const { data: popRows, error: popErr } = await supabase
+      .from('video_popularity_daily')
+      .select('video_id, d, likes')
+      .gte('d', since)
+      .limit(50000);
 
-    if (likesErr) {
-      console.error('[ai-recommend] likes query error:', likesErr.message);
-      return new Response(JSON.stringify({ error: likesErr.message }), {
+    if (popErr) {
+      console.error('[ai-recommend] popularity view error:', popErr.message);
+      return new Response(JSON.stringify({ error: popErr.message }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    const freq = new Map<number, number>();
-    for (const row of likeRows ?? []) {
-      const id = Number(row.video_id);
-      if (!Number.isFinite(id)) continue;
-      freq.set(id, (freq.get(id) ?? 0) + 1);
+    const freq = new Map<string, number>();
+    for (const row of popRows ?? []) {
+      const id = String((row as any).video_id);
+      const c = Number((row as any).likes) || 0;
+      freq.set(id, (freq.get(id) ?? 0) + c);
     }
 
-    // Sort by count desc and take top 10 ids
     const topIds = Array.from(freq.entries())
       .sort((a, b) => b[1] - a[1])
       .slice(0, 10)
@@ -97,7 +95,7 @@ Deno.serve(async (req) => {
       }
 
       // Order results to match ranking
-      const rank = new Map<number, number>();
+      const rank = new Map<string, number>();
       topIds.forEach((id, idx) => rank.set(id, idx));
       trending = (videos ?? []).sort((a, b) => (rank.get(a.id) ?? 9999) - (rank.get(b.id) ?? 9999));
     }
