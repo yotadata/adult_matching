@@ -49,8 +49,11 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Trending: top 10 by likes in the past 3 days
-    const since = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
+    // Trending: top 10 by likes in the past 3 calendar days (UTC)
+    // Note: video_popularity_daily.d is day-truncated; filter by a day boundary to avoid dropping same-day likes
+    const now = new Date();
+    const utcMidnightToday = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+    const since = new Date(utcMidnightToday.getTime() - 2 * 24 * 60 * 60 * 1000).toISOString();
 
     // Use materialized view to avoid RLS on individual decisions
     const { data: popRows, error: popErr } = await supabase
@@ -98,6 +101,9 @@ Deno.serve(async (req) => {
       const rank = new Map<string, number>();
       topIds.forEach((id, idx) => rank.set(id, idx));
       trending = (videos ?? []).sort((a, b) => (rank.get(a.id) ?? 9999) - (rank.get(b.id) ?? 9999));
+    } else {
+      // Fallback: if no trending rows (e.g., no likes in window), return latest 10 to avoid empty UI
+      trending = latestVideos ?? [];
     }
 
     const resBody = {

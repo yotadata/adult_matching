@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 
 export type Video = {
-  id: number;
+  id: string; // uuid
   title: string;
   description?: string | null;
   external_id?: string | null;
@@ -42,4 +42,3 @@ export function useAiRecommend() {
 
   return { data, loading, error };
 }
-
