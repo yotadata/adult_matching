@@ -40,6 +40,7 @@ export default function PersonalityTestPage() {
     if (answers.length === quizQuestions.length) {
       setIsFinished(true);
       const finalType = calculatePersonalityType(answers);
+      localStorage.setItem('personalityResultType', finalType);
       setTimeout(() => {
         router.push(`/personality/result/${finalType}`);
       }, 1000);
