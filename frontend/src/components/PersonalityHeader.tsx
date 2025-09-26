@@ -30,18 +30,17 @@ export default function PersonalityHeader() {
     }`;
   };
 
-  const navLinks = (
+  const navLinks = (isMobile = false) => (
     <>
-      <Link href="/personality" className={navLinkClasses('/personality')}>
+      <Link href="/personality" className={navLinkClasses('/personality', isMobile)}>
         診断テスト
       </Link>
-      {resultType ? (
-        <Link href={`/personality/result/${resultType}`} className={navLinkClasses('/personality/result')}>
+      <Link href="#" className={navLinkClasses('/personality/types', isMobile) + ' cursor-not-allowed opacity-50'}>
+        性癖タイプ
+      </Link>
+      {resultType && (
+        <Link href={`/personality/result/${resultType}`} className={navLinkClasses('/personality/result', isMobile)}>
           あなたの結果
-        </Link>
-      ) : (
-        <Link href="#" className={navLinkClasses('/personality/types', true) + ' cursor-not-allowed opacity-50'}>
-          性癖タイプ
         </Link>
       )}
     </>
@@ -56,7 +55,7 @@ export default function PersonalityHeader() {
 
         {/* Desktop Nav */}
         <nav className="hidden sm:flex items-center space-x-1 p-1">
-          {navLinks}
+          {navLinks()}
         </nav>
 
         {/* Mobile Nav Button */}
@@ -77,7 +76,7 @@ export default function PersonalityHeader() {
             className="sm:hidden absolute top-full left-0 w-full bg-white/80 backdrop-blur-xl shadow-lg"
           >
             <nav className="flex flex-col space-y-2 p-4">
-              {navLinks}
+              {navLinks(true)}
             </nav>
           </motion.div>
         )}
