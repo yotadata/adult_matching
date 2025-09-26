@@ -5,6 +5,7 @@ import DesktopSidebar from '@/components/DesktopSidebar';
 import useMediaQuery from '@/hooks/useMediaQuery';
 import GlobalModals from '@/components/GlobalModals';
 import { usePathname } from 'next/navigation';
+import { DecisionCountProvider } from '@/hooks/useDecisionCount';
 
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -14,13 +15,15 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
   const isMobile = useMediaQuery('(max-width: 639px)');
 
   return (
-    <div className="min-h-screen w-full" style={{ background: isHome ? homeGradient : nonHomeGradient }}>
-      {/* Desktop fixed left sidebar */}
-      {!isMobile && <DesktopSidebar />}
-      <div className={!isMobile ? 'pl-56' : ''}>
-        {isMobile ? <Header cardWidth={undefined} /> : <GlobalModals />}
-        {children}
+    <DecisionCountProvider>
+      <div className="min-h-screen w-full" style={{ background: isHome ? homeGradient : nonHomeGradient }}>
+        {/* Desktop fixed left sidebar */}
+        {!isMobile && <DesktopSidebar />}
+        <div className={!isMobile ? 'pl-56' : ''}>
+          {isMobile ? <Header cardWidth={undefined} /> : <GlobalModals />}
+          {children}
+        </div>
       </div>
-    </div>
+    </DecisionCountProvider>
   );
 }

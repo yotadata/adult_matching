@@ -7,46 +7,25 @@ import { useRouter, usePathname } from 'next/navigation';
 import { Home as HomeIcon, Sparkles, BarChart2, Brain, User, UserPlus, LogOut } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { forceClearSupabaseAuth } from '@/lib/authUtils';
+import { useDecisionCount } from '@/hooks/useDecisionCount';
 
 export default function DesktopSidebar() {
   const router = useRouter();
   const pathname = usePathname();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [decisionCount, setDecisionCount] = useState<number>(0);
+  const { decisionCount } = useDecisionCount();
   const personalizeTarget = Number(process.env.NEXT_PUBLIC_PERSONALIZE_TARGET || 20);
-  const diagnosisTarget = Number(process.env.NEXT_PUBLIC_DIAGNOSIS_TARGET || 30);
   const isHome = pathname === '/';
   const nonHomeGradient = 'linear-gradient(90deg, #ADB4E3 0%, #C8BAE3 33.333%, #F7BECE 66.666%, #F9B1C4 100%)';
-  const homeGradient = 'linear-gradient(90deg, #C4C8E3 0%, #D7D1E3 33.333%, #F7D7E0 66.666%, #F9C9D6 100%)';
 
   useEffect(() => {
-    const loadAuthAndCount = async () => {
+    const loadAuth = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      const loggedIn = Boolean(session?.user);
-      setIsLoggedIn(loggedIn);
-      if (!loggedIn) {
-        try {
-          const raw = localStorage.getItem('guest_decisions_v1');
-          const arr = raw ? JSON.parse(raw) : [];
-          setDecisionCount(Array.isArray(arr) ? arr.length : 0);
-        } catch {
-          setDecisionCount(0);
-        }
-      } else {
-        const { count } = await supabase
-          .from('user_video_decisions')
-          .select('*', { count: 'exact', head: true })
-          .eq('user_id', session!.user!.id);
-        setDecisionCount(count || 0);
-      }
+      setIsLoggedIn(Boolean(session?.user));
     };
-
-    loadAuthAndCount();
-
+    loadAuth();
     const { data: listener } = supabase.auth.onAuthStateChange((_e, session) => {
       setIsLoggedIn(Boolean(session?.user));
-      // Recompute count on auth state change
-      loadAuthAndCount();
     });
     return () => listener.subscription.unsubscribe();
   }, []);
@@ -59,19 +38,16 @@ export default function DesktopSidebar() {
 
   const handleLogout = async () => {
     try {
-      // セッションを確実にロードしてからサインアウト
       await supabase.auth.getSession();
       const { error } = await supabase.auth.signOut({ scope: 'global' });
       if (error) console.error('signOut error:', error.message);
     } catch (e) {
       console.error('logout exception', e);
     }
-    // 即時にUIへ反映
     setIsLoggedIn(false);
     try { forceClearSupabaseAuth(); } catch {}
     try { router.push('/'); } catch {}
     try { router.refresh(); } catch {}
-    // 最後の砦: ハードリロード
     try { setTimeout(() => { if (typeof window !== 'undefined') window.location.assign('/'); }, 100); } catch {}
   };
 
@@ -126,6 +102,9 @@ export default function DesktopSidebar() {
     </button>
   );
 
+  const remainingSwipes = Math.max(personalizeTarget - decisionCount, 0);
+  const caption = remainingSwipes === 0 ? 'パーソナライズ完了' : `パーソナライズまであと${remainingSwipes}枚`;
+
   return (
     <aside className="hidden sm:block fixed left-0 top-0 h-screen w-56 bg-white/80 backdrop-blur-md border-r border-white/30 shadow-md text-gray-800 z-40">
       <div className="h-full flex flex-col">
@@ -156,7 +135,7 @@ export default function DesktopSidebar() {
             href="/ai-recommend"
             disabled={!isLoggedIn}
             progress={decisionCount / personalizeTarget}
-            caption={`パーソナライズまであと${Math.max(personalizeTarget - decisionCount, 0)}枚`}
+            caption={caption}
           />
           <NavButton label="性癖分析" icon={BarChart2} href="/analysis-results" disabled={!isLoggedIn} />
           {/* 性癖パーソナリティ診断: 準備中表記・disableを解除 */}
