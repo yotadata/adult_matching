@@ -1,0 +1,229 @@
+name: Two-Tower Performance Benchmark
+
+on:
+  push:
+    paths:
+      - 'ml_pipeline/**'
+      - 'tests/performance/**'
+      - 'scripts/train_*.py'
+  pull_request:
+    paths:
+      - 'ml_pipeline/**'
+      - 'tests/performance/**'
+      - 'scripts/train_*.py'
+  schedule:
+    # 毎日午前9時（UTC）にベンチマーク実行
+    - cron: '0 9 * * *'
+  workflow_dispatch:
+
+jobs:
+  performance-benchmark:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+
+    - name: Install UV
+      uses: astral-sh/setup-uv@v3
+      with:
+        version: "0.8.11"
+
+    - name: Install dependencies
+      run: |
+        uv sync
+
+    - name: Create necessary directories
+      run: |
+        mkdir -p data_processing/processed_data
+        mkdir -p ml_pipeline/models
+
+    - name: Generate minimal test data (if needed)
+      run: |
+        # 最小限のテストデータ生成（実際のデータがない場合）
+        if [ ! -f "data_processing/processed_data/rating_based_pseudo_users.json" ]; then
+          echo "Generating minimal test data..."
+          uv run python -c "
+import json
+import numpy as np
+from pathlib import Path
+
+# 最小限の疑似ユーザーデータ
+pseudo_users = []
+for i in range(10):
+    user = {
+        'id': i,
+        'like_ratio': np.random.uniform(0.3, 0.9),
+        'avg_rating': np.random.uniform(3.0, 5.0),
+        'genre_preferences': {f'genre_{j}': np.random.uniform(0, 1) for j in range(3)}
+    }
+    pseudo_users.append(user)
+
+# 最小限のレビューデータ
+reviews = []
+for i in range(100):
+    review = {
+        'content_id': f'content_{i}',
+        'title': f'Test Content {i}',
+        'rating': np.random.randint(1, 6),
+        'genre': f'genre_{np.random.randint(0, 3)}',
+        'maker': f'maker_{np.random.randint(0, 5)}'
+    }
+    reviews.append(review)
+
+# ディレクトリ作成・データ保存
+Path('data_processing/processed_data').mkdir(parents=True, exist_ok=True)
+with open('data_processing/processed_data/rating_based_pseudo_users.json', 'w') as f:
+    json.dump(pseudo_users, f)
+with open('data_processing/processed_data/integrated_reviews.json', 'w') as f:
+    json.dump(reviews, f)
+
+print('Minimal test data generated successfully')
+          "
+        fi
+
+    - name: Check if 768-dim model exists
+      run: |
+        if [ ! -d "ml_pipeline/models/rating_based_two_tower_768" ]; then
+          echo "768-dim model not found, training minimal model for benchmarking..."
+          # 最小限の768次元モデル訓練
+          uv run python scripts/train_768_dim_two_tower.py || echo "Model training failed, will use mock model in benchmark"
+        else
+          echo "768-dim model found, proceeding with benchmark"
+        fi
+
+    - name: Run Performance Benchmark
+      run: |
+        uv run python tests/performance/ci_benchmark.py
+      env:
+        CI: true
+
+    - name: Upload benchmark results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: performance-benchmark-results
+        path: tests/performance/benchmark_results_*.json
+        retention-days: 30
+
+    - name: Generate performance report
+      if: always()
+      run: |
+        echo "## Performance Benchmark Results" >> $GITHUB_STEP_SUMMARY
+        
+        # 最新結果ファイル取得
+        latest_result=$(ls -t tests/performance/benchmark_results_*.json 2>/dev/null | head -1 || echo "")
+        
+        if [ -n "$latest_result" ]; then
+          echo "### 📊 Overall Results" >> $GITHUB_STEP_SUMMARY
+          uv run python -c "
+import json
+import sys
+
+try:
+    with open('$latest_result') as f:
+        results = json.load(f)
+    
+    summary = results.get('overall_summary', {})
+    total_tests = summary.get('total_tests', 0)
+    passed_tests = summary.get('passed_tests', 0)
+    pass_rate = summary.get('pass_rate', 0) * 100
+    
+    status_emoji = '✅' if summary.get('overall_passed', False) else '❌'
+    
+    print(f'- {status_emoji} **Overall Status**: {\"PASSED\" if summary.get(\"overall_passed\", False) else \"FAILED\"}')
+    print(f'- 📈 **Pass Rate**: {pass_rate:.1f}% ({passed_tests}/{total_tests})')
+    print(f'- ⏱️ **Total Execution Time**: {results.get(\"total_execution_time_minutes\", 0):.2f} minutes')
+    
+    print()
+    print('### 📋 Detailed Results')
+    
+    benchmarks = [
+        ('推論性能', 'inference_benchmark'),
+        ('訓練性能', 'training_benchmark'), 
+        ('埋め込み更新', 'embedding_update_benchmark'),
+        ('バッチ推薦', 'batch_recommendation_benchmark')
+    ]
+    
+    for name, key in benchmarks:
+        if key in results:
+            bench_result = results[key]
+            if isinstance(bench_result, dict):
+                passed = bench_result.get('overall_passed', False)
+                status = '✅ PASS' if passed else '❌ FAIL'
+                print(f'- **{name}**: {status}')
+            else:
+                print(f'- **{name}**: ⚠️ Skipped/Error')
+        else:
+            print(f'- **{name}**: ❓ No data')
+
+except Exception as e:
+    print(f'Error processing results: {e}', file=sys.stderr)
+    sys.exit(1)
+          " >> $GITHUB_STEP_SUMMARY
+        else
+          echo "❌ No benchmark results found" >> $GITHUB_STEP_SUMMARY
+        fi
+
+    - name: Comment on PR (if PR)
+      if: github.event_name == 'pull_request'
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const fs = require('fs');
+          const glob = require('glob');
+          
+          // 最新の結果ファイルを取得
+          const resultFiles = glob.sync('tests/performance/benchmark_results_*.json').sort().reverse();
+          
+          if (resultFiles.length === 0) {
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '❌ Performance benchmark results not found.'
+            });
+            return;
+          }
+          
+          const results = JSON.parse(fs.readFileSync(resultFiles[0], 'utf8'));
+          const summary = results.overall_summary || {};
+          
+          const overallPassed = summary.overall_passed || false;
+          const passRate = (summary.pass_rate || 0) * 100;
+          const totalTests = summary.total_tests || 0;
+          const passedTests = summary.passed_tests || 0;
+          const execTime = results.total_execution_time_minutes || 0;
+          
+          const statusIcon = overallPassed ? '✅' : '❌';
+          const statusText = overallPassed ? 'PASSED' : 'FAILED';
+          
+          const comment = `## ${statusIcon} Performance Benchmark Results
+
+**Overall Status**: ${statusText}
+**Pass Rate**: ${passRate.toFixed(1)}% (${passedTests}/${totalTests})
+**Execution Time**: ${execTime.toFixed(2)} minutes
+
+### Individual Test Results:
+- **推論性能**: ${results.inference_benchmark?.overall_passed ? '✅ PASS' : '❌ FAIL'}
+- **訓練性能**: ${results.training_benchmark?.overall_passed ? '✅ PASS' : '❌ FAIL'} 
+- **埋め込み更新**: ${results.embedding_update_benchmark?.overall_passed ? '✅ PASS' : '❌ FAIL'}
+- **バッチ推薦**: ${results.batch_recommendation_benchmark?.overall_passed ? '✅ PASS' : '❌ FAIL'}
+
+${overallPassed ? 
+  '🎉 All performance requirements are met!' : 
+  '⚠️ Some performance requirements are not met. Please review the failing tests.'
+}`;
+          
+          await github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: comment
+          });

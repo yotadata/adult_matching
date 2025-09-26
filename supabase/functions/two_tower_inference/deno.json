@@ -1,0 +1,6 @@
+{
+  "imports": {
+    "@tensorflow/tfjs": "https://cdn.skypack.dev/@tensorflow/tfjs",
+    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2"
+  }
+}
