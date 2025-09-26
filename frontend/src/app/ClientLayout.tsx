@@ -26,7 +26,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
             <PersonalityHeader />
             <main className="pt-24 pb-12">
               <div className="container mx-auto max-w-4xl px-4">
-                <div className="bg-black/10 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-2xl overflow-hidden">
+                <div className="bg-white/20 backdrop-blur-lg border border-white/30 rounded-2xl shadow-2xl overflow-hidden">
                   {children}
                 </div>
               </div>
