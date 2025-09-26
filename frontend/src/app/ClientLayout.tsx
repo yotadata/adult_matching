@@ -6,8 +6,7 @@ import useMediaQuery from '@/hooks/useMediaQuery';
 import GlobalModals from '@/components/GlobalModals';
 import { usePathname } from 'next/navigation';
 import { DecisionCountProvider } from '@/hooks/useDecisionCount.tsx';
-import Link from 'next/link';
-import Image from 'next/image';
+import PersonalityHeader from '@/components/PersonalityHeader';
 
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -24,13 +23,13 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
       <div className="min-h-screen w-full" style={{ background }}>
         {isPersonalityPage ? (
           <>
-            <header className="fixed top-0 left-0 w-full p-4 z-50 flex justify-center sm:justify-start">
-              <Link href="/" aria-label="ホームへ移動" className="inline-flex">
-                <Image src="/seiheki_lab.png" alt="Seiheki Lab Logo" width={120} height={40} priority draggable="false" />
-              </Link>
-            </header>
-            <main className="pt-20">
-              {children}
+            <PersonalityHeader />
+            <main className="pt-24 pb-12">
+              <div className="container mx-auto max-w-4xl px-4">
+                <div className="bg-black/10 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-2xl overflow-hidden">
+                  {children}
+                </div>
+              </div>
             </main>
           </>
         ) : (
