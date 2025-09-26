@@ -5,7 +5,7 @@ import DesktopSidebar from '@/components/DesktopSidebar';
 import useMediaQuery from '@/hooks/useMediaQuery';
 import GlobalModals from '@/components/GlobalModals';
 import { usePathname } from 'next/navigation';
-import { DecisionCountProvider } from '@/hooks/useDecisionCount.tsx';
+import { DecisionCountProvider } from '@/hooks/useDecisionCount';
 import PersonalityHeader from '@/components/PersonalityHeader';
 
 export default function ClientLayout({ children }: { children: React.ReactNode }) {

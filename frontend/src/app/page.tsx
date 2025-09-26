@@ -87,7 +87,7 @@ export default function Home() {
     } finally {
       setIsFetchingVideos(false);
     }
-  }, [setIsFetchingVideos, setIsLoggedIn, setCards, setActiveIndex, supabase.auth, supabase.functions]);
+  }, [setIsFetchingVideos, setIsLoggedIn, setCards, setActiveIndex]);
 
   useEffect(() => {
     refetchVideos();
@@ -146,7 +146,7 @@ export default function Home() {
       }
     }
     setGuestDecisions([]);
-  }, [getGuestDecisions, setGuestDecisions, supabase.auth, supabase.from]);
+  }, [getGuestDecisions, setGuestDecisions]);
 
   useEffect(() => {
     const { data: authListener } = supabase.auth.onAuthStateChange(async (_event, session) => {
@@ -159,14 +159,14 @@ export default function Home() {
     return () => {
       authListener.subscription.unsubscribe();
     };
-  }, [flushGuestDecisions, supabase.auth]);
+  }, [flushGuestDecisions]);
 
   useEffect(() => {
     (async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) await flushGuestDecisions();
     })();
-  }, [flushGuestDecisions, supabase.auth]);
+  }, [flushGuestDecisions]);
 
   const handleSwipe = async (direction: 'left' | 'right') => {
     if (activeCard) {

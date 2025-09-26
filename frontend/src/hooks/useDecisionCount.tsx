@@ -39,7 +39,7 @@ export const DecisionCountProvider = ({ children }: { children: React.ReactNode 
 
   useEffect(() => {
     loadDecisionCount();
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: listener } = supabase.auth.onAuthStateChange(() => {
       loadDecisionCount();
     });
     return () => {

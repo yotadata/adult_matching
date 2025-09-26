@@ -9,7 +9,7 @@ import { supabase } from '@/lib/supabase';
 import { User as SupabaseUser } from '@supabase/supabase-js';
 import { Dialog, Transition } from '@headlessui/react';
 import { UserPlus, Menu as MenuIcon, X, Home as HomeIcon, Sparkles, BarChart2, Brain } from 'lucide-react';
-import { useRouter, usePathname } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import LikedVideosDrawer from './LikedVideosDrawer'; // ドロワーコンポーネントをインポート
 import { toast } from 'react-hot-toast';
 import { forceClearSupabaseAuth } from '@/lib/authUtils';

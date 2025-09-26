@@ -69,10 +69,7 @@ const LikedVideosDrawer: React.FC<LikedVideosDrawerProps> = ({ isOpen, onClose }
     return `https://al.fanza.co.jp/?lurl=${lurl}&af_id=${encodeURIComponent(AF_ID)}&ch=link_tool&ch_id=link`;
   };
 
-  const depsKey = useMemo(
-    () => ({ isOpen, sort, order, selectedTagIds, selectedPerformerIds }),
-    [isOpen, sort, order, selectedTagIds, selectedPerformerIds]
-  );
+  
 
   // Fetch facet options (tags/performers across ALL likes) when opening
   useEffect(() => {
