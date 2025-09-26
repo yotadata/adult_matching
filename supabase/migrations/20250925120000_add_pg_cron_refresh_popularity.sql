@@ -1,5 +1,5 @@
 -- Enable pg_cron (if not already enabled)
-create extension if not exists pg_cron;
+-- create extension if not exists pg_cron;
 
 -- Unique index required for CONCURRENT REFRESH on materialized view
 create unique index if not exists mv_pop_daily_uidx
