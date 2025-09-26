@@ -21,7 +21,15 @@ export default function PersonalityHeader() {
   }, [pathname]); // パスが変わるたびに再チェック
 
   const navLinkClasses = (href: string, isMobile = false) => {
-    const isActive = pathname.startsWith(href) && href !== '/';
+    let isActive = false;
+    if (href === '/personality') {
+      isActive = pathname === '/personality';
+    } else if (href === '/personality/types') {
+      isActive = pathname === '/personality/types';
+    } else if (href === '/personality/result') {
+      isActive = pathname.startsWith('/personality/result');
+    }
+
     const baseClasses = isMobile ? 'block w-full text-left px-4 py-3 text-lg' : 'px-4 py-2 rounded-md text-sm font-medium';
     return `${baseClasses} transition-colors ${
       isActive
