@@ -69,10 +69,7 @@ const LikedVideosDrawer: React.FC<LikedVideosDrawerProps> = ({ isOpen, onClose }
     return `https://al.fanza.co.jp/?lurl=${lurl}&af_id=${encodeURIComponent(AF_ID)}&ch=link_tool&ch_id=link`;
   };
 
-  const depsKey = useMemo(
-    () => ({ isOpen, sort, order, selectedTagIds, selectedPerformerIds }),
-    [isOpen, sort, order, selectedTagIds, selectedPerformerIds]
-  );
+  
 
   // Fetch facet options (tags/performers across ALL likes) when opening
   useEffect(() => {
@@ -132,7 +129,7 @@ const LikedVideosDrawer: React.FC<LikedVideosDrawerProps> = ({ isOpen, onClose }
     };
 
     fetchLikedVideos();
-  }, [depsKey]);
+  }, [isOpen, sort, order, selectedTagIds, selectedPerformerIds]);
 
   // ここではオーバーレイは常時クリック可能とし、パネル側で stopPropagation して外側判定を防ぐ。
 

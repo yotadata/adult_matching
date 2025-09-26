@@ -39,7 +39,7 @@ export default function LikesPage() {
   const [dateTo, setDateTo] = useState<string>('');
   const [page, setPage] = useState(0);
 
-  const params = useMemo(() => ({ q, sort, order, priceMin, priceMax, dateFrom, dateTo, page }), [q, sort, order, priceMin, priceMax, dateFrom, dateTo, page]);
+  
 
   useEffect(() => {
     const check = async () => {
@@ -88,7 +88,7 @@ export default function LikesPage() {
       }
     };
     run();
-  }, [params]);
+  }, [q, sort, order, priceMin, priceMax, dateFrom, dateTo, page]);
 
   if (isLoggedIn === false) {
     return (

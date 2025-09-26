@@ -8,3 +8,15 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
     Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
 }
+
+/* Felt-like textured background */
+.felt-bg {
+  /* Layer subtle fibers/noise without changing the base color */
+  background-image:
+    radial-gradient(40% 60% at 25% 25%, rgba(255,255,255,0.035), rgba(255,255,255,0) 60%),
+    radial-gradient(50% 70% at 75% 30%, rgba(255,255,255,0.02), rgba(255,255,255,0) 60%),
+    radial-gradient(60% 50% at 40% 75%, rgba(0,0,0,0.05), rgba(0,0,0,0) 60%),
+    repeating-radial-gradient(circle at 20% 10%, rgba(255,255,255,0.012) 0 2px, rgba(0,0,0,0) 3px 6px),
+    repeating-linear-gradient(45deg, rgba(255,255,255,0.01) 0 2px, rgba(0,0,0,0) 2px 4px);
+  background-blend-mode: soft-light, soft-light, multiply, normal, normal;
+}

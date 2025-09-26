@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-import Image from 'next/image';
 import Link from 'next/link';
 
 type Performer = { id: string; name: string };

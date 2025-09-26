@@ -29,7 +29,7 @@ const ProgressGauges: React.FC<Props> = ({
 
   const progressPct = clamp((decisionCount / diagnosisTarget) * 100);
   const pTick = clamp((personalizeTarget / diagnosisTarget) * 100);
-  const dTick = 100; // 診断のしきい値
+  
 
   return (
     <div

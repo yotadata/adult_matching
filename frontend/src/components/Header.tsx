@@ -1,6 +1,7 @@
 'use client';
 
 import Image from 'next/image';
+import Link from 'next/link';
 import { useState, useEffect, useRef, Fragment } from 'react';
 import AuthModal from './auth/AuthModal';
 import useMediaQuery from '@/hooks/useMediaQuery';
@@ -8,7 +9,7 @@ import { supabase } from '@/lib/supabase';
 import { User as SupabaseUser } from '@supabase/supabase-js';
 import { Dialog, Transition } from '@headlessui/react';
 import { UserPlus, Menu as MenuIcon, X, Home as HomeIcon, Sparkles, BarChart2, Brain } from 'lucide-react';
-import { useRouter, usePathname } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import LikedVideosDrawer from './LikedVideosDrawer'; // ドロワーコンポーネントをインポート
 import { toast } from 'react-hot-toast';
 import { forceClearSupabaseAuth } from '@/lib/authUtils';
@@ -24,7 +25,6 @@ const Header = ({ cardWidth, mobileGauge }: { cardWidth: number | undefined; mob
   const [isMenuDrawerOpen, setIsMenuDrawerOpen] = useState(false);
   const mobileCloseBtnRef = useRef<HTMLButtonElement | null>(null);
   const router = useRouter();
-  const pathname = usePathname();
   const [decisionCount, setDecisionCount] = useState<number>(0);
   const personalizeTarget = Number(process.env.NEXT_PUBLIC_PERSONALIZE_TARGET || 20);
   const diagnosisTarget = Number(process.env.NEXT_PUBLIC_DIAGNOSIS_TARGET || 30);
@@ -134,15 +134,18 @@ const Header = ({ cardWidth, mobileGauge }: { cardWidth: number | undefined; mob
               <div className="grid grid-cols-3 items-center text-white">
                 <div />
                 <div className="flex justify-center">
-                  <Image
-                    src="/seiheki_lab.png"
-                    alt="Seiheki Lab Logo"
-                    width={120}
-                    height={50}
-                    priority
-                    draggable="false"
-                    style={{ filter: 'drop-shadow(0 0 0.5rem rgba(0, 0, 0, 0.1))' }}
-                  />
+                  <Link href="/" aria-label="ホームへ移動" className="inline-flex">
+                    <Image
+                      src="/seiheki_lab.png"
+                      alt="Seiheki Lab Logo"
+                      width={120}
+                      height={50}
+                      priority
+                      draggable="false"
+                      className="cursor-pointer"
+                      style={{ filter: 'drop-shadow(0 0 0.5rem rgba(0, 0, 0, 0.1))' }}
+                    />
+                  </Link>
                 </div>
                 <div className="flex justify-end">
                   <button
@@ -159,15 +162,18 @@ const Header = ({ cardWidth, mobileGauge }: { cardWidth: number | undefined; mob
               // 未ログイン時: 左寄せロゴ＋右端ログインボタン
               <div className="grid grid-cols-3 items-center text-white">
                 <div className="flex justify-start">
-                  <Image
-                    src="/seiheki_lab.png"
-                    alt="Seiheki Lab Logo"
-                    width={120}
-                    height={50}
-                    priority
-                    draggable="false"
-                    style={{ filter: 'drop-shadow(0 0 0.5rem rgba(0, 0, 0, 0.1))' }}
-                  />
+                  <Link href="/" aria-label="ホームへ移動" className="inline-flex">
+                    <Image
+                      src="/seiheki_lab.png"
+                      alt="Seiheki Lab Logo"
+                      width={120}
+                      height={50}
+                      priority
+                      draggable="false"
+                      className="cursor-pointer"
+                      style={{ filter: 'drop-shadow(0 0 0.5rem rgba(0, 0, 0, 0.1))' }}
+                    />
+                  </Link>
                 </div>
                 <div />
                 <div className="flex justify-end">
@@ -254,15 +260,18 @@ const Header = ({ cardWidth, mobileGauge }: { cardWidth: number | undefined; mob
           <div className="grid grid-cols-3 items-center text-white">
             <div />
             <div className="flex justify-center">
-              <Image
-                src="/seiheki_lab.png"
-                alt="Seiheki Lab Logo"
-                width={180}
-                height={78}
-                priority
-                draggable="false"
-                style={{ filter: 'drop-shadow(0 0 0.5rem rgba(0, 0, 0, 0.1))' }}
-              />
+              <Link href="/" aria-label="ホームへ移動" className="inline-flex">
+                <Image
+                  src="/seiheki_lab.png"
+                  alt="Seiheki Lab Logo"
+                  width={180}
+                  height={78}
+                  priority
+                  draggable="false"
+                  className="cursor-pointer"
+                  style={{ filter: 'drop-shadow(0 0 0.5rem rgba(0, 0, 0, 0.1))' }}
+                />
+              </Link>
             </div>
             <div className="flex justify-end">
               {user ? (

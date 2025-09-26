@@ -89,17 +89,7 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwi
     onDragEnd?.(event, info); // 親の onDragEnd を呼び出す
   };
 
-  const handlePlayClick = () => {
-    // デバッグ: どの再生パスか確認（開発のみ）
-    if (process.env.NODE_ENV !== 'production') {
-      if (cardData.sampleVideoUrl) {
-        console.warn('[SwipeCard] Using <video> src:', cardData.sampleVideoUrl);
-      } else {
-        console.warn('[SwipeCard] Using <iframe> src:', cardData.embedUrl || cardData.videoUrl);
-      }
-    }
-    setShowVideo(true);
-  };
+  
 
   const toAffiliateUrl = (raw?: string) => {
     const AF_ID = 'yotadata2-001';
@@ -208,7 +198,7 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwi
                       window.open(shareUrl, '_blank', 'noopener,noreferrer');
                     } catch {}
                   }}
-                  className="p-1.5 rounded-full bg-black text-white hover:opacity-90"
+                  className="w-8 h-8 flex items-center justify-center rounded-full bg-white text-black border border-gray-300 shadow-sm hover:bg-gray-50"
                   aria-label="Xで共有"
                   title="Xで共有"
                 >
