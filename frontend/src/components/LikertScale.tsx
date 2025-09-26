@@ -10,7 +10,7 @@ interface LikertScaleProps {
 const nopeColor = { r: 108, g: 117, b: 125 }; // #6C757D
 const likeColor = { r: 255, g: 107, b: 129 }; // #FF6B81
 
-const lerpColor = (color1: {r,g,b}, color2: {r,g,b}, factor: number) => {
+const lerpColor = (color1: {r: number, g: number, b: number}, color2: {r: number, g: number, b: number}, factor: number) => {
   const r = Math.round(color1.r + factor * (color2.r - color1.r));
   const g = Math.round(color1.g + factor * (color2.g - color1.g));
   const b = Math.round(color1.b + factor * (color2.b - color1.b));
