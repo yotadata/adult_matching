@@ -28,7 +28,7 @@ export default function LikertScale({ onChange, value }: LikertScaleProps) {
       <div className="flex items-center justify-center space-x-2 sm:space-x-3">
         {options.map((optionValue, index) => {
           const distanceFromCenter = Math.abs(index - 2.5); // 6段階の中央は2.5
-          const size = 20 + (2.5 - distanceFromCenter) * 6; // 中央から遠いほど大きく
+          const size = 20 + distanceFromCenter * 6; // 中央から遠いほど大きく
           const factor = index / (options.length - 1); // 0-1の補間係数
           const color = lerpColor(nopeColor, likeColor, factor);
           const isSelected = value === optionValue;
