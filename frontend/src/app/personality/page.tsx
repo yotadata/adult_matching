@@ -65,7 +65,7 @@ export default function PersonalityTestPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: index * 0.1 }}
-          className="border border-white/20 rounded-xl p-6"
+          className="bg-white/10 border border-white/20 rounded-xl p-6"
         >
           <h3 className="text-xl font-bold text-white mb-4">{index + 1}. {question.text}</h3>
           <div className="flex flex-col space-y-2">
@@ -77,7 +77,7 @@ export default function PersonalityTestPage() {
                   w-full text-left p-3 rounded-lg transition-colors duration-200
                   ${answers.find(a => a.questionId === question.id)?.value === scale.value
                     ? 'bg-amber-500/80 text-white font-bold'
-                    : 'bg-black/20 hover:bg-black/40 text-white/80'}
+                    : 'bg-white/10 hover:bg-white/20 text-white'}
                 `}
               >
                 {scale.text}
