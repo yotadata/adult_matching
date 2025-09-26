@@ -30,8 +30,8 @@ export default function PersonalityTestPage() {
   if (isFinished) {
     return (
       <div className="flex flex-col items-center justify-center h-[50vh]">
-        <p className="text-white text-xl">診断結果を計算しています...</p>
-        <div className="w-16 h-16 mt-6 rounded-full border-4 border-gray-400 border-t-white animate-spin"></div>
+        <p className="text-gray-800 text-xl">診断結果を計算しています...</p>
+        <div className="w-16 h-16 mt-6 rounded-full border-4 border-gray-400 border-t-gray-800 animate-spin"></div>
       </div>
     );
   }
@@ -40,8 +40,8 @@ export default function PersonalityTestPage() {
     <div className="space-y-12 p-4 py-10 sm:p-8 md:p-12">
       {quizQuestions.map((question, index) => (
         <div key={question.id} className="text-center">
-          <h3 className="text-lg font-bold text-white mb-5">
-            <span className="text-white/60 mr-2">{index + 1}.</span>
+          <h3 className="text-lg font-bold text-gray-800 mb-5">
+            <span className="text-gray-800/60 mr-2">{index + 1}.</span>
             {question.text}
           </h3>
           <LikertScale 
