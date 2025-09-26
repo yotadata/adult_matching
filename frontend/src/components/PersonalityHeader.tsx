@@ -8,8 +8,12 @@ export default function PersonalityHeader() {
   const pathname = usePathname();
 
   const navLinkClasses = (href: string) => {
-    const isActive = pathname === href;
-    return `px-4 py-2 rounded-md text-sm font-medium transition-colors ${isActive ? 'bg-white/20 text-white' : 'text-white/70 hover:bg-white/10 hover:text-white'}`;
+    const isActive = pathname.startsWith(href);
+    return `px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+      isActive
+        ? 'bg-white/40 text-gray-900'
+        : 'text-gray-700 hover:bg-white/20 hover:text-gray-900'
+    }`;
   };
 
   return (
@@ -18,7 +22,7 @@ export default function PersonalityHeader() {
         <Link href="/" aria-label="ホームへ移動" className="inline-flex">
           <Image src="/seiheki_lab.png" alt="Seiheki Lab Logo" width={120} height={40} priority draggable="false" />
         </Link>
-        <nav className="flex items-center space-x-2 bg-black/10 backdrop-blur-md border border-white/10 rounded-lg p-1">
+        <nav className="flex items-center space-x-1 bg-white/30 backdrop-blur-lg border border-white/40 rounded-lg p-1">
           <Link href="/personality" className={navLinkClasses('/personality')}>
             診断テスト
           </Link>
