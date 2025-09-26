@@ -1,7 +1,7 @@
 'use client';
 
 import { Dialog, Transition } from '@headlessui/react';
-import { Fragment, useState, useEffect, useMemo } from 'react';
+import { Fragment, useState, useEffect } from 'react';
 import { X, Filter } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
