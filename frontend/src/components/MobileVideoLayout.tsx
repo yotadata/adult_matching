@@ -1,9 +1,8 @@
 'use client';
 
 import { CardData } from '@/components/SwipeCard';
-import ActionButtons from '@/components/ActionButtons';
 import { useEffect, useRef, useState } from 'react';
-import { Play, Calendar, User, Tag, ThumbsDown, ThumbsUp, Heart, List, Share2 } from 'lucide-react';
+import { Play, Calendar, User, Tag, ThumbsDown, Heart, List, Share2 } from 'lucide-react';
 
 interface MobileVideoLayoutProps {
   cardData: CardData;
@@ -28,17 +27,7 @@ const MobileVideoLayout: React.FC<MobileVideoLayoutProps> = ({ cardData, onSkip,
     }
   }, [cardData?.id]);
 
-  const handlePlayClick = () => {
-    // デバッグ: どの再生パスか確認（開発のみ）
-    if (process.env.NODE_ENV !== 'production') {
-      if (cardData.sampleVideoUrl) {
-        console.warn('[MobileVideoLayout] Using <video> src:', cardData.sampleVideoUrl);
-      } else {
-        console.warn('[MobileVideoLayout] Using <iframe> src:', cardData.embedUrl || cardData.videoUrl);
-      }
-    }
-    setShowVideo(true);
-  };
+  
 
   const toAffiliateUrl = (raw?: string) => {
     const AF_ID = 'yotadata2-001';

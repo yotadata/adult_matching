@@ -25,7 +25,6 @@ const Header = ({ cardWidth, mobileGauge }: { cardWidth: number | undefined; mob
   const [isMenuDrawerOpen, setIsMenuDrawerOpen] = useState(false);
   const mobileCloseBtnRef = useRef<HTMLButtonElement | null>(null);
   const router = useRouter();
-  const pathname = usePathname();
   const [decisionCount, setDecisionCount] = useState<number>(0);
   const personalizeTarget = Number(process.env.NEXT_PUBLIC_PERSONALIZE_TARGET || 20);
   const diagnosisTarget = Number(process.env.NEXT_PUBLIC_DIAGNOSIS_TARGET || 30);

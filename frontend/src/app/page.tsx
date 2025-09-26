@@ -1,10 +1,8 @@
 'use client';
 
 import SwipeCard, { CardData, SwipeCardHandle } from "@/components/SwipeCard";
-import ActionButtons from "@/components/ActionButtons";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { AnimatePresence, motion, PanInfo } from "framer-motion";
-import dynamic from "next/dynamic";
 import useMediaQuery from "@/hooks/useMediaQuery";
 import useWindowSize from "@/hooks/useWindowSize";
 import MobileVideoLayout from "@/components/MobileVideoLayout";
@@ -34,13 +32,11 @@ export default function Home() {
   const [cards, setCards] = useState<CardData[]>([]);
   const [activeIndex, setActiveIndex] = useState(0);
   const [isFetchingVideos, setIsFetchingVideos] = useState(false);
-  const [noMore, setNoMore] = useState(false);
   const cardRef = useRef<SwipeCardHandle>(null);
   const [currentGradient, setCurrentGradient] = useState(ORIGINAL_GRADIENT);
   const isMobile = useMediaQuery('(max-width: 639px)');
-  const { width: windowWidth, height: windowHeight } = useWindowSize();
+  const { height: windowHeight } = useWindowSize();
   const [cardWidth, setCardWidth] = useState<number | undefined>(400);
-  const [layoutReady, setLayoutReady] = useState(false);
   const { decisionCount, incrementDecisionCount } = useDecisionCount();
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
   const guestLimit = Number(process.env.NEXT_PUBLIC_GUEST_DECISIONS_LIMIT || 20);
@@ -49,10 +45,9 @@ export default function Home() {
   const videoAspectRatio = 4 / 3;
   const activeCard = activeIndex < cards.length ? cards[activeIndex] : null;
 
-  const refetchVideos = async () => {
+  const refetchVideos = useCallback(async () => {
     try {
       setIsFetchingVideos(true);
-      setNoMore(false);
       const { data: { session } } = await supabase.auth.getSession();
       setIsLoggedIn(!!session?.user);
       const headers: HeadersInit = {};
@@ -87,17 +82,16 @@ export default function Home() {
       });
       setCards(fetchedCards);
       setActiveIndex(0);
-      if (fetchedCards.length === 0) setNoMore(true);
     } catch (err) {
       console.error('[Home] refetchVideos failed:', err);
     } finally {
       setIsFetchingVideos(false);
     }
-  };
+  }, [setIsFetchingVideos, setIsLoggedIn, setCards, setActiveIndex, supabase.auth, supabase.functions]);
 
   useEffect(() => {
     refetchVideos();
-  }, []);
+  }, [refetchVideos]);
 
   useEffect(() => {
     const recalc = () => {
@@ -107,7 +101,6 @@ export default function Home() {
           const targetVideoHeight = mainH * (3 / 5);
           const calculatedCardWidth = targetVideoHeight * videoAspectRatio;
           setCardWidth(calculatedCardWidth);
-          setLayoutReady(true);
           return;
         }
       }
@@ -115,47 +108,26 @@ export default function Home() {
         const targetVideoHeight = (!isMobile ? windowHeight * (3 / 5) : windowHeight / 2);
         const calculatedCardWidth = targetVideoHeight * videoAspectRatio;
         setCardWidth(calculatedCardWidth);
-        setLayoutReady(true);
       }
     };
     recalc();
   }, [windowHeight, videoAspectRatio, isMobile]);
 
-  useEffect(() => {
-    const { data: authListener } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      const loggedIn = !!session?.user;
-      setIsLoggedIn(loggedIn);
-      if (loggedIn) {
-        await flushGuestDecisions();
-      }
-    });
-    return () => {
-      authListener.subscription.unsubscribe();
-    };
-  }, []);
-
-  useEffect(() => {
-    (async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) await flushGuestDecisions();
-    })();
-  }, []);
-
-  const getGuestDecisions = (): { video_id: number; decision_type: 'like' | 'nope'; created_at: string }[] => {
+  const getGuestDecisions = useCallback((): { video_id: number; decision_type: 'like' | 'nope'; created_at: string }[] => {
     try {
-      const raw = localStorage.getItem('guest_decisions_v1');
+      const raw = typeof window !== 'undefined' ? localStorage.getItem('guest_decisions_v1') : null;
       const arr = raw ? JSON.parse(raw) : [];
       return Array.isArray(arr) ? arr : [];
     } catch {
       return [];
     }
-  };
+  }, []);
 
-  const setGuestDecisions = (arr: { video_id: number; decision_type: 'like' | 'nope'; created_at: string }[]) => {
+  const setGuestDecisions = useCallback((arr: { video_id: number; decision_type: 'like' | 'nope'; created_at: string }[]) => {
     localStorage.setItem('guest_decisions_v1', JSON.stringify(arr));
-  };
+  }, []);
 
-  const flushGuestDecisions = async () => {
+  const flushGuestDecisions = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
     const items = getGuestDecisions();
@@ -174,7 +146,27 @@ export default function Home() {
       }
     }
     setGuestDecisions([]);
-  };
+  }, [getGuestDecisions, setGuestDecisions, supabase.auth, supabase.from]);
+
+  useEffect(() => {
+    const { data: authListener } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      const loggedIn = !!session?.user;
+      setIsLoggedIn(loggedIn);
+      if (loggedIn) {
+        await flushGuestDecisions();
+      }
+    });
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
+  }, [flushGuestDecisions, supabase.auth]);
+
+  useEffect(() => {
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) await flushGuestDecisions();
+    })();
+  }, [flushGuestDecisions, supabase.auth]);
 
   const handleSwipe = async (direction: 'left' | 'right') => {
     if (activeCard) {

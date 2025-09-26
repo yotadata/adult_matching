@@ -88,7 +88,7 @@ export default function LikesPage() {
       }
     };
     run();
-  }, [params]);
+  }, [q, sort, order, priceMin, priceMax, dateFrom, dateTo, page]);
 
   if (isLoggedIn === false) {
     return (

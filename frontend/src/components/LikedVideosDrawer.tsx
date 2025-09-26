@@ -132,7 +132,7 @@ const LikedVideosDrawer: React.FC<LikedVideosDrawerProps> = ({ isOpen, onClose }
     };
 
     fetchLikedVideos();
-  }, [depsKey]);
+  }, [isOpen, sort, order, selectedTagIds, selectedPerformerIds]);
 
   // ここではオーバーレイは常時クリック可能とし、パネル側で stopPropagation して外側判定を防ぐ。
 

@@ -15,7 +15,6 @@ try {
       // Do not throw to avoid breaking the app completely, but log loudly.
       // Mixed content will block network requests and appear as "no request fired" in DevTools.
       // Fix by setting NEXT_PUBLIC_SUPABASE_URL to https.
-      // eslint-disable-next-line no-console
       console.error('[Supabase] Mixed content: page over HTTPS but NEXT_PUBLIC_SUPABASE_URL is HTTP. Update env to use https://');
     }
   }

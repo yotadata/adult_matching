@@ -13,13 +13,11 @@ const DecisionCountContext = createContext<DecisionCountContextType | undefined>
 export const DecisionCountProvider = ({ children }: { children: React.ReactNode }) => {
   const [decisionCount, setDecisionCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   const loadDecisionCount = useCallback(async () => {
     setIsLoading(true);
     const { data: { session } } = await supabase.auth.getSession();
     const loggedIn = Boolean(session?.user);
-    setIsLoggedIn(loggedIn);
 
     if (!loggedIn) {
       try {
@@ -42,7 +40,6 @@ export const DecisionCountProvider = ({ children }: { children: React.ReactNode 
   useEffect(() => {
     loadDecisionCount();
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-      setIsLoggedIn(Boolean(session?.user));
       loadDecisionCount();
     });
     return () => {

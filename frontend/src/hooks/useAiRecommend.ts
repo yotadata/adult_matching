@@ -28,11 +28,11 @@ export function useAiRecommend() {
         const { data: { session } } = await supabase.auth.getSession();
         const headers: HeadersInit = {};
         if (session?.access_token) headers.Authorization = `Bearer ${session.access_token}`;
-        const { data: body, error } = await supabase.functions.invoke('ai-recommend', { headers });
+        const { data: body, error } = await supabase.functions.invoke<AiRecommendResponse>('ai-recommend', { headers });
         if (error) throw error;
-        setData(body as AiRecommendResponse);
-      } catch (e: any) {
-        setError(e?.message || '取得に失敗しました');
+        setData(body);
+      } catch (e: unknown) {
+        setError((e instanceof Error) ? e.message : '取得に失敗しました');
       } finally {
         setLoading(false);
       }

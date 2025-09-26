@@ -4,7 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import { Home as HomeIcon, Sparkles, BarChart2, Brain, User, UserPlus, LogOut } from 'lucide-react';
+import { Home as HomeIcon, Sparkles, BarChart2, Brain, UserPlus, LogOut } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { forceClearSupabaseAuth } from '@/lib/authUtils';
 import { useDecisionCount } from '@/hooks/useDecisionCount';
@@ -15,7 +15,7 @@ export default function DesktopSidebar() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const { decisionCount } = useDecisionCount();
   const personalizeTarget = Number(process.env.NEXT_PUBLIC_PERSONALIZE_TARGET || 20);
-  const isHome = pathname === '/';
+  
   const nonHomeGradient = 'linear-gradient(90deg, #ADB4E3 0%, #C8BAE3 33.333%, #F7BECE 66.666%, #F9B1C4 100%)';
 
   useEffect(() => {
