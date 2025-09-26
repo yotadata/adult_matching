@@ -35,7 +35,7 @@ export default function PersonalityHeader() {
       <Link href="/personality" className={navLinkClasses('/personality', isMobile)}>
         診断テスト
       </Link>
-      <Link href="#" className={navLinkClasses('/personality/types', isMobile) + ' cursor-not-allowed opacity-50'}>
+      <Link href="/personality/types" className={navLinkClasses('/personality/types', isMobile)}>
         性癖タイプ
       </Link>
       {resultType && (
