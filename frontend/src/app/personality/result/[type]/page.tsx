@@ -37,7 +37,7 @@ export default function ResultPage() {
 
         <div className="mt-10 flex flex-col sm:flex-row gap-4">
           <Link 
-            href="/personality/questions"
+            href="/personality"
             className="w-full sm:w-auto px-8 py-3 rounded-full bg-white text-gray-900 font-bold shadow-lg hover:bg-gray-200 transition-all duration-300 transform hover:scale-105"
           >
             もう一度診断する
