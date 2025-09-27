@@ -1,3 +1,7 @@
 node_modules/
 .env.local
 .env.remote
+.env.production
+.spec-workflow/
+.serena/
+.pytest_cache/

@@ -1,0 +1,10 @@
+{
+  "model_type": "two_tower_768",
+  "embedding_dim": 768,
+  "trained_at": "2025-09-24T11:18:06.855329",
+  "num_users": 102,
+  "num_items": 10000,
+  "epochs": 10,
+  "batch_size": 128,
+  "learning_rate": 0.001
+}

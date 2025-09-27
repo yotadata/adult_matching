@@ -1,0 +1,1874 @@
+[
+  {
+    "user_id": "8ca652dd-8e2b-4b34-9722-692156c6dbe8",
+    "video_id": "88e3cb32-4198-4dda-bbb8-02a56978678f",
+    "decision_type": "like",
+    "created_at": "2025-07-25T00:47:26",
+    "original_rating": 5.0,
+    "original_reviewer_id": "61490",
+    "original_content_id": "juq00834"
+  },
+  {
+    "user_id": "8ca652dd-8e2b-4b34-9722-692156c6dbe8",
+    "video_id": "42aaeaeb-1a9a-4664-9b75-ece8925b0a5e",
+    "decision_type": "like",
+    "created_at": "2025-07-25T00:44:56",
+    "original_rating": 5.0,
+    "original_reviewer_id": "61490",
+    "original_content_id": "roe00273"
+  },
+  {
+    "user_id": "d821bb7c-d14b-4c00-8336-ccaa2e57a675",
+    "video_id": "58149401-1f2d-488a-8f88-b473dd9f027e",
+    "decision_type": "like",
+    "created_at": "2025-07-06T18:48:30",
+    "original_rating": 5.0,
+    "original_reviewer_id": "122508",
+    "original_content_id": "ndra00120"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "535c08fe-fa60-4562-82d1-17b8d4a55c6d",
+    "decision_type": "like",
+    "created_at": "2025-09-02T15:25:32",
+    "original_rating": 5.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "5664mbrbi00010"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "7e19e6cb-cd91-420a-8e83-7eeca40fdd64",
+    "decision_type": "like",
+    "created_at": "2025-08-10T03:34:43",
+    "original_rating": 5.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "sone00791"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "2671501f-8cb9-47fe-9a07-d778965aff59",
+    "decision_type": "like",
+    "created_at": "2025-08-09T03:06:16",
+    "original_rating": 4.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "sone00870"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "e9440dd6-cba6-4923-ae84-b31129148af7",
+    "decision_type": "like",
+    "created_at": "2025-08-06T14:15:56",
+    "original_rating": 4.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "sone00808"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "a5929239-1dc3-4d7f-816f-8ad1b6a6b50d",
+    "decision_type": "like",
+    "created_at": "2025-08-06T13:34:09",
+    "original_rating": 4.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "jur00410"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "c990a966-c3be-4927-b7a6-661ffee9501e",
+    "decision_type": "like",
+    "created_at": "2025-08-06T13:10:40",
+    "original_rating": 5.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "5642reisv00033"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "d1dc6fcb-61c6-4db6-8c3a-a6813a7eb5d0",
+    "decision_type": "like",
+    "created_at": "2025-08-03T04:57:40",
+    "original_rating": 4.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "mikr00025"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "bf58cf11-3efb-481a-9d3e-b62122d7fcb3",
+    "decision_type": "like",
+    "created_at": "2025-08-03T04:18:17",
+    "original_rating": 5.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "cawd00853"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "2221e8a2-8307-44f2-b2a9-7f72143e2e2e",
+    "decision_type": "nope",
+    "created_at": "2025-07-18T15:08:07",
+    "original_rating": 3.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "sone00566"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "83097dc1-b4b2-4137-b812-20feb349eaa3",
+    "decision_type": "nope",
+    "created_at": "2025-07-07T15:35:01",
+    "original_rating": 3.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "cawd00849"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "90213ca7-464b-4598-8e5f-0845273abeb9",
+    "decision_type": "nope",
+    "created_at": "2025-07-07T15:21:33",
+    "original_rating": 3.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "mifd00609"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "cb817c3a-4742-4500-996b-2fb78617c783",
+    "decision_type": "like",
+    "created_at": "2025-07-04T16:56:28",
+    "original_rating": 5.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "sone00790"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "c7b7f6c4-4eaa-43e0-8c18-20768cfa69b4",
+    "decision_type": "like",
+    "created_at": "2025-07-02T21:15:35",
+    "original_rating": 5.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "cawd00845"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "7a4630a7-a4ba-44dd-9601-c3f2d42c3933",
+    "decision_type": "nope",
+    "created_at": "2025-06-20T13:42:03",
+    "original_rating": 3.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "sone00563"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "2af0c4ff-e306-4186-a41f-b0cd10108a73",
+    "decision_type": "like",
+    "created_at": "2025-06-08T11:53:39",
+    "original_rating": 4.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "same00169"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "3f0c701b-80f3-4354-b8ce-1b1f84948124",
+    "decision_type": "like",
+    "created_at": "2025-06-06T02:15:08",
+    "original_rating": 4.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "sone00752"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "25ddc8df-86d7-4b8c-9e79-17a55f237d14",
+    "decision_type": "like",
+    "created_at": "2025-06-03T05:46:02",
+    "original_rating": 5.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "tek00102"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "65908309-47d3-45f1-94a7-74a01d3639e8",
+    "decision_type": "like",
+    "created_at": "2025-06-02T13:43:57",
+    "original_rating": 5.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "cawd00827"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "ca9cd62b-9a3b-40e8-8329-09fc1de50d09",
+    "decision_type": "nope",
+    "created_at": "2025-05-31T09:20:10",
+    "original_rating": 3.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "mifd00598"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "77a3ed50-160b-4573-a50b-8b2dee89b275",
+    "decision_type": "like",
+    "created_at": "2025-05-31T08:37:05",
+    "original_rating": 4.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "mimk00193"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "d5a55443-f04d-4c9e-9ca2-eb503d301bda",
+    "decision_type": "like",
+    "created_at": "2025-05-31T07:36:43",
+    "original_rating": 4.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "mida00189"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "aa0a8ac6-4422-4951-bb9f-b6adb464b6b6",
+    "decision_type": "nope",
+    "created_at": "2025-05-24T03:54:50",
+    "original_rating": 3.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "sone00564"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "ffe8a816-a91f-4bdf-a99f-1638316ade7c",
+    "decision_type": "like",
+    "created_at": "2025-05-22T02:23:50",
+    "original_rating": 4.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "pred00759"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "d969a6bc-7f06-453a-a125-853a7c5a8e99",
+    "decision_type": "nope",
+    "created_at": "2025-05-15T13:07:23",
+    "original_rating": 3.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "mida00144"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "9820da30-7cf6-480e-82d2-88892d521adc",
+    "decision_type": "like",
+    "created_at": "2025-05-15T12:50:53",
+    "original_rating": 4.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "jbd00303"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "d31c1c51-c162-48db-86af-78aa887486c1",
+    "decision_type": "nope",
+    "created_at": "2025-05-09T05:17:08",
+    "original_rating": 3.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "5389prian00022"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "2da40759-09d7-4587-b296-4a27619f0b58",
+    "decision_type": "like",
+    "created_at": "2025-05-09T02:47:15",
+    "original_rating": 5.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "sone00714"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "969e0605-f012-40b4-b2e2-5cc80a1b4dd0",
+    "decision_type": "like",
+    "created_at": "2025-05-05T03:45:09",
+    "original_rating": 4.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "cawd00817"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "a62611ab-1f25-40bb-b4ce-6dc14486112c",
+    "decision_type": "like",
+    "created_at": "2025-05-05T03:10:35",
+    "original_rating": 4.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "waaa00517"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "63ebeb4c-f374-40c7-ad7a-3634c5b8c6a7",
+    "decision_type": "like",
+    "created_at": "2025-04-23T07:11:56",
+    "original_rating": 4.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "sone00685"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "2024ac0d-d42a-46e2-bb4f-6e73f3acbf66",
+    "decision_type": "like",
+    "created_at": "2025-04-20T01:20:47",
+    "original_rating": 4.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "cjod00464"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "60b29efc-901e-46ef-844a-fefcdd109da3",
+    "decision_type": "nope",
+    "created_at": "2025-04-13T05:04:45",
+    "original_rating": 3.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "atid00627"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "7d662bbf-75e0-4528-af9d-52bc63e40476",
+    "decision_type": "like",
+    "created_at": "2025-04-13T04:16:32",
+    "original_rating": 4.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "ebwh00214"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "8194fe57-61a2-4bd0-b107-10c91a05078f",
+    "decision_type": "like",
+    "created_at": "2025-04-08T17:22:51",
+    "original_rating": 5.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "jur00272"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "46086319-29cd-4233-ae6c-dc86dce8f132",
+    "decision_type": "like",
+    "created_at": "2025-04-08T04:15:02",
+    "original_rating": 4.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "cawd00808"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "1f334108-6f4a-497f-b83b-d56df12bfa5a",
+    "decision_type": "like",
+    "created_at": "2025-04-05T00:05:26",
+    "original_rating": 4.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "sone00561"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "89c62660-1eb5-4f54-baef-85026b3e5ed2",
+    "decision_type": "like",
+    "created_at": "2025-04-04T02:46:42",
+    "original_rating": 5.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "sone00676"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "a608c206-85b9-4476-b2db-9551a1a48631",
+    "decision_type": "nope",
+    "created_at": "2025-04-02T04:11:03",
+    "original_rating": 3.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "h_1799mera00003"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "e580e75b-f6ee-4e4b-8f94-56216a1c863b",
+    "decision_type": "like",
+    "created_at": "2025-03-22T04:15:42",
+    "original_rating": 4.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "hmn00686"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "58912e7c-f7f6-467e-a378-e38bf6cf068c",
+    "decision_type": "like",
+    "created_at": "2025-03-18T05:09:59",
+    "original_rating": 4.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "mida00082"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "8b072f22-4a38-40c8-8942-370f9c9443d9",
+    "decision_type": "like",
+    "created_at": "2025-03-18T04:13:29",
+    "original_rating": 4.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "sone00634"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "ea8b13aa-fb56-483e-945e-d320af772c63",
+    "decision_type": "like",
+    "created_at": "2025-03-13T19:38:54",
+    "original_rating": 4.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "1okb00171"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "0ac116ed-fca1-4dc2-8227-c4549ae1d300",
+    "decision_type": "like",
+    "created_at": "2025-03-07T15:25:37",
+    "original_rating": 4.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "sone00562"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "10a29705-c17c-425f-b4ca-69dce5b2f083",
+    "decision_type": "like",
+    "created_at": "2025-03-07T03:04:44",
+    "original_rating": 5.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "sone00632"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "6e1ff6b3-57f0-4a1a-b2d1-9c2ecfb9ef09",
+    "decision_type": "nope",
+    "created_at": "2025-03-04T15:47:16",
+    "original_rating": 3.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "venz00043"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "3d2b0aa0-8003-456a-ba45-b0c1946b9a37",
+    "decision_type": "like",
+    "created_at": "2025-03-02T04:51:08",
+    "original_rating": 5.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "cawd00799"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "0df5454d-f19d-4daa-bdcd-b74081537ffe",
+    "decision_type": "like",
+    "created_at": "2025-03-01T00:35:58",
+    "original_rating": 4.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "homa00150"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "a95002db-f87f-4505-bde3-468cf558f59c",
+    "decision_type": "like",
+    "created_at": "2025-02-26T14:46:21",
+    "original_rating": 5.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "sone00606"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "910f65d6-8151-4976-9c51-7245d93022a8",
+    "decision_type": "like",
+    "created_at": "2025-02-25T05:41:51",
+    "original_rating": 4.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "jur00190"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "53d29a2e-00a8-4600-8797-4d7b3fa696a6",
+    "decision_type": "like",
+    "created_at": "2025-02-24T03:38:54",
+    "original_rating": 5.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "sone00641"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "b04b3ea7-f8db-40e8-b38a-3b4b03e72042",
+    "decision_type": "like",
+    "created_at": "2025-02-23T05:00:09",
+    "original_rating": 4.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "sone00610"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "c63ef2b4-b54c-4a97-a3ca-e3be4ab2fb18",
+    "decision_type": "like",
+    "created_at": "2025-02-22T22:12:45",
+    "original_rating": 5.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "dass00576"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "c057d5e4-fb4b-47c4-a6e2-013874db2c9a",
+    "decision_type": "like",
+    "created_at": "2025-02-19T12:00:29",
+    "original_rating": 5.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "atid00622"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "3a9133ba-415e-4b6f-b1b5-3a7aa7843b0a",
+    "decision_type": "like",
+    "created_at": "2025-02-16T00:03:58",
+    "original_rating": 4.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "genu00017"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "208413ff-f8c5-4ef4-8dd1-35d34221a106",
+    "decision_type": "like",
+    "created_at": "2025-02-07T14:40:35",
+    "original_rating": 5.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "sone00586"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "908ae94f-b8de-413f-89bc-d1c6828a1019",
+    "decision_type": "like",
+    "created_at": "2025-02-05T13:52:29",
+    "original_rating": 4.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "cawd00796"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "bb5b667d-bab4-4aa7-9d7f-7c214967bcb3",
+    "decision_type": "like",
+    "created_at": "2025-02-04T14:58:33",
+    "original_rating": 4.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "h_706higr00070b"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "d7fe8acc-b1a8-4d21-a028-454d81a654ee",
+    "decision_type": "like",
+    "created_at": "2025-02-04T13:59:46",
+    "original_rating": 4.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "cawd00780"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "c229bad0-c7fc-4c7f-8463-e1fd3f4b2633",
+    "decision_type": "like",
+    "created_at": "2025-02-03T04:11:09",
+    "original_rating": 4.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "miab00437"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "deff9272-7257-4361-8c4f-d29109a7c14b",
+    "decision_type": "like",
+    "created_at": "2025-01-25T05:16:37",
+    "original_rating": 4.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "sone00565"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "b859c4d1-ed0c-483e-b370-1a46dd7b9dd6",
+    "decision_type": "like",
+    "created_at": "2025-01-21T18:43:39",
+    "original_rating": 4.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "sone00532"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "a8bb1f5f-a262-4e64-b1bc-c9fb4d4fef34",
+    "decision_type": "like",
+    "created_at": "2025-01-18T06:48:43",
+    "original_rating": 4.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "jur00179"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "770eea6f-9d58-4bd2-b529-c1ca97927b05",
+    "decision_type": "like",
+    "created_at": "2025-01-18T05:37:46",
+    "original_rating": 4.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "hsoda00056"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "9664bd55-18de-4785-93d9-d219abbecf4d",
+    "decision_type": "like",
+    "created_at": "2025-01-17T02:04:36",
+    "original_rating": 4.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "apns00361"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "b4953a09-9b75-45ae-9c08-aab3867f3506",
+    "decision_type": "like",
+    "created_at": "2025-01-16T06:10:53",
+    "original_rating": 4.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "cemd00620"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "d79561ef-7576-403b-b6e5-251c0cfbb527",
+    "decision_type": "like",
+    "created_at": "2025-01-15T02:18:47",
+    "original_rating": 5.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "cawd00762"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "503ed27b-1bb7-4ddc-9588-4f306fbcaf71",
+    "decision_type": "like",
+    "created_at": "2025-01-10T13:35:09",
+    "original_rating": 5.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "sone00521"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "d86e0492-4216-47cb-a099-a53807cda80f",
+    "decision_type": "like",
+    "created_at": "2025-01-09T02:11:24",
+    "original_rating": 4.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "adn00648"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "b3ab38d7-3da4-4a1e-910c-2082a215327e",
+    "decision_type": "like",
+    "created_at": "2025-01-07T22:15:49",
+    "original_rating": 5.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "same00146"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "802e374c-d346-4c3f-9563-885c45bb997f",
+    "decision_type": "like",
+    "created_at": "2025-01-07T21:15:07",
+    "original_rating": 5.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "midv00974"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "6558cee6-a9f5-4e0e-99ce-c2bf167d8922",
+    "decision_type": "like",
+    "created_at": "2025-01-06T00:56:33",
+    "original_rating": 5.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "same00138"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "845a92f2-e537-4d00-b999-64a114b8b943",
+    "decision_type": "like",
+    "created_at": "2025-01-04T03:37:21",
+    "original_rating": 4.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "ipzz00436"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "dfb23e32-c785-4fa9-b693-092eecfc9876",
+    "decision_type": "nope",
+    "created_at": "2025-01-03T02:12:03",
+    "original_rating": 3.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "5664mbrbi00005"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "c2a40bd5-b8b9-4ea1-b64e-d30e2267d207",
+    "decision_type": "like",
+    "created_at": "2025-01-02T01:07:43",
+    "original_rating": 5.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "pppe00293"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "dcfa6023-eb6c-40e6-a93f-edd8d5ba0819",
+    "decision_type": "like",
+    "created_at": "2024-12-31T14:00:10",
+    "original_rating": 4.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "sone00486"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "f5cd703b-50be-4e39-8184-47f2f2a9a9c5",
+    "decision_type": "nope",
+    "created_at": "2024-12-28T01:31:03",
+    "original_rating": 3.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "h_706higr00069b"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "4f9afc3f-1913-46c3-aa91-3701fc90b635",
+    "decision_type": "like",
+    "created_at": "2024-12-28T01:19:11",
+    "original_rating": 5.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "sone00511"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "6c954176-d3f0-487f-b657-77674691bc1b",
+    "decision_type": "like",
+    "created_at": "2024-12-25T16:25:36",
+    "original_rating": 5.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "sone00487"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "b724cafb-48e9-4a12-bf80-720c0e3d6594",
+    "decision_type": "nope",
+    "created_at": "2024-12-25T03:52:54",
+    "original_rating": 3.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "huntc00297"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "50018724-2a16-4a9c-9463-d5f91f319636",
+    "decision_type": "like",
+    "created_at": "2024-12-25T03:25:50",
+    "original_rating": 4.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "huntc00296"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "2686315d-00d1-4de6-8f37-a4269baa7753",
+    "decision_type": "nope",
+    "created_at": "2024-12-25T02:13:37",
+    "original_rating": 3.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "5013tsds42918"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "9ab09368-08bf-4e62-ad6e-82a93cc9b8d8",
+    "decision_type": "nope",
+    "created_at": "2024-12-25T01:50:16",
+    "original_rating": 3.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "sone00498"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "382d8994-6b3b-4bf6-8bff-26a5a6eb1ed7",
+    "decision_type": "like",
+    "created_at": "2024-12-23T14:38:08",
+    "original_rating": 4.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "miab00384"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "1c61f1f7-312e-480a-8414-193c0884bdfb",
+    "decision_type": "like",
+    "created_at": "2024-12-23T14:19:06",
+    "original_rating": 4.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "jur00116"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "9b7ddd5e-e7ee-4fdd-8bdb-06cd48685672",
+    "decision_type": "like",
+    "created_at": "2024-12-21T04:40:41",
+    "original_rating": 4.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "cawd00771"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "fb36a241-bb8a-4249-ac94-4c829757e309",
+    "decision_type": "like",
+    "created_at": "2024-12-17T04:02:46",
+    "original_rating": 5.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "hmn00647"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "5fd9899b-e8a4-4048-983c-b28e4d961579",
+    "decision_type": "like",
+    "created_at": "2024-12-13T03:01:28",
+    "original_rating": 5.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "ngod00242"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "d2267b49-10bc-4805-87ad-9e64fb40d993",
+    "decision_type": "like",
+    "created_at": "2024-12-12T08:29:44",
+    "original_rating": 5.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "sone00560"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "865d3943-9eb5-4872-aae1-74ba69a09c71",
+    "decision_type": "like",
+    "created_at": "2024-12-06T12:29:22",
+    "original_rating": 5.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "sone00492"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "6e803bae-2e99-49e6-9bc9-a1b230103a19",
+    "decision_type": "nope",
+    "created_at": "2024-12-05T13:35:16",
+    "original_rating": 3.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "same00137"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "819791ac-fad5-43c5-960e-f8047b2ac0f3",
+    "decision_type": "like",
+    "created_at": "2024-12-02T16:18:17",
+    "original_rating": 5.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "cawd00749"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "b423f3dd-6c8d-4597-b86f-6b6e79ef8e30",
+    "decision_type": "like",
+    "created_at": "2024-11-27T22:03:04",
+    "original_rating": 5.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "apak00292"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "7a154752-7f4a-4fc8-b086-055b2012e619",
+    "decision_type": "like",
+    "created_at": "2024-11-26T04:50:30",
+    "original_rating": 5.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "sone00450"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "326765cc-3054-4145-9cbe-96eb9892950a",
+    "decision_type": "like",
+    "created_at": "2024-11-25T15:20:42",
+    "original_rating": 4.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "5642hodv21918"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "e3d8ade2-8545-49fd-894a-24d062c3c222",
+    "decision_type": "like",
+    "created_at": "2024-11-25T14:44:02",
+    "original_rating": 5.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "royd00210"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "fdd66223-4ee8-4018-a92d-f2838c4b53c2",
+    "decision_type": "like",
+    "created_at": "2024-11-21T12:25:25",
+    "original_rating": 5.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "pred00717"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "aee3e5e1-e264-444d-a82c-bb31fef1b056",
+    "decision_type": "like",
+    "created_at": "2024-11-20T13:32:15",
+    "original_rating": 4.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "ebwh00156"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "f27f273f-9dc0-44a1-8f00-c6d9a11a7668",
+    "decision_type": "like",
+    "created_at": "2024-11-20T13:12:50",
+    "original_rating": 5.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "ebwh00169"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "6d3c8fc3-648e-4eb2-bc9a-4d9ad64d7d2c",
+    "decision_type": "nope",
+    "created_at": "2024-11-16T06:07:37",
+    "original_rating": 2.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "sone00394"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "5276b8cf-80a9-47c7-8b50-f964e8418a5c",
+    "decision_type": "nope",
+    "created_at": "2024-11-16T05:51:46",
+    "original_rating": 2.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "sone00445"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "e2de5a57-57da-443b-b8f8-a2382b4eea01",
+    "decision_type": "nope",
+    "created_at": "2024-11-14T04:52:22",
+    "original_rating": 2.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "dass00489"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "9d57810f-10e7-445b-a015-6a629a322079",
+    "decision_type": "nope",
+    "created_at": "2024-11-13T00:02:08",
+    "original_rating": 3.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "ipzz00404"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "1dd98761-6ad1-4517-917a-eeb04cc10323",
+    "decision_type": "like",
+    "created_at": "2024-11-12T20:30:56",
+    "original_rating": 4.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "juq00993"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "30da8102-1f2b-4954-8bf1-2799e1d84bb9",
+    "decision_type": "like",
+    "created_at": "2024-11-12T19:42:16",
+    "original_rating": 5.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "sone00468"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "01b90714-efa1-4638-8af5-3903289d78c3",
+    "decision_type": "like",
+    "created_at": "2024-11-12T06:25:30",
+    "original_rating": 4.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "sone00431"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "8bd4f004-a558-4db0-81c8-0ed617ab530a",
+    "decision_type": "like",
+    "created_at": "2024-11-11T04:26:22",
+    "original_rating": 4.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "apgh00025"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "0fc1c5fc-b562-49ec-ab85-9b22fbd525ed",
+    "decision_type": "nope",
+    "created_at": "2024-11-11T04:11:51",
+    "original_rating": 3.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "dvmm00143"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "eb4aacdd-f1ef-4d2e-9231-7071fd4ecc0f",
+    "decision_type": "nope",
+    "created_at": "2024-11-10T05:01:10",
+    "original_rating": 3.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "1fsfst00002"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "1f868e6f-4b43-4f02-ae12-96a6fb6db4b5",
+    "decision_type": "like",
+    "created_at": "2024-11-10T04:30:20",
+    "original_rating": 5.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "juq00970"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "cba9824f-4879-4ecb-ac7d-37ddb9eab528",
+    "decision_type": "nope",
+    "created_at": "2024-11-10T02:42:33",
+    "original_rating": 3.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "gvh00697"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "c63347e4-a342-4703-bc2a-6c3652b65f2a",
+    "decision_type": "like",
+    "created_at": "2024-11-10T02:12:29",
+    "original_rating": 4.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "dass00518"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "464b3326-b89a-4aae-8982-63a0428cfe0b",
+    "decision_type": "like",
+    "created_at": "2024-11-08T16:39:24",
+    "original_rating": 4.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "adn00630"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "ad39ddc8-e3f2-47d7-b08b-dbd5d7201811",
+    "decision_type": "nope",
+    "created_at": "2024-11-08T16:08:41",
+    "original_rating": 3.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "atid00614"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "e41bf2f8-d4e9-4f35-807e-1353ffb95987",
+    "decision_type": "like",
+    "created_at": "2024-11-08T12:32:01",
+    "original_rating": 5.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "mifd00543"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "0f4094e8-94ae-4055-9d09-0d9d2a2eafc0",
+    "decision_type": "like",
+    "created_at": "2024-11-08T12:19:51",
+    "original_rating": 4.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "midv00905"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "a941356e-5552-4cfc-b346-a0f2c9834577",
+    "decision_type": "like",
+    "created_at": "2024-11-08T11:02:44",
+    "original_rating": 4.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "sone00399"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "d36478db-d844-4a8c-a3f6-6b0180672766",
+    "decision_type": "like",
+    "created_at": "2024-11-07T15:19:15",
+    "original_rating": 5.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "mikr00002"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "ce982b1c-b9d6-420d-bf3c-f471f4ac8eba",
+    "decision_type": "like",
+    "created_at": "2024-11-06T15:42:20",
+    "original_rating": 4.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "cawd00752"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "87cab779-a2e5-4466-aaa2-2520b474bbfe",
+    "decision_type": "nope",
+    "created_at": "2024-11-05T15:54:07",
+    "original_rating": 3.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "ipzz00349"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "91c39bca-c052-44fd-8bd6-f67eb2081cd9",
+    "decision_type": "like",
+    "created_at": "2024-11-05T15:43:38",
+    "original_rating": 5.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "cawd00753"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "247aeda6-5977-4ba3-a505-410952245a4a",
+    "decision_type": "like",
+    "created_at": "2024-11-05T15:23:17",
+    "original_rating": 5.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "cawd00740"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "e9cd72ac-e763-4d00-a37c-0a8bdd546a0c",
+    "decision_type": "like",
+    "created_at": "2024-11-05T05:41:00",
+    "original_rating": 5.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "mird00245"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "9fe71378-ebf1-4520-804e-780f2226f7ac",
+    "decision_type": "like",
+    "created_at": "2024-11-05T04:16:50",
+    "original_rating": 4.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "midv00908"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "114236ba-3a92-4c6e-a255-3620aea758a3",
+    "decision_type": "like",
+    "created_at": "2024-11-04T04:32:18",
+    "original_rating": 5.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "pred00715"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "e083b7a9-b454-4566-bf62-18d12571dff2",
+    "decision_type": "like",
+    "created_at": "2024-11-02T21:14:56",
+    "original_rating": 5.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "sone00408"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "fb66f8b7-5ed0-4c65-a835-a0fc45a12c83",
+    "decision_type": "like",
+    "created_at": "2024-11-02T20:25:59",
+    "original_rating": 5.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "juq00893"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "ee9ce43f-8bc4-4704-b908-b6b5ae653128",
+    "decision_type": "nope",
+    "created_at": "2024-11-02T06:06:09",
+    "original_rating": 3.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "5050mbrba00124"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "968fb785-571c-4a1b-897d-5def3378ee7a",
+    "decision_type": "like",
+    "created_at": "2024-11-02T05:47:05",
+    "original_rating": 4.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "achj00051"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "653fd8aa-db9f-4b41-bf39-f0bb40df344f",
+    "decision_type": "like",
+    "created_at": "2024-11-02T05:27:13",
+    "original_rating": 4.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "rbk00100"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "42aaeaeb-1a9a-4664-9b75-ece8925b0a5e",
+    "decision_type": "like",
+    "created_at": "2024-11-01T17:38:23",
+    "original_rating": 5.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "roe00273"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "aaf81fd4-4283-46c7-ab84-2cd067d76179",
+    "decision_type": "like",
+    "created_at": "2024-11-01T04:53:08",
+    "original_rating": 5.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "h_722cand01233"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "5a5e02ab-a2f4-4890-8c78-7afcb4f918ed",
+    "decision_type": "like",
+    "created_at": "2024-11-01T04:41:12",
+    "original_rating": 4.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "sone00404"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "881eb3c7-a8de-409b-a4d8-9992fb222dd8",
+    "decision_type": "nope",
+    "created_at": "2024-10-30T06:23:14",
+    "original_rating": 3.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "pppe00264"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "13d2f68a-bd0b-4935-9ad1-4ba83c8bf3cb",
+    "decision_type": "nope",
+    "created_at": "2024-10-30T06:04:57",
+    "original_rating": 3.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "miab00289"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "31f5f361-d0b5-43ff-b533-c73321f6297c",
+    "decision_type": "like",
+    "created_at": "2024-10-30T05:48:10",
+    "original_rating": 4.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "midv00924"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "ab55d2e0-491a-45f7-bb26-3c1997def8c1",
+    "decision_type": "like",
+    "created_at": "2024-10-28T23:52:46",
+    "original_rating": 4.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "1dldss00346"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "19869bd5-8b1b-491b-9435-66fe62d05af9",
+    "decision_type": "like",
+    "created_at": "2024-10-28T23:34:01",
+    "original_rating": 5.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "apak00289"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "e023e6a8-9c5b-4349-ac6a-c0db93c32d8b",
+    "decision_type": "nope",
+    "created_at": "2024-10-27T17:24:03",
+    "original_rating": 3.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "1sw00966"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "0b0fe298-1162-4fc7-be26-128c15a2307c",
+    "decision_type": "nope",
+    "created_at": "2024-10-27T17:06:12",
+    "original_rating": 3.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "scpx00511"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "0a16b9a5-1588-45a2-b6db-e3fae5b71f14",
+    "decision_type": "like",
+    "created_at": "2024-10-27T03:20:52",
+    "original_rating": 5.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "juq00948"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "5799d1f0-5330-43c4-9688-9de604ba2d14",
+    "decision_type": "like",
+    "created_at": "2024-10-27T03:03:24",
+    "original_rating": 4.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "1dldss00358"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "98a9ad78-7076-4e3a-8265-aaef8f52396f",
+    "decision_type": "like",
+    "created_at": "2024-10-25T21:20:18",
+    "original_rating": 4.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "midv00900"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "9e21cd11-4656-4ba3-be9f-fbbd33a2a99c",
+    "decision_type": "like",
+    "created_at": "2024-10-25T07:25:28",
+    "original_rating": 4.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "midv00895"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "836bfefa-d059-4575-a70b-9dc5b7447620",
+    "decision_type": "nope",
+    "created_at": "2024-10-25T07:06:53",
+    "original_rating": 3.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "dass00483"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "55ca29fb-43c5-4ea6-b8ae-43cd4ff97a27",
+    "decision_type": "like",
+    "created_at": "2024-10-25T06:40:16",
+    "original_rating": 4.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "hmn00597"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "9dc8b4c1-1a5d-4b0b-a3c7-c87bb83fdb79",
+    "decision_type": "like",
+    "created_at": "2024-10-24T05:53:53",
+    "original_rating": 4.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "apgh00023"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "5f91a1aa-416f-4794-8a34-90c044d0ef56",
+    "decision_type": "like",
+    "created_at": "2024-10-24T05:42:13",
+    "original_rating": 4.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "apak00288"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "fcec0515-e456-46d1-bc57-f5d57ec8ff47",
+    "decision_type": "like",
+    "created_at": "2024-10-23T04:22:14",
+    "original_rating": 4.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "sone00384"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "0528cd59-d67d-4d42-8f9a-386af391d8e0",
+    "decision_type": "like",
+    "created_at": "2024-10-23T03:11:31",
+    "original_rating": 4.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "1boko00006"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "d5782c4c-ebbd-44ea-9556-72a88fbaa3ce",
+    "decision_type": "like",
+    "created_at": "2024-10-23T02:34:29",
+    "original_rating": 5.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "sone00403"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "311ad278-df88-468b-912e-66b5bdac5c2a",
+    "decision_type": "like",
+    "created_at": "2024-10-22T04:08:17",
+    "original_rating": 5.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "hmn00625"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "6f9f3866-5ce2-4d32-b7a6-e9dcd6afb159",
+    "decision_type": "nope",
+    "created_at": "2024-10-22T03:34:18",
+    "original_rating": 3.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "mifd00535"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "99b0dfe6-9135-421c-b04e-5770669d420a",
+    "decision_type": "like",
+    "created_at": "2024-10-22T03:20:30",
+    "original_rating": 4.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "apak00290"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "4bb4efc1-3a73-4e45-ac33-6ace247d3b18",
+    "decision_type": "like",
+    "created_at": "2024-10-21T05:16:16",
+    "original_rating": 4.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "mukc00080"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "5658ec3a-00e9-4b37-8d0e-38c56b62657f",
+    "decision_type": "like",
+    "created_at": "2024-10-21T04:59:04",
+    "original_rating": 4.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "apgh00024"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "7736833e-b2c3-44dc-bf9f-735f9979c723",
+    "decision_type": "like",
+    "created_at": "2024-10-19T05:09:15",
+    "original_rating": 4.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "sone00395"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "2068f4d5-ef21-466b-bd05-5961042cd214",
+    "decision_type": "like",
+    "created_at": "2024-10-19T04:35:34",
+    "original_rating": 4.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "miab00341"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "9891e0a4-ae99-4617-b2d2-6d1fcb4472a8",
+    "decision_type": "nope",
+    "created_at": "2024-10-19T02:05:57",
+    "original_rating": 2.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "1fsdss00869"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "66495c41-9eb8-4615-8a65-c697c588e864",
+    "decision_type": "like",
+    "created_at": "2024-10-18T04:18:27",
+    "original_rating": 4.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "hmn00615"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "cf6987ea-022f-4169-8dc2-4d05c152483c",
+    "decision_type": "like",
+    "created_at": "2024-10-17T16:29:31",
+    "original_rating": 4.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "miab00328"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "ae0663eb-67c3-480d-a7bc-05fd85bf4a77",
+    "decision_type": "like",
+    "created_at": "2024-10-17T16:09:47",
+    "original_rating": 5.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "ebwh00168"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "1554bd83-a610-40a9-9c66-1ed4ed7665da",
+    "decision_type": "like",
+    "created_at": "2024-10-17T06:01:38",
+    "original_rating": 4.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "ebwh00163"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "7429f057-d13a-4868-b14b-bb2b919605b9",
+    "decision_type": "like",
+    "created_at": "2024-10-15T04:04:04",
+    "original_rating": 5.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "ipzz00386"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "b2ab63b8-45dd-4172-adb5-2f80d58a8374",
+    "decision_type": "nope",
+    "created_at": "2024-10-15T00:26:05",
+    "original_rating": 3.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "ipzz00395"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "1c752cb8-4b52-44db-bfd2-bf94207a6dce",
+    "decision_type": "like",
+    "created_at": "2024-10-15T00:04:51",
+    "original_rating": 4.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "sone00391"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "2ee11ca1-9cc2-468b-8693-790bdb52a1a9",
+    "decision_type": "nope",
+    "created_at": "2024-10-11T16:14:11",
+    "original_rating": 3.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "sone00389"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "589d5a93-ed29-4264-ad1f-b4ab522a8be0",
+    "decision_type": "like",
+    "created_at": "2024-10-11T04:02:23",
+    "original_rating": 4.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "fway00033"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "74b889ca-176c-4869-ba63-67f25c016cdb",
+    "decision_type": "like",
+    "created_at": "2024-10-11T03:45:22",
+    "original_rating": 4.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "ipzz00387"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "b486afd4-71b4-4ee5-9070-50ffc07e6662",
+    "decision_type": "like",
+    "created_at": "2024-10-11T03:20:43",
+    "original_rating": 4.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "sone00385"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "eda4c34f-3d97-4aa5-9141-100478a816ea",
+    "decision_type": "like",
+    "created_at": "2024-10-09T01:47:54",
+    "original_rating": 5.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "cawd00729"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "ee7b2d41-b02c-4837-911b-6d18af790ded",
+    "decision_type": "like",
+    "created_at": "2024-10-06T12:18:10",
+    "original_rating": 4.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "sone00387"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "7d145ccb-5af2-46ac-bee4-55b8e79d3c9e",
+    "decision_type": "like",
+    "created_at": "2024-10-04T12:37:04",
+    "original_rating": 5.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "sone00353"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "aea00923-11aa-4722-ae9c-484c83d8dc1d",
+    "decision_type": "nope",
+    "created_at": "2024-10-03T13:31:54",
+    "original_rating": 3.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "adn00622"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "429d4180-07a2-4afa-92f8-b4a9ebab0e8b",
+    "decision_type": "like",
+    "created_at": "2024-10-03T12:52:25",
+    "original_rating": 4.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "rbk00096"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "3daec14d-8645-4b88-baa1-de0d30fbdaf8",
+    "decision_type": "nope",
+    "created_at": "2024-09-30T03:52:37",
+    "original_rating": 3.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "sone00372"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "5c2db3cb-101d-4ec4-8466-9020664b6aef",
+    "decision_type": "nope",
+    "created_at": "2024-09-30T03:34:42",
+    "original_rating": 3.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "juq00875"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "4bc7cbea-6aed-4532-98e1-6b3542e105f2",
+    "decision_type": "nope",
+    "created_at": "2024-09-29T17:12:51",
+    "original_rating": 3.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "sone00366"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "5842d8c4-0dca-4a2d-924e-9c5a4bd6e049",
+    "decision_type": "like",
+    "created_at": "2024-09-25T01:26:40",
+    "original_rating": 4.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "sone00359"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "c44b05ce-0f47-40ff-90dd-c2c2dc0f0328",
+    "decision_type": "nope",
+    "created_at": "2024-09-25T01:10:33",
+    "original_rating": 3.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "sone00373"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "7012209c-f2c3-45c1-8bd4-8b5158643f2d",
+    "decision_type": "nope",
+    "created_at": "2024-09-18T12:39:38",
+    "original_rating": 3.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "ebwh00136"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "c5c5498a-d048-4bc5-bdc1-1d1345753945",
+    "decision_type": "nope",
+    "created_at": "2024-09-18T12:13:16",
+    "original_rating": 3.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "ebwh00153"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "c74d5ccd-42a9-4b35-ba6a-fcc10eabc54c",
+    "decision_type": "nope",
+    "created_at": "2024-09-15T03:47:45",
+    "original_rating": 3.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "sone00345"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "405dd198-fb2b-43b0-8cb6-a653f4efe3ca",
+    "decision_type": "like",
+    "created_at": "2024-09-10T12:20:40",
+    "original_rating": 5.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "ipzz00377"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "11652ea3-4453-43cc-bcf5-e270678dc52f",
+    "decision_type": "like",
+    "created_at": "2024-09-06T11:40:55",
+    "original_rating": 5.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "sone00305"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "437ac259-b714-407e-bf0c-9f0d0576353c",
+    "decision_type": "like",
+    "created_at": "2024-09-06T03:28:43",
+    "original_rating": 4.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "adn00604"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "785512ed-08a9-4248-94fd-e1e4977078a0",
+    "decision_type": "like",
+    "created_at": "2024-09-05T23:48:36",
+    "original_rating": 4.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "cawd00706"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "da997a39-b1a7-458f-9c30-b9cc10a4080b",
+    "decision_type": "nope",
+    "created_at": "2024-08-29T12:44:54",
+    "original_rating": 3.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "ebwh00142"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "d973a849-5016-444c-bf71-b906f86ba859",
+    "decision_type": "like",
+    "created_at": "2024-08-29T12:07:05",
+    "original_rating": 5.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "sone00317"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "ac78a5fb-8bb7-4fce-89e5-7aaaff64a74b",
+    "decision_type": "like",
+    "created_at": "2024-08-28T15:30:21",
+    "original_rating": 4.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "1dldss00328"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "6bc64e72-3e3e-428b-a552-ba5bbf90189f",
+    "decision_type": "nope",
+    "created_at": "2024-08-28T14:53:12",
+    "original_rating": 2.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "juq00818"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "ea79c3c6-9897-4cd4-b8d3-4a8055e67b6c",
+    "decision_type": "like",
+    "created_at": "2024-08-28T10:38:49",
+    "original_rating": 4.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "sone00312"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "b8315989-69f1-4b5b-a4b4-e2e13558dbcb",
+    "decision_type": "like",
+    "created_at": "2024-08-28T10:04:24",
+    "original_rating": 5.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "sone00269"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "b76fde01-36d1-4672-878f-443d12cd663f",
+    "decision_type": "like",
+    "created_at": "2024-08-26T03:51:41",
+    "original_rating": 5.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "juq00921"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "b43eb2da-376b-459e-9e8b-0f4d2349cdf7",
+    "decision_type": "nope",
+    "created_at": "2024-08-26T03:11:21",
+    "original_rating": 3.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "sone00293"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "2494cac5-e3c0-40d9-a3e4-d102d4cd323c",
+    "decision_type": "like",
+    "created_at": "2024-08-18T05:18:43",
+    "original_rating": 5.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "juq00857"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "86844e34-1a45-4cce-a30b-56581de327c3",
+    "decision_type": "like",
+    "created_at": "2024-08-18T04:39:37",
+    "original_rating": 4.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "apak00283"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "8b6d9912-f39b-4a86-bddc-abb35f9f4004",
+    "decision_type": "like",
+    "created_at": "2024-08-09T11:57:17",
+    "original_rating": 5.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "sone00262"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "89506bd7-fbfe-4bcb-91de-99cbd2a66a43",
+    "decision_type": "like",
+    "created_at": "2024-08-08T12:57:32",
+    "original_rating": 5.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "cawd00677"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "6702598e-4d56-4e9c-9d23-2d7f92aa1e44",
+    "decision_type": "like",
+    "created_at": "2024-08-08T12:29:32",
+    "original_rating": 5.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "midv00808"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "7e0cec73-d5f5-44b7-bf86-549c7db26533",
+    "decision_type": "like",
+    "created_at": "2024-08-04T06:19:36",
+    "original_rating": 5.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "cawd00688"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "b9e5052c-0b97-4d0b-b2b8-d482cda6e19a",
+    "decision_type": "like",
+    "created_at": "2024-08-04T05:47:04",
+    "original_rating": 5.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "sspd00175"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "7ee971c1-611a-4bed-b0fb-b0b8e31478d2",
+    "decision_type": "like",
+    "created_at": "2024-07-28T00:11:48",
+    "original_rating": 5.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "sone00229"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "725efd2e-8165-4dba-a386-4dae77afc2b5",
+    "decision_type": "nope",
+    "created_at": "2024-07-26T04:41:33",
+    "original_rating": 3.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "sone00268"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "95160493-d5f1-4de3-9fbf-a63b164c31fa",
+    "decision_type": "like",
+    "created_at": "2024-07-22T16:57:54",
+    "original_rating": 5.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "hmn00563"
+  },
+  {
+    "user_id": "03f18d06-e3ad-4707-8e7a-64fa2dec2519",
+    "video_id": "14157f25-9984-47b9-8046-00c617dc1ba9",
+    "decision_type": "like",
+    "created_at": "2024-07-15T15:42:28",
+    "original_rating": 4.0,
+    "original_reviewer_id": "30802",
+    "original_content_id": "ebwh00119"
+  }
+]
