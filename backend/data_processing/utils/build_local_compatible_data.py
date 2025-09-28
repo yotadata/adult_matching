@@ -17,19 +17,26 @@ from datetime import datetime
 from typing import Dict, List, Any
 from pathlib import Path
 import os
+from dotenv import load_dotenv
 
 class LocalCompatibleDataBuilder:
     def __init__(self):
-        self.supabase_url = os.getenv('NEXT_PUBLIC_SUPABASE_URL')
-        self.supabase_key = os.getenv('NEXT_PUBLIC_SUPABASE_ANON_KEY')
+        # .env.productionを読み込み
+        load_dotenv("../../../.env.production")
+
+        self.supabase_url = os.getenv('SUPABASE_URL')
+        self.supabase_key = os.getenv('SUPABASE_ANON_KEY')
+
+        print(f"Supabase URL: {self.supabase_url}")
+        print(f"接続キー確認: {'設定済み' if self.supabase_key else '未設定'}")
 
         # 出力ディレクトリ
         self.output_dir = Path("../local_compatible_data")
         self.output_dir.mkdir(exist_ok=True)
 
         # データディレクトリ
-        self.processed_data_dir = Path("../processed_data")
-        self.converted_data_dir = Path("../converted_data")
+        self.processed_data_dir = Path("../archive/processed_data")
+        self.converted_data_dir = Path("../archive/converted_data")
 
         # キャッシュ
         self.video_mapping = {}  # content_id -> video_info
@@ -87,7 +94,7 @@ class LocalCompatibleDataBuilder:
         while True:
             videos_url = f"{self.supabase_url}/rest/v1/videos"
             params = {
-                'select': 'id,external_id,title,thumbnail_url,price,product_released_at',
+                'select': '*',
                 'limit': limit,
                 'offset': offset
             }
@@ -121,6 +128,60 @@ class LocalCompatibleDataBuilder:
         print(f"動画データ取得完了: {len(video_mapping)}件")
 
         return video_mapping
+
+    async def fetch_video_tags(self, session: aiohttp.ClientSession) -> Dict[str, List[str]]:
+        """動画のタグ情報を取得"""
+        headers = {
+            'apikey': self.supabase_key,
+            'Authorization': f'Bearer {self.supabase_key}'
+        }
+
+        # video_id -> [tag_names] のマッピング
+        video_tags_mapping = {}
+        limit = 1000
+        offset = 0
+
+        print("動画タグデータ取得中...")
+
+        while True:
+            # video_tags と tags をJOINしてタグ名を取得
+            tags_url = f"{self.supabase_url}/rest/v1/video_tags"
+            params = {
+                'select': 'video_id,tags(name)',
+                'limit': limit,
+                'offset': offset
+            }
+
+            try:
+                async with session.get(tags_url, headers=headers, params=params) as response:
+                    if response.status == 200:
+                        video_tags = await response.json()
+                        if not video_tags:
+                            break
+
+                        for vt in video_tags:
+                            video_id = vt.get('video_id')
+                            tag_info = vt.get('tags')
+                            if video_id and tag_info:
+                                tag_name = tag_info.get('name')
+                                if video_id not in video_tags_mapping:
+                                    video_tags_mapping[video_id] = []
+                                video_tags_mapping[video_id].append(tag_name)
+
+                        offset += limit
+
+                        if len(video_tags) < limit:
+                            break
+                    else:
+                        print(f"タグ取得失敗: {response.status}")
+                        break
+
+            except Exception as e:
+                print(f"タグ取得エラー: {e}")
+                break
+
+        print(f"タグデータ取得完了: {len(video_tags_mapping)}動画分")
+        return video_tags_mapping
 
     def process_matching_reviews(self) -> List[Dict[str, Any]]:
         """マッチするレビューを処理してuser_video_decisions形式に変換"""
@@ -373,6 +434,16 @@ CREATE INDEX IF NOT EXISTS idx_videos_external_id ON public.videos_subset(extern
         print("\\n2. 動画データ取得中...")
         async with aiohttp.ClientSession() as session:
             await self.fetch_matching_videos(session)
+
+            # タグデータ取得
+            video_tags_mapping = await self.fetch_video_tags(session)
+
+            # 動画データにタグ情報を追加
+            for external_id, video_info in self.video_mapping.items():
+                if video_info['id'] in video_tags_mapping:
+                    video_info['tags'] = video_tags_mapping[video_info['id']]
+                else:
+                    video_info['tags'] = []
 
         # 3. マッチングレビュー処理
         print("\\n3. レビューマッチング処理中...")

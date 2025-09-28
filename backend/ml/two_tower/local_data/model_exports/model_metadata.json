@@ -1,0 +1,19 @@
+{
+  "model_info": {
+    "user_input_dim": 13,
+    "item_input_dim": 229,
+    "embedding_dim": 768,
+    "user_layers": 4,
+    "item_layers": 5
+  },
+  "training_info": {
+    "accuracy": 0.9786,
+    "samples": 5332,
+    "created_at": "2025-09-27T18:29:43.623885"
+  },
+  "deployment": {
+    "target": "supabase_edge_function",
+    "format": "javascript_lightweight",
+    "file_size_kb": 37874.1
+  }
+}

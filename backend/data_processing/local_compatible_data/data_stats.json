@@ -1,8 +1,8 @@
 {
-  "total_users": 5,
+  "total_users": 50,
   "total_videos": 40036,
-  "total_decisions": 208,
-  "like_decisions": 160,
-  "nope_decisions": 48,
-  "processing_time": "2025-09-27T16:06:25.997918"
+  "total_decisions": 5332,
+  "like_decisions": 4577,
+  "nope_decisions": 755,
+  "processing_time": "2025-09-27T18:29:43.623885"
 }

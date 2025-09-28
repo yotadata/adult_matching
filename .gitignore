@@ -5,3 +5,17 @@ node_modules/
 .spec-workflow/
 .serena/
 .pytest_cache/
+
+# Windows security zone identifier files
+*:Zone.Identifier
+
+# Python cache files
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+
+# Log files
+*.log
+nohup.out
