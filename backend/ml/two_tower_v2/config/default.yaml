@@ -1,0 +1,50 @@
+# Two-Tower v2 default configuration
+experiment_name: two_tower_v2_default
+seed: 42
+
+artifacts:
+  embedding_dim: 256
+  max_tag_vocab: 512
+  max_actress_vocab: 256
+  min_tag_freq: 3
+  min_actress_freq: 2
+
+training:
+  epochs: 25
+  batch_size: 256
+  lr: 0.001
+  weight_decay: 1.0e-5
+  negative_sampling_ratio: 3
+  train_val_split: 0.1
+  early_stopping_patience: 5
+  gradient_clip_norm: 5.0
+
+features:
+  numeric:
+    - account_age_days
+    - mean_price
+    - median_price
+    - like_ratio
+    - like_count
+    - nope_count
+    - decision_count
+    - recent_like_days
+  bucketized:
+    - hour_of_day
+  aggregations:
+    recency_days: {kind: numeric}
+    tag_histogram: {kind: tag}
+    actress_histogram: {kind: actress}
+
+optimizer:
+  name: adamw
+  parameters:
+    betas: [0.9, 0.999]
+    eps: 1.0e-8
+
+logging:
+  every_n_steps: 50
+
+export:
+  onnx_opset: 17
+  onnx_user_input_name: user_features
