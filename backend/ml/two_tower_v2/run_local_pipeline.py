@@ -36,6 +36,19 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--checkpoint", type=Path, default=Path("checkpoints/latest.pt"))
     parser.add_argument("--artifacts", type=Path, default=Path("artifacts"))
     parser.add_argument("--embeddings", type=Path, default=Path("artifacts/video_embeddings.parquet"))
+    parser.add_argument("--use-remote", action="store_true", help="Fetch data from Supabase before training")
+    parser.add_argument(
+        "--remote-output",
+        type=Path,
+        default=Path("tmp/remote_data"),
+        help="Directory to store fetched remote data",
+    )
+    parser.add_argument(
+        "--remote-page-size",
+        type=int,
+        default=1000,
+        help="Page size when fetching remote data",
+    )
     parser.add_argument("--skip-embeddings", action="store_true", help="Skip item embedding export")
     parser.add_argument("--skip-export", action="store_true", help="Skip ONNX + artifact export")
     return parser.parse_args()
@@ -45,17 +58,37 @@ def main() -> None:
     args = parse_args()
     project_root = Path(__file__).resolve().parent
 
+    profiles_path = Path(args.profiles)
+    videos_path = Path(args.videos)
+    decisions_path = Path(args.decisions)
+
+    if args.use_remote:
+        remote_dir = args.remote_output
+        remote_dir.mkdir(parents=True, exist_ok=True)
+        fetch_cmd = [
+            sys.executable,
+            "src/fetch_remote_data.py",
+            "--output-dir",
+            str(remote_dir),
+            "--page-size",
+            str(args.remote_page_size),
+        ]
+        run_subprocess(fetch_cmd, cwd=project_root)
+        profiles_path = remote_dir / "profiles.json"
+        videos_path = remote_dir / "videos_subset.json"
+        decisions_path = remote_dir / "user_video_decisions.json"
+
     train_cmd = [
         sys.executable,
         "src/train.py",
         "--config",
         str(args.config),
         "--profiles",
-        str(args.profiles),
+        str(profiles_path),
         "--videos",
-        str(args.videos),
+        str(videos_path),
         "--decisions",
-        str(args.decisions),
+        str(decisions_path),
         "--output-dir",
         str(Path(args.checkpoint).parent),
     ]

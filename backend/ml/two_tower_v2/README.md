@@ -38,6 +38,14 @@ python run_local_pipeline.py
 必要に応じて `--config` や入力データパスを上書きできます。エクスポートのみ/埋め込みのみをスキップしたい場合は `--skip-export` や `--skip-embeddings` オプションを指定してください。
 デフォルトでは、疑似データセットとして `backend/data_processing/local_compatible_data` 以下の JSON を参照します。
 
+本番 DB からデータを直接取得して学習する場合は `--use-remote` を付け、`SUPABASE_URL` と `SUPABASE_SERVICE_ROLE_KEY` を環境変数で指定してください（必要に応じて `--remote-output` で保存先ディレクトリ、`--remote-page-size` で取得ページサイズを変更可能）。
+
+```bash
+export SUPABASE_URL=...       # 例: https://xyz.supabase.co
+export SUPABASE_SERVICE_ROLE_KEY=...
+python run_local_pipeline.py --use-remote
+```
+
 ### 手動実行（詳細）
 
 1. 依存関係をインストール:
@@ -67,6 +75,8 @@ python run_local_pipeline.py
    ```bash
    python src/generate_embeddings.py --config config/default.yaml --checkpoint checkpoints/latest.pt --videos backend/data_processing/local_compatible_data/videos_subset.json --output artifacts/video_embeddings.parquet
    ```
+
+   Supabase 上の本番データを利用したい場合は、先に `src/fetch_remote_data.py` を実行して JSON を取得するか、`run_local_pipeline.py --use-remote` を利用してください。
 
 ## 出力される成果物
 
@@ -136,6 +146,7 @@ python run_local_pipeline.py
 1. パイプライン実行 (`run_local_pipeline.py`) と成果物生成。
 2. 任意で、Supabase Storage への成果物アップロード (`publish_artifacts` を true)。
 3. 任意で、`video_embeddings` テーブルへのベクトル upsert と HNSW インデックス再構築 (`update_embeddings` を true)。
+4. 本番データを利用した学習を行う場合は、実行時に `use_remote_data` を true にし、`SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` を Secrets に登録してください。
 
 実行前に GitHub Secrets として以下を登録してください。
 

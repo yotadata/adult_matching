@@ -11,6 +11,10 @@ on:
         description: "Upsert embeddings into Supabase database"
         type: boolean
         default: false
+      use_remote_data:
+        description: "Fetch training data from Supabase before running pipeline"
+        type: boolean
+        default: false
 
 jobs:
   train:
@@ -40,7 +44,16 @@ jobs:
 
       - name: Run training pipeline
         working-directory: backend/ml/two_tower_v2
-        run: python run_local_pipeline.py
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          set -e
+          if [ "${{ github.event.inputs.use_remote_data }}" = "true" ]; then
+            python run_local_pipeline.py --use-remote
+          else
+            python run_local_pipeline.py
+          fi
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4

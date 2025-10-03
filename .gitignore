@@ -20,6 +20,7 @@ __pycache__/
 .venv/
 backend/ml/two_tower_v2/artifacts/
 backend/ml/two_tower_v2/checkpoints/
+backend/ml/two_tower_v2/tmp/
 
 # Log files
 *.log

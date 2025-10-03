@@ -60,6 +60,7 @@
   - `recommend`: ユーザー埋め込み → `recommend_videos_ann` RPC → 簡易リランキングしてレスポンス。
 - WASMアーティファクト（`ort-wasm-*.wasm`）もCDNに配置し、Edge側の `onnxruntime-web` 初期化で利用すること。
 - GitHub Actions `train-two-tower.yml` でパイプライン実行・成果物配布・Supabase反映まで自動化可能（Secrets設定必須）。
+- 本番データセットは `backend/ml/two_tower_v2/src/fetch_remote_data.py` で Supabase から取得でき、`run_local_pipeline.py --use-remote` でも自動化可能。
 
 ## 動作確認チェックリスト
 1. `python src/train.py ...` 実行で `checkpoints/latest.pt` が生成されること。
