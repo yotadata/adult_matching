@@ -18,7 +18,8 @@ import sys
 from pathlib import Path
 from typing import Sequence
 
-DEFAULT_DATA_ROOT = Path("../data_processing/local_compatible_data")
+REPO_ROOT = Path(__file__).resolve().parents[3]
+DEFAULT_DATA_ROOT = REPO_ROOT / "backend" / "data_processing" / "local_compatible_data"
 
 
 def run_subprocess(cmd: Sequence[str], cwd: Path) -> None:

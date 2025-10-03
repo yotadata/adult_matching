@@ -55,14 +55,16 @@
 - 成果物は `artifacts/` 以下に出力し、CDN（例: Supabase Storage）へ配置。Edge Functions は `MODEL_ARTIFACT_BASE_URL` から `user_tower.onnx` / `feature_schema.json` 等を取得する。
 - Supabase RPC: `recommend_videos_ann`（HNSW×cosine）。`videos.safety_level`・`videos.region_codes`・`video_tags` をwhere句で制御。
 - Edge Functions:
-  - `embed-user`: ユーザーの決定履歴から特徴量を作成し、ONNX推論で埋め込みを生成 → `user_embeddings` にアップサート。
+  - `embed-user`: `user_id` を受け取り、サービスロール経由で履歴を取得 → 埋め込み生成・`user_embeddings` に保存。
+  - `ai-recommend-v5`: `user_id` とフィルタを受け、埋め込み参照（必要なら生成）→ `recommend_videos_ann` RPC → リランキングしてレスポンス。
   - `recommend`: ユーザー埋め込み → `recommend_videos_ann` RPC → 簡易リランキングしてレスポンス。
 - WASMアーティファクト（`ort-wasm-*.wasm`）もCDNに配置し、Edge側の `onnxruntime-web` 初期化で利用すること。
+- GitHub Actions `train-two-tower.yml` でパイプライン実行・成果物配布・Supabase反映まで自動化可能（Secrets設定必須）。
 
 ## 動作確認チェックリスト
 1. `python src/train.py ...` 実行で `checkpoints/latest.pt` が生成されること。
 2. `python src/export.py ...` 後、`artifacts/user_tower.onnx` と各種JSONが作成されること。
 3. `python src/generate_embeddings.py ...` で `video_embeddings.parquet` が出力され、pgvectorへのアップサートに利用できること。
 4. Supabaseローカルで `supabase db reset` → 新規マイグレーション適用後、`recommend_videos_ann` RPC が呼び出せること。
-5. Edge Functions (`supabase functions serve embed-user` / `recommend`) を起動し、`curl` で埋め込み生成と推薦結果が得られること。
+5. Edge Functions (`supabase functions serve embed-user` / `ai-recommend-v5`) を起動し、`curl` で埋め込み生成と推薦結果が得られること。
 6. CDNに成果物を配置した上で `.env` に `MODEL_ARTIFACT_BASE_URL` を設定し、本番のEdge Functionsが起動できること。

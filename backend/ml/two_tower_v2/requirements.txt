@@ -7,3 +7,4 @@ onnx>=1.15
 onnxruntime>=1.18
 pyarrow>=17.0
 rich>=13.7
+requests>=2.32

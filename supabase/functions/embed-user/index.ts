@@ -1,7 +1,5 @@
-import { buildUserFeatureVector } from "../_shared/feature-builder.ts";
-import { inferUserEmbedding } from "../_shared/onnx.ts";
-import { getSupabaseClient } from "../_shared/supabase-client.ts";
-import { fetchUserFeatureInput } from "../_shared/user-data.ts";
+import { getSupabaseServiceRoleClient } from "../_shared/supabase-client.ts";
+import { computeUserEmbedding } from "../_shared/user-embedding.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -10,6 +8,7 @@ const corsHeaders = {
 };
 
 interface RequestBody {
+  user_id?: string;
   force?: boolean;
 }
 
@@ -25,28 +24,28 @@ Deno.serve(async (req) => {
   try {
     const body = req.method === "POST" ? await req.json().catch(() => ({})) : {};
     const { force } = body as RequestBody;
+    const url = new URL(req.url);
+    const userId = (body as RequestBody).user_id ?? url.searchParams.get("user_id") ?? undefined;
 
-    const supabase = getSupabaseClient(req);
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-    if (authError) throw authError;
-    if (!user) {
-      return new Response(JSON.stringify({ error: "unauthorized" }), {
-        status: 401,
+    if (!userId) {
+      return new Response(JSON.stringify({ error: "user_id is required" }), {
+        status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
+    const supabase = getSupabaseServiceRoleClient();
+
     if (!force) {
-      const { data: existing } = await supabase
+      const { data: existing, error } = await supabase
         .from("user_embeddings")
         .select("embedding, updated_at")
-        .eq("user_id", user.id)
+        .eq("user_id", userId)
         .maybeSingle();
+      if (error) throw error;
       if (existing?.embedding) {
         return new Response(JSON.stringify({
+          userId,
           source: "cache",
           embedding: existing.embedding,
           updatedAt: existing.updated_at,
@@ -57,25 +56,13 @@ Deno.serve(async (req) => {
       }
     }
 
-    const context = await fetchUserFeatureInput(supabase, user.id);
-    const featureVector = await buildUserFeatureVector(context);
-    const embeddingArray = await inferUserEmbedding(
-      featureVector.vector,
-      featureVector.artifacts.schema.input_name,
-    );
-    const embedding = Array.from(embeddingArray);
-
-    await supabase
-      .from("user_embeddings")
-      .upsert({
-        user_id: user.id,
-        embedding,
-      });
+    const { embedding, summary } = await computeUserEmbedding(supabase, userId, { persist: true });
 
     return new Response(JSON.stringify({
+      userId,
       source: "fresh",
       embedding,
-      summary: featureVector.summary,
+      summary,
     }), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },

@@ -15,3 +15,20 @@ export function getSupabaseClient(req: Request): SupabaseClient {
     },
   });
 }
+
+let serviceClient: SupabaseClient | null = null;
+
+export function getSupabaseServiceRoleClient(): SupabaseClient {
+  if (serviceClient) return serviceClient;
+  const url = Deno.env.get("SUPABASE_URL");
+  const serviceKey =
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? Deno.env.get("SUPABASE_SERVICE_KEY");
+  if (!url || !serviceKey) {
+    throw new Error("SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY are not configured");
+  }
+  serviceClient = createClient(url, serviceKey, {
+    auth: { persistSession: false },
+    global: { headers: {} },
+  });
+  return serviceClient;
+}

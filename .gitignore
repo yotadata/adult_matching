@@ -16,6 +16,11 @@ __pycache__/
 *.pyd
 .Python
 
+# Virtual environments and model artifacts
+.venv/
+backend/ml/two_tower_v2/artifacts/
+backend/ml/two_tower_v2/checkpoints/
+
 # Log files
 *.log
 nohup.out
