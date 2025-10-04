@@ -15,6 +15,10 @@ on:
         description: "Fetch training data from Supabase before running pipeline"
         type: boolean
         default: false
+      generate_embeddings:
+        description: "Generate item embeddings after training"
+        type: boolean
+        default: true
 
 jobs:
   train:
@@ -50,18 +54,72 @@ jobs:
         run: |
           set -e
           if [ "${{ github.event.inputs.use_remote_data }}" = "true" ]; then
-            python run_local_pipeline.py --use-remote
+            python run_local_pipeline.py --use-remote --skip-embeddings
           else
-            python run_local_pipeline.py
+            python run_local_pipeline.py --skip-embeddings
           fi
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: two-tower-artifacts
+          name: two-tower-training
           path: |
             backend/ml/two_tower_v2/artifacts
             backend/ml/two_tower_v2/checkpoints/latest.pt
+          if-no-files-found: error
+
+  embeddings:
+    needs: train
+    if: ${{ github.event.inputs.generate_embeddings == 'true' || github.event.inputs.publish_artifacts == 'true' || github.event.inputs.update_embeddings == 'true' }}
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      MODEL_ARTIFACTS_BUCKET: ${{ secrets.MODEL_ARTIFACTS_BUCKET }}
+      MODEL_ARTIFACTS_PREFIX: ${{ secrets.MODEL_ARTIFACTS_PREFIX }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download training artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: two-tower-training
+          path: backend/ml/two_tower_v2
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        working-directory: backend/ml/two_tower_v2
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Generate item embeddings
+        working-directory: backend/ml/two_tower_v2
+        env:
+          USE_REMOTE_DATA: ${{ github.event.inputs.use_remote_data }}
+        run: |
+          set -euo pipefail
+          if [ "$USE_REMOTE_DATA" = "true" ]; then
+            python src/fetch_remote_data.py --output-dir tmp/remote_data --page-size 1000
+            videos_path=tmp/remote_data/videos_subset.json
+          else
+            videos_path=../data_processing/local_compatible_data/videos_subset.json
+          fi
+          python src/generate_embeddings.py --config config/default.yaml --checkpoint checkpoints/latest.pt --videos "$videos_path" --output artifacts/video_embeddings.parquet
+
+      - name: Upload embeddings artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: two-tower-embeddings
+          path: backend/ml/two_tower_v2/artifacts/video_embeddings.parquet
           if-no-files-found: error
 
       - name: Setup Supabase CLI

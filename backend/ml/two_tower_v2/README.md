@@ -89,6 +89,39 @@ python run_local_pipeline.py --use-remote
 
 成果物一式は CI から CDN（例: Supabase Storage, CloudFront など）へアップロードし、Edge Functions で利用します。アップロード先のベース URL は `MODEL_ARTIFACT_BASE_URL` 環境変数として Edge Functions に設定してください。
 
+### モデル入出力仕様
+
+Two-Tower はユーザ側・アイテム側で同じ 256 次元の埋め込みを出力しますが、入力ベクトルの構築ロジックは `src/features.py` に定義されています。ローカル学習時は `backend/data_processing/local_compatible_data/` 以下の JSON（`profiles.json`, `videos_subset.json`, `user_video_decisions.json`）から特徴量を組み立て、`run_local_pipeline.py` 内で `FeaturePipeline` を保存します。
+
+- **User Tower**
+  - 入力テンソル名: `user_features`（`float32[225]`）。`FeaturePipeline.user_feature_dim` と一致します。
+  - 入力生成プロセス:
+    1. `UserFeatureStore.build_features(user_id)` が `profiles` と `user_video_decisions` からユーザごとの統計値を作成。
+       - `numeric` 8 項目: アカウント年齢、選好価格の平均/中央値、LIKE/NOPE カウントや比率、直近 Like からの日数など（`NumericNormalizer` で z-score 正規化）。
+       - `hour_of_day`: LIKE の発生時刻の平均を 0–1 に線形スケール。
+       - `tag_vector`: LIKE した動画に含まれるタグ ID を語彙（`vocab_tag.json`）に基づき Bag-of-Words 集計 → L2 正規化。
+       - `actress_vector`: 同様に女優語彙に基づく Bag-of-Words（現行データでは語彙サイズ 0 のため空配列）。
+    2. `assemble_user_feature_vector(...)` がこれらの要素を順番に連結し、ONNX 入力ベクトルを作成。
+  - 出力テンソル名: `user_embedding`（`float32[256]`）。`src/model.py` の `UserTower.forward` 内で L2 正規化済み。Edge Function では `computeUserEmbedding` → `inferUserEmbedding` により取得し、`user_embeddings` テーブルへ保存されます。
+
+- **Item Tower**
+  - 入力テンソル名: `item_features`（`float32[219]`）。`FeaturePipeline.item_feature_dim` と一致します。
+  - 入力生成プロセス（商用環境）:
+    1. **データ取得**: `src/fetch_remote_data.py` が Supabase REST API から `videos` テーブルを取得し、関連テーブル `video_tags`・`video_performers` を `select` 句で JOIN して JSON を生成します。
+       - 主キー `videos.id`（UUID）
+       - 数値/日時フィールド: `price`, `duration_seconds`, `distribution_started_at`, `product_released_at`, `published_at`, `created_at` など
+       - メタ情報: `title`, `description`, `maker`, `label`, `series`, `image_urls` など（必要に応じてフィルタ可能）
+       - タグ/出演者: join 結果を `video_tags ( tags ( name ) )`, `video_performers ( performers ( name ) )` として受け取り、`transform_videos()`（`fetch_remote_data.py` 内）で `tags` と `performers` の一次元配列へ正規化
+       - 取得結果は `tmp/remote_data/videos_subset.json` に保存され、ローカル JSON が商用データのキャッシュとなります。
+    2. **特徴量抽出**: `ItemFeatureStore.build_features(video_id)` が上記 JSON をロードした `pandas.DataFrame` からレコードを参照し、以下を生成します。
+       - `numeric` 3 項目: `price`、最新リリース日との差分日数（`product_released_at` を基準）、`duration_seconds`。`NumericNormalizer` により z-score 正規化。
+       - `tag_vector`: `tags` 配列を `vocab_tag.json` の語彙順に Bag-of-Words 化し L2 正規化。
+       - `actress_vector`: `performers` 配列を同様に語彙化（現行は語彙サイズ 0 だが、構造は保持）。
+    3. **テンソル化**: `assemble_item_feature_vector(...)` が上記セグメントを結合し、PyTorch/ONNX に渡す 1 次元ベクトル（`float32[219]`）を生成します。
+  - 出力テンソル名: `item_embedding`（`float32[256]`）。`src/model.py` の `ItemTower.forward` で L2 正規化された結果。`generate_embeddings.py` が各動画 ID へ割り当て、`video_embeddings.parquet` に書き出します。
+
+`feature_schema.json` には User Tower 入力のセグメント定義、`model_meta.json` には双方の入力次元と語彙サイズ、`normalizer.json` には数値特徴量の平均・標準偏差が記録されているので、ONNX 推論実装（Edge Function やバッチ処理）で同じ順序・スケールを再現する際の参照資料になります。
+
 ## Edge Function への導入手順
 
 1. **モデル成果物の配置**
@@ -139,14 +172,25 @@ python run_local_pipeline.py --use-remote
    デプロイ後、`.env.production` と同等の環境変数を Supabase プロジェクト設定に登録してください。
    ベクトルの更新を手動で行う場合は、`upload_embeddings.py` を利用して REST API 経由で `video_embeddings` に upsert できます。
 
+#### ローカルテスト時の注意点
+
+- `supabase functions serve` は内部的に Docker コンテナを利用します。Docker デーモンへ接続できない環境（例: Docker ソケットへのアクセスが禁止されている CI や制限付きサーバ）では `permission denied while trying to connect to the Docker daemon socket` と表示され起動できないため、その場合は Docker が利用可能な端末でテストしてください。
+- Edge Functions が参照する Two-Tower 成果物（`user_tower.onnx`, `feature_schema.json`, `ort-wasm*.wasm` など）は `MODEL_ARTIFACT_BASE_URL` から取得します。ローカル検証時は `python -m http.server 8001` などで `backend/ml/two_tower_v2/artifacts` を配信し、`MODEL_ARTIFACT_BASE_URL=http://127.0.0.1:8001` のように設定します。ポートバインドが禁止されている環境では `PermissionError: [Errno 1] Operation not permitted` になるため、別環境で実施するか CDN 等を利用してください。
+- `.env` ファイルを `source` する際、値にスペースが含まれると `set -a; source ...` でコマンドエラーになる場合があります。Supabase CLI の `--env-file` オプションを使うか、必要に応じて値を引用符で囲んでください。
+
 ### GitHub Actions による自動化
 
-`.github/workflows/train-two-tower.yml` を用意しており、手動トリガー (`workflow_dispatch`) で以下を実行できます。
+`.github/workflows/train-two-tower.yml` は手動トリガー (`workflow_dispatch`) を想定した 2 ジョブ構成です。
 
-1. パイプライン実行 (`run_local_pipeline.py`) と成果物生成。
-2. 任意で、Supabase Storage への成果物アップロード (`publish_artifacts` を true)。
-3. 任意で、`video_embeddings` テーブルへのベクトル upsert と HNSW インデックス再構築 (`update_embeddings` を true)。
-4. 本番データを利用した学習を行う場合は、実行時に `use_remote_data` を true にし、`SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` を Secrets に登録してください。
+1. **train ジョブ** — `run_local_pipeline.py --skip-embeddings` を実行し、学習・ONNX エクスポートのみを行います。成果物は `two-tower-training` アーティファクト（`artifacts/*`, `checkpoints/latest.pt`）として保存されます。
+2. **embeddings ジョブ** — 入力 `generate_embeddings` もしくは `publish_artifacts` / `update_embeddings` が true のときに実行され、前段のアーティファクトを用いて `src/generate_embeddings.py` を再実行します。生成した `artifacts/video_embeddings.parquet` を `two-tower-embeddings` としてアップロードし、必要であれば Supabase Storage へのコピーや DB 更新を行います。
+
+主な workflow inputs:
+
+- `generate_embeddings` (default: true) — embeddings ジョブを動かすか制御します。false にすると学習のみ実施されます。
+- `publish_artifacts` — Supabase Storage へ `artifacts/` 一式（ONNX + JSON + embeddings）をコピーします。
+- `update_embeddings` — REST API 経由で `video_embeddings` に upsert し、HNSW インデックスを再構築します。
+- `use_remote_data` — Supabase からデータを取得して学習・埋め込み生成を行います（`SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` が必須）。
 
 実行前に GitHub Secrets として以下を登録してください。
 
@@ -155,6 +199,19 @@ python run_local_pipeline.py --use-remote
 - `MODEL_ARTIFACTS_BUCKET`（必要であれば `MODEL_ARTIFACTS_PREFIX`）
 
 ※ Supabase Storage を利用しない場合は `publish_artifacts` を false のまま実行し、生成された Workflows の artifact を手動で配布する運用でも問題ありません。
+
+ローカルでワークフローの主要ステップを確認する場合は、仮想環境を作成して以下を参考にしてください。
+
+```bash
+cd backend/ml/two_tower_v2
+python -m venv .venv_test
+./.venv_test/bin/pip install -r requirements.txt
+./.venv_test/bin/python run_local_pipeline.py
+./.venv_test/bin/python upload_embeddings.py --dry-run --parquet artifacts/video_embeddings.parquet
+```
+
+- PyTorch や CUDA 関連ホイールのダウンロードで数百 MB 程度必要になるため、十分なネットワーク帯域とストレージ容量を確保してください。
+- 検証後は `.venv_test` などの仮想環境やキャッシュを削除し、空き容量を回収することを推奨します。
 
 ## 今後の TODO
 
