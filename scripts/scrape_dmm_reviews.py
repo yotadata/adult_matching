@@ -9,25 +9,25 @@ Outputs columns: product_url, reviewer_id, stars
 Assumptions and notes:
 - Ranking source: https://review.dmm.co.jp/review-front/ranking/1year
 - Each reviewer entry links to a reviewer review-list URL that includes the reviewer ID
-  (e.g., contains reviewer_id=12345 or id=12345). We extract the numeric/slug ID from URL.
+    (e.g., contains reviewer_id=12345 or id=12345). We extract the numeric/slug ID from URL.
 - Each review list page contains product links whose URL includes a CID (e.g., cid=abcd12345).
 - Star ratings are extracted by common patterns (data-rate, active star icons, or text like "星5").
 - The script follows pagination for each reviewer until no next page is found.
 
 Usage:
-  python scripts/scrape_dmm_reviews.py \
-      --output data/dmm_reviews.csv \
-      --max-reviewers 100 \
-      --delay 1.2 \
-      --timeout 20 \
-      --verbose
+    python scripts/scrape_dmm_reviews.py \
+        --output data/dmm_reviews.csv \
+        --max-reviewers 100 \
+        --delay 1.2 \
+        --timeout 20 \
+        --verbose
 
 Dependencies: requests, beautifulsoup4, lxml, tqdm (optional)
-  pip install -r scripts/requirements.txt
+    pip install -r scripts/requirements.txt
 
 Caveats:
 - Site structure may change. This script uses heuristic selectors and regexes to be resilient,
-  but you may need to tweak selectors if DMM updates markup.
+    but you may need to tweak selectors if DMM updates markup.
 - Respect site terms and robots. Add longer delays if needed.
 """
 
