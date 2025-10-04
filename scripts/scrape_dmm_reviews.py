@@ -36,6 +36,7 @@ from __future__ import annotations
 import argparse
 import csv
 import logging
+import random
 import re
 import time
 from dataclasses import dataclass
@@ -611,6 +612,26 @@ def main():
     parser.add_argument("--timeout", type=int, default=20, help="HTTP request timeout seconds (default: 20)")
     parser.add_argument("--verbose", action="store_true", help="Enable debug logging")
     parser.add_argument(
+        "--only-reviewers",
+        nargs="+",
+        default=None,
+        help=(
+            "Process only these reviewer IDs (space- or comma-separated). "
+            "When set, skips ranking fetch and crawls only specified reviewers."
+        ),
+    )
+    parser.add_argument(
+        "--no-shuffle",
+        action="store_true",
+        help="Disable shuffling reviewers (by default reviewers are shuffled)",
+    )
+    parser.add_argument(
+        "--shuffle-seed",
+        type=int,
+        default=None,
+        help="Optional seed for reviewer shuffling (default: random)",
+    )
+    parser.add_argument(
         "--max-detail-fetch-per-reviewer",
         type=int,
         default=50,
@@ -652,14 +673,48 @@ def main():
     session = create_session(timeout=args.timeout)
     ensure_age_check_cookie(session)
 
-    # 1) Fetch ranking page and extract up to max-reviewers
-    soup = fetch_soup(session, RANKING_URL)
-    reviewers = parse_ranking_for_reviewers(soup)
+    # Build reviewer list
+    reviewers: List[ReviewerLink] = []
+    if args.only_reviewers:
+        # Normalize IDs from args (accept comma-separated or space-separated)
+        raw_ids: List[str] = []
+        for token in args.only_reviewers:
+            raw_ids.extend([t for t in token.split(",") if t])
+        ids_set = []
+        seen_id: set[str] = set()
+        for rid in raw_ids:
+            rid_norm = rid.strip()
+            if not rid_norm or rid_norm in seen_id:
+                continue
+            seen_id.add(rid_norm)
+            reviewers.append(
+                ReviewerLink(
+                    reviewer_id=rid_norm,
+                    url=f"https://review.dmm.co.jp/review-front/reviewer/list/{rid_norm}",
+                    name=None,
+                )
+            )
+        if not reviewers:
+            logging.error("No valid reviewer IDs provided to --only-reviewers")
+            return
+        logging.info(f"Processing only specified reviewer(s): {', '.join([r.reviewer_id for r in reviewers])}")
+    else:
+        # 1) Fetch ranking page and extract up to max-reviewers
+        soup = fetch_soup(session, RANKING_URL)
+        reviewers = parse_ranking_for_reviewers(soup)
 
-    if not reviewers:
-        logging.warning("No reviewers found on ranking page. The page structure may have changed.")
+        if not reviewers:
+            logging.warning("No reviewers found on ranking page. The page structure may have changed.")
 
-    reviewers = reviewers[: args.max_reviewers]
+        # Shuffle reviewers to avoid always starting from the largest-volume reviewer
+        if not args.no_shuffle:
+            if args.shuffle_seed is not None:
+                random.Random(args.shuffle_seed).shuffle(reviewers)
+            else:
+                random.shuffle(reviewers)
+            logging.info("Shuffled reviewers before processing")
+
+        reviewers = reviewers[: args.max_reviewers]
     logging.info(f"Processing {len(reviewers)} reviewer(s)")
 
     # 2) Crawl per reviewer and append rows to a single CSV incrementally
