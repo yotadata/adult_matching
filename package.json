@@ -1,6 +1,7 @@
 {
   "scripts": {
-    "backfill:affiliate": "node scripts/backfillAffiliateLinks.mjs"
+    "backfill:affiliate": "node scripts/backfillAffiliateLinks.mjs",
+    "db:sync:remote-to-local": "bash scripts/sync-remote-db-to-local.sh --env-file .env.remote"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.56.0",
