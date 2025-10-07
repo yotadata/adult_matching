@@ -7,7 +7,8 @@
     "dev:supabase": "concurrently \"supabase start\" \"supabase functions serve --no-verify-jwt\" \"npm run dev\"",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "db:sync:remote": "bash ../scripts/sync-remote-db-to-local.sh"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.7",
