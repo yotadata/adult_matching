@@ -31,6 +31,11 @@ jobs:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       MODEL_ARTIFACTS_BUCKET: ${{ secrets.MODEL_ARTIFACTS_BUCKET }}
       MODEL_ARTIFACTS_PREFIX: ${{ secrets.MODEL_ARTIFACTS_PREFIX }}
+      PG_DSN: postgresql://two_tower:two_tower@localhost:5433/two_tower
+      LOCAL_PG_USER: two_tower
+      LOCAL_PG_PASSWORD: two_tower
+      LOCAL_PG_DATABASE: two_tower
+      LOCAL_PG_PORT: "5433"
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -40,11 +45,28 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y postgresql-client
+
       - name: Install dependencies
         working-directory: backend/ml/two_tower_v2
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+
+      - name: Start Postgres (Docker Compose)
+        working-directory: backend/ml/two_tower_v2
+        run: |
+          docker compose -f infra/docker-compose.yml up -d
+          until PGPASSWORD=${LOCAL_PG_PASSWORD} pg_isready -h localhost -p ${LOCAL_PG_PORT} -U ${LOCAL_PG_USER}; do
+            sleep 2
+          done
+
+      - name: Bootstrap schema
+        working-directory: backend/ml/two_tower_v2
+        run: ./scripts/bootstrap_local_db.sh
 
       - name: Run training pipeline
         working-directory: backend/ml/two_tower_v2
@@ -53,11 +75,11 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: |
           set -e
+          pipeline_cmd=(python run_local_pipeline.py --config config/default.yaml --pg-dsn "$PG_DSN" --skip-embeddings)
           if [ "${{ github.event.inputs.use_remote_data }}" = "true" ]; then
-            python run_local_pipeline.py --use-remote --skip-embeddings
-          else
-            python run_local_pipeline.py --skip-embeddings
+            pipeline_cmd+=(--fetch-remote)
           fi
+          "${pipeline_cmd[@]}"
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
@@ -80,6 +102,11 @@ jobs:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       MODEL_ARTIFACTS_BUCKET: ${{ secrets.MODEL_ARTIFACTS_BUCKET }}
       MODEL_ARTIFACTS_PREFIX: ${{ secrets.MODEL_ARTIFACTS_PREFIX }}
+      PG_DSN: postgresql://two_tower:two_tower@localhost:5433/two_tower
+      LOCAL_PG_USER: two_tower
+      LOCAL_PG_PASSWORD: two_tower
+      LOCAL_PG_DATABASE: two_tower
+      LOCAL_PG_PORT: "5433"
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -95,25 +122,37 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y postgresql-client
+
       - name: Install dependencies
         working-directory: backend/ml/two_tower_v2
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      - name: Start Postgres (Docker Compose)
+        working-directory: backend/ml/two_tower_v2
+        run: |
+          docker compose -f infra/docker-compose.yml up -d
+          until PGPASSWORD=${LOCAL_PG_PASSWORD} pg_isready -h localhost -p ${LOCAL_PG_PORT} -U ${LOCAL_PG_USER}; do
+            sleep 2
+          done
+
+      - name: Bootstrap schema
+        working-directory: backend/ml/two_tower_v2
+        run: ./scripts/bootstrap_local_db.sh
+
       - name: Generate item embeddings
         working-directory: backend/ml/two_tower_v2
-        env:
-          USE_REMOTE_DATA: ${{ github.event.inputs.use_remote_data }}
         run: |
           set -euo pipefail
-          if [ "$USE_REMOTE_DATA" = "true" ]; then
-            python src/fetch_remote_data.py --output-dir tmp/remote_data --page-size 1000
-            videos_path=tmp/remote_data/videos_subset.json
-          else
-            videos_path=../data_processing/local_compatible_data/videos_subset.json
+          if [ "${{ github.event.inputs.use_remote_data }}" = "true" ]; then
+            python src/pull_remote_into_pg.py --pg-dsn "$PG_DSN" --page-size 1000
           fi
-          python src/generate_embeddings.py --config config/default.yaml --checkpoint checkpoints/latest.pt --videos "$videos_path" --output artifacts/video_embeddings.parquet
+          python src/generate_embeddings.py --config config/default.yaml --checkpoint checkpoints/latest.pt --pg-dsn "$PG_DSN" --output artifacts/video_embeddings.parquet
 
       - name: Upload embeddings artifact
         uses: actions/upload-artifact@v4
@@ -134,6 +173,30 @@ jobs:
         run: |
           supabase link --project-ref "$SUPABASE_PROJECT_ID" --password "$SUPABASE_DB_PASSWORD"
 
+      - name: Prepare artifact version
+        if: ${{ github.event.inputs.publish_artifacts == 'true' }}
+        run: |
+          set -euo pipefail
+          timestamp=$(date -u +%Y%m%dT%H%M%SZ)
+          short_sha=${GITHUB_SHA::7}
+          version="${timestamp}-${short_sha}"
+          echo "ARTIFACT_VERSION=$version" >> "$GITHUB_ENV"
+
+      - name: Build artifact manifest
+        if: ${{ github.event.inputs.publish_artifacts == 'true' }}
+        working-directory: backend/ml/two_tower_v2
+        env:
+          ARTIFACT_VERSION: ${{ env.ARTIFACT_VERSION }}
+          GITHUB_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          version="${ARTIFACT_VERSION:-${GITHUB_RUN_ID}}"
+          python scripts/build_manifest.py \
+            --artifacts-dir artifacts \
+            --output artifacts/manifest.json \
+            --version "$version" \
+            --commit-sha "${GITHUB_SHA}"
+
       - name: Upload artifacts to Supabase Storage
         if: ${{ github.event.inputs.publish_artifacts == 'true' }}
         run: |
@@ -142,8 +205,15 @@ jobs:
             echo "MODEL_ARTIFACTS_BUCKET secret is required to upload artifacts" >&2
             exit 1
           fi
-          prefix="${MODEL_ARTIFACTS_PREFIX:-two-tower}"
-          supabase storage cp -r backend/ml/two_tower_v2/artifacts "ss:///${MODEL_ARTIFACTS_BUCKET}/${prefix}"
+          prefix="${MODEL_ARTIFACTS_PREFIX:-two-tower/v3}"
+          prefix="${prefix%/}"
+          version_path="${prefix}/${ARTIFACT_VERSION}"
+          current_path="${prefix}/current"
+          supabase storage rm "ss:///${MODEL_ARTIFACTS_BUCKET}/${current_path}" || true
+          supabase storage cp -r backend/ml/two_tower_v2/artifacts "ss:///${MODEL_ARTIFACTS_BUCKET}/${version_path}"
+          supabase storage cp -r backend/ml/two_tower_v2/artifacts "ss:///${MODEL_ARTIFACTS_BUCKET}/${current_path}"
+          base_url="https://${SUPABASE_PROJECT_ID}.supabase.co/storage/v1/object/public/${MODEL_ARTIFACTS_BUCKET}/${current_path}"
+          echo "MODEL_ARTIFACT_BASE_URL=${base_url}" >> "$GITHUB_ENV"
 
       - name: Upsert video embeddings
         if: ${{ github.event.inputs.update_embeddings == 'true' }}

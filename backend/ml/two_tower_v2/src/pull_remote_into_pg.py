@@ -1,13 +1,15 @@
 from __future__ import annotations
 
 import argparse
-import json
 import os
 from dataclasses import dataclass
-from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Iterable, List, Optional
 
 import requests
+
+from psycopg.types.json import Json
+
+from db import PostgresConfig, delete_rows_by_ids, upsert_rows
 
 DEFAULT_PAGE_SIZE = 1000
 
@@ -76,34 +78,130 @@ def transform_videos(rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         new_row = dict(row)
 
         video_tags = new_row.pop("video_tags", None) or []
-        new_row["tags"] = [
+        tags = [
             entry.get("tags", {}).get("name")
             for entry in video_tags
             if isinstance(entry, dict) and entry.get("tags") and entry["tags"].get("name")
         ]
 
         video_performers = new_row.pop("video_performers", None) or []
-        new_row["performers"] = [
+        performers = [
             entry.get("performers", {}).get("name")
             for entry in video_performers
             if isinstance(entry, dict) and entry.get("performers") and entry["performers"].get("name")
         ]
 
+        new_row["tags"] = [tag for tag in tags if tag]
+        new_row["performers"] = [name for name in performers if name]
         transformed.append(new_row)
     return transformed
 
 
-def write_json(path: Path, payload: Any) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("w", encoding="utf-8") as fp:
-        json.dump(payload, fp, ensure_ascii=False, indent=2, default=str)
+def chunked(iterable: List[Dict[str, Any]], size: int) -> Iterable[List[Dict[str, Any]]]:
+    for idx in range(0, len(iterable), size):
+        yield iterable[idx : idx + size]
+
+
+def upsert_profiles(cfg: PostgresConfig, profiles: List[Dict[str, Any]]) -> None:
+    upsert_rows(
+        cfg,
+        table="profiles",
+        columns=["user_id", "display_name", "created_at"],
+        rows=profiles,
+        conflict_columns=["user_id"],
+    )
+
+
+def upsert_videos(cfg: PostgresConfig, videos: List[Dict[str, Any]]) -> None:
+    if not videos:
+        return
+
+    base_rows = []
+    tag_rows: List[Dict[str, Any]] = []
+    performer_rows: List[Dict[str, Any]] = []
+    video_ids: List[str] = []
+
+    columns = [
+        "id",
+        "external_id",
+        "title",
+        "description",
+        "duration_seconds",
+        "thumbnail_url",
+        "preview_video_url",
+        "distribution_code",
+        "maker_code",
+        "director",
+        "series",
+        "maker",
+        "label",
+        "price",
+        "distribution_started_at",
+        "product_released_at",
+        "sample_video_url",
+        "image_urls",
+        "source",
+        "published_at",
+        "product_url",
+        "created_at",
+    ]
+
+    for video in videos:
+        video_id = video.get("id")
+        if not video_id:
+            continue
+        video_ids.append(video_id)
+        tags = video.pop("tags", []) or []
+        performers = video.pop("performers", []) or []
+
+        row = {col: video.get(col) for col in columns}
+        if isinstance(row.get("image_urls"), list):
+            row["image_urls"] = Json(row["image_urls"])
+        base_rows.append(row)
+        tag_rows.extend({"video_id": video_id, "tag_name": tag} for tag in tags)
+        performer_rows.extend({"video_id": video_id, "performer_name": name} for name in performers)
+
+    upsert_rows(
+        cfg,
+        table="videos",
+        columns=columns,
+        rows=base_rows,
+        conflict_columns=["id"],
+    )
+
+    delete_rows_by_ids(cfg, "video_tags", "video_id", video_ids)
+    delete_rows_by_ids(cfg, "video_performers", "video_id", video_ids)
+
+    if tag_rows:
+        upsert_rows(
+            cfg,
+            table="video_tags",
+            columns=["video_id", "tag_name"],
+            rows=tag_rows,
+            conflict_columns=["video_id", "tag_name"],
+        )
+    if performer_rows:
+        upsert_rows(
+            cfg,
+            table="video_performers",
+            columns=["video_id", "performer_name"],
+            rows=performer_rows,
+            conflict_columns=["video_id", "performer_name"],
+        )
+
+
+def upsert_decisions(cfg: PostgresConfig, decisions: List[Dict[str, Any]], batch_size: int = 5000) -> None:
+    columns = ["user_id", "video_id", "decision_type", "created_at"]
+    conflicts = ["user_id", "video_id", "decision_type", "created_at"]
+    for batch in chunked(decisions, batch_size):
+        upsert_rows(cfg, "user_video_decisions", columns, batch, conflicts)
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Fetch Supabase data for Two-Tower training")
+    parser = argparse.ArgumentParser(description="Pull Supabase data into local Postgres")
     parser.add_argument("--supabase-url", type=str, default=os.getenv("SUPABASE_URL"))
     parser.add_argument("--service-role-key", type=str, default=os.getenv("SUPABASE_SERVICE_ROLE_KEY"))
-    parser.add_argument("--output-dir", type=Path, default=Path("tmp/remote_data"))
+    parser.add_argument("--pg-dsn", type=str, required=True)
     parser.add_argument("--page-size", type=int, default=DEFAULT_PAGE_SIZE)
     return parser.parse_args()
 
@@ -113,20 +211,21 @@ def main() -> None:
     if not args.supabase_url or not args.service_role_key:
         raise SystemExit("SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be provided")
 
+    cfg = PostgresConfig(dsn=args.pg_dsn)
     fetcher = SupabaseFetcher(
         base_url=args.supabase_url,
         service_role_key=args.service_role_key,
         page_size=args.page_size,
     )
 
-    print("📥 Fetching profiles...")
+    print("📥 Fetching profiles…")
     profiles = fetcher.fetch_all(
         "profiles",
         select="user_id, display_name, created_at",
         order="user_id.asc",
     )
 
-    print("📥 Fetching videos...")
+    print("📥 Fetching videos…")
     videos_raw = fetcher.fetch_all(
         "videos",
         select=(
@@ -139,19 +238,23 @@ def main() -> None:
     )
     videos = transform_videos(videos_raw)
 
-    print("📥 Fetching user decisions...")
+    print("📥 Fetching user decisions…")
     decisions = fetcher.fetch_all(
         "user_video_decisions",
         select="user_id, video_id, decision_type, created_at",
         order="created_at.asc",
     )
 
-    output_dir = args.output_dir
-    write_json(output_dir / "profiles.json", profiles)
-    write_json(output_dir / "videos_subset.json", videos)
-    write_json(output_dir / "user_video_decisions.json", decisions)
+    print("⬆️ Upserting profiles…")
+    upsert_profiles(cfg, profiles)
 
-    print(f"✅ Remote data written to {output_dir}")
+    print("⬆️ Upserting videos…")
+    upsert_videos(cfg, videos)
+
+    print("⬆️ Upserting decisions…")
+    upsert_decisions(cfg, decisions)
+
+    print("✅ Remote data import complete")
 
 
 if __name__ == "__main__":

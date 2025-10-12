@@ -1,0 +1,15 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: ankane/pgvector:latest
+    container_name: two_tower_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${LOCAL_PG_USER:-two_tower}
+      POSTGRES_PASSWORD: ${LOCAL_PG_PASSWORD:-two_tower}
+      POSTGRES_DB: ${LOCAL_PG_DATABASE:-two_tower}
+    ports:
+      - "${LOCAL_PG_PORT:-5433}:5432"
+    volumes:
+      - ../tmp/postgres-data:/var/lib/postgresql/data

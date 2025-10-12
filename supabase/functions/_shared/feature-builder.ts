@@ -29,28 +29,35 @@ interface VocabularyPayload {
   tokens: string[];
 }
 
-export interface VideoMeta {
-  id: string;
-  tags: string[];
-  performers: string[];
-  price: number | null;
-  productReleasedAt?: string | null;
-}
-
-export interface DecisionRecord {
-  decisionType: "like" | "nope";
-  createdAt: string | null;
-  video: VideoMeta | null;
-}
-
-export interface UserProfileMeta {
-  createdAt: string | null;
-}
-
-export interface UserFeatureInput {
-  profile: UserProfileMeta | null;
-  decisions: DecisionRecord[];
+export interface UserEmbeddingFeaturePayload {
+  user_id: string;
+  profile?: { created_at: string | null } | null;
+  decision_stats?: {
+    like_count?: number | null;
+    nope_count?: number | null;
+    decision_count?: number | null;
+    recent_like_at?: string | null;
+    average_like_hour?: number | null;
+  } | null;
+  price_stats?: {
+    mean?: number | null;
+    median?: number | null;
+  } | null;
+  tags?: string[] | null;
+  performers?: string[] | null;
   now?: Date;
+}
+
+export interface ItemEmbeddingFeaturePayload {
+  video_id: string;
+  price?: number | null;
+  duration_seconds?: number | null;
+  product_released_at?: string | null;
+  distribution_started_at?: string | null;
+  safety_level?: number | null;
+  region_codes?: string[] | null;
+  tags?: string[] | null;
+  performers?: string[] | null;
 }
 
 interface FeatureArtifacts {
@@ -116,16 +123,6 @@ function standardize(value: number, stats: NormalizerStats | undefined): number 
   return (value - stats.mean) / std;
 }
 
-function median(values: number[]): number {
-  if (values.length === 0) return 0;
-  const sorted = [...values].sort((a, b) => a - b);
-  const mid = Math.floor(sorted.length / 2);
-  if (sorted.length % 2 === 0) {
-    return (sorted[mid - 1] + sorted[mid]) / 2;
-  }
-  return sorted[mid];
-}
-
 function diffDays(later: Date, earlier: Date | null): number {
   if (!earlier) return 0;
   const diffMs = later.getTime() - earlier.getTime();
@@ -150,48 +147,64 @@ export interface UserFeatureResult {
   artifacts: FeatureArtifacts;
 }
 
-export async function buildUserFeatureVector(input: UserFeatureInput): Promise<UserFeatureResult> {
+function coerceNumber(value: unknown, fallback = 0): number {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string") {
+    const parsed = Number.parseFloat(value);
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  return fallback;
+}
+
+function coerceArray(values: unknown): string[] {
+  if (!Array.isArray(values)) return [];
+  return values.filter((entry): entry is string => typeof entry === "string" && entry.length > 0);
+}
+
+export async function buildUserFeatureVector(input: UserEmbeddingFeaturePayload): Promise<UserFeatureResult> {
   const artifacts = await loadArtifacts();
   const now = input.now ?? new Date();
 
-  const likes = input.decisions.filter((d) => d.decisionType === "like" && d.video);
-  const nopes = input.decisions.filter((d) => d.decisionType === "nope" && d.video);
-  const decisions = input.decisions.filter((d) => d.video);
+  const decisionStats = input.decision_stats ?? {};
+  const priceStats = input.price_stats ?? {};
 
-  const likeVideos = likes.map((d) => d.video!).filter(Boolean);
-  const likeTimestamps = likes
-    .map((d) => parseDate(d.createdAt))
-    .filter((dt): dt is Date => !!dt)
-    .sort((a, b) => b.getTime() - a.getTime());
+  const likeCount = coerceNumber(decisionStats.like_count, 0);
+  const nopeCount = coerceNumber(decisionStats.nope_count, 0);
+  const decisionCount = coerceNumber(decisionStats.decision_count, likeCount + nopeCount);
+  const likeRatioRaw = decisionCount > 0 ? likeCount / decisionCount : 0.5;
+  const likeRatio = Math.min(Math.max(likeRatioRaw, 0), 1);
 
-  const prices = likeVideos
-    .map((v) => (typeof v.price === "number" ? Number(v.price) : null))
-    .filter((value): value is number => value != null);
+  const recentLikeAt = parseDate(decisionStats.recent_like_at ?? null);
+  const avgLikeHourRaw = coerceNumber(decisionStats.average_like_hour, 12);
+  const avgLikeHour = Math.min(Math.max(avgLikeHourRaw, 0), 23);
 
-  const tagValues = likeVideos.flatMap((v) => v.tags ?? []);
-  const actressValues = likeVideos.flatMap((v) => v.performers ?? []);
+  const meanPrice = coerceNumber(priceStats.mean, 0);
+  const medianPrice = coerceNumber(priceStats.median, 0);
 
-  const profileCreated = parseDate(input.profile?.createdAt ?? null);
+  const tags = coerceArray(input.tags);
+  const performers = coerceArray(input.performers);
+
+  const profileCreated = parseDate(input.profile?.created_at ?? null);
+  const tagValues = tags;
+  const actressValues = performers;
 
   const numericFeatureNames = artifacts.schema.segments.find((segment) => segment.name === "numeric")?.features ?? [];
   const numericStats = artifacts.normalizer.user_numeric;
 
   const rawNumericValues: Record<string, number> = {
     account_age_days: diffDays(now, profileCreated),
-    mean_price: prices.length ? prices.reduce((sum, p) => sum + p, 0) / prices.length : 0,
-    median_price: prices.length ? median(prices) : 0,
-    like_ratio: decisions.length ? likes.length / decisions.length : 0.5,
-    like_count: likes.length,
-    nope_count: nopes.length,
-    decision_count: decisions.length,
-    recent_like_days: likeTimestamps.length ? diffDays(now, likeTimestamps[0]) : 0,
+    mean_price: meanPrice,
+    median_price: medianPrice,
+    like_ratio: likeRatio,
+    like_count: likeCount,
+    nope_count: nopeCount,
+    decision_count: decisionCount,
+    recent_like_days: diffDays(now, recentLikeAt),
   };
 
   const numericVector = numericFeatureNames.map((name) => standardize(rawNumericValues[name] ?? 0, numericStats[name]));
 
-  const likeHours = likeTimestamps.map((dt) => dt.getHours());
-  const avgHour = likeHours.length ? likeHours.reduce((sum, h) => sum + h, 0) / likeHours.length : 12;
-  const hourComponent = avgHour / 23;
+  const hourComponent = avgLikeHour / 23;
 
   const tagVector = buildHistogram(tagValues, artifacts.tagTokens);
   const actressVector = buildHistogram(actressValues, artifacts.actressTokens);
@@ -210,9 +223,9 @@ export async function buildUserFeatureVector(input: UserFeatureInput): Promise<U
   return {
     vector: featureVector,
     summary: {
-      likeCount: likes.length,
-      nopeCount: nopes.length,
-      decisionCount: decisions.length,
+      likeCount,
+      nopeCount,
+      decisionCount,
       tagMatchCount: tagValues.length,
       actressMatchCount: actressValues.length,
     },

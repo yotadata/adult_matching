@@ -1,53 +1,9 @@
 from __future__ import annotations
 
-import json
 import random
-from dataclasses import dataclass
-from pathlib import Path
 from typing import Dict, Iterable, List, Tuple
 
 import pandas as pd
-
-
-@dataclass
-class DatasetPaths:
-    profiles: Path
-    videos: Path
-    decisions: Path
-
-
-def load_profiles(path: Path) -> pd.DataFrame:
-    with path.open("r", encoding="utf-8") as fp:
-        data = json.load(fp)
-    df = pd.DataFrame(data)
-    if "created_at" in df.columns:
-        df["created_at"] = pd.to_datetime(df["created_at"], errors="coerce")
-    return df
-
-
-def load_videos(path: Path) -> pd.DataFrame:
-    with path.open("r", encoding="utf-8") as fp:
-        data = json.load(fp)
-    df = pd.DataFrame(data)
-    for col in ("product_released_at", "published_at", "created_at"):
-        if col in df.columns:
-            df[col] = pd.to_datetime(df[col], errors="coerce")
-    if "tags" in df.columns:
-        df["tags"] = df["tags"].apply(lambda x: x if isinstance(x, list) else [])
-    if "performers" in df.columns:
-        df["performers"] = df["performers"].apply(lambda x: x if isinstance(x, list) else [])
-    else:
-        df["performers"] = [[] for _ in range(len(df))]
-    return df
-
-
-def load_decisions(path: Path) -> pd.DataFrame:
-    with path.open("r", encoding="utf-8") as fp:
-        data = json.load(fp)
-    df = pd.DataFrame(data)
-    if "created_at" in df.columns:
-        df["created_at"] = pd.to_datetime(df["created_at"], errors="coerce")
-    return df
 
 
 def _sample_negatives(
@@ -61,7 +17,6 @@ def _sample_negatives(
     eligible = [vid for vid in candidate_video_ids if vid not in liked_set]
     if not eligible:
         return []
-    # sample with replacement if needed
     choices = []
     for _ in range(num_samples):
         choices.append(rng.choice(eligible))
@@ -77,11 +32,9 @@ def build_training_samples(
 ) -> pd.DataFrame:
     rng = random.Random(seed)
 
-    # limit to users present in profiles and decisions
     valid_user_ids = set(profiles["user_id"].astype(str))
     decisions = decisions[decisions["user_id"].astype(str).isin(valid_user_ids)].copy()
 
-    # map video id -> metadata
     videos = videos.copy()
     videos["id"] = videos["id"].astype(str)
     video_lookup: Dict[str, Dict] = videos.set_index("id").to_dict(orient="index")
@@ -97,7 +50,6 @@ def build_training_samples(
         liked_ids = user_likes["video_id"].astype(str).tolist()
         nope_ids = user_nopes["video_id"].astype(str).tolist()
 
-        # positive samples
         for _, row in user_likes.iterrows():
             video_id = str(row["video_id"])
             if video_id not in video_lookup:
@@ -112,7 +64,6 @@ def build_training_samples(
                 }
             )
 
-        # explicit negatives from NOPE
         for _, row in user_nopes.iterrows():
             video_id = str(row["video_id"])
             if video_id not in video_lookup:
@@ -127,7 +78,6 @@ def build_training_samples(
                 }
             )
 
-        # sampled negatives
         num_extra_neg = max(0, negative_ratio * max(1, len(liked_ids)) - len(nope_ids))
         negative_candidates = _sample_negatives(
             str(user_id),

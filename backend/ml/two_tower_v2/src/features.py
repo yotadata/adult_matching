@@ -2,11 +2,13 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Dict, Iterable, List, Tuple
+from typing import Any, Dict, Iterable, List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
+import psycopg
 from sklearn.preprocessing import StandardScaler
+from psycopg.rows import dict_row
 
 
 @dataclass
@@ -98,6 +100,20 @@ def _safe_days_between(later: datetime, earlier: datetime | None) -> float:
     return delta.total_seconds() / 86400.0
 
 
+def _parse_datetime(value: Any) -> Optional[datetime]:
+    if value is None:
+        return None
+    if isinstance(value, datetime):
+        return value if value.tzinfo else value.replace(tzinfo=timezone.utc)
+    try:
+        ts = pd.to_datetime(value, utc=True, errors="coerce")
+    except Exception:  # noqa: BLE001
+        return None
+    if isinstance(ts, pd.Timestamp) and not pd.isna(ts):
+        return ts.to_pydatetime()
+    return None
+
+
 class UserFeatureStore:
     def __init__(
         self,
@@ -106,20 +122,100 @@ class UserFeatureStore:
         decisions: pd.DataFrame,
         tag_vocab: Vocabulary,
         actress_vocab: Vocabulary,
+        *,
+        use_rpc: bool = False,
+        pg_dsn: str | None = None,
     ) -> None:
         self.profiles = profiles
         self.videos = videos
         self.decisions = decisions
         self.tag_vocab = tag_vocab
         self.actress_vocab = actress_vocab
+        self.use_rpc = use_rpc
+        self.pg_dsn = pg_dsn
+        self._rpc_conn: psycopg.Connection | None = None
+        self._rpc_payload_cache: Dict[str, Dict[str, Any]] = {}
         self.video_lookup = videos.set_index("id").to_dict(orient="index")
         self.profile_lookup = profiles.set_index("user_id").to_dict(orient="index")
-        self.reference_dt = compute_reference_datetime(decisions)
+        self.reference_dt = datetime.now(timezone.utc) if use_rpc else compute_reference_datetime(decisions)
         self._cache: Dict[str, Dict[str, np.ndarray | float]] = {}
+
+        if self.use_rpc and not self.pg_dsn:
+            raise ValueError("pg_dsn must be provided when use_rpc is True")
+
+    def _get_rpc_conn(self) -> psycopg.Connection:
+        assert self.pg_dsn is not None
+        if self._rpc_conn is None:
+            self._rpc_conn = psycopg.connect(self.pg_dsn, row_factory=dict_row)
+        return self._rpc_conn
+
+    def _fetch_user_payload(self, user_id: str) -> Dict[str, Any]:
+        if user_id in self._rpc_payload_cache:
+            return self._rpc_payload_cache[user_id]
+        conn = self._get_rpc_conn()
+        row = conn.execute(
+            "select public.get_user_embedding_features(%s) as payload",
+            (user_id,),
+        ).fetchone()
+        payload = (row or {}).get("payload") or {}
+        if not isinstance(payload, dict):
+            payload = {}
+        self._rpc_payload_cache[user_id] = payload
+        return payload
+
+    def _build_features_from_rpc(self, user_id: str) -> Dict[str, np.ndarray | float]:
+        payload = self._fetch_user_payload(user_id)
+        decision_stats = payload.get("decision_stats") or {}
+        price_stats = payload.get("price_stats") or {}
+
+        like_count = float(decision_stats.get("like_count") or 0.0)
+        nope_count = float(decision_stats.get("nope_count") or 0.0)
+        decision_count = float(decision_stats.get("decision_count") or (like_count + nope_count))
+        like_ratio = like_count / decision_count if decision_count > 0 else 0.5
+        like_ratio = float(np.clip(like_ratio, 0.0, 1.0))
+
+        mean_price = float(price_stats.get("mean") or 0.0)
+        median_price = float(price_stats.get("median") or 0.0)
+
+        recent_like_at = _parse_datetime(decision_stats.get("recent_like_at"))
+        avg_hour = float(decision_stats.get("average_like_hour") or 12.0)
+        avg_hour = float(np.clip(avg_hour, 0.0, 23.0))
+
+        profile = payload.get("profile") or {}
+        profile_created = _parse_datetime(profile.get("created_at"))
+
+        tag_values = [str(v) for v in payload.get("tags") or [] if isinstance(v, str)]
+        actress_values = [str(v) for v in payload.get("performers") or [] if isinstance(v, str)]
+
+        numeric_features = np.array(
+            [
+                _safe_days_between(self.reference_dt, profile_created),
+                mean_price,
+                median_price,
+                like_ratio,
+                like_count,
+                nope_count,
+                decision_count,
+                _safe_days_between(self.reference_dt, recent_like_at),
+            ],
+            dtype=np.float32,
+        )
+
+        return {
+            "numeric": numeric_features,
+            "hour_of_day": avg_hour,
+            "tag_vector": self.tag_vocab.encode(tag_values),
+            "actress_vector": self.actress_vocab.encode(actress_values),
+        }
 
     def build_features(self, user_id: str) -> Dict[str, np.ndarray | float]:
         if user_id in self._cache:
             return self._cache[user_id]
+
+        if self.use_rpc:
+            features = self._build_features_from_rpc(user_id)
+            self._cache[user_id] = features
+            return features
 
         profile = self.profile_lookup.get(user_id, {})
         user_decisions = self.decisions[self.decisions["user_id"] == user_id]
@@ -185,13 +281,68 @@ class UserFeatureStore:
 
 
 class ItemFeatureStore:
-    def __init__(self, videos: pd.DataFrame, tag_vocab: Vocabulary, actress_vocab: Vocabulary) -> None:
+    def __init__(
+        self,
+        videos: pd.DataFrame,
+        tag_vocab: Vocabulary,
+        actress_vocab: Vocabulary,
+        *,
+        use_rpc: bool = False,
+        pg_dsn: str | None = None,
+    ) -> None:
         self.videos = videos
         self.tag_vocab = tag_vocab
         self.actress_vocab = actress_vocab
         self.reference_release = videos["product_released_at"].max()
+        self.use_rpc = use_rpc
+        self.pg_dsn = pg_dsn
+        self._rpc_conn: psycopg.Connection | None = None
+        self._rpc_payload_cache: Dict[str, Dict[str, Any]] = {}
+
+        if self.use_rpc and not self.pg_dsn:
+            raise ValueError("pg_dsn must be provided when use_rpc is True")
+
+    def _get_rpc_conn(self) -> psycopg.Connection:
+        assert self.pg_dsn is not None
+        if self._rpc_conn is None:
+            self._rpc_conn = psycopg.connect(self.pg_dsn, row_factory=dict_row)
+        return self._rpc_conn
+
+    def _fetch_item_payload(self, video_id: str) -> Dict[str, Any]:
+        if video_id in self._rpc_payload_cache:
+            return self._rpc_payload_cache[video_id]
+        conn = self._get_rpc_conn()
+        row = conn.execute(
+            "select public.get_item_embedding_features(%s) as payload",
+            (video_id,),
+        ).fetchone()
+        payload = (row or {}).get("payload") or {}
+        if not isinstance(payload, dict):
+            payload = {}
+        self._rpc_payload_cache[video_id] = payload
+        return payload
 
     def build_features(self, video_id: str) -> Dict[str, np.ndarray | float]:
+        if self.use_rpc:
+            payload = self._fetch_item_payload(video_id)
+            tags = [str(v) for v in payload.get("tags") or [] if isinstance(v, str)]
+            actresses = [str(v) for v in payload.get("performers") or [] if isinstance(v, str)]
+            price = float(payload.get("price") or 0.0)
+            duration = float(payload.get("duration_seconds") or 0.0)
+            release_at = _parse_datetime(payload.get("product_released_at"))
+            if isinstance(self.reference_release, pd.Timestamp) and not pd.isna(self.reference_release):
+                ref_dt = self.reference_release.to_pydatetime()
+                if ref_dt.tzinfo is None:
+                    ref_dt = ref_dt.replace(tzinfo=timezone.utc)
+            else:
+                ref_dt = datetime.now(timezone.utc)
+            recency_days = _safe_days_between(ref_dt, release_at)
+            return {
+                "numeric": np.array([price, recency_days, duration], dtype=np.float32),
+                "tag_vector": self.tag_vocab.encode(tags),
+                "actress_vector": self.actress_vocab.encode(actresses),
+            }
+
         row = self.videos[self.videos["id"] == video_id]
         if row.empty:
             return {
@@ -284,12 +435,29 @@ def build_feature_pipeline(
     min_tag_freq: int,
     max_actress_vocab: int,
     min_actress_freq: int,
+    *,
+    use_rpc_features: bool = False,
+    pg_dsn: str | None = None,
 ) -> Tuple[FeaturePipeline, UserFeatureStore, ItemFeatureStore]:
     tag_vocab = build_vocab_from_videos(videos["tags"], max_tag_vocab, min_tag_freq)
     actress_vocab = build_vocab_from_videos(videos["performers"], max_actress_vocab, min_actress_freq)
 
-    user_store = UserFeatureStore(profiles, videos, decisions, tag_vocab, actress_vocab)
-    item_store = ItemFeatureStore(videos, tag_vocab, actress_vocab)
+    user_store = UserFeatureStore(
+        profiles,
+        videos,
+        decisions,
+        tag_vocab,
+        actress_vocab,
+        use_rpc=use_rpc_features,
+        pg_dsn=pg_dsn,
+    )
+    item_store = ItemFeatureStore(
+        videos,
+        tag_vocab,
+        actress_vocab,
+        use_rpc=use_rpc_features,
+        pg_dsn=pg_dsn,
+    )
 
     user_numeric_samples: List[np.ndarray] = []
     for user_id in decisions["user_id"].unique():

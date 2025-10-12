@@ -11,7 +11,8 @@ from torch.utils.data import DataLoader, Dataset
 from rich.console import Console
 from rich.table import Table
 
-from data import build_training_samples, load_decisions, load_profiles, load_videos, split_train_val
+from db import PostgresConfig, fetch_decisions, fetch_profiles, fetch_videos
+from data_utils import build_training_samples, split_train_val
 from features import (
     FeaturePipeline,
     UserFeatureStore,
@@ -67,9 +68,7 @@ class InteractionDataset(Dataset):
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Train Two-Tower model v2")
     parser.add_argument("--config", type=Path, required=True)
-    parser.add_argument("--profiles", type=Path, required=True)
-    parser.add_argument("--videos", type=Path, required=True)
-    parser.add_argument("--decisions", type=Path, required=True)
+    parser.add_argument("--pg-dsn", type=str, required=True)
     parser.add_argument("--output-dir", type=Path, default=Path("checkpoints"))
     return parser.parse_args()
 
@@ -121,9 +120,10 @@ def main() -> None:
     set_global_seed(config.get("seed", 42))
 
     console.rule("データ読込")
-    profiles_df = load_profiles(args.profiles)
-    videos_df = load_videos(args.videos)
-    decisions_df = load_decisions(args.decisions)
+    cfg = PostgresConfig(dsn=args.pg_dsn)
+    profiles_df = fetch_profiles(cfg)
+    videos_df = fetch_videos(cfg)
+    decisions_df = fetch_decisions(cfg)
 
     samples_df = build_training_samples(
         profiles_df,
@@ -134,6 +134,7 @@ def main() -> None:
     )
     console.print(f"サンプル数: {len(samples_df)} (正例: {(samples_df['label']==1).sum()}, 負例: {(samples_df['label']==0).sum()})")
 
+    use_rpc_features = config["training"].get("use_rpc_features", True)
     pipeline, user_store, item_store = build_feature_pipeline(
         profiles_df,
         videos_df,
@@ -142,6 +143,8 @@ def main() -> None:
         min_tag_freq=config["artifacts"].get("min_tag_freq", 3),
         max_actress_vocab=config["artifacts"].get("max_actress_vocab", 256),
         min_actress_freq=config["artifacts"].get("min_actress_freq", 2),
+        use_rpc_features=use_rpc_features,
+        pg_dsn=args.pg_dsn if use_rpc_features else None,
     )
     console.print(f"ユーザー入力次元: {pipeline.user_feature_dim}, アイテム入力次元: {pipeline.item_feature_dim}")
 

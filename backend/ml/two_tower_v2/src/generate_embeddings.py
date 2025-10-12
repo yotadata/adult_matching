@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 import torch
 
-from data import load_videos
+from db import PostgresConfig, fetch_videos
 from features import ItemFeatureStore, assemble_item_feature_vector, restore_pipeline
 from model import TwoTowerModel
 from utils import load_yaml
@@ -17,7 +17,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Generate item embeddings")
     parser.add_argument("--config", type=Path, required=True)
     parser.add_argument("--checkpoint", type=Path, required=True)
-    parser.add_argument("--videos", type=Path, required=True)
+    parser.add_argument("--pg-dsn", type=str, required=True)
     parser.add_argument("--output", type=Path, required=True, help="Path to output Parquet file")
     return parser.parse_args()
 
@@ -37,8 +37,16 @@ def main() -> None:
     model.load_state_dict(checkpoint["model_state"])
     model.eval()
 
-    videos_df = load_videos(args.videos)
-    item_store = ItemFeatureStore(videos_df, pipeline.tag_vocab, pipeline.actress_vocab)
+    cfg = PostgresConfig(dsn=args.pg_dsn)
+    videos_df = fetch_videos(cfg)
+    use_rpc_features = config.get("training", {}).get("use_rpc_features", True)
+    item_store = ItemFeatureStore(
+        videos_df,
+        pipeline.tag_vocab,
+        pipeline.actress_vocab,
+        use_rpc=use_rpc_features,
+        pg_dsn=args.pg_dsn if use_rpc_features else None,
+    )
 
     embeddings = []
     video_ids = []

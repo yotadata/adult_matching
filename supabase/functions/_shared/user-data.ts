@@ -1,75 +1,38 @@
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.43.0";
-import type { DecisionRecord, UserFeatureInput, VideoMeta } from "../_shared/feature-builder.ts";
+import type { UserEmbeddingFeaturePayload } from "../_shared/feature-builder.ts";
 
-interface SupabaseDecisionRow {
-  video_id: string;
-  decision_type: "like" | "nope";
-  created_at: string | null;
-  videos: {
-    id: string;
-    price: number | null;
-    product_released_at: string | null;
-    safety_level?: number | null;
-    region_codes?: string[] | null;
-    video_tags?: { tags?: { name?: string | null } | null }[] | null;
-    video_performers?: { performers?: { name?: string | null } | null }[] | null;
-  } | null;
-}
-
-function mapVideo(row: SupabaseDecisionRow["videos"]): VideoMeta | null {
-  if (!row) return null;
-  const tags = (row.video_tags ?? [])
-    .map((entry) => entry?.tags?.name)
-    .filter((name): name is string => typeof name === "string" && name.length > 0);
-  const performers = (row.video_performers ?? [])
-    .map((entry) => entry?.performers?.name)
-    .filter((name): name is string => typeof name === "string" && name.length > 0);
-  return {
-    id: row.id,
-    tags,
-    performers,
-    price: row.price,
-    productReleasedAt: row.product_released_at,
-  };
-}
-
-function mapDecisionRow(row: SupabaseDecisionRow): DecisionRecord {
-  return {
-    decisionType: row.decision_type,
-    createdAt: row.created_at,
-    video: mapVideo(row.videos),
-  };
+function normalizeStringArray(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter((entry): entry is string => typeof entry === "string" && entry.length > 0);
 }
 
 export async function fetchUserFeatureInput(
   client: SupabaseClient,
   userId: string,
-): Promise<UserFeatureInput> {
-  const [{ data: profile, error: profileError }, { data: decisions, error: decisionError }] = await Promise.all([
-    client
-      .from("profiles")
-      .select("user_id, created_at")
-      .eq("user_id", userId)
-      .maybeSingle(),
-    client
-      .from("user_video_decisions")
-      .select(
-        `video_id, decision_type, created_at,
-         videos (
-           id, price, product_released_at, safety_level, region_codes,
-           video_tags ( tags ( name ) ),
-           video_performers ( performers ( name ) )
-         )`
-      )
-      .eq("user_id", userId)
-      .order("created_at", { ascending: false })
-      .limit(500),
-  ]);
+): Promise<UserEmbeddingFeaturePayload> {
+  const { data, error } = await client.rpc("get_user_embedding_features", { user_id: userId });
+  if (error) throw error;
 
-  if (profileError) throw profileError;
-  if (decisionError) throw decisionError;
+  const payload = (data ?? {}) as Record<string, unknown>;
+  const decisionStats = (payload["decision_stats"] ?? {}) as Record<string, unknown>;
+  const priceStats = (payload["price_stats"] ?? {}) as Record<string, unknown>;
 
-  const profileMeta = profile ? { createdAt: profile.created_at } : { createdAt: null };
-  const decisionRecords = (decisions ?? []).map(mapDecisionRow);
-  return { profile: profileMeta, decisions: decisionRecords } satisfies UserFeatureInput;
+  return {
+    user_id: typeof payload["user_id"] === "string" ? (payload["user_id"] as string) : userId,
+    profile: (payload["profile"] as UserEmbeddingFeaturePayload["profile"]) ?? { created_at: null },
+    decision_stats: {
+      like_count: decisionStats["like_count"] as number | undefined,
+      nope_count: decisionStats["nope_count"] as number | undefined,
+      decision_count: decisionStats["decision_count"] as number | undefined,
+      recent_like_at: decisionStats["recent_like_at"] as string | undefined,
+      average_like_hour: decisionStats["average_like_hour"] as number | undefined,
+    },
+    price_stats: {
+      mean: priceStats["mean"] as number | undefined,
+      median: priceStats["median"] as number | undefined,
+    },
+    tags: normalizeStringArray(payload["tags"]),
+    performers: normalizeStringArray(payload["performers"]),
+    now: new Date(),
+  } satisfies UserEmbeddingFeaturePayload;
 }

@@ -6,6 +6,11 @@
 - データ層はSupabase/PostgreSQLを前提に、`backend/data_processing/local_compatible_data`で生成した疑似ユーザー・動画データを利用する。
 - 将来的にMLレコメンド（`supabase/functions/ai-recommend*`）やデータパイプライン強化を想定しており、`docs/openapi.yaml`にAPI仕様、`docs/ui_design.md`にUI要件がまとまっている。
 
+### サンドボックス環境について
+- この ChatGPT (Codex CLI) 上のシェルは制約付きコンテナで動作しており、外部ネットワーク（Supabase 等）や Docker デーモンソケットには接続できない。
+- `curl`/`psql`/`docker info` などが必要な場合は、開発者自身の WSL シェルやネットワーク制限のない環境で実行する。
+- 本ドキュメントに記載したコマンド例は、基本的に開発者ローカル（WSL）か CI 上で実行する想定。
+
 ## ディレクトリと役割
 - `frontend/` : Next.jsアプリ本体。スワイプUIや動画詳細モーダル、Supabaseクライアント初期化など。
 - `supabase/` : Supabase CLIプロジェクト。Edge Function (`functions/videos-feed` 等)、DBマイグレーション、`config.toml`。
@@ -60,7 +65,7 @@
   - `recommend`: ユーザー埋め込み → `recommend_videos_ann` RPC → 簡易リランキングしてレスポンス。
 - WASMアーティファクト（`ort-wasm-*.wasm`）もCDNに配置し、Edge側の `onnxruntime-web` 初期化で利用すること。
 - GitHub Actions `train-two-tower.yml` でパイプライン実行・成果物配布・Supabase反映まで自動化可能（Secrets設定必須）。
-- 本番データセットは `backend/ml/two_tower_v2/src/fetch_remote_data.py` で Supabase から取得でき、`run_local_pipeline.py --use-remote` でも自動化可能。
+- 本番データセットは `backend/ml/two_tower_v2/src/pull_remote_into_pg.py` で Supabase から取得・Postgres に同期でき、`run_local_pipeline.py --pg-dsn ... --fetch-remote` でも自動化可能。
 
 ## 動作確認チェックリスト
 1. `python src/train.py ...` 実行で `checkpoints/latest.pt` が生成されること。
