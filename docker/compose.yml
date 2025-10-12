@@ -1,0 +1,58 @@
+services:
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: frontend.dev.Dockerfile
+    container_name: adult_matching_frontend
+    ports:
+      - "3000:3000"
+    volumes:
+      - ../frontend:/app:delegated
+      - frontend_node_modules:/app/node_modules
+    environment:
+      - WATCHPACK_POLLING=true
+      - CHOKIDAR_USEPOLLING=true
+      - HOST=0.0.0.0
+    env_file:
+      - ./env/dev.env
+    working_dir: /app
+    command: ["npm", "run", "dev", "--", "-p", "3000", "-H", "0.0.0.0"]
+
+  ml:
+    build:
+      context: ..
+      dockerfile: docker/ml.dev.Dockerfile
+    container_name: adult_matching_ml
+    working_dir: /workspace
+    # Mount entire repo for convenience (scripts, ml/, etc.)
+    volumes:
+      - ..:/workspace:delegated
+    environment:
+      - PYTHONUNBUFFERED=1
+    command: ["sleep", "infinity"]
+
+  supabase:
+    image: supabase/cli:latest
+    container_name: adult_matching_supabase_cli
+    working_dir: /workspace
+    # Allow the CLI to control Docker on the host to start the Supabase stack
+    volumes:
+      - ..:/workspace:delegated
+      - /var/run/docker.sock:/var/run/docker.sock
+    # Start local stack and keep container alive
+    command: ["sh", "-lc", "supabase start && sleep infinity"]
+
+  functions:
+    image: supabase/cli:latest
+    container_name: adult_matching_functions
+    working_dir: /workspace
+    volumes:
+      - ..:/workspace:delegated
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      - supabase
+    # Serve edge functions without JWT verification for local dev
+    command: ["sh", "-lc", "cd supabase && supabase functions serve --no-verify-jwt"]
+
+volumes:
+  frontend_node_modules:

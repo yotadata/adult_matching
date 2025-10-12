@@ -103,13 +103,13 @@ def export_onnx(model: TwoTower, out_path: Path):
 
 def main():
     ap = argparse.ArgumentParser(description="Train a simple Two-Tower model (PyTorch)")
-    ap.add_argument("--train", type=Path, default=Path("data/interactions_train.parquet"))
-    ap.add_argument("--val", type=Path, default=Path("data/interactions_val.parquet"))
+    ap.add_argument("--train", type=Path, default=Path("ml/data/interactions_train.parquet"))
+    ap.add_argument("--val", type=Path, default=Path("ml/data/interactions_val.parquet"))
     ap.add_argument("--embedding-dim", type=int, default=256)
     ap.add_argument("--epochs", type=int, default=5)
     ap.add_argument("--batch-size", type=int, default=2048)
     ap.add_argument("--lr", type=float, default=1e-3)
-    ap.add_argument("--out-dir", type=Path, default=Path("artifacts"))
+    ap.add_argument("--out-dir", type=Path, default=Path("ml/artifacts"))
     ap.add_argument("--item-key", choices=["product_url", "video_id"], default="product_url", help="Which column to use as item key if present in parquet")
     args = ap.parse_args()
 

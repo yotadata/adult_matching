@@ -238,9 +238,9 @@ def main():
     ap.add_argument("--min-stars", type=int, default=4, help="Minimum stars to treat as positive (default: 4)")
     ap.add_argument("--neg-per-pos", type=int, default=3, help="Number of negatives per positive (default: 3)")
     ap.add_argument("--val-ratio", type=float, default=0.2, help="Validation user ratio (default: 0.2)")
-    ap.add_argument("--out-train", type=Path, default=Path("data/interactions_train.parquet"))
-    ap.add_argument("--out-val", type=Path, default=Path("data/interactions_val.parquet"))
-    ap.add_argument("--out-items", type=Path, default=Path("data/item_features.parquet"), help="Output path for per-item attributes (if videos CSV is supplied)")
+    ap.add_argument("--out-train", type=Path, default=Path("ml/data/interactions_train.parquet"))
+    ap.add_argument("--out-val", type=Path, default=Path("ml/data/interactions_val.parquet"))
+    ap.add_argument("--out-items", type=Path, default=Path("ml/data/item_features.parquet"), help="Output path for per-item attributes (if videos CSV is supplied)")
     args = ap.parse_args()
 
     cfg = PrepConfig(

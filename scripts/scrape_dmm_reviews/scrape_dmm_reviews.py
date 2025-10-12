@@ -15,15 +15,15 @@ Assumptions and notes:
 - The script follows pagination for each reviewer until no next page is found.
 
 Usage:
-    python scripts/scrape_dmm_reviews.py \
-        --output data/dmm_reviews.csv \
+    python scripts/scrape_dmm_reviews/scrape_dmm_reviews.py \
+        --output ml/data/dmm_reviews.csv \
         --max-reviewers 100 \
         --delay 1.2 \
         --timeout 20 \
         --verbose
 
-Dependencies: requests, beautifulsoup4, lxml, tqdm (optional)
-    pip install -r scripts/requirements.txt
+Dependencies: requests, beautifulsoup4, lxml, tqdm
+    pip install -r scripts/scrape_dmm_reviews/requirements.txt
 
 Caveats:
 - Site structure may change. This script uses heuristic selectors and regexes to be resilient,
@@ -606,7 +606,7 @@ def append_csv_rows(output_path: str, rows: Iterable[Tuple[str, str, int]]) -> i
 
 def main():
     parser = argparse.ArgumentParser(description="Scrape DMM Review top-100 reviewers' reviews → CSV")
-    parser.add_argument("--output", required=True, help="Output CSV path (e.g., data/dmm_reviews.csv)")
+    parser.add_argument("--output", required=True, help="Output CSV path (e.g., ml/data/dmm_reviews.csv)")
     parser.add_argument("--max-reviewers", type=int, default=100, help="Max reviewers to process (default: 100)")
     parser.add_argument("--delay", type=float, default=1.2, help="Delay seconds between page requests (default: 1.2)")
     parser.add_argument("--timeout", type=int, default=20, help="HTTP request timeout seconds (default: 20)")
@@ -640,7 +640,7 @@ def main():
     parser.add_argument(
         "--dump-html-dir",
         default=None,
-        help="Directory to dump HTML for debugging (e.g., data/dumps).",
+        help="Directory to dump HTML for debugging (e.g., ml/data/dumps).",
     )
     parser.add_argument(
         "--dump-on-missing-star",

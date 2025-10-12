@@ -7,7 +7,7 @@
 # - Your remote project is accessible by the CLI (supabase login; has org/project access)
 #
 # Default behavior (modes):
-# - Reads project info from .env.remote (NEXT_PUBLIC_SUPABASE_URL) to derive project ref
+# - Reads project info from docker/env/dev.env (NEXT_PUBLIC_SUPABASE_URL) to derive project ref
 # - Links the Supabase project (supabase link) and uses `db dump --linked`
 # - Starts local stack (unless --no-start)
 # - Mode "schema-mirror" (default): Rebuild local DB from the REMOTE schema, then import data.
@@ -17,12 +17,12 @@
 # - Mode "full": Keeps local schema and imports ALL remote data including supabase_migrations history.
 #
 # Usage:
-#   scripts/sync-remote-db-to-local.sh [--env-file .env.remote] [--project-ref <ref>] [--mode schema-mirror|full|data] [--db-password <pass>] [--exclude <schema.tbl[,..]>] [--exclude-embeddings] [--yes] [--no-start]
+#   scripts/sync-remote-db-to-local.sh [--env-file docker/env/dev.env] [--project-ref <ref>] [--mode schema-mirror|full|data] [--db-password <pass>] [--exclude <schema.tbl[,..]>] [--exclude-embeddings] [--yes] [--no-start]
 #
 # Examples:
 #   scripts/sync-remote-db-to-local.sh --yes
 #   scripts/sync-remote-db-to-local.sh --mode data --yes
-#   scripts/sync-remote-db-to-local.sh --env-file .env.remote --yes
+#   scripts/sync-remote-db-to-local.sh --env-file docker/env/dev.env --yes
 #   scripts/sync-remote-db-to-local.sh --project-ref abcd1234 --yes --no-start
 #
 # Notes:
@@ -36,7 +36,7 @@ set -euo pipefail
 ROOT_DIR=$(cd "$(dirname "$0")/.." && pwd)
 cd "$ROOT_DIR"
 
-ENV_FILE=".env.remote"
+ENV_FILE="docker/env/dev.env"
 PROJECT_REF=""
 CONFIRM="false"
 START_LOCAL="true"

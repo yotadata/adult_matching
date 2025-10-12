@@ -13,14 +13,14 @@
 
 - 明示フィードバック（推奨）: `reviewer_id, product_url, label`（LIKE=1, DISLIKE=0）
   - 負例サンプリングは不要。DISLIKE が無い/極端に少ないユーザーのみ、任意で疑似負例を補う。
-- 代替（レビュー由来の星評価）: `product_url, reviewer_id, stars`（例: `data/dmm_reviews_videoa_YYYY-MM-DD.csv`）
+- 代替（レビュー由来の星評価）: `product_url, reviewer_id, stars`（例: `ml/data/dmm_reviews_videoa_YYYY-MM-DD.csv`）
   - 簡易に「暗黙フィードバック化」して学習可能。正例（stars>=4）に対し、未観測アイテムから K 件の疑似負例をサンプリング。
 
 ### データソース統合（今回の前処理スクリプト仕様）
 
 - 想定元ソース:
   - テーブル相当: `user_video_decisions`（LIKE/DISLIKE ベース、初期モデルでは未使用）
-  - 外部CSV: DMM レビュー `data/dmm_reviews_videoa_*.csv`
+- 外部CSV: DMM レビュー `ml/data/dmm_reviews_videoa_*.csv`
 - スクリプトは2つのソースを単一形式（`reviewer_id, product_url, label`）に整形・統合できます。
   - 既定では decisions を含めません（初期モデル方針）。
   - 必要時に `--decisions-csv` へ CSV を渡すと、レビュー由来のデータに decisions をマージします（同一ユーザー×アイテムは decisions 側で上書き）。
@@ -49,7 +49,7 @@
 
 ```bash
 python -m venv .venv && source .venv/bin/activate
-pip install -r scripts/requirements-train.txt
+pip install -r scripts/train_two_tower/requirements.txt
 ```
 
 ### uv での実行（推奨）
@@ -69,46 +69,45 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 
 # 3) 仮想環境の作成と依存導入
 uv venv
-uv pip install -r scripts/requirements-train.txt
+uv pip install -r scripts/train_two_tower/requirements.txt
 
 # 4) 前処理（DMMレビューのみ・初期モデル）
-uv run scripts/prep_two_tower_dataset.py \
+uv run scripts/prep_two_tower/prep_two_tower_dataset.py \
   --mode reviews \
-  --input data/dmm_reviews_videoa_2025-10-04.csv \
+  --input ml/data/dmm_reviews_videoa_2025-10-04.csv \
   --min-stars 4 --neg-per-pos 3 \
   --val-ratio 0.2 \
-  --out-train data/interactions_train.parquet \
-  --out-val data/interactions_val.parquet
+  --out-train ml/data/interactions_train.parquet \
+  --out-val ml/data/interactions_val.parquet
 
 # 5) 学習（256次元）
-uv run scripts/train_two_tower.py \
+uv run scripts/train_two_tower/train_two_tower.py \
   --embedding-dim 256 --epochs 5 --batch-size 1024 --lr 1e-3
 
 # 参考: レビュー＋decisions を統合する場合
-uv run scripts/prep_two_tower_dataset.py \
+uv run scripts/prep_two_tower/prep_two_tower_dataset.py \
   --mode reviews \
-  --input data/dmm_reviews_videoa_2025-10-04.csv \
-  --decisions-csv data/user_video_decisions_export.csv \
+  --input ml/data/dmm_reviews_videoa_2025-10-04.csv \
+  --decisions-csv ml/data/user_video_decisions_export.csv \
   --min-stars 4 --neg-per-pos 3 \
   --val-ratio 0.2 \
-  --out-train data/interactions_train.parquet \
-  --out-val data/interactions_val.parquet
+  --out-train ml/data/interactions_train.parquet \
+  --out-val ml/data/interactions_val.parquet
 ```
 
 トラブルシューティング
 - 「No virtual environment found」: `uv venv` を実行してから `uv pip install ...` を実行してください。
-- 「pyenv: version '3.11' is not installed」: `pyenv install 3.11.x` か、`brew install python@3.11 && export UV_PYTHON=$(which python3.11)` を設定してください（`.envrc` に `export UV_PYTHON=...` を追記すると毎回設定不要）。
-- Makefile も uv を自動検出して使います（未導入なら `python/pip` にフォールバック）。
+- 「pyenv: version '3.11' is not installed」: `pyenv install 3.11.x` か、`brew install python@3.11 && export UV_PYTHON=$(which python3.11)` を設定してください。
 
 2) 前処理（明示ラベルが既にある場合: 既定）
 
 ```bash
-python scripts/prep_two_tower_dataset.py \
+python scripts/prep_two_tower/prep_two_tower_dataset.py \
   --mode explicit \
-  --input data/reactions.csv \
+  --input ml/data/reactions.csv \
   --val-ratio 0.2 \
-  --out-train data/interactions_train.parquet \
-  --out-val data/interactions_val.parquet
+  --out-train ml/data/interactions_train.parquet \
+  --out-val ml/data/interactions_val.parquet
 ```
 
 3) 前処理（レビュー星から作る場合: 代替）
@@ -116,23 +115,23 @@ python scripts/prep_two_tower_dataset.py \
 ```bash
 python scripts/prep_two_tower_dataset.py \
   --mode reviews \
-  --input data/dmm_reviews_videoa_2025-10-04.csv \
+  --input ml/data/dmm_reviews_videoa_2025-10-04.csv \
   --min-stars 4 --neg-per-pos 3 \
   --val-ratio 0.2 \
-  --out-train data/interactions_train.parquet \
-  --out-val data/interactions_val.parquet
+  --out-train ml/data/interactions_train.parquet \
+  --out-val ml/data/interactions_val.parquet
 
 3b) 前処理（レビュー＋decisions を統合する場合: 任意）
 
 ```bash
 python scripts/prep_two_tower_dataset.py \
   --mode reviews \
-  --input data/dmm_reviews_videoa_2025-10-04.csv \
-  --decisions-csv data/user_video_decisions_export.csv \
+  --input ml/data/dmm_reviews_videoa_2025-10-04.csv \
+  --decisions-csv ml/data/user_video_decisions_export.csv \
   --min-stars 4 --neg-per-pos 3 \
   --val-ratio 0.2 \
-  --out-train data/interactions_train.parquet \
-  --out-val data/interactions_val.parquet
+  --out-train ml/data/interactions_train.parquet \
+  --out-val ml/data/interactions_val.parquet
 ```
 
 3c) videos をDBから直接取得（cid→external_id 突合／itemキーを video_id に正規化）
@@ -141,16 +140,16 @@ python scripts/prep_two_tower_dataset.py \
 # 事前に videos テーブルをCSVにエクスポートしておく（最低: id, product_url）
 # 例: supabase studio からダウンロード、またはSQL→CSV出力
 
-uv run scripts/prep_two_tower_dataset.py \
+uv run scripts/prep_two_tower/prep_two_tower_dataset.py \
   --mode reviews \
-  --input data/dmm_reviews_videoa_2025-10-04.csv \
+  --input ml/data/dmm_reviews_videoa_2025-10-04.csv \
   --db-url postgresql://postgres:postgres@127.0.0.1:54322/postgres \
   --join-on external_id \
   --min-stars 4 --neg-per-pos 3 \
   --val-ratio 0.2 \
-  --out-train data/interactions_train.parquet \
-  --out-val data/interactions_val.parquet \
-  --out-items data/item_features.parquet
+  --out-train ml/data/interactions_train.parquet \
+  --out-val ml/data/interactions_val.parquet \
+  --out-items ml/data/item_features.parquet
 
 # 出力と挙動:
 # - interactions_{train,val}.parquet に 'video_id' 列が付与（join成功分のみ保持）
@@ -163,16 +162,16 @@ uv run scripts/prep_two_tower_dataset.py \
 4) 学習（256 次元）
 
 ```bash
-python scripts/train_two_tower.py \
+python scripts/train_two_tower/train_two_tower.py \
   --embedding-dim 256 --epochs 5 --batch-size 2048 --lr 1e-3
 
 # itemキーに video_id を使う場合（prepで videos を渡したとき）
-python scripts/train_two_tower.py \
+python scripts/train_two_tower/train_two_tower.py \
   --embedding-dim 256 --epochs 5 --batch-size 2048 --lr 1e-3 \
   --item-key video_id
 ```
 
-5) 生成物（`artifacts/`）
+5) 生成物（`ml/artifacts/`）
 
 - `two_tower_latest.pt`（PyTorch state_dict）
 - `two_tower_latest.onnx`（ONNX: Python/TypeScript からロード可能）
@@ -192,28 +191,26 @@ python scripts/train_two_tower.py \
 
 ```bash
 python -m venv .venv && source .venv/bin/activate
-pip install -r scripts/requirements.txt  # 既存
-# 追加で学習用依存（例）
-pip install torch torchvision torchaudio pytorch-lightning scikit-learn pandas numpy pgvector psycopg[binary]
+pip install -r scripts/train_two_tower/requirements.txt
 ```
 
-2) 前処理スクリプト（例: `scripts/prep_two_tower_dataset.py`）
+2) 前処理スクリプト（例: `scripts/prep_two_tower/prep_two_tower_dataset.py`）
 
-- 入力: `data/dmm_reviews.csv` + Postgres(`videos`)
-- 出力: `data/interactions.parquet`（`user_id, video_id, label`）
+- 入力: `ml/data/dmm_reviews.csv` + Postgres(`videos`)
+- 出力: `ml/data/interactions.parquet`（`user_id, video_id, label`）
 
-3) 学習スクリプト（例: `scripts/train_two_tower.py`）
+3) 学習スクリプト（例: `scripts/train_two_tower/train_two_tower.py`）
 
 - 引数例
 
 ```bash
-python scripts/train_two_tower.py \
-  --input data/interactions.parquet \
+python scripts/train_two_tower/train_two_tower.py \
+  --input ml/data/interactions.parquet \
   --embedding-dim 128 \
   --epochs 5 --batch-size 2048 --lr 1e-3 \
-  --out-model artifacts/two_tower_latest.pkl \
-  --out-video-emb data/video_embeddings.parquet \
-  --out-user-emb data/user_embeddings.parquet
+  --out-model ml/artifacts/two_tower_latest.pkl \
+  --out-video-emb ml/data/video_embeddings.parquet \
+  --out-user-emb ml/data/user_embeddings.parquet
 ```
 
 4) 反映
@@ -252,15 +249,15 @@ jobs:
       - name: Install deps
         run: |
           python -m pip install --upgrade pip
-          pip install -r scripts/requirements-train.txt
+          pip install -r scripts/train_two_tower/requirements.txt
 
       - name: Prepare dataset (explicit)
         run: |
           python scripts/prep_two_tower_dataset.py \
             --mode explicit \
-            --input data/reactions.csv \
-            --out-train data/interactions_train.parquet \
-            --out-val data/interactions_val.parquet
+            --input ml/data/reactions.csv \
+  --out-train ml/data/interactions_train.parquet \
+  --out-val ml/data/interactions_val.parquet
 
       - name: Train TwoTower
         run: |
@@ -276,7 +273,7 @@ jobs:
           curl -X POST "$SUPABASE_URL/storage/v1/object/models/two_tower_latest.onnx" \
             -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
             -H "Content-Type: application/octet-stream" \
-            --data-binary @artifacts/two_tower_latest.onnx
+  --data-binary @ml/artifacts/two_tower_latest.onnx
 
       # 埋め込みのDB反映は本仕様では不要のため省略
 ```

@@ -2,7 +2,8 @@ import axios from 'axios';
 import { createClient } from '@supabase/supabase-js';
 import * as dotenv from 'dotenv';
 
-dotenv.config({ path: '.env.remote' });
+// Load envs only from docker scope
+dotenv.config({ path: 'docker/env/dev.env' });
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -17,7 +18,7 @@ if (!supabaseUrl || !supabaseAnonKey) {
 }
 
 if (!fanzaApiId || !fanzaApiAffiliateId) {
-  console.error('FANZA_API_ID or FANZA_API_AFFILIATE_ID is not set in .env.remote');
+  console.error('FANZA_API_ID or FANZA_API_AFFILIATE_ID is not set. Set it in docker/env/dev.env');
   process.exit(1);
 }
 
