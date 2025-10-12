@@ -40,16 +40,10 @@ cp docker/env/dev.env docker/env/dev.env.local  # 例: バックアップ
 
 ## 起動方法
 
-- Supabase（DB/Studio）+ Edge Functions を起動
+すべてのサービス（フロントエンド + Supabase + Edge Functions）をまとめて起動します。
 
 ```bash
-docker compose -f docker/compose.yml up -d supabase functions
-```
-
-- フロントエンドを起動
-
-```bash
-docker compose -f docker/compose.yml up --build
+docker compose -f docker/compose.yml up -d --build
 # http://localhost:3000 にアクセス
 ```
 

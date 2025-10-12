@@ -17,6 +17,9 @@ services:
       - ./env/dev.env
     working_dir: /app
     command: ["npm", "run", "dev", "--", "-p", "3000", "-H", "0.0.0.0"]
+    depends_on:
+      - supabase
+      - functions
 
   ml:
     build:

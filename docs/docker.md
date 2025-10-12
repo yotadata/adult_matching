@@ -9,29 +9,23 @@ This repo includes a Docker setup to run:
 - Docker + Docker Compose
 - Copy `docker/env/dev.env.example` to `docker/env/dev.env` and fill values
 
-## Start the frontend (dev)
-- Run: `docker compose -f docker/compose.yml up --build`
+## Start All Services (Dev)
+- Run: `docker compose -f docker/compose.yml up -d --build`
 - Open: `http://localhost:3000`
 
 The container uses Node 20, mounts the `frontend` directory for live reload, and persists `node_modules` in a named volume.
 
-## Connecting to Supabase
-You have two typical options:
-
-1) Use Remote Supabase
-- Put values in `docker/env/dev.env`
-- Required envs: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-
-2) Use Local Supabase (CLI in Docker)
-- Run `docker compose -f docker/compose.yml up -d supabase functions`
-- This starts the local stack and serves Edge Functions at `http://localhost:54321/functions/v1/<function>`
-- Inside other containers, set in `docker/env/dev.env`:
+## Supabase
+- Compose brings up the local stack and Edge Functions automatically.
+- API: `http://localhost:54321`
+- Edge Functions: `http://localhost:54321/functions/v1/<function>`
+- From other containers, set in `docker/env/dev.env`:
   - `NEXT_PUBLIC_SUPABASE_URL=http://host.docker.internal:54321`
   - `NEXT_PUBLIC_SUPABASE_ANON_KEY=...` (from logs of supabase services)
 
 ## Commands (per-script Docker)
-- Start frontend: `docker compose -f docker/compose.yml up --build` (uses `docker/env/dev.env`)
-- Stop frontend: `docker compose -f docker/compose.yml down`
+- Start all services: `docker compose -f docker/compose.yml up -d --build` (uses `docker/env/dev.env`)
+- Stop all services: `docker compose -f docker/compose.yml down`
 - Prep dataset: `bash scripts/prep_two_tower/run.sh --mode reviews --input ml/data/dmm_reviews_videoa_....csv --out-train ml/data/interactions_train.parquet --out-val ml/data/interactions_val.parquet`
 - Train model: `bash scripts/train_two_tower/run.sh --embedding-dim 256 --epochs 5`
 - Scrape reviews: `bash scripts/scrape_dmm_reviews/run.sh --output ml/data/dmm_reviews.csv`
