@@ -26,12 +26,25 @@
 ## 事前準備
 
 1) Docker/Docker Compose をインストール
-2) 環境変数ファイルを作成
+2) 環境変数ファイルを作成（self-hosted Supabase 用の必須キーを含む）
 
 ```bash
 cp docker/env/dev.env docker/env/dev.env.local  # 例: バックアップ
-# docker/env/dev.env に実値を設定
+# docker/env/dev.env に実値を設定（下記の必須キーを参照）
+## 自動生成も可能（開発用）:
+## bash scripts/gen_supabase_keys/run.sh  # docker/env/dev.env.generated に出力
 ```
+
+必須キー（dev.env）
+- `POSTGRES_PASSWORD`: 任意の強固な文字列
+- `SUPABASE_JWT_SECRET`: JWT 署名用の秘密鍵（十分長いランダム文字列）
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`: 上記秘密鍵で署名した anon ロールの JWT
+- `SUPABASE_SERVICE_ROLE_KEY`: 上記秘密鍵で署名した service_role ロールの JWT
+- `NEXT_PUBLIC_SUPABASE_URL`: `http://host.docker.internal:54321` を推奨（Kong 経由）
+
+補足
+- Edge Functions は検証を無効化して起動（`VERIFY_JWT=false`）。開発用途に限って利用してください。
+- 機密情報は `docker/env/*.env` に置き、Git にはコミットしないでください。
 
 主要な値:
 - `NEXT_PUBLIC_SUPABASE_URL`（例: `http://host.docker.internal:54321`）
@@ -40,7 +53,7 @@ cp docker/env/dev.env docker/env/dev.env.local  # 例: バックアップ
 
 ## 起動方法
 
-すべてのサービス（フロントエンド + Supabase + Edge Functions）をまとめて起動します。
+すべてのサービス（フロントエンド + Supabase 自前スタック + Edge Functions）をまとめて起動します。
 
 ```bash
 docker compose -f docker/compose.yml up -d --build
@@ -91,4 +104,5 @@ bash scripts/sync_remote_db/run.sh --env-file docker/env/dev.env --yes
 
 - すべて Docker 前提です。ローカルの `.nvmrc`, `.python-version`, `.venv` は不要です。
 - 機密情報は `docker/env/*.env` に保持し、Git にはコミットしないでください。
+- Supabase は self-hosted 構成（db/rest/auth/realtime/storage/kong/studio/inbucket + edge-runtime）。Edge Functions は `VERIFY_JWT=false` で起動します。
 - 詳細は `docs/docker.md`, `docs/two_tower_training.md` も参照してください。

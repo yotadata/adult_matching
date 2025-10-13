@@ -1,5 +1,2 @@
-node_modules/
-.venv/
-.env.local
-.env.remote
 docker/env/*.env
+docker/env/*.env.generated

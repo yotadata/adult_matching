@@ -8,6 +8,9 @@ This repo includes a Docker setup to run:
 ## Prerequisites
 - Docker + Docker Compose
 - Copy `docker/env/dev.env.example` to `docker/env/dev.env` and fill values
+- Login to GitHub Container Registry (for Supabase CLI image):
+  - Create a GitHub Personal Access Token with `read:packages`
+  - `echo <TOKEN> | docker login ghcr.io -u <GITHUB_USERNAME> --password-stdin`
 
 ## Start All Services (Dev)
 - Run: `docker compose -f docker/compose.yml up -d --build`

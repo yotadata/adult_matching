@@ -1,0 +1,16 @@
+.git
+**/.DS_Store
+
+# Large directories not needed for image build contexts
+frontend/node_modules
+frontend/.next
+
+ml/data
+ml/artifacts
+
+data
+artifacts
+
+# Python virtualenvs
+.venv
+

@@ -12,11 +12,11 @@ ENV NODE_ENV=development \
 WORKDIR /app
 
 # Install dependencies separately for better caching
-COPY package.json package-lock.json ./
+COPY frontend/package.json frontend/package-lock.json ./
 RUN npm ci
 
-# Copy only what's needed at build-time for dev (the rest is bind-mounted)
-COPY . .
+# Copy only the frontend sources for baseline (will be bind-mounted in dev)
+COPY frontend/. ./
 
 # Expose Next.js dev port
 EXPOSE 3000
