@@ -13,7 +13,7 @@
 ## データ仕様（学習用）
 
 - 入力データ: `interactions`（レビュー由来）
-  - 生成元: `data/dmm_reviews.csv`（列: `product_url, reviewer_id, stars`）と `videos(product_url)` の突合
+  - 生成元: `ml/data/dmm_reviews.csv`（列: `product_url, reviewer_id, stars`）と `videos(product_url)` の突合
   - 最終スキーマ（Parquet/CSV）例: `user_id, item_id, label, weight, timestamp`
     - `user_id` = `reviewer_id`
     - `item_id` = `videos.id`（uuid）

@@ -26,27 +26,14 @@ const LoginForm: React.FC<LoginFormProps> = ({ onClose }) => {
     setMessage(null);
     setIsLoading(true);
     try {
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email: data.email, password: data.password }),
+      // クライアントで直接ログインし、ブラウザにセッションを保存する
+      const { data: signInData, error } = await supabase.auth.signInWithPassword({
+        email: data.email,
+        password: data.password,
       });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.error || 'ログインに失敗しました');
-      }
-
-      // Set the Supabase session on the client side
-      if (result.session && result.access_token) {
-        await supabase.auth.setSession({
-          access_token: result.access_token,
-          refresh_token: result.session.refresh_token,
-        });
-      }
+      if (error) throw new Error(error.message || 'ログインに失敗しました');
+      // 念のため取得して確定させる（CORS/環境差異の切り分け用）
+      await supabase.auth.getUser();
 
       toast.success('ログインしました！');
       onClose();

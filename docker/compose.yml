@@ -1,0 +1,273 @@
+name: adult-mathing
+services:
+  frontend:
+    build:
+      context: ..
+      dockerfile: docker/frontend.dev.Dockerfile
+    container_name: adult_matching_frontend
+    ports:
+      - "3000:3000"
+    volumes:
+      - ../frontend:/app:delegated
+      - frontend_node_modules:/app/node_modules
+    environment:
+      - WATCHPACK_POLLING=true
+      - CHOKIDAR_USEPOLLING=true
+      - HOST=0.0.0.0
+    env_file:
+      - ./env/dev.env
+    working_dir: /app
+    command: ["sh", "-lc", "npm install --no-fund --no-audit && npm run dev -- -p 3000 -H 0.0.0.0"]
+    depends_on:
+      - kong
+
+
+  db:
+    image: supabase/postgres:17.6.1.021
+    platform: linux/amd64
+    container_name: supabase_db
+    restart: unless-stopped
+    ports:
+      - "54322:5432"
+    env_file:
+      - ./env/dev.env
+    environment:
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=postgres
+      - POSTGRES_USER=postgres
+    volumes:
+      - db_data:/var/lib/postgresql/data
+      - ./db/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -h 127.0.0.1 -p 5432"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 5s
+
+  db-init:
+    image: postgres:15-alpine
+    platform: linux/amd64
+    container_name: supabase_db_init
+    restart: "no"
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - ./env/dev.env
+    environment:
+      - PGPASSWORD=${POSTGRES_PASSWORD}
+    volumes:
+      - ./db/init:/init:ro
+    command: >-
+      sh -eu -c '
+      pg_isready -h db -p 5432 -U postgres -t 1 >/dev/null 2>&1 || true;
+      until pg_isready -h db -p 5432 -U postgres; do sleep 1; done;
+      for f in /init/*.sql; do
+        [ -f "$$f" ] || continue;
+        echo "Applying $$f";
+        psql -h db -U postgres -v ON_ERROR_STOP=1 -f "$$f" || exit 1;
+      done'
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -h 127.0.0.1 -p 5432"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 5s
+
+
+  rest:
+    image: postgrest/postgrest:v13.0.7
+    platform: linux/amd64
+    container_name: supabase_rest
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      db-init:
+        condition: service_completed_successfully
+    env_file:
+      - ./env/dev.env
+    environment:
+      - PGRST_DB_URI=postgres://postgres:${POSTGRES_PASSWORD}@db:5432/postgres
+      - PGRST_DB_SCHEMA=public
+      - PGRST_DB_ANON_ROLE=anon
+      - PGRST_JWT_SECRET=${SUPABASE_JWT_SECRET}
+
+  auth:
+    image: supabase/gotrue:v2.180.0
+    platform: linux/amd64
+    container_name: supabase_auth
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      db-init:
+        condition: service_completed_successfully
+    env_file:
+      - ./env/dev.env
+    environment:
+      # External URL where Auth API is exposed via Kong (used in magic links, redirects)
+      - API_EXTERNAL_URL=http://localhost:54321/auth/v1
+      - GOTRUE_API_HOST=0.0.0.0
+      - GOTRUE_API_PORT=9999
+      - GOTRUE_SITE_URL=http://localhost:3000
+      - GOTRUE_DB_NAMESPACE=auth
+      - GOTRUE_JWT_SECRET=${SUPABASE_JWT_SECRET}
+      - GOTRUE_JWT_DEFAULT_GROUP_NAME=authenticated
+      - GOTRUE_JWT_ADMIN_ROLES=service_role
+      - GOTRUE_JWT_AUD=authenticated
+      - GOTRUE_DB_DRIVER=postgres
+      - DATABASE_URL=postgres://postgres:${POSTGRES_PASSWORD}@db:5432/postgres?sslmode=disable&search_path=auth,public
+      - GOTRUE_DISABLE_SIGNUP=false
+      - GOTRUE_MAILER_AUTOCONFIRM=true
+      - GOTRUE_MAILER_EXTERNAL_HOSTS=localhost,127.0.0.1,host.docker.internal,kong
+
+  realtime:
+    image: supabase/realtime:v2.53.4
+    platform: linux/amd64
+    container_name: supabase_realtime
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      db-init:
+        condition: service_completed_successfully
+    env_file:
+      - ./env/dev.env
+    environment:
+      - APP_NAME=realtime
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_NAME=postgres
+      - DB_USER=postgres
+      - DB_PASSWORD=${POSTGRES_PASSWORD}
+      - PORT=4000
+      - JWT_SECRET=${SUPABASE_JWT_SECRET}
+      - RLIMIT_NOFILE=1048576
+      - SECRET_KEY_BASE=${REALTIME_SECRET_KEY_BASE}
+    ulimits:
+      nofile:
+        soft: 1048576
+        hard: 1048576
+
+  storage:
+    image: supabase/storage-api:v1.28.1
+    platform: linux/amd64
+    container_name: supabase_storage
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      db-init:
+        condition: service_completed_successfully
+      rest:
+        condition: service_started
+    env_file:
+      - ./env/dev.env
+    environment:
+      - ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+      - SERVICE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+      - POSTGREST_URL=http://rest:3000
+      - PGRST_JWT_SECRET=${SUPABASE_JWT_SECRET}
+      - DATABASE_URL=postgres://postgres:${POSTGRES_PASSWORD}@db:5432/postgres
+      - REGION=local
+      - GLOBAL_S3_BUCKET=storage
+      - FILE_STORAGE_BACKEND=file
+      - FILE_STORAGE_BACKEND_PATH=/var/lib/storage
+    volumes:
+      - storage_data:/var/lib/storage
+
+  kong:
+    image: kong:2.8
+    platform: linux/amd64
+    container_name: supabase_kong
+    restart: unless-stopped
+    depends_on:
+      - rest
+      - auth
+      - realtime
+      - storage
+    ports:
+      - "54321:8000"
+    env_file:
+      - ./env/dev.env
+    environment:
+      - KONG_DATABASE=off
+      - KONG_DECLARATIVE_CONFIG=/var/lib/kong/kong.yml
+      - KONG_DNS_ORDER=LAST,SRV,A,CNAME
+      - KONG_LOG_LEVEL=notice
+    volumes:
+      - ./kong.yml:/var/lib/kong/kong.yml:ro
+
+  studio:
+    image: supabase/studio:2025.10.09-sha-433e578
+    platform: linux/amd64
+    container_name: supabase_studio
+    restart: unless-stopped
+    depends_on:
+      - kong
+      - meta
+    ports:
+      - "54323:3000"
+    env_file:
+      - ./env/dev.env
+    environment:
+      - STUDIO_PG_META_URL=http://meta:8080
+      - SUPABASE_URL=http://kong:8000
+      - SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+
+
+  edge-videos-feed:
+    image: supabase/edge-runtime:v1.69.11
+    platform: linux/amd64
+    container_name: supabase_edge_videos_feed
+    restart: unless-stopped
+    depends_on:
+      - rest
+      - auth
+    environment:
+      - SUPABASE_URL=http://kong:8000
+      - SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+      - VERIFY_JWT=false
+    volumes:
+      - ../supabase/functions:/home/deno/functions:ro
+    command: ["start", "--main-service", "/home/deno/functions/videos-feed", "--port", "9000"]
+
+  edge-ai-recommend:
+    image: supabase/edge-runtime:v1.69.11
+    platform: linux/amd64
+    container_name: supabase_edge_ai_recommend
+    restart: unless-stopped
+    depends_on:
+      - rest
+      - auth
+    environment:
+      - SUPABASE_URL=http://kong:8000
+      - SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+      - VERIFY_JWT=false
+    volumes:
+      - ../supabase/functions:/home/deno/functions:ro
+    command: ["start", "--main-service", "/home/deno/functions/ai-recommend", "--port", "9001"]
+
+  meta:
+    image: supabase/postgres-meta:v0.80.0
+    platform: linux/amd64
+    container_name: supabase_meta
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - ./env/dev.env
+    environment:
+      - PG_META_DB_HOST=db
+      - PG_META_DB_PORT=5432
+      - PG_META_DB_NAME=postgres
+      - PG_META_DB_USER=postgres
+      - PG_META_DB_PASSWORD=${POSTGRES_PASSWORD}
+
+volumes:
+  frontend_node_modules:
+  db_data:
+  storage_data:

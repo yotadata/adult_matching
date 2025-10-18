@@ -1,0 +1,82 @@
+_format_version: "2.1"
+_transform: true
+
+services:
+  - name: auth
+    url: http://auth:9999/
+    plugins:
+      - name: cors
+        config:
+          origins:
+            - "http://localhost:3000"
+          methods:
+            - GET
+            - POST
+            - OPTIONS
+            - PUT
+            - PATCH
+            - DELETE
+          headers:
+            - Authorization
+            - Content-Type
+            - apikey
+            - x-client-info
+            - X-Client-Info
+            - x-supabase-api-version
+            - X-Supabase-Api-Version
+            - X-Requested-With
+            - Prefer
+            - Range
+          exposed_headers:
+            - Content-Range
+            - Content-Disposition
+            - Content-Encoding
+          credentials: true
+          max_age: 3600
+      - name: response-transformer
+        config:
+          add:
+            headers:
+              - "Access-Control-Allow-Origin: http://localhost:3000"
+              - "Access-Control-Allow-Credentials: true"
+              - "Access-Control-Allow-Headers: Authorization, Content-Type, apikey, x-client-info, X-Client-Info, x-supabase-api-version, X-Supabase-Api-Version, X-Requested-With, Prefer, Range"
+              - "Vary: Origin"
+    routes:
+      - name: auth_v1
+        paths:
+          - /auth/v1
+
+  - name: rest
+    url: http://rest:3000/
+    routes:
+      - name: rest_v1
+        paths:
+          - /rest/v1
+
+  - name: realtime
+    url: http://realtime:4000/
+    routes:
+      - name: realtime_v1
+        paths:
+          - /realtime/v1
+
+  - name: storage
+    url: http://storage:5000/
+    routes:
+      - name: storage_v1
+        paths:
+          - /storage/v1
+
+  - name: edge-videos-feed
+    url: http://edge-videos-feed:9000/
+    routes:
+      - name: functions_v1_videos_feed
+        paths:
+          - /functions/v1/videos-feed
+
+  - name: edge-ai-recommend
+    url: http://edge-ai-recommend:9001/
+    routes:
+      - name: functions_v1_ai_recommend
+        paths:
+          - /functions/v1/ai-recommend

@@ -25,34 +25,21 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onClose }) => {
     setMessage(null);
     setIsLoading(true);
     try {
-      const response = await fetch('/api/auth/signup', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email: data.email, password: data.password }),
+      const { supabase } = await import('@/lib/supabase');
+      const { data: signUpData, error } = await supabase.auth.signUp({
+        email: data.email,
+        password: data.password,
       });
+      if (error) throw new Error(error.message || '登録に失敗しました');
 
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.error || '登録に失敗しました');
-      }
-
-      // autoConfirm（メール確認不要）がONのプロジェクトでは session が返るので、自動ログインする
-      if (result.session && result.access_token) {
-        const { supabase } = await import('@/lib/supabase');
-        await supabase.auth.setSession({
-          access_token: result.access_token,
-          refresh_token: result.session.refresh_token,
-        });
+      if (signUpData.session) {
+        // autoConfirm 環境では即ログイン状態
+        await supabase.auth.getUser();
         toast.success('登録してログインしました！');
-        onClose();
       } else {
-        // メール確認が必要な設定では従来通りの案内
         toast.success('確認メールを送信しました。メールボックスをご確認ください。');
-        onClose();
       }
+      onClose();
     } catch (error: unknown) {
       let errorMessage = '予期せぬエラーが発生しました';
       if (error instanceof Error) {

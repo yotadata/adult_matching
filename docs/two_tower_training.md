@@ -1,64 +1,186 @@
-# Two‑Tower 初期学習ガイド（DMMレビュー活用）
+# Two‑Tower 学習ガイド（256 次元・PyTorch・ローカル優先）
 
-本ドキュメントは、DMMレビューのスクレイプ結果を用いて Two‑Tower（ユーザー塔×アイテム塔）モデルの初期学習を行い、学習済みモデルを Supabase のストレージへ配置するまでを一気通貫でまとめたものです。
+本ドキュメントは、LIKE/DISLIKE を主とした明示フィードバックを用いて Two‑Tower（ユーザー塔×アイテム塔）モデルを学習し、生成物をオブジェクトストレージ（Supabase Storage）へ配置するまでをまとめたものです。まずはローカルで学習し、のちに GitHub Actions へ移行できる構成とします。
 
 ## 目的とアウトプット
 
-- 目的: DMM レビュー由来のユーザー×動画相性を Two‑Tower で学習し、初期の個人化推薦を可能にする。
-- 学習アウトプット（いずれか、または両方）
-  - A) 学習済みモデルファイル（例: `models/two_tower_latest.pkl`）を Supabase Storage へアップロード
-  - B) `video_embeddings` / `user_embeddings` を再計算し、Supabase DB（pgvector）へ反映
+- 目的: ユーザー×動画の嗜好を Two‑Tower で学習し、初期の個人化推薦を可能にする。
+- 埋め込み次元: 256 に固定。
+- 学習アウトプット（本仕様）
+  - モデル（PyTorch state_dict と ONNX）を Storage へ配置（Python/TypeScript から読み込み可能）
 
-現行の Edge Function（`supabase/functions/ai-recommend`）はスタブのため、ローンチ段階は B の「埋め込みDB参照」方式を推奨します。モデルファイル（A）は将来的なオンライン更新や再学習容易化のために保管します。
+## データソース（優先: 明示フィードバック）
 
-## データソースとスキーマ前提
+- 明示フィードバック（推奨）: `reviewer_id, product_url, label`（LIKE=1, DISLIKE=0）
+  - 負例サンプリングは不要。DISLIKE が無い/極端に少ないユーザーのみ、任意で疑似負例を補う。
+- 代替（レビュー由来の星評価）: `product_url, reviewer_id, stars`（例: `ml/data/dmm_reviews_videoa_YYYY-MM-DD.csv`）
+  - 簡易に「暗黙フィードバック化」して学習可能。正例（stars>=4）に対し、未観測アイテムから K 件の疑似負例をサンプリング。
 
-- 学習元: `data/dmm_reviews.csv`（スクレイパ出力）
-  - 列: `product_url, reviewer_id, stars`
-  - すべてのレビューを取得済み（URL検証なし）
-- 動画テーブル（Supabase）: `public.videos`
-  - 主に `id (uuid)`, `product_url`, `created_at` などを使用
-- 埋め込みテーブル（Supabase）: `public.video_embeddings`, `public.user_embeddings`
-  - いずれも `embedding vector(256)` を前提（次元は必要に応じて調整）
+### データソース統合（今回の前処理スクリプト仕様）
 
-補足: `product_url` が `videos` に未登録の場合は、最小項目で新規レコードを作る「ingest」工程を挟みます（タイトル等は後続のクローラで補完）。
+- 想定元ソース:
+  - テーブル相当: `user_video_decisions`（LIKE/DISLIKE ベース、初期モデルでは未使用）
+- 外部CSV: DMM レビュー `ml/data/dmm_reviews_videoa_*.csv`
+- スクリプトは2つのソースを単一形式（`reviewer_id, product_url, label`）に整形・統合できます。
+  - 既定では decisions を含めません（初期モデル方針）。
+  - 必要時に `--decisions-csv` へ CSV を渡すと、レビュー由来のデータに decisions をマージします（同一ユーザー×アイテムは decisions 側で上書き）。
+  - decisions CSV の列は柔軟に解釈します:
+    - ユーザー: `reviewer_id` または `user_id`
+    - アイテム: `product_url` または `item_id`（本スクリプトでは product_url を推奨）
+    - ラベル: `label`（0/1） または `decision`（LIKE/DISLIKE/SKIP）。`decision` は LIKE→1, DISLIKE→0, SKIP→無視。
 
-## ラベル設計（初期案）
+## ラベル設計
 
-- 暗黙フィードバック化（バイナリ化）
-  - 正例: `stars >= 4`
-  - 負例: レビュワー未観測アイテムからランダムサンプル（正例:負例=1:K 例: K=3）
-- 代替案
-  - 重み付き（回帰的）: `weight = stars / 5.0`（損失に重み付け）
-
-まずは暗黙×負例サンプリングの方が堅く動かせます。必要あれば切替可能です。
+- 明示: LIKE=1 / DISLIKE=0 をそのまま学習（BCE）に使用。
+- 暗黙（レビュー）: 正例は `stars>=4`、負例は未観測アイテムからの疑似負例（例: 正例1に対しK=3）。
+  - 注: 将来好きになる可能性を考慮し、K を小さく・学習率を保守的に。
 
 ## パイプライン全体像
 
-1) 本番DBダンプ取得 → ローカル/CI で復元 or 直接接続（読み取り専用）
-2) `reviews.csv` を `videos.product_url` で突合 → `interactions(user_id, video_id, label/weight)` 生成
-   - 未登録URLは `videos` に最小限で `INSERT`（任意）
-3) データ分割: train/valid（例: 8/2、ユーザーで層化）
-4) Two‑Tower 学習（PyTorch/TensorFlow いずれも可）
-5) 生成物
-   - A) モデルファイル（保存）
-   - B) `video_embeddings` / `user_embeddings` Upsert（pgvector）
-6) （任意）監視用メトリクス出力: Recall@K、Precision@K、MAP@K
+1) 入力CSVの準備（優先: LIKE/DISLIKE の明示データ）
+2) 前処理: `interactions(user_id, item_id, label)` を作成（ユーザー層化で train/val 分割）
+3) Two‑Tower を PyTorch で学習（埋め込み256次元）
+4) 生成物: モデル（state_dict, ONNX）、IDマップ（user/item）、メタ情報
+5) （任意）評価メトリクス: Recall@K / MAP@K
 
-## 本番DBダンプ運用（推奨）
+## ローカル検証の流れ
 
-- いずれかの方法で本番DBをダンプ（必要テーブルのみでも可）
-  - Supabase CLI: `supabase db dump --project-ref <REF> --schema-only=false`（要ドキュメント参照）
-  - もしくは `pg_dump`（接続文字列は GitHub Secrets 管理）
-- 復元（ローカル検証向け）
-  - Docker Postgres をアドホック起動し `pg_restore` で復元、または CI 内で一時DBへ復元
-- セキュリティ
-  - 接続情報・ダンプは GitHub Encrypted Secrets / OIDC で保護
-  - PII・ユーザー識別子の匿名化が必要な場合は、ダンプ後の変換工程でハッシュ化
+1) Python venv 構築
+
+```bash
+python -m venv .venv && source .venv/bin/activate
+pip install -r scripts/train_two_tower/requirements.txt
+```
+
+### uv での実行（推奨）
+
+uv を使うと仮想環境の作成と依存導入、スクリプト実行が簡潔になります。
+
+```bash
+# 1) uv のインストール（未導入の場合）
+# macOS (Homebrew):
+brew install uv
+# もしくは公式スクリプト:
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# 2) Python 3.11 の用意（pyenv or brew のいずれか）
+# pyenv:  pyenv install 3.11.9 && pyenv local 3.11.9
+# brew:   brew install python@3.11; export UV_PYTHON="$(which python3.11)"
+
+# 3) 仮想環境の作成と依存導入
+uv venv
+uv pip install -r scripts/train_two_tower/requirements.txt
+
+# 4) 前処理（DMMレビューのみ・初期モデル）
+uv run scripts/prep_two_tower/prep_two_tower_dataset.py \
+  --mode reviews \
+  --input ml/data/dmm_reviews_videoa_2025-10-04.csv \
+  --min-stars 4 --neg-per-pos 3 \
+  --val-ratio 0.2 \
+  --out-train ml/data/interactions_train.parquet \
+  --out-val ml/data/interactions_val.parquet
+
+# 5) 学習（256次元）
+uv run scripts/train_two_tower/train_two_tower.py \
+  --embedding-dim 256 --epochs 5 --batch-size 1024 --lr 1e-3
+
+# 参考: レビュー＋decisions を統合する場合
+uv run scripts/prep_two_tower/prep_two_tower_dataset.py \
+  --mode reviews \
+  --input ml/data/dmm_reviews_videoa_2025-10-04.csv \
+  --decisions-csv ml/data/user_video_decisions_export.csv \
+  --min-stars 4 --neg-per-pos 3 \
+  --val-ratio 0.2 \
+  --out-train ml/data/interactions_train.parquet \
+  --out-val ml/data/interactions_val.parquet
+```
+
+トラブルシューティング
+- 「No virtual environment found」: `uv venv` を実行してから `uv pip install ...` を実行してください。
+- 「pyenv: version '3.11' is not installed」: `pyenv install 3.11.x` か、`brew install python@3.11 && export UV_PYTHON=$(which python3.11)` を設定してください。
+
+2) 前処理（明示ラベルが既にある場合: 既定）
+
+```bash
+python scripts/prep_two_tower/prep_two_tower_dataset.py \
+  --mode explicit \
+  --input ml/data/reactions.csv \
+  --val-ratio 0.2 \
+  --out-train ml/data/interactions_train.parquet \
+  --out-val ml/data/interactions_val.parquet
+```
+
+3) 前処理（レビュー星から作る場合: 代替）
+
+```bash
+python scripts/prep_two_tower_dataset.py \
+  --mode reviews \
+  --input ml/data/dmm_reviews_videoa_2025-10-04.csv \
+  --min-stars 4 --neg-per-pos 3 \
+  --val-ratio 0.2 \
+  --out-train ml/data/interactions_train.parquet \
+  --out-val ml/data/interactions_val.parquet
+
+3b) 前処理（レビュー＋decisions を統合する場合: 任意）
+
+```bash
+python scripts/prep_two_tower_dataset.py \
+  --mode reviews \
+  --input ml/data/dmm_reviews_videoa_2025-10-04.csv \
+  --decisions-csv ml/data/user_video_decisions_export.csv \
+  --min-stars 4 --neg-per-pos 3 \
+  --val-ratio 0.2 \
+  --out-train ml/data/interactions_train.parquet \
+  --out-val ml/data/interactions_val.parquet
+```
+
+3c) videos をDBから直接取得（cid→external_id 突合／itemキーを video_id に正規化）
+
+```bash
+# 事前に videos テーブルをCSVにエクスポートしておく（最低: id, product_url）
+# 例: supabase studio からダウンロード、またはSQL→CSV出力
+
+uv run scripts/prep_two_tower/prep_two_tower_dataset.py \
+  --mode reviews \
+  --input ml/data/dmm_reviews_videoa_2025-10-04.csv \
+  --db-url postgresql://postgres:postgres@127.0.0.1:54322/postgres \
+  --join-on external_id \
+  --min-stars 4 --neg-per-pos 3 \
+  --val-ratio 0.2 \
+  --out-train ml/data/interactions_train.parquet \
+  --out-val ml/data/interactions_val.parquet \
+  --out-items ml/data/item_features.parquet
+
+# 出力と挙動:
+# - interactions_{train,val}.parquet に 'video_id' 列が付与（join成功分のみ保持）
+# - DMMの product_url から `cid` を抽出し、`videos.external_id` と突合（推奨）。一致しないものは除外（ドロップ件数はサマリに出力）
+# - item_features.parquet に video_id, product_url, title, maker, label, series, external_id, tags（カンマ区切り）を格納
+```
+```
+```
+
+4) 学習（256 次元）
+
+```bash
+python scripts/train_two_tower/train_two_tower.py \
+  --embedding-dim 256 --epochs 5 --batch-size 2048 --lr 1e-3
+
+# itemキーに video_id を使う場合（prepで videos を渡したとき）
+python scripts/train_two_tower/train_two_tower.py \
+  --embedding-dim 256 --epochs 5 --batch-size 2048 --lr 1e-3 \
+  --item-key video_id
+```
+
+5) 生成物（`ml/artifacts/`）
+
+- `two_tower_latest.pt`（PyTorch state_dict）
+- `two_tower_latest.onnx`（ONNX: Python/TypeScript からロード可能）
+- `mappings/user_id_map.json`, `mappings/item_id_map.json`
+- `model_meta.json`（メタ情報: 次元、件数など）
 
 ### 取得対象（例）
 
-- `public.videos`（id, product_url, created_at, …）
+- `public.videos`（id, product_url, external_id, title, maker, label, series, …）
 - `public.video_embeddings`（初回は空でも可）
 - `public.user_embeddings`（初回は空でも可）
 - （他）likes/decisions/視聴履歴があれば将来活用
@@ -69,28 +191,26 @@
 
 ```bash
 python -m venv .venv && source .venv/bin/activate
-pip install -r scripts/requirements.txt  # 既存
-# 追加で学習用依存（例）
-pip install torch torchvision torchaudio pytorch-lightning scikit-learn pandas numpy pgvector psycopg[binary]
+pip install -r scripts/train_two_tower/requirements.txt
 ```
 
-2) 前処理スクリプト（例: `scripts/prep_two_tower_dataset.py`）
+2) 前処理スクリプト（例: `scripts/prep_two_tower/prep_two_tower_dataset.py`）
 
-- 入力: `data/dmm_reviews.csv` + Postgres(`videos`)
-- 出力: `data/interactions.parquet`（`user_id, video_id, label`）
+- 入力: `ml/data/dmm_reviews.csv` + Postgres(`videos`)
+- 出力: `ml/data/interactions.parquet`（`user_id, video_id, label`）
 
-3) 学習スクリプト（例: `scripts/train_two_tower.py`）
+3) 学習スクリプト（例: `scripts/train_two_tower/train_two_tower.py`）
 
 - 引数例
 
 ```bash
-python scripts/train_two_tower.py \
-  --input data/interactions.parquet \
+python scripts/train_two_tower/train_two_tower.py \
+  --input ml/data/interactions.parquet \
   --embedding-dim 128 \
   --epochs 5 --batch-size 2048 --lr 1e-3 \
-  --out-model artifacts/two_tower_latest.pkl \
-  --out-video-emb data/video_embeddings.parquet \
-  --out-user-emb data/user_embeddings.parquet
+  --out-model ml/artifacts/two_tower_latest.pkl \
+  --out-video-emb ml/data/video_embeddings.parquet \
+  --out-user-emb ml/data/user_embeddings.parquet
 ```
 
 4) 反映
@@ -104,7 +224,7 @@ create index if not exists idx_video_embeddings_cosine on public.video_embedding
 create index if not exists idx_user_embeddings_cosine on public.user_embeddings using ivfflat (embedding vector_cosine_ops);
 ```
 
-## GitHub Actions（本番実行）の雛形
+## GitHub Actions（将来移行の雛形）
 
 以下は学習 → ストレージへモデル配置 →（任意で）埋め込みをDBに反映、までの一例です。実際にはリポジトリにスクリプトを実装した後、このワークフローを `.github/workflows/train_two_tower.yml` として追加します。
 
@@ -129,60 +249,33 @@ jobs:
       - name: Install deps
         run: |
           python -m pip install --upgrade pip
-          pip install -r scripts/requirements.txt
-          pip install torch torchvision torchaudio pytorch-lightning scikit-learn pandas numpy requests
+          pip install -r scripts/train_two_tower/requirements.txt
 
-      - name: Fetch prod DB dump (pg_dump)
-        env:
-          DATABASE_URL: ${{ secrets.PROD_DATABASE_URL }}
-        run: |
-          pg_dump --no-owner --no-privileges --format=custom "$DATABASE_URL" \
-            --table=public.videos \
-            --table=public.video_embeddings \
-            --table=public.user_embeddings \
-            --file=prod.dump
-
-      - name: Restore dump to local Postgres
-        run: |
-          docker run -d --name pg -e POSTGRES_PASSWORD=postgres -p 5432:5432 postgres:15
-          sleep 10
-          pg_restore --clean --if-exists --no-owner --no-privileges --dbname=postgresql://postgres:postgres@localhost:5432/postgres prod.dump
-
-      - name: Prepare dataset
+      - name: Prepare dataset (explicit)
         run: |
           python scripts/prep_two_tower_dataset.py \
-            --reviews data/dmm_reviews.csv \
-            --db postgresql://postgres:postgres@localhost:5432/postgres \
-            --out data/interactions.parquet
+            --mode explicit \
+            --input ml/data/reactions.csv \
+  --out-train ml/data/interactions_train.parquet \
+  --out-val ml/data/interactions_val.parquet
 
       - name: Train TwoTower
         run: |
           python scripts/train_two_tower.py \
-            --input data/interactions.parquet \
-            --embedding-dim 128 --epochs 5 --batch-size 2048 --lr 1e-3 \
-            --out-model artifacts/two_tower_latest.pkl \
-            --out-video-emb data/video_embeddings.parquet \
-            --out-user-emb data/user_embeddings.parquet
+            --embedding-dim 256 --epochs 5 --batch-size 2048 --lr 1e-3
 
       - name: Upload model to Supabase Storage
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: |
-          # 例: storage バケット "models" にアップロード
-          curl -X POST "$SUPABASE_URL/storage/v1/object/models/two_tower_latest.pkl" \
+          # 例: storage バケット "models" にアップロード（ONNX推奨）
+          curl -X POST "$SUPABASE_URL/storage/v1/object/models/two_tower_latest.onnx" \
             -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
             -H "Content-Type: application/octet-stream" \
-            --data-binary @artifacts/two_tower_latest.pkl
+  --data-binary @ml/artifacts/two_tower_latest.onnx
 
-      - name: Upsert embeddings to DB (optional)
-        env:
-          DATABASE_URL: ${{ secrets.PROD_DATABASE_URL }}
-        run: |
-          python scripts/upsert_embeddings.py \
-            --db "$DATABASE_URL" \
-            --video-emb data/video_embeddings.parquet \
-            --user-emb data/user_embeddings.parquet
+      # 埋め込みのDB反映は本仕様では不要のため省略
 ```
 
 ### Secrets と権限
@@ -214,14 +307,14 @@ jobs:
 - [ ] `reviews.csv` → `interactions.parquet` が妥当（件数、ユーザー/動画数、星分布）
 - [ ] 学習 1〜5 epoch で overfit しすぎない・loss 低下
 - [ ] Recall@K（例: K=10）がランダムより十分に良い
-- [ ] DB 反映後、簡易クエリで類似検索が返る（例: 上位10件）
+-- [ ] ONNXの推論が期待通り（例: サンプルユーザー/アイテムでスコアが出る）
 
 ## よくある論点
 
-- 未登録 `product_url` の扱い: ingest で最小挿入→後続クロールで enrich がベター
-- 埋め込み次元: 計算資源とトレードオフ。最終的には 768 へ射影してスキーマ整合
-- 評価: ユーザーごとのレビュー濃度差に留意。ヒストリー極小ユーザーは正則化・popularity 混合が有効
+- 未登録 `product_url` の扱い: 前処理時に最小挿入→後続クロールで enrich（任意）。
+- 埋め込み次元: 本仕様は 256 に固定。将来変更時はDBスキーマ・下流も一括更新。
+- 評価: ユーザー履歴が薄い場合、popularity 混合や正則化で安定化。
 
 ---
 
-以上です。了承いただければ、前処理/学習/Upsert 用のスクリプト雛形を `scripts/` 配下に順次追加します（最初はダミー実装→段階的に精緻化）。
+以上です。スクリプトは `scripts/` 配下に追加済みです。必要に応じて Upsert 用スクリプトや GHA ワークフローも追補します。
