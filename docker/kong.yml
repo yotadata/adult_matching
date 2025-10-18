@@ -1,78 +1,50 @@
 _format_version: "2.1"
 _transform: true
 
-plugins:
-  - name: cors
-    config:
-      origins:
-        - "*"
-      methods:
-        - GET
-        - POST
-        - OPTIONS
-        - PUT
-        - PATCH
-        - DELETE
-      headers:
-        - Authorization
-        - Content-Type
-        - apikey
-        - x-client-info
-        - X-Client-Info
-        - x-supabase-api-version
-        - X-Supabase-Api-Version
-        - X-Requested-With
-        - Prefer
-        - Range
-      exposed_headers:
-        - Content-Range
-        - Content-Disposition
-        - Content-Encoding
-      credentials: false
-      max_age: 3600
-
 services:
   - name: auth
     url: http://auth:9999/
+    plugins:
+      - name: cors
+        config:
+          origins:
+            - "http://localhost:3000"
+          methods:
+            - GET
+            - POST
+            - OPTIONS
+            - PUT
+            - PATCH
+            - DELETE
+          headers:
+            - Authorization
+            - Content-Type
+            - apikey
+            - x-client-info
+            - X-Client-Info
+            - x-supabase-api-version
+            - X-Supabase-Api-Version
+            - X-Requested-With
+            - Prefer
+            - Range
+          exposed_headers:
+            - Content-Range
+            - Content-Disposition
+            - Content-Encoding
+          credentials: true
+          max_age: 3600
+      - name: response-transformer
+        config:
+          add:
+            headers:
+              - "Access-Control-Allow-Origin: http://localhost:3000"
+              - "Access-Control-Allow-Credentials: true"
+              - "Access-Control-Allow-Headers: Authorization, Content-Type, apikey, x-client-info, X-Client-Info, x-supabase-api-version, X-Supabase-Api-Version, X-Requested-With, Prefer, Range"
+              - "Vary: Origin"
     routes:
       - name: auth_v1
         paths:
           - /auth/v1
-        plugins:
-          - name: cors
-            config:
-              origins:
-                - "http://localhost:3000"
-              methods:
-                - GET
-                - POST
-                - OPTIONS
-                - PUT
-                - PATCH
-                - DELETE
-              headers:
-                - Authorization
-                - Content-Type
-                - apikey
-                - x-client-info
-                - X-Client-Info
-                - x-supabase-api-version
-                - X-Supabase-Api-Version
-                - X-Requested-With
-                - Prefer
-                - Range
-              exposed_headers:
-                - Content-Range
-                - Content-Disposition
-                - Content-Encoding
-              credentials: false
-              max_age: 3600
-          - name: response-transformer
-            config:
-              add:
-                headers:
-                  - "Access-Control-Allow-Origin: *"
-                  - "Vary: Origin"
 
   - name: rest
     url: http://rest:3000/
