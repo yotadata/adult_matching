@@ -22,3 +22,8 @@
 ## 受け入れ基準
 - [ ] テスト観点・完了条件
 
+## 運用前提（Supabase 自前スタック）
+- DB 初期化: `docker/db/init/*.sql` を idempotent に適用する。
+- 互換性: Realtime（Ecto）は `public.schema_migrations(version, inserted_at)` を期待する。
+  - 他ツールにより `public.schema_migrations(version)` のみが存在する場合、`003-fix-ecto-schema-migrations.sql` で `inserted_at` を自動追加する。
+  - 既存データは保持される（`inserted_at` は `now()` で補完）。

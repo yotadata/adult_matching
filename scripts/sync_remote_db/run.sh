@@ -1,13 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-IMAGE=adult-matching-sync-db:latest
+# Prefer host-installed Supabase CLI to avoid pulling container images
+if command -v supabase >/dev/null 2>&1; then
+  exec bash scripts/sync_remote_db/sync_remote_db.sh "$@"
+fi
 
-docker build -f scripts/sync_remote_db/Dockerfile -t "$IMAGE" .
-
-exec docker run --rm -it \
-  -v "$(pwd)":/workspace \
-  -v /var/run/docker.sock:/var/run/docker.sock \
-  -w /workspace \
-  "$IMAGE" "$@"
-
+echo "Error: supabase CLI not found on host, and containerized runner is disabled due to registry access." >&2
+echo "Install CLI (macOS): brew install supabase/tap/supabase" >&2
+echo "Docs: https://supabase.com/docs/guides/cli" >&2
+exit 1

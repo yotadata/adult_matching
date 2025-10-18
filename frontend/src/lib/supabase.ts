@@ -1,23 +1,32 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+// Use internal URL when running on the server (inside Docker network)
+const isServer = typeof window === 'undefined';
+const publicUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const internalUrl = process.env.SUPABASE_INTERNAL_URL;
+const supabaseUrl = isServer ? (internalUrl || publicUrl) : publicUrl;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
 if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Missing Supabase URL or Anon Key. Make sure NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY are set in your environment variables.');
+  throw new Error('Missing Supabase URL or Anon Key. Ensure NEXT_PUBLIC_SUPABASE_URL (and SUPABASE_INTERNAL_URL for server) and NEXT_PUBLIC_SUPABASE_ANON_KEY are set.');
 }
 
-// Warn in production if running on HTTPS while Supabase URL is HTTP (blocked mixed content)
+// Warn in browser if running on HTTPS while Supabase URL is HTTP (blocked mixed content)
 try {
-  if (typeof window !== 'undefined') {
+  if (!isServer) {
     const isHttps = window.location.protocol === 'https:';
     if (isHttps && supabaseUrl?.startsWith('http://')) {
-      // Do not throw to avoid breaking the app completely, but log loudly.
-      // Mixed content will block network requests and appear as "no request fired" in DevTools.
-      // Fix by setting NEXT_PUBLIC_SUPABASE_URL to https.
       console.error('[Supabase] Mixed content: page over HTTPS but NEXT_PUBLIC_SUPABASE_URL is HTTP. Update env to use https://');
     }
   }
 } catch {}
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+// Expose client for debugging in the browser (dev only)
+try {
+  if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'production') {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (window as any).supabase = supabase;
+  }
+} catch {}

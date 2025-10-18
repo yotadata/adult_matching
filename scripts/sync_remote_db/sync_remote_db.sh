@@ -39,7 +39,7 @@ cd "$ROOT_DIR"
 ENV_FILE="docker/env/dev.env"
 PROJECT_REF=""
 CONFIRM="false"
-START_LOCAL="true"
+START_LOCAL="false" # default to post-apply against existing local stack
 MODE="schema-mirror" # schema-mirror | full | data
 DB_PASSWORD=""
 EXCLUDE_LIST=""
@@ -60,6 +60,8 @@ while [[ $# -gt 0 ]]; do
       EXCLUDE_LIST="$2"; shift 2;;
     --exclude-embeddings)
       EXCLUDE_EMBEDDINGS="true"; shift;;
+    --start-local)
+      START_LOCAL="true"; shift;;
     --include-managed-schemas)
       INCLUDE_MANAGED_SCHEMAS="true"; shift;;
     --yes|-y)
@@ -78,14 +80,16 @@ if ! command -v supabase >/dev/null 2>&1; then
   exit 1
 fi
 
-# Load env file if exists to get NEXT_PUBLIC_SUPABASE_URL as default source
+# Always load env file for local DB credentials and defaults
+if [[ -f "$ENV_FILE" ]]; then
+  set -a
+  # shellcheck disable=SC1090
+  . "$ENV_FILE"
+  set +a
+fi
+
+# Load project ref from URL only if not provided
 if [[ -z "$PROJECT_REF" ]]; then
-  if [[ -f "$ENV_FILE" ]]; then
-    set -a
-    # shellcheck disable=SC1090
-    . "$ENV_FILE"
-    set +a
-  fi
   if [[ -n "${NEXT_PUBLIC_SUPABASE_URL:-}" ]]; then
     # Extract subdomain before .supabase.co as project ref
     maybe_ref=$(printf "%s\n" "$NEXT_PUBLIC_SUPABASE_URL" | sed -E 's#^https?://([^.]+)\.supabase\.co.*#\1#')
@@ -115,12 +119,14 @@ fi
 if [[ "$START_LOCAL" == "true" ]]; then
   echo "Starting local Supabase (if not running)..."
   supabase start >/dev/null || true
+else
+  echo "Skipping 'supabase start' (per --no-start)"
 fi
 
 echo "Linking to remote project (if not already linked)..."
 supabase link --project-ref "$PROJECT_REF" --yes >/dev/null || true
 
-TMP_DIR="supabase/.tmp/db-sync"
+TMP_DIR="$ROOT_DIR/supabase/.tmp/db-sync"
 mkdir -p "$TMP_DIR"
 DATA_FILE="$TMP_DIR/remote_data.sql"
 SCHEMA_FILE="$TMP_DIR/remote_schema.sql"
@@ -138,7 +144,7 @@ run_sql() {
   local sql="$1"
   local host="${LOCAL_DB_HOST:-127.0.0.1}"
   local user="${LOCAL_DB_USER:-postgres}"
-  local pass="${LOCAL_DB_PASSWORD:-postgres}"
+  local pass="${LOCAL_DB_PASSWORD:-${POSTGRES_PASSWORD:-postgres}}"
   local dbname="${LOCAL_DB_NAME:-postgres}"
   local port
   port=$(_detect_db_port)
@@ -183,7 +189,7 @@ restore_with_psql() {
   local file="$1"
   local host="${LOCAL_DB_HOST:-127.0.0.1}"
   local user="${LOCAL_DB_USER:-postgres}"
-  local pass="${LOCAL_DB_PASSWORD:-postgres}"
+  local pass="${LOCAL_DB_PASSWORD:-${POSTGRES_PASSWORD:-postgres}}"
   local dbname="${LOCAL_DB_NAME:-postgres}"
   local port
   port=$(_detect_db_port)
@@ -194,7 +200,14 @@ restore_with_psql() {
   fi
 
   echo "Applying file to local database via psql: $file"
-  PGPASSWORD="$pass" psql -h "$host" -p "$port" -U "$user" -d "$dbname" -v ON_ERROR_STOP=1 -f "$file"
+  if ! PGPASSWORD="$pass" psql -h "$host" -p "$port" -U "$user" -d "$dbname" -v ON_ERROR_STOP=1 -f "$file"; then
+    echo "Direct TCP connection failed. Falling back to docker exec into 'supabase_db'..." >&2
+    if ! docker ps --format '{{.Names}}' | grep -Fxq supabase_db; then
+      echo "Error: Container 'supabase_db' not found. Set LOCAL_DB_HOST/PORT/USER/PASSWORD or ensure the container name matches." >&2
+      exit 1
+    fi
+    docker exec -i -e PGPASSWORD="$pass" supabase_db psql -U "$user" -d "$dbname" -v ON_ERROR_STOP=1 -f - < "$file"
+  fi
 }
 
 if [[ "$MODE" == "schema-mirror" ]]; then
@@ -236,9 +249,13 @@ if [[ "$MODE" == "schema-mirror" ]]; then
 fi
 
 # Non-mirror modes keep local schema created by local migrations
-echo "Resetting local database (apply local migrations; skip seeds)..."
-# Newer Supabase CLI does not support --force; use global --yes to skip prompts
-supabase db reset --local --no-seed --yes >/dev/null
+if [[ "$START_LOCAL" == "true" ]]; then
+  echo "Resetting local database (apply local migrations; skip seeds)..."
+  # Newer Supabase CLI does not support --force; use global --yes to skip prompts
+  supabase db reset --local --no-seed --yes >/dev/null
+else
+  echo "Skipping 'supabase db reset' (per --no-start). Using current local schema."
+fi
 
 dump_data "$MODE"
 
