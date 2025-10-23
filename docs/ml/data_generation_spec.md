@@ -87,9 +87,8 @@ Two-Tower 推薦モデル向けの学習データを生成するための標準�
 | `public.user_video_decisions` 集計 | `positive_ratio_30d` | float32 | `0.67` | LIKE / (LIKE+DISLIKE) の比率。0 除算時は `null`。 |
 | `public.profiles` | `signup_days` | int32 | `124` | `now() - created_at` を日数換算。アクティブ度の proxy。 |
 | `public.profiles` + 集計 | `preferred_tag_ids` | uuid[] | `["0c8c...", "9f2b..."]` | LIKE した動画タグの上位 N 件。タグ軸のユーザー嗜好を表現。 |
-| `ml/data/raw/reviews/*.csv` | `avg_stars` | float32 | `4.3` | レビュー星評価の平均値。レビューソースを利用する際の補助特徴。 |
-
-> `user_features.parquet` を追加する際は、上記列を含む長形式（主キー: `reviewer_id`）で保存し、欠損は `null` のまま後段でマスク処理する。数値列は `float32` / `int32` ベースで書き出し、ONNX 入力テンソルのスキーマは `model_meta.json` の `input_schema_version` と同期させる。
+> `user_features.parquet` を追加する際は、上記列を含む長形式（主キー: `reviewer_id`）で保存し、欠損は `null` のまま後段でマスク処理する。数値列は `float32` / `int32` ベースで書き出し、ONNX 入力テンソルのスキーマは `model_meta.json` の `input_schema_version` と同期させる。  
+> レビューデータ（星評価 CSV）は初期モデル構築時の暫定データであり、恒常運用の特徴量には利用しない方針とする。
 
 #### アイテム特徴量（現行＋拡張）
 
