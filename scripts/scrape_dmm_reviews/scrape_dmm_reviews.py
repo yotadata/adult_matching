@@ -16,7 +16,7 @@ Assumptions and notes:
 
 Usage:
     python scripts/scrape_dmm_reviews/scrape_dmm_reviews.py \
-        --output ml/data/dmm_reviews.csv \
+        --output ml/data/raw/reviews/dmm_reviews.csv \
         --max-reviewers 100 \
         --delay 1.2 \
         --timeout 20 \
@@ -606,7 +606,7 @@ def append_csv_rows(output_path: str, rows: Iterable[Tuple[str, str, int]]) -> i
 
 def main():
     parser = argparse.ArgumentParser(description="Scrape DMM Review top-100 reviewers' reviews → CSV")
-    parser.add_argument("--output", required=True, help="Output CSV path (e.g., ml/data/dmm_reviews.csv)")
+    parser.add_argument("--output", required=True, help="Output CSV path (e.g., ml/data/raw/reviews/dmm_reviews.csv)")
     parser.add_argument("--max-reviewers", type=int, default=100, help="Max reviewers to process (default: 100)")
     parser.add_argument("--delay", type=float, default=1.2, help="Delay seconds between page requests (default: 1.2)")
     parser.add_argument("--timeout", type=int, default=20, help="HTTP request timeout seconds (default: 20)")

@@ -9,22 +9,44 @@
 - 学習アウトプット（本仕様）
   - モデル（PyTorch state_dict と ONNX）を Storage へ配置（Python/TypeScript から読み込み可能）
 
+## ローカル開発 4 ステップ構成（Docker 実行）
+
+1. **データ生成（prep）**  
+   - レビューデータ（CSV）と DB の動画マスタ（CSV/DB 経由）を突合し、`reviewer_id, video_id, label` を含む学習データを `ml/data/` に出力。  
+   - 統計（件数／欠損／結合率など）をログ化し、再実行時も安全に上書きできるようにする。
+
+2. **学習（train）**  
+   - 上記 Parquet を入力に Two‑Tower を学習。  
+   - `ml/artifacts/` に成果物（`.pt`, `.onnx`, `user_embeddings.parquet`, `video_embeddings.parquet`, `model_meta.json`）を保存。ONNX はユーザー/アイテム特徴量を入力して埋め込みベクトルを生成できる推論モデルとする。
+
+3. **評価（eval）**  
+   - 学習済みモデル＋検証データから指標（例: AUC, Recall@K, MAP@K）を算出し、閾値を満たすか判定。  
+   - PyTorch モデルと ONNX 推論の出力ベクトルを比較し、コサイン距離などで許容誤差内に収まることを確認。  
+   - 結果を JSON などに保存し、NG の場合はアップサート処理へ進ませない。
+
+4. **埋め込み反映（upsert / オンライン更新）**  
+   - 評価 OK の成果物だけを Supabase Postgres の `public.user_embeddings` / `public.video_embeddings`（vector(256)）へアップサート。  
+   - Storage には `models/two_tower_latest.onnx` 等をアップロードし、バージョン管理 (`two_tower_YYYYMMDDHHMM.*`) を行う。
+
+> 各ステップは `scripts/<name>/run.sh` 経由で Docker 上から実行する。  
+> 将来的な GitHub Actions 化では、この順番でジョブ／ステップを構成すればそのまま流用可能。
+
 ## データソース（優先: 明示フィードバック）
 
 - 明示フィードバック（推奨）: `reviewer_id, product_url, label`（LIKE=1, DISLIKE=0）
   - 負例サンプリングは不要。DISLIKE が無い/極端に少ないユーザーのみ、任意で疑似負例を補う。
-- 代替（レビュー由来の星評価）: `product_url, reviewer_id, stars`（例: `ml/data/dmm_reviews_videoa_YYYY-MM-DD.csv`）
+- 代替（レビュー由来の星評価）: `product_url, reviewer_id, stars`（例: `ml/data/raw/reviews/dmm_reviews_videoa_YYYY-MM-DD.csv`）
   - 簡易に「暗黙フィードバック化」して学習可能。正例（stars>=4）に対し、未観測アイテムから K 件の疑似負例をサンプリング。
 
 ### データソース統合（今回の前処理スクリプト仕様）
 
 - 想定元ソース:
   - テーブル相当: `user_video_decisions`（LIKE/DISLIKE ベース、初期モデルでは未使用）
-- 外部CSV: DMM レビュー `ml/data/dmm_reviews_videoa_*.csv`
+- 外部CSV: DMM レビュー `ml/data/raw/reviews/dmm_reviews_videoa_*.csv`
 - スクリプトは2つのソースを単一形式（`reviewer_id, product_url, label`）に整形・統合できます。
   - 既定では decisions を含めません（初期モデル方針）。
   - 必要時に `--decisions-csv` へ CSV を渡すと、レビュー由来のデータに decisions をマージします（同一ユーザー×アイテムは decisions 側で上書き）。
-  - decisions CSV の列は柔軟に解釈します:
+ - decisions CSV の列は柔軟に解釈します:
     - ユーザー: `reviewer_id` または `user_id`
     - アイテム: `product_url` または `item_id`（本スクリプトでは product_url を推奨）
     - ラベル: `label`（0/1） または `decision`（LIKE/DISLIKE/SKIP）。`decision` は LIKE→1, DISLIKE→0, SKIP→無視。
@@ -37,192 +59,101 @@
 
 ## パイプライン全体像
 
-1) 入力CSVの準備（優先: LIKE/DISLIKE の明示データ）
-2) 前処理: `interactions(user_id, item_id, label)` を作成（ユーザー層化で train/val 分割）
-3) Two‑Tower を PyTorch で学習（埋め込み256次元）
-4) 生成物: モデル（state_dict, ONNX）、IDマップ（user/item）、メタ情報
+1) 入力CSVの準備（優先: LIKE/DISLIKE の明示データ）  
+2) 前処理: `interactions(user_id, item_id, label)` を作成（ユーザー層化で train/val 分割）  
+3) Two‑Tower を PyTorch で学習（埋め込み256次元）  
+4) 生成物: モデル（state_dict, ONNX）、埋め込み Parquet、メタ情報  
 5) （任意）評価メトリクス: Recall@K / MAP@K
 
-## ローカル検証の流れ
+## ONNX 推論入力の設計指針
 
-1) Python venv 構築
+- ユーザー塔・アイテム塔ともに ID ではなく特徴量テンソルを入力とする。例: 
+  - ユーザー: 直近 LIKE のアイテム ID ベクトル、プロフィールカテゴリ、年齢層など
+  - アイテム: タイトル/タグのテキスト埋め込み、カテゴリ ID、多値属性など
+- 各特徴量は可変長を想定しつつ、ONNX では固定サイズかマスク付きテンソルとして受け取れるよう前処理で整形する。
+- 将来の拡張を見据え、未使用フィールドがあってもフォーマットを壊さず追加できるようバージョニングする（`input_schema_version` をメタ情報に保持）。
+- 特徴量エンコード（tokenize、カテゴリ ID 付与など）は学習時と推論時で同一ロジックを使う。ONNX に含めるか、前処理コンテナを共通化する。
+
+## 運用サイクル想定
+
+- **週次**: バッチ再学習（Two-Tower 全体を再学習し、新しい ONNX / state_dict / メタ情報を生成）
+- **日次**: 新規スクレイピングで取得したアイテムに対し、ONNX を用いて特徴量→ベクトルを生成し `video_embeddings` を更新
+- **適時**: ユーザーの行動変化に応じて特徴量を組み立て、ONNX で最新のユーザー埋め込みを生成し `user_embeddings` を更新
+- 上記の各ステップは評価スクリプトの指標（Recall@K / AUC / MAP@K など）で前回比を監視し、急激な劣化があれば反映を止める
+
+### データディレクトリ構造（ml/data/）
+
+- `raw/` … 外部ソースそのままの CSV/JSON（例: `raw/reviews/dmm_reviews_videoa_YYYY-MM-DD.csv`）
+- `processed/two_tower/latest/` … 直近の学習で使用する Parquet（`interactions_train.parquet` など）
+- `processed/two_tower/runs/<run-id>/` … 各前処理実行のスナップショット（入力コピー、出力、`summary.json`）
+
+> `scripts/prep_two_tower/run_with_remote_db.sh` はデフォルトで `processed/two_tower/latest/` を上書きしつつ、`--run-id` を付けると `processed/two_tower/runs/<run-id>/` に成果物を保存します。既存のダンプを使う場合は従来の `run.sh` に `--videos-csv` を渡すことも可能です。
+
+## ローカル検証の流れ（Docker 前提）
+
+> すべて `bash scripts/<name>/run.sh` から専用コンテナを起動して実行する。ホストの Python や venv は利用しない。
+
+### 1. データ生成（prep）
 
 ```bash
-python -m venv .venv && source .venv/bin/activate
-pip install -r scripts/train_two_tower/requirements.txt
-```
-
-### uv での実行（推奨）
-
-uv を使うと仮想環境の作成と依存導入、スクリプト実行が簡潔になります。
-
-```bash
-# 1) uv のインストール（未導入の場合）
-# macOS (Homebrew):
-brew install uv
-# もしくは公式スクリプト:
-curl -LsSf https://astral.sh/uv/install.sh | sh
-
-# 2) Python 3.11 の用意（pyenv or brew のいずれか）
-# pyenv:  pyenv install 3.11.9 && pyenv local 3.11.9
-# brew:   brew install python@3.11; export UV_PYTHON="$(which python3.11)"
-
-# 3) 仮想環境の作成と依存導入
-uv venv
-uv pip install -r scripts/train_two_tower/requirements.txt
-
-# 4) 前処理（DMMレビューのみ・初期モデル）
-uv run scripts/prep_two_tower/prep_two_tower_dataset.py \
+# Remote DB 経由で動画マスタを取り込みつつデータ生成
+bash scripts/prep_two_tower/run_with_remote_db.sh \
+  --remote-db-url "$REMOTE_DATABASE_URL" \
   --mode reviews \
-  --input ml/data/dmm_reviews_videoa_2025-10-04.csv \
-  --min-stars 4 --neg-per-pos 3 \
-  --val-ratio 0.2 \
-  --out-train ml/data/interactions_train.parquet \
-  --out-val ml/data/interactions_val.parquet
-
-# 5) 学習（256次元）
-uv run scripts/train_two_tower/train_two_tower.py \
-  --embedding-dim 256 --epochs 5 --batch-size 1024 --lr 1e-3
-
-# 参考: レビュー＋decisions を統合する場合
-uv run scripts/prep_two_tower/prep_two_tower_dataset.py \
-  --mode reviews \
-  --input ml/data/dmm_reviews_videoa_2025-10-04.csv \
-  --decisions-csv ml/data/user_video_decisions_export.csv \
-  --min-stars 4 --neg-per-pos 3 \
-  --val-ratio 0.2 \
-  --out-train ml/data/interactions_train.parquet \
-  --out-val ml/data/interactions_val.parquet
+  --input ml/data/raw/reviews/dmm_reviews_videoa_YYYY-MM-DD.csv \
+  --min-stars 4 --neg-per-pos 3 --val-ratio 0.2 \
+  --run-id auto \
+  --snapshot-inputs
 ```
 
-トラブルシューティング
-- 「No virtual environment found」: `uv venv` を実行してから `uv pip install ...` を実行してください。
-- 「pyenv: version '3.11' is not installed」: `pyenv install 3.11.x` か、`brew install python@3.11 && export UV_PYTHON=$(which python3.11)` を設定してください。
+- オプション: `--decisions-csv` で LIKE/決定ログをマージ、ローカルにダンプ済みの場合は `--videos-csv` を直接指定しても良い。
+- このヘルパーはリモート DB から必要テーブルをダンプし、Docker 内に立てた Postgres にロードした上で `prep_two_tower_dataset.py` を実行する。
+- 出力: 既定では `ml/data/processed/two_tower/latest/` に `interactions_train.parquet` などを上書き。結合失敗件数や CID 欠損はサマリ JSON/標準出力で確認。
+- `--run-id auto` を指定すると `ml/data/processed/two_tower/runs/<timestamp>/` に入力/出力/summary をスナップショット保存（`--snapshot-inputs` で入力CSVもコピー）。
 
-2) 前処理（明示ラベルが既にある場合: 既定）
+### 2. 学習（train）
 
 ```bash
-python scripts/prep_two_tower/prep_two_tower_dataset.py \
-  --mode explicit \
-  --input ml/data/reactions.csv \
-  --val-ratio 0.2 \
-  --out-train ml/data/interactions_train.parquet \
-  --out-val ml/data/interactions_val.parquet
-```
-
-3) 前処理（レビュー星から作る場合: 代替）
-
-```bash
-python scripts/prep_two_tower_dataset.py \
-  --mode reviews \
-  --input ml/data/dmm_reviews_videoa_2025-10-04.csv \
-  --min-stars 4 --neg-per-pos 3 \
-  --val-ratio 0.2 \
-  --out-train ml/data/interactions_train.parquet \
-  --out-val ml/data/interactions_val.parquet
-
-3b) 前処理（レビュー＋decisions を統合する場合: 任意）
-
-```bash
-python scripts/prep_two_tower_dataset.py \
-  --mode reviews \
-  --input ml/data/dmm_reviews_videoa_2025-10-04.csv \
-  --decisions-csv ml/data/user_video_decisions_export.csv \
-  --min-stars 4 --neg-per-pos 3 \
-  --val-ratio 0.2 \
-  --out-train ml/data/interactions_train.parquet \
-  --out-val ml/data/interactions_val.parquet
-```
-
-3c) videos をDBから直接取得（cid→external_id 突合／itemキーを video_id に正規化）
-
-```bash
-# 事前に videos テーブルをCSVにエクスポートしておく（最低: id, product_url）
-# 例: supabase studio からダウンロード、またはSQL→CSV出力
-
-uv run scripts/prep_two_tower/prep_two_tower_dataset.py \
-  --mode reviews \
-  --input ml/data/dmm_reviews_videoa_2025-10-04.csv \
-  --db-url postgresql://postgres:postgres@127.0.0.1:54322/postgres \
-  --join-on external_id \
-  --min-stars 4 --neg-per-pos 3 \
-  --val-ratio 0.2 \
-  --out-train ml/data/interactions_train.parquet \
-  --out-val ml/data/interactions_val.parquet \
-  --out-items ml/data/item_features.parquet
-
-# 出力と挙動:
-# - interactions_{train,val}.parquet に 'video_id' 列が付与（join成功分のみ保持）
-# - DMMの product_url から `cid` を抽出し、`videos.external_id` と突合（推奨）。一致しないものは除外（ドロップ件数はサマリに出力）
-# - item_features.parquet に video_id, product_url, title, maker, label, series, external_id, tags（カンマ区切り）を格納
-```
-```
-```
-
-4) 学習（256 次元）
-
-```bash
-python scripts/train_two_tower/train_two_tower.py \
-  --embedding-dim 256 --epochs 5 --batch-size 2048 --lr 1e-3
-
-# itemキーに video_id を使う場合（prepで videos を渡したとき）
-python scripts/train_two_tower/train_two_tower.py \
-  --embedding-dim 256 --epochs 5 --batch-size 2048 --lr 1e-3 \
-  --item-key video_id
-```
-
-5) 生成物（`ml/artifacts/`）
-
-- `two_tower_latest.pt`（PyTorch state_dict）
-- `two_tower_latest.onnx`（ONNX: Python/TypeScript からロード可能）
-- `mappings/user_id_map.json`, `mappings/item_id_map.json`
-- `model_meta.json`（メタ情報: 次元、件数など）
-
-### 取得対象（例）
-
-- `public.videos`（id, product_url, external_id, title, maker, label, series, …）
-- `public.video_embeddings`（初回は空でも可）
-- `public.user_embeddings`（初回は空でも可）
-- （他）likes/decisions/視聴履歴があれば将来活用
-
-## ローカル検証の流れ（提案）
-
-1) Python venv 構築
-
-```bash
-python -m venv .venv && source .venv/bin/activate
-pip install -r scripts/train_two_tower/requirements.txt
-```
-
-2) 前処理スクリプト（例: `scripts/prep_two_tower/prep_two_tower_dataset.py`）
-
-- 入力: `ml/data/dmm_reviews.csv` + Postgres(`videos`)
-- 出力: `ml/data/interactions.parquet`（`user_id, video_id, label`）
-
-3) 学習スクリプト（例: `scripts/train_two_tower/train_two_tower.py`）
-
-- 引数例
-
-```bash
-python scripts/train_two_tower/train_two_tower.py \
-  --input ml/data/interactions.parquet \
-  --embedding-dim 128 \
+bash scripts/train_two_tower/run.sh \
+  --train ml/data/processed/two_tower/latest/interactions_train.parquet \
+  --val ml/data/processed/two_tower/latest/interactions_val.parquet \
+  --item-key video_id \
+  --embedding-dim 256 \
   --epochs 5 --batch-size 2048 --lr 1e-3 \
-  --out-model ml/artifacts/two_tower_latest.pkl \
-  --out-video-emb ml/data/video_embeddings.parquet \
-  --out-user-emb ml/data/user_embeddings.parquet
+  --out-dir ml/artifacts
 ```
 
-4) 反映
+- 出力: `ml/artifacts/` に `two_tower_latest.pt`, `two_tower_latest.onnx`, `user_embeddings.parquet`, `video_embeddings.parquet`, `model_meta.json` など。乱数シードやハイパーは `model_meta.json` に記録。
+- ONNX は「特徴量テンソル → ユーザー／アイテム埋め込み」を返すネットワークとしてエクスポートし、ID マップは生成しない。
+- 標準出力に epoch ごとの val loss を JSON で出力するので、ログ収集と比較が容易。
 
-- DB 書き込み（Upsert）ユーティリティ（例: `scripts/upsert_embeddings.py`）で `video_embeddings` / `user_embeddings` を更新
-- pgvector インデックス（初回のみ）
+### 3. 評価（eval, 実装予定）
 
-```sql
--- 初回のみ: 類似検索用インデックス（次元は実際の embedding 次元に合わせる）
-create index if not exists idx_video_embeddings_cosine on public.video_embeddings using ivfflat (embedding vector_cosine_ops);
-create index if not exists idx_user_embeddings_cosine on public.user_embeddings using ivfflat (embedding vector_cosine_ops);
+```bash
+bash scripts/eval_two_tower/run.sh \
+  --artifacts-dir ml/artifacts \
+  --val ml/data/processed/two_tower/latest/interactions_val.parquet \
+  --metrics-json ml/artifacts/metrics.json \
+  --recall-k 20 --auc-threshold 0.6
 ```
+
+- 期待出力: `metrics.json`（AUC, Recall@K, MAP@K など）。閾値を満たさない場合は終了コード ≠ 0 とし、後続ステップを止める。
+- Dockerfile / requirements / run.sh を `scripts/eval_two_tower/` に追加し、共通の評価ロジックを実装予定。
+- PyTorch で生成した埋め込みと ONNX で生成した埋め込みを比較し、コサイン距離・L2 誤差が許容範囲かを回帰テストする。
+
+### 4. 埋め込み反映（upsert, 実装予定）
+
+```bash
+bash scripts/upsert_two_tower/run.sh \
+  --artifacts-dir ml/artifacts \
+  --env-file docker/env/dev.env \
+  --dry-run
+```
+
+- 期待動作: `user_embeddings.parquet` / `video_embeddings.parquet` を pgvector テーブルへ upsert し、`two_tower_latest.onnx` などを Storage `models/` バケットへアップロード。
+- `--dry-run=false` で実際に書き込み。成功時は更新件数と新モデル バージョンをログ出力する。
+
+> 評価・アップサートのスクリプトは未実装。今後追加し、GitHub Actions から `prep → train → eval → upsert` の順に実行する構成を前提とする。
 
 ## GitHub Actions（将来移行の雛形）
 
@@ -253,11 +184,12 @@ jobs:
 
       - name: Prepare dataset (explicit)
         run: |
-          python scripts/prep_two_tower_dataset.py \
+          python scripts/prep_two_tower/prep_two_tower_dataset.py \
             --mode explicit \
-            --input ml/data/reactions.csv \
-  --out-train ml/data/interactions_train.parquet \
-  --out-val ml/data/interactions_val.parquet
+            --input ml/data/raw/reactions.csv \
+            --out-train ml/data/processed/two_tower/latest/interactions_train.parquet \
+            --out-val ml/data/processed/two_tower/latest/interactions_val.parquet \
+            --run-id "$(date -u +%Y%m%dT%H%M%SZ)"
 
       - name: Train TwoTower
         run: |
@@ -307,7 +239,7 @@ jobs:
 - [ ] `reviews.csv` → `interactions.parquet` が妥当（件数、ユーザー/動画数、星分布）
 - [ ] 学習 1〜5 epoch で overfit しすぎない・loss 低下
 - [ ] Recall@K（例: K=10）がランダムより十分に良い
--- [ ] ONNXの推論が期待通り（例: サンプルユーザー/アイテムでスコアが出る）
+- [ ] ONNX で生成した埋め込みと PyTorch で生成した埋め込みが十分に一致（コサイン距離が閾値内）
 
 ## よくある論点
 

@@ -29,9 +29,9 @@ The container uses Node 20, mounts the `frontend` directory for live reload, and
 ## Commands (per-script Docker)
 - Start all services: `docker compose -f docker/compose.yml up -d --build` (uses `docker/env/dev.env`)
 - Stop all services: `docker compose -f docker/compose.yml down`
-- Prep dataset: `bash scripts/prep_two_tower/run.sh --mode reviews --input ml/data/dmm_reviews_videoa_....csv --out-train ml/data/interactions_train.parquet --out-val ml/data/interactions_val.parquet`
+- Prep dataset: `bash scripts/prep_two_tower/run_with_remote_db.sh --remote-db-url "$REMOTE_DATABASE_URL" --mode reviews --input ml/data/raw/reviews/dmm_reviews_videoa_....csv --run-id auto`
 - Train model: `bash scripts/train_two_tower/run.sh --embedding-dim 256 --epochs 5`
-- Scrape reviews: `bash scripts/scrape_dmm_reviews/run.sh --output ml/data/dmm_reviews.csv`
+- Scrape reviews: `bash scripts/scrape_dmm_reviews/run.sh --output ml/data/raw/reviews/dmm_reviews.csv`
 
 ## Notes
 - Edge Functions: In dev, you can run `supabase functions serve` on the host alongside `supabase start`. The frontend will call them via the Supabase API URL (use the same `host.docker.internal` host if needed).

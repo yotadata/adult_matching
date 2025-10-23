@@ -1,15 +1,22 @@
 #!/usr/bin/env python3
 import argparse
 import json
+import shutil
 import sys
-from os import path as _path
 from dataclasses import dataclass
+from datetime import datetime, timezone
+from os import path as _path
 from pathlib import Path
-from typing import Tuple
+from typing import Dict, Tuple
 
 import numpy as np
 import pandas as pd
 import psycopg
+
+
+DEFAULT_PROCESSED_ROOT = Path("ml/data/processed/two_tower")
+DEFAULT_LATEST_DIR = DEFAULT_PROCESSED_ROOT / "latest"
+DEFAULT_SNAPSHOT_ROOT = DEFAULT_PROCESSED_ROOT / "runs"
 
 
 @dataclass
@@ -26,6 +33,11 @@ class PrepConfig:
     out_train: Path
     out_val: Path
     out_items: Path
+    run_id: str | None
+    snapshot_root: Path | None
+    snapshot_inputs: bool
+    summary_path: Path | None
+    keep_legacy_outputs: bool
 
 
 def build_interactions_from_reviews(df: pd.DataFrame, min_positive_stars: int, k_neg: int) -> pd.DataFrame:
@@ -227,6 +239,60 @@ def maybe_join_videos(interactions: pd.DataFrame, videos_csv: Path | None, join_
     return joined.rename(columns={"id": "video_id"}), items, missing, True, join_used
 
 
+def _resolve_snapshot_paths(cfg: PrepConfig) -> tuple[Path | None, Dict[str, Path]]:
+    if cfg.run_id is None or cfg.snapshot_root is None:
+        return None, {}
+    run_dir = cfg.snapshot_root / cfg.run_id
+    run_dir.mkdir(parents=True, exist_ok=True)
+    files: Dict[str, Path] = {
+        "train": run_dir / "interactions_train.parquet",
+        "val": run_dir / "interactions_val.parquet",
+        "items": run_dir / "item_features.parquet",
+        "summary": run_dir / "summary.json",
+    }
+    return run_dir, files
+
+
+def _copy_if_exists(src: Path | None, dest: Path) -> bool:
+    if src is None:
+        return False
+    if not src.exists():
+        return False
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(src, dest)
+    return True
+
+
+def _snapshot_inputs(cfg: PrepConfig, run_dir: Path, copied_files: Dict[str, str]) -> None:
+    inputs_dir = run_dir / "inputs"
+    inputs_dir.mkdir(exist_ok=True)
+    copied_any = False
+
+    if cfg.input_csv.exists():
+        dest = inputs_dir / cfg.input_csv.name
+        shutil.copy2(cfg.input_csv, dest)
+        copied_files["input_csv_copy"] = str(dest)
+        copied_any = True
+    if cfg.decisions_csv is not None and cfg.decisions_csv.exists():
+        dest = inputs_dir / cfg.decisions_csv.name
+        shutil.copy2(cfg.decisions_csv, dest)
+        copied_files["decisions_csv_copy"] = str(dest)
+        copied_any = True
+    if cfg.videos_csv is not None and cfg.videos_csv.exists():
+        dest = inputs_dir / cfg.videos_csv.name
+        shutil.copy2(cfg.videos_csv, dest)
+        copied_files["videos_csv_copy"] = str(dest)
+        copied_any = True
+
+    if not copied_any:
+        copied_files["inputs_copied"] = "none"
+
+
+def _write_summary(summary: Dict[str, object], path: Path) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(summary, ensure_ascii=False, indent=2))
+
+
 def main():
     ap = argparse.ArgumentParser(description="Prepare Two-Tower interactions dataset.")
     ap.add_argument("--mode", choices=["explicit", "reviews"], default="explicit", help="Input format: explicit (LIKE/DISLIKE) or reviews (stars). Default: explicit")
@@ -238,10 +304,32 @@ def main():
     ap.add_argument("--min-stars", type=int, default=4, help="Minimum stars to treat as positive (default: 4)")
     ap.add_argument("--neg-per-pos", type=int, default=3, help="Number of negatives per positive (default: 3)")
     ap.add_argument("--val-ratio", type=float, default=0.2, help="Validation user ratio (default: 0.2)")
-    ap.add_argument("--out-train", type=Path, default=Path("ml/data/interactions_train.parquet"))
-    ap.add_argument("--out-val", type=Path, default=Path("ml/data/interactions_val.parquet"))
-    ap.add_argument("--out-items", type=Path, default=Path("ml/data/item_features.parquet"), help="Output path for per-item attributes (if videos CSV is supplied)")
+    ap.add_argument("--out-train", type=Path, default=DEFAULT_LATEST_DIR / "interactions_train.parquet")
+    ap.add_argument("--out-val", type=Path, default=DEFAULT_LATEST_DIR / "interactions_val.parquet")
+    ap.add_argument("--out-items", type=Path, default=DEFAULT_LATEST_DIR / "item_features.parquet", help="Output path for per-item attributes (if videos CSV is supplied)")
+    ap.add_argument("--run-id", type=str, default=None, help="Optional identifier to snapshot this run under --snapshot-root/<run-id>. Use 'auto' to generate a timestamp.")
+    ap.add_argument("--snapshot-root", type=Path, default=DEFAULT_SNAPSHOT_ROOT, help="Base directory for prep run snapshots when --run-id is provided.")
+    ap.add_argument("--snapshot-inputs", action="store_true", help="When used with --run-id, copy input/auxiliary CSVs into the snapshot directory.")
+    ap.add_argument("--summary-out", type=Path, default=None, help="Optional path to write the prep summary JSON.")
+    ap.add_argument("--skip-legacy-output", action="store_true", help="If set, do not write legacy output files (out-train/out-val/out-items) and rely on snapshots only.")
     args = ap.parse_args()
+
+    run_id = args.run_id
+    snapshot_root: Path | None = None
+    if run_id:
+        if run_id.lower() == "auto":
+            run_id = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+        snapshot_root = args.snapshot_root
+    if args.skip_legacy_output and run_id is None:
+        raise ValueError("--skip-legacy-output requires --run-id (or --run-id auto) to specify snapshot destination.")
+    snapshot_inputs = bool(args.snapshot_inputs and run_id)
+
+    summary_path: Path | None = args.summary_out
+    if summary_path is None:
+        if run_id is not None and snapshot_root is not None:
+            summary_path = snapshot_root / run_id / "summary.json"
+        elif not args.skip_legacy_output:
+            summary_path = DEFAULT_LATEST_DIR / "summary.json"
 
     cfg = PrepConfig(
         mode=args.mode,
@@ -249,14 +337,22 @@ def main():
         decisions_csv=args.decisions_csv,
         videos_csv=args.videos_csv,
         db_url=args.db_url,
+        join_on=args.join_on,
         min_positive_stars=args.min_stars,
         negatives_per_positive=args.neg_per_pos,
         val_ratio=args.val_ratio,
         out_train=args.out_train,
         out_val=args.out_val,
         out_items=args.out_items,
-        join_on=args.join_on,
+        run_id=run_id,
+        snapshot_root=snapshot_root,
+        snapshot_inputs=snapshot_inputs,
+        summary_path=summary_path,
+        keep_legacy_outputs=not args.skip_legacy_output,
     )
+
+    if cfg.videos_csv is None and cfg.db_url is None:
+        raise ValueError("A videos source is required. Provide either --videos-csv or --db-url.")
 
     df = pd.read_csv(cfg.input_csv)
     if cfg.mode == "explicit":
@@ -276,13 +372,14 @@ def main():
 
     # Optional: join videos to attach video_id and output item attributes parquet
     interactions, items_df, missing_count, joined_ok, join_used = maybe_join_videos(interactions, cfg.videos_csv, cfg.join_on, cfg.db_url)
+    if not joined_ok or items_df is None:
+        raise ValueError("Failed to join videos metadata. Ensure --videos-csv or --db-url provides the required tables.")
     dropped_no_video_id = 0
-    if joined_ok:
-        before = int(len(interactions))
-        # Drop rows that failed to map to a video_id
-        interactions = interactions.dropna(subset=["video_id"]).reset_index(drop=True)
-        after = int(len(interactions))
-        dropped_no_video_id = before - after
+    before = int(len(interactions))
+    # Drop rows that failed to map to a video_id
+    interactions = interactions.dropna(subset=["video_id"]).reset_index(drop=True)
+    after = int(len(interactions))
+    dropped_no_video_id = before - after
     # Normalize dtypes before split/write to avoid UUID dtype issues in parquet
     for col in ["reviewer_id", "product_url"]:
         if col in interactions.columns:
@@ -294,19 +391,6 @@ def main():
 
     train, val = train_val_split(interactions, cfg.val_ratio)
 
-    cfg.out_train.parent.mkdir(parents=True, exist_ok=True)
-    cfg.out_val.parent.mkdir(parents=True, exist_ok=True)
-    train.to_parquet(cfg.out_train, index=False)
-    val.to_parquet(cfg.out_val, index=False)
-    if items_df is not None:
-        # Ensure string types for IDs before parquet
-        if "video_id" in items_df.columns:
-            items_df["video_id"] = items_df["video_id"].astype(str)
-        if "external_id" in items_df.columns:
-            items_df["external_id"] = items_df["external_id"].astype(str)
-        cfg.out_items.parent.mkdir(parents=True, exist_ok=True)
-        items_df.to_parquet(cfg.out_items, index=False)
-
     summary = {
         "train_rows": int(len(train)),
         "val_rows": int(len(val)),
@@ -316,6 +400,7 @@ def main():
         "merged_decisions": bool(cfg.decisions_csv is not None),
         "joined_videos": bool(items_df is not None),
         "mode": cfg.mode,
+        "missing_video_id_before_drop": int(missing_count),
     }
     if joined_ok:
         cid_null = int(interactions['cid'].isna().sum()) if ('cid' in interactions.columns and join_used == 'external_id') else 0
@@ -326,7 +411,79 @@ def main():
             "join_used": join_used,
             "cid_missing_in_input": cid_null,
         })
-    print(json.dumps(summary, ensure_ascii=False))
+
+    snapshot_dir, snapshot_files = _resolve_snapshot_paths(cfg)
+    paths_info: Dict[str, str] = {}
+    items_to_write = None
+    if items_df is not None:
+        items_to_write = items_df.copy()
+        if "video_id" in items_to_write.columns:
+            items_to_write["video_id"] = items_to_write["video_id"].astype(str)
+        if "external_id" in items_to_write.columns:
+            items_to_write["external_id"] = items_to_write["external_id"].astype(str)
+
+    summary_paths: list[Path] = []
+    if cfg.summary_path is not None:
+        summary_paths.append(cfg.summary_path)
+        paths_info["summary_path"] = str(cfg.summary_path)
+
+    if cfg.keep_legacy_outputs:
+        cfg.out_train.parent.mkdir(parents=True, exist_ok=True)
+        cfg.out_val.parent.mkdir(parents=True, exist_ok=True)
+        train.to_parquet(cfg.out_train, index=False)
+        val.to_parquet(cfg.out_val, index=False)
+        paths_info["train_path"] = str(cfg.out_train)
+        paths_info["val_path"] = str(cfg.out_val)
+        if items_to_write is not None:
+            cfg.out_items.parent.mkdir(parents=True, exist_ok=True)
+            items_to_write.to_parquet(cfg.out_items, index=False)
+            paths_info["items_path"] = str(cfg.out_items)
+        else:
+            paths_info["items_path"] = "not_generated"
+    elif snapshot_dir is None:
+        raise ValueError("No legacy outputs and no snapshot destination. Provide --run-id or remove --skip-legacy-output.")
+
+    if snapshot_dir is not None:
+        if cfg.keep_legacy_outputs:
+            _copy_if_exists(cfg.out_train, snapshot_files["train"])
+            _copy_if_exists(cfg.out_val, snapshot_files["val"])
+            if items_to_write is not None and cfg.out_items.exists():
+                _copy_if_exists(cfg.out_items, snapshot_files["items"])
+        else:
+            train.to_parquet(snapshot_files["train"], index=False)
+            val.to_parquet(snapshot_files["val"], index=False)
+            if items_to_write is not None:
+                items_to_write.to_parquet(snapshot_files["items"], index=False)
+        paths_info["snapshot_dir"] = str(snapshot_dir)
+        paths_info["snapshot_train"] = str(snapshot_files["train"])
+        paths_info["snapshot_val"] = str(snapshot_files["val"])
+        if items_to_write is not None:
+            paths_info["snapshot_items"] = str(snapshot_files["items"])
+        if cfg.snapshot_inputs:
+            _snapshot_inputs(cfg, snapshot_dir, paths_info)
+        summary["run_id"] = cfg.run_id
+        summary["snapshot_dir"] = str(snapshot_dir)
+        snapshot_summary_path = snapshot_files["summary"]
+        summary_paths.append(snapshot_summary_path)
+        paths_info["snapshot_summary"] = str(snapshot_summary_path)
+
+    unique_summary_paths: list[Path] = []
+    seen = set()
+    for p in summary_paths:
+        if p is None:
+            continue
+        p = Path(p)
+        key = p.resolve()
+        if key in seen:
+            continue
+        seen.add(key)
+        unique_summary_paths.append(p)
+
+    summary_payload = {**summary, "paths": paths_info, "generated_at": datetime.now(timezone.utc).isoformat()}
+    for path in unique_summary_paths:
+        _write_summary(summary_payload, path)
+
+    print(json.dumps({**summary, "paths": paths_info}, ensure_ascii=False))
 
 
 if __name__ == "__main__":

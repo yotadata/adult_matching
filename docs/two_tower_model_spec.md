@@ -13,7 +13,7 @@
 ## データ仕様（学習用）
 
 - 入力データ: `interactions`（レビュー由来）
-  - 生成元: `ml/data/dmm_reviews.csv`（列: `product_url, reviewer_id, stars`）と `videos(product_url)` の突合
+  - 生成元: `ml/data/raw/reviews/dmm_reviews_*.csv`（列: `product_url, reviewer_id, stars`）と `videos(product_url)` の突合
   - 最終スキーマ（Parquet/CSV）例: `user_id, item_id, label, weight, timestamp`
     - `user_id` = `reviewer_id`
     - `item_id` = `videos.id`（uuid）
@@ -26,19 +26,31 @@
 ## モデル仕様
 
 - エンコーダ
-  - UserEncoder: `user_id -> R^D`（Embedding + MLP など）
-  - ItemEncoder: `item_id -> R^D`（Embedding + MLP など）
+  - UserEncoder: ユーザーの行動・属性特徴量を入力し埋め込みベクトルを生成するネットワーク（例: 直近 LIKE のアイテム一覧の埋め込み平均、プロフィールカテゴリの one-hot など）
+  - ItemEncoder: アイテムのコンテンツ特徴量を入力し埋め込みベクトルを生成するネットワーク（例: タイトル/タグのテキスト埋め込み、カテゴリ ID、多値属性など）
 - 出力次元 D: 256 を基本（計算都合により 128 などで学習→必要なら線形で 256 へ射影も可）
 - 類似度: コサイン（DB は `vector_cosine_ops` を推奨）
 - 損失: 対数双曲線/InfoNCE などの二値ロス or サンプリングベースのソフトマックス。初期は BCE + 負例サンプルで可。
 - 最適化: Adam、`lr=1e-3` 目安、早期終了/学習率減衰オプション
 
+## ONNX 入力テンソル仕様
+
+- ユーザー塔・アイテム塔ともに固定 schema を持つ。例: 
+  - `user_recent_video_ids` (int64, 長さ固定の top-N。足りない分は 0、別途マスクテンソルを用意)
+  - `user_profile_onehot` (float32, プロフィールカテゴリ one-hot)
+  - `item_title_embedding` (float32, 事前学習済みテキストエンコーダの出力)
+  - `item_tag_multi_hot` (float32, タグ multi-hot)
+- 必須/任意フィールドとバージョン (`input_schema_version`) を `model_meta.json` に明記する。
+- 特徴量前処理は学習時と推論時で共通化し、ONNX 実行前にテンソルへ整形する。
+- 可変長入力は length テンソルやマスクを併用して表現し、将来的に項目が増えても互換性が保てるようにする。
+
 ## 成果物と配置
 
 - Storage（Supabase）
-  - `models/two_tower_latest.pkl`（pickle）
-  - `models/two_tower_latest.json`（メタデータ: `version, trained_at, dim, loss, metrics`）
-  - 版管理: `two_tower_YYYYMMDDHHMM.pkl` を保存し、`latest` を上書き
+  - `models/two_tower_latest.pkl`（学習済み PyTorch state_dict）
+  - `models/two_tower_latest.onnx`（特徴量→ユーザー/アイテム埋め込みを生成する推論モデル）
+  - `models/two_tower_latest.json`（メタデータ: `version, trained_at, dim, loss, metrics, input_schema_version`）
+  - 版管理: `two_tower_YYYYMMDDHHMM.onnx` などバージョン付きファイルを保存し、`latest` を上書き
 - DB（pgvector）
   - `public.video_embeddings(video_id uuid, embedding vector(256))`
   - `public.user_embeddings(user_id text, embedding vector(256))`
@@ -53,13 +65,15 @@ create index if not exists idx_user_embeddings_cosine
 
 ## 推論 I/O 仕様
 
-- 入力（いずれか）
-  - `user_id`（既存ユーザー）→ `user_embeddings` から取得
-  - 新規/未学習ユーザー: 簡易プロフィールや最近の行動から `E_u` を都度推定（当面は fallback: 人気混合）
-  - 候補アイテム: `video_embeddings` 全体 or 事前絞り込み（新着・タグ一致など）
-- 出力
-  - `[{ video_id, score, rank }, ...]`（rank は score 降順）
-  - UI では `videos` と join して `title/thumbnail/product_url` を返却
+- **バッチ/オンライン埋め込み生成**
+  - 入力: ユーザーまたはアイテムの特徴量テンソル（例: 最近の LIKE リスト、タイトル埋め込み、タグ one-hot など）
+  - 出力: 埋め込みベクトル（`R^D`）。生成した結果を `public.user_embeddings` / `public.video_embeddings` に upsert するか、その場の推論に利用する。
+  - ONNX Runtime を用い、PyTorch 版と同じ特徴量前処理を共有する。
+
+- **推薦 API**
+  - 入力: `user_embeddings` から取得したベクトル（新規ユーザーは ONNX で生成）
+  - 候補: `video_embeddings` テーブル（新規アイテムは日次で ONNX 生成）
+  - 出力: `[{ video_id, score, rank }, ...]`（rank は score 降順）。UI では `videos` と join して `title/thumbnail/product_url` を返却
 
 ### TypeScript からの利用例（Supabase + pgvector）
 

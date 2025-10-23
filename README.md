@@ -108,13 +108,13 @@ docker compose -f docker/compose.yml restart rest
 - 前処理（reviews → interactions）
 
 ```bash
-bash scripts/prep_two_tower/run.sh \
+# Remote DB から動画メタデータを取り込みつつデータ生成
+bash scripts/prep_two_tower/run_with_remote_db.sh \
+  --remote-db-url "$REMOTE_DATABASE_URL" \
   --mode reviews \
-  --input ml/data/dmm_reviews_videoa_YYYY-MM-DD.csv \
-  --min-stars 4 --neg-per-pos 3 \
-  --val-ratio 0.2 \
-  --out-train ml/data/interactions_train.parquet \
-  --out-val ml/data/interactions_val.parquet
+  --input ml/data/raw/reviews/dmm_reviews_videoa_YYYY-MM-DD.csv \
+  --min-stars 4 --neg-per-pos 3 --val-ratio 0.2 \
+  --run-id auto
 ```
 
 - 学習
@@ -126,7 +126,7 @@ bash scripts/train_two_tower/run.sh --embedding-dim 256 --epochs 5
 - スクレイピング（DMM レビュー）
 
 ```bash
-bash scripts/scrape_dmm_reviews/run.sh --output ml/data/dmm_reviews.csv
+bash scripts/scrape_dmm_reviews/run.sh --output ml/data/raw/reviews/dmm_reviews.csv
 ```
 
 - データ取り込み（FANZA API）
