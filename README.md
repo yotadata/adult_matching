@@ -175,7 +175,7 @@ HARD=true bash scripts/db_reset/run.sh
 - すべて Docker 前提です。ローカルの `.nvmrc`, `.python-version`, `.venv` は不要です。
 - 機密情報は `docker/env/*.env` に保持し、Git にはコミットしないでください。
 - Supabase は self-hosted 構成（db/rest/auth/realtime/storage/kong/studio + edge-runtime）。Edge Functions は `VERIFY_JWT=false` で起動します。
-- 詳細は `docs/docker.md`, `docs/two_tower_training.md` も参照してください。
+- 詳細は `docs/docker.md`, `docs/ml/two_tower_training.md` も参照してください。
 # 補足: 自動初期化
 # - `db` の起動をヘルスチェックで待ち、`db-init` ジョブが init SQL を idempotent に適用します
 #   （空ボリュームでも、既存ボリュームでも安全に前提を整備します）

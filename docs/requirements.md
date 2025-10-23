@@ -25,6 +25,7 @@
 - [ ] 学習ジョブは再実行時に同一成果物パスへ上書きしても安全（idempotent）であること。
 - [ ] Storage / DB 転送時に機密キーを `.env` から安全に読み取る。
 - [ ] `ml/data` のディレクトリ構成を `raw/`（生データ）・`processed/two_tower/latest/`（最新出力）・`processed/two_tower/runs/<run-id>/`（スナップショット）の形で整理し、前処理スクリプトがこの構造を前提に動作する。
+- [ ] ML 関連ドキュメントは `docs/ml/` 配下に配置し、再学習手順や仕様は同ディレクトリで管理する。
 
 ## インターフェース/依存
 - Supabase Postgres (`public.video_embeddings`, `public.user_embeddings`, `public.video_popularity_daily`) と pgvector 拡張。
