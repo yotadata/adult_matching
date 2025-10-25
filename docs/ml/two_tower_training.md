@@ -108,7 +108,7 @@ bash scripts/prep_two_tower/run_with_remote_db.sh \
 
 - オプション: `--decisions-csv` で LIKE/決定ログをマージ、ローカルにダンプ済みの場合は `--videos-csv` を直接指定しても良い。
 - このヘルパーはリモート DB から必要テーブルをダンプし、Docker 内に立てた Postgres にロードした上で `prep_two_tower_dataset.py` を実行する。
-- 出力: 既定では `ml/data/processed/two_tower/latest/` に `interactions_train.parquet` などを上書き。結合失敗件数や CID 欠損はサマリ JSON/標準出力で確認。
+- 出力: 既定では `ml/data/processed/two_tower/latest/` に `interactions_train.parquet`, `interactions_val.parquet`, `item_features.parquet`, `user_features.parquet` を上書き。`user_features.parquet` は `user_video_decisions` / `profiles` / `video_tags` を集約し、`recent_positive_video_ids`, `like_count_30d`, `positive_ratio_30d`, `signup_days`, `preferred_tag_ids` などを保持する。結合失敗件数や CID 欠損はサマリ JSON/標準出力で確認。
 - `--run-id auto` を指定すると `ml/data/processed/two_tower/runs/<timestamp>/` に入力/出力/summary をスナップショット保存（`--snapshot-inputs` で入力CSVもコピー）。
 
 ### 2. 学習（train）
@@ -117,14 +117,17 @@ bash scripts/prep_two_tower/run_with_remote_db.sh \
 bash scripts/train_two_tower/run.sh \
   --train ml/data/processed/two_tower/latest/interactions_train.parquet \
   --val ml/data/processed/two_tower/latest/interactions_val.parquet \
+  --user-features ml/data/processed/two_tower/latest/user_features.parquet \
   --item-key video_id \
+  --item-features ml/data/processed/two_tower/latest/item_features.parquet \
   --embedding-dim 256 \
-  --epochs 5 --batch-size 2048 --lr 1e-3 \
+  --hidden-dim 512 \
+  --epochs 5 --batch-size 1024 --lr 1e-3 \
   --out-dir ml/artifacts
 ```
 
-- 出力: `ml/artifacts/` に `two_tower_latest.pt`, `two_tower_latest.onnx`, `user_embeddings.parquet`, `video_embeddings.parquet`, `model_meta.json` など。乱数シードやハイパーは `model_meta.json` に記録。
-- ONNX は「特徴量テンソル → ユーザー／アイテム埋め込み」を返すネットワークとしてエクスポートし、ID マップは生成しない。
+- 出力: `ml/artifacts/` に `two_tower_latest.pt`, `two_tower_latest.onnx`, `user_embeddings.parquet`, `video_embeddings.parquet`, `model_meta.json` など。`user_embeddings.parquet` / `video_embeddings.parquet` は `user_features.parquet` / `item_features.parquet` の特徴量を MLP エンコーダに通して得た埋め込みを保存する。
+- ONNX 入力は `user_features` / `item_features`（いずれも `float32`）で、ID マップは生成しない。推論時は前処理で同一ベクトルを作成し ONNX に入力する。
 - 標準出力に epoch ごとの val loss を JSON で出力するので、ログ収集と比較が容易。
 
 ### 3. 評価（eval, 実装予定）

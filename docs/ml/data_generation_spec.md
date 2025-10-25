@@ -75,7 +75,7 @@ Two-Tower 推薦モデル向けの学習データを生成するための標準�
 
 ### 特徴量設計（ユーザー／アイテム）
 
-前処理では当面 ID ベースの Two-Tower を想定しつつ、将来的に属性・行動特徴を同一パイプラインで扱えるようテーブル構造を整理している。`item_features.parquet` は現状の出力、`user_features.parquet` は拡張時に追加する予定の成果物である。
+前処理では Two-Tower が特徴量テンソルを直接受け取る前提で、`item_features.parquet`（アイテム特徴量）と `user_features.parquet`（ユーザー特徴量）を出力する。
 
 #### ユーザー特徴量（候補）
 
@@ -88,7 +88,7 @@ Two-Tower 推薦モデル向けの学習データを生成するための標準�
 | `public.profiles` | `signup_days` | int32 | `124` | `now() - created_at` を日数換算。アクティブ度の proxy。 |
 | `public.profiles` + 集計 | `preferred_tag_ids` | uuid[] | `["0c8c...", "9f2b..."]` | LIKE した動画タグの上位 N 件。タグ軸のユーザー嗜好を表現。 |
 > `user_features.parquet` を追加する際は、上記列を含む長形式（主キー: `reviewer_id`）で保存し、欠損は `null` のまま後段でマスク処理する。数値列は `float32` / `int32` ベースで書き出し、ONNX 入力テンソルのスキーマは `model_meta.json` の `input_schema_version` と同期させる。  
-> レビューデータ（星評価 CSV）は初期モデル構築時の暫定データであり、恒常運用の特徴量には利用しない方針とする。
+> レビューデータ（星評価 CSV）は初期モデル構築時の暫定データであり、恒常運用の特徴量には利用しない方針とする。ユーザー集計は `user_video_decisions` / `profiles` / `video_tags` を参照するため、`--db-url` を指定して Postgres から直接取得する。
 
 #### アイテム特徴量（現行＋拡張）
 

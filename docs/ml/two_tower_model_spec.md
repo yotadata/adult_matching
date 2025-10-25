@@ -35,14 +35,17 @@
 
 ## ONNX 入力テンソル仕様
 
-- ユーザー塔・アイテム塔ともに固定 schema を持つ。例: 
-  - `user_recent_video_ids` (int64, 長さ固定の top-N。足りない分は 0、別途マスクテンソルを用意)
-  - `user_profile_onehot` (float32, プロフィールカテゴリ one-hot)
-  - `item_title_embedding` (float32, 事前学習済みテキストエンコーダの出力)
-  - `item_tag_multi_hot` (float32, タグ multi-hot)
-- 必須/任意フィールドとバージョン (`input_schema_version`) を `model_meta.json` に明記する。
-- 特徴量前処理は学習時と推論時で共通化し、ONNX 実行前にテンソルへ整形する。
-- 可変長入力は length テンソルやマスクを併用して表現し、将来的に項目が増えても互換性が保てるようにする。
+- 入力名: `user_features` / `item_features`（どちらも `float32`、shape `[batch, feature_dim]`）。前処理スクリプトで生成した `user_features.parquet` / `item_features.parquet` のベクトルと同一フォーマットを期待する。
+- ユーザー側ベクトル例:
+  - `preferred_tag_ids` の multi-hot（タグ語彙と同期）
+  - `like_count_30d` / `signup_days` の `log1p` 値
+  - `positive_ratio_30d`（0〜1）
+- アイテム側ベクトル例:
+  - `source` / `maker` / `label` / `series` の one-hot
+  - `tag_ids` / `performer_ids` の multi-hot
+  - `price` の `log1p` 値
+- 特徴量の語彙（タグ・出演者など）は `model_meta.json` に `*_vocab_size` を記録し、再学習時に変動があればバージョン管理する。
+- 推論系で新しい特徴量を導入する場合は `input_schema_version` を increment し、ONNX と前処理を同時にデプロイする。
 
 ## 成果物と配置
 
