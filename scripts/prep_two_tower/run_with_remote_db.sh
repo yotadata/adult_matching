@@ -7,34 +7,48 @@ REPO_ROOT=$(cd "$SCRIPT_DIR/../.." && pwd)
 usage() {
   cat <<'EOF'
 Usage:
-  bash scripts/prep_two_tower/run_with_remote_db.sh --remote-db-url <URL> [prep_args...]
+  bash scripts/prep_two_tower/run_with_remote_db.sh [options] [prep_args...]
 
 Description:
-  1. Dumps the required tables from the remote Postgres database.
-  2. Spins up an ephemeral Postgres container seeded with the dump.
-  3. Runs prep_two_tower_dataset.py inside its Docker container against that DB.
-  4. Cleans up the ephemeral Postgres container.
+  1. Uses Supabase CLI (`supabase db dump --db-url`) to export the required tables from the remote project.
+  2. Spins up an ephemeral Postgres container seeded with that dump.
+  3. Runs prep_two_tower_dataset.py inside its Dockerコンテナ against the local DB.
+  4. Cleans upリソース after completion.
 
-Environment variables:
-  REMOTE_DB_URL     Remote Postgres connection string (postgres://...)
-  RUN_ID            Optional identifier for dump / snapshot directory (defaults to UTC timestamp)
-  DUMP_TABLES       Space separated list of tables to dump (default: "public.videos public.video_tags public.tags")
-  LOCAL_DB_NAME     Ephemeral Postgres database name (default: tt_prep)
-  LOCAL_DB_USER     Ephemeral Postgres user (default: tt_user)
-  LOCAL_DB_PASS     Ephemeral Postgres password (default: tt_pass)
-  LOCAL_DB_PORT     Host port to expose Postgres on (default: 6543)
+Options:
+  --env-file <path>     Env file to load before running (default: docker/env/prd.env).
+  --project-ref <ref>   Supabase project ref (informational / future use).
+  -h, --help            Show this help.
 
-Any additional arguments after the known flags are forwarded to prep_two_tower_dataset.py.
+Environment variables (via env file or shell):
+  REMOTE_DATABASE_URL   Remote Postgres connection string (postgresql://user:pass@host:port/db).
+  RUN_ID                Optional identifier for dump directory (default: UTC timestamp).
+  DUMP_TABLES           Space separated tables to export (default: "public.videos public.video_tags public.tags public.video_performers").
+  LOCAL_DB_NAME         Ephemeral Postgres database name (default: tt_prep).
+  LOCAL_DB_USER         Ephemeral Postgres user (default: supabase_admin).
+  LOCAL_DB_PASS         Ephemeral Postgres password (default: postgres).
+  LOCAL_DB_PORT         Host port to expose Postgres on (default: 6543).
+  LOCAL_DB_CONNECT_DB   Database used for readiness checks (default: postgres).
+  LOCAL_DB_STARTUP_TIMEOUT  Seconds to wait for Postgres readiness (default: 90).
+  POSTGRES_IMAGE        Docker image for ephemeral Postgres (default: supabase/postgres:17.6.1.021).
+  POSTGRES_PLATFORM     Docker platform for the image (auto-detected).
+
+Any追加引数 after `--` are forwarded to prep_two_tower_dataset.py.
 EOF
 }
 
-REMOTE_DB_URL="${REMOTE_DB_URL:-}"
+ENV_FILE="${SUPABASE_ENV_FILE:-docker/env/prd.env}"
+PROJECT_REF="${PROJECT_REF:-${SUPABASE_PROJECT_REF:-}}"
 FORWARD_ARGS=()
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --remote-db-url)
-      REMOTE_DB_URL="$2"
+    --env-file)
+      ENV_FILE="$2"
+      shift 2
+      ;;
+    --project-ref)
+      PROJECT_REF="$2"
       shift 2
       ;;
     -h|--help)
@@ -53,41 +67,276 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-if [[ -z "$REMOTE_DB_URL" ]]; then
-  echo "[ERROR] --remote-db-url is required (or set REMOTE_DB_URL env)" >&2
+if [[ -f "$ENV_FILE" ]]; then
+  set -a
+  # shellcheck disable=SC1090
+  . "$ENV_FILE"
+  set +a
+fi
+
+if ! command -v supabase >/dev/null 2>&1; then
+  echo "[ERROR] Supabase CLI が見つかりません。https://supabase.com/docs/guides/cli を参照してセットアップしてください。" >&2
+  exit 1
+fi
+
+if [[ -z "${REMOTE_DATABASE_URL:-}" ]]; then
+  echo "[ERROR] REMOTE_DATABASE_URL が未設定です。docker/env/prd.env などで定義してください。" >&2
   usage
   exit 1
 fi
 
+printf '[DEBUG] Env check: REMOTE_DATABASE_URL=%s\n' "$( [[ -n ${REMOTE_DATABASE_URL:-} ]] && echo set || echo unset )"
+printf '[DEBUG] Env check: PGPASSWORD=%s\n' "$( [[ -n ${PGPASSWORD:-} ]] && echo set || echo unset )"
+
 RUN_ID="${RUN_ID:-$(date -u +%Y%m%dT%H%M%SZ)}"
-DUMP_TABLES_DEFAULT="public.videos public.video_tags public.tags"
+DUMP_TABLES_DEFAULT="public.videos public.video_tags public.tags public.video_performers"
 DUMP_TABLES="${DUMP_TABLES:-$DUMP_TABLES_DEFAULT}"
 
 LOCAL_DB_NAME="${LOCAL_DB_NAME:-tt_prep}"
-LOCAL_DB_USER="${LOCAL_DB_USER:-tt_user}"
-LOCAL_DB_PASS="${LOCAL_DB_PASS:-tt_pass}"
+LOCAL_DB_USER="${LOCAL_DB_USER:-supabase_admin}"
+LOCAL_DB_PASS="${LOCAL_DB_PASS:-postgres}"
+LOCAL_DB_CONNECT_DB="${LOCAL_DB_CONNECT_DB:-postgres}"
+LOCAL_DB_STARTUP_TIMEOUT="${LOCAL_DB_STARTUP_TIMEOUT:-90}"
 LOCAL_DB_PORT="${LOCAL_DB_PORT:-6543}"
-POSTGRES_IMAGE="${POSTGRES_IMAGE:-postgres:15-alpine}"
+POSTGRES_IMAGE="${POSTGRES_IMAGE:-supabase/postgres:17.6.1.021}"
+DEFAULT_PLATFORM="linux/amd64"
+ARCH=$(uname -m)
+if [[ "$ARCH" == "arm64" || "$ARCH" == "aarch64" ]]; then
+  DEFAULT_PLATFORM="linux/arm64/v8"
+fi
+POSTGRES_PLATFORM="${POSTGRES_PLATFORM:-$DEFAULT_PLATFORM}"
 NETWORK_NAME="tt-prep-net"
 DB_CONTAINER="tt-prep-db-$RUN_ID"
 PREP_IMAGE="adult-matching-prep:latest"
 
+PYTHON_BIN="${PYTHON_BIN:-python3}"
+if ! command -v "$PYTHON_BIN" >/dev/null 2>&1; then
+  PYTHON_BIN="python"
+fi
+if ! command -v "$PYTHON_BIN" >/dev/null 2>&1; then
+  echo "[ERROR] python / python3 が見つかりません。REMOTE_DATABASE_URL の解析に必要です。" >&2
+  exit 1
+fi
+
+eval "$("$PYTHON_BIN" - <<'PY'
+from urllib.parse import urlparse
+import os
+import shlex
+
+url = os.environ.get("REMOTE_DATABASE_URL", "")
+parsed = urlparse(url)
+
+host = parsed.hostname or ""
+port = str(parsed.port or 5432)
+db = parsed.path.lstrip("/") or "postgres"
+user = parsed.username or ""
+password = parsed.password or ""
+
+print(f"REMOTE_DB_HOST={shlex.quote(host)}")
+print(f"REMOTE_DB_PORT={shlex.quote(port)}")
+print(f"REMOTE_DB_NAME={shlex.quote(db)}")
+print(f"REMOTE_DB_USER={shlex.quote(user)}")
+print(f"REMOTE_DB_PASS={shlex.quote(password)}")
+PY
+)"
+
+if [[ -z "${REMOTE_DB_HOST:-}" || -z "${REMOTE_DB_USER:-}" ]]; then
+  echo "[ERROR] REMOTE_DATABASE_URL からホスト/ユーザーを特定できません。" >&2
+  exit 1
+fi
+
+if [[ -z "${REMOTE_DB_PASS:-}" ]]; then
+  if [[ -n "${PGPASSWORD:-}" ]]; then
+    REMOTE_DB_PASS="$PGPASSWORD"
+  else
+    echo "[ERROR] REMOTE_DATABASE_URL にパスワードが含まれていません (PGPASSWORD も未設定)。" >&2
+    exit 1
+  fi
+fi
+
+SQL_DB_URL="postgresql://${REMOTE_DB_USER}:${REMOTE_DB_PASS}@${REMOTE_DB_HOST}:${REMOTE_DB_PORT}/${REMOTE_DB_NAME}"
+if [[ "$SQL_DB_URL" != *"pgbouncer="* ]]; then
+  SQL_DB_URL="${SQL_DB_URL}?pgbouncer=false"
+else
+  SQL_DB_URL="${SQL_DB_URL}"
+fi
+if [[ "$SQL_DB_URL" != *"sslmode="* ]]; then
+  if [[ "$SQL_DB_URL" == *"?"* ]]; then
+    SQL_DB_URL="${SQL_DB_URL}&sslmode=require"
+  else
+    SQL_DB_URL="${SQL_DB_URL}?sslmode=require"
+  fi
+fi
+
+TEMP_CA_FILE=""
+if [[ -z "${PGSSLROOTCERT:-}" ]]; then
+  TEMP_CA_FILE=$(mktemp)
+  "$PYTHON_BIN" - "$REMOTE_DB_HOST" "$REMOTE_DB_PORT" > "$TEMP_CA_FILE" <<'PY'
+import ssl, socket, sys
+
+host = sys.argv[1]
+port = int(sys.argv[2])
+ctx = ssl.create_default_context()
+ctx.check_hostname = False
+ctx.verify_mode = ssl.CERT_NONE
+with socket.create_connection((host, port)) as sock:
+    with ctx.wrap_socket(sock, server_hostname=host) as ssock:
+        der = ssock.getpeercert(True)
+pem = ssl.DER_cert_to_PEM_cert(der)
+sys.stdout.write(pem)
+PY
+  PGSSLROOTCERT="$TEMP_CA_FILE"
+  echo "[INFO] REMOTE_DB_HOST のサーバー証明書を取得し、PGSSLROOTCERT=$PGSSLROOTCERT に保存しました。"
+fi
+
+if [[ -n "${SSL_CERT_FILE:-}" && ! -f "$SSL_CERT_FILE" ]]; then
+  echo "[WARN] SSL_CERT_FILE=$SSL_CERT_FILE が存在しません。PGSSLROOTCERT を共有します。" >&2
+  SSL_CERT_FILE=""
+fi
+
+if [[ -z "${SSL_CERT_FILE:-}" ]]; then
+  SSL_CERT_FILE="$PGSSLROOTCERT"
+fi
+
 DUMP_DIR="$REPO_ROOT/ml/data/raw/db_dumps/$RUN_ID"
 mkdir -p "$DUMP_DIR"
-DUMP_FILE="$DUMP_DIR/prep_subset.sql"
+SCHEMA_SQL="$DUMP_DIR/prep_dump.schema.sql"
+DATA_SQL="$DUMP_DIR/prep_dump.data.sql"
+FILTERED_SCHEMA_SQL="$DUMP_DIR/prep_dump.schema.filtered.sql"
+FILTERED_DATA_SQL="$DUMP_DIR/prep_dump.data.filtered.sql"
 
-echo "[INFO] Dumping tables ($DUMP_TABLES) from remote DB..."
-TABLE_ARGS=()
-for tbl in $DUMP_TABLES; do
-  TABLE_ARGS+=("--table=$tbl")
-done
+cleanup() {
+  echo "[INFO] Cleaning up Postgres container..."
+  docker rm -f "$DB_CONTAINER" > /dev/null 2>&1 || true
+  if [[ -n "$TEMP_CA_FILE" && -f "$TEMP_CA_FILE" ]]; then
+    rm -f "$TEMP_CA_FILE"
+  fi
+}
+trap cleanup EXIT
 
-docker run --rm \
-  -e PGPASSWORD="${PGPASSWORD:-}" \
-  -e REMOTE_DB_URL="$REMOTE_DB_URL" \
-  -v "$DUMP_DIR":/dump \
-  "$POSTGRES_IMAGE" \
-  sh -c 'pg_dump "$REMOTE_DB_URL" --no-owner --no-privileges '"${TABLE_ARGS[*]}"' --file=/dump/prep_subset.sql'
+SCHEMAS_ARG=(--schema public)
+
+echo "[INFO] Supabase CLI で schema dump を取得します..."
+PGPASSWORD="$REMOTE_DB_PASS" PGSSLROOTCERT="$PGSSLROOTCERT" SSL_CERT_FILE="$SSL_CERT_FILE" \
+  supabase db dump --db-url "$SQL_DB_URL" "${SCHEMAS_ARG[@]}" -f "$SCHEMA_SQL"
+
+echo "[INFO] Supabase CLI で data dump を取得します..."
+PGPASSWORD="$REMOTE_DB_PASS" PGSSLROOTCERT="$PGSSLROOTCERT" SSL_CERT_FILE="$SSL_CERT_FILE" \
+  supabase db dump --db-url "$SQL_DB_URL" "${SCHEMAS_ARG[@]}" --data-only -f "$DATA_SQL"
+
+echo "[INFO] Schema dump をフィルタリングしています (functions/auth/storage を除外)..."
+"$PYTHON_BIN" - "$SCHEMA_SQL" "$FILTERED_SCHEMA_SQL" <<'PY'
+import sys
+import re
+
+source, target = sys.argv[1], sys.argv[2]
+
+dollar_pattern = re.compile(r'\$[A-Za-z0-9_]*\$')
+
+def iter_statements(lines):
+    statement = []
+    in_dollar = None
+    copy_mode = False
+    for line in lines:
+        statement.append(line)
+        stripped = line.strip()
+
+        if copy_mode:
+            if stripped == r'\.':
+                copy_mode = False
+                yield ''.join(statement)
+                statement = []
+            continue
+
+        if in_dollar:
+            if in_dollar in line:
+                remainder = line.split(in_dollar, 1)[1]
+                if ';' in remainder:
+                    in_dollar = None
+                    yield ''.join(statement)
+                    statement = []
+            continue
+
+        match = dollar_pattern.search(line)
+        if match:
+            in_dollar = match.group(0)
+            remainder = line.split(in_dollar, 1)[1]
+            if ';' in remainder:
+                in_dollar = None
+                yield ''.join(statement)
+                statement = []
+            continue
+
+        upper = stripped.upper()
+        if upper.startswith('COPY '):
+            copy_mode = True
+            continue
+
+        if ';' in line:
+            yield ''.join(statement)
+            statement = []
+
+    if statement:
+        yield ''.join(statement)
+
+skip_patterns = [
+    re.compile(r'\bCREATE\s+(OR\s+REPLACE\s+)?FUNCTION\b', re.IGNORECASE),
+    re.compile(r'\bALTER\s+FUNCTION\b', re.IGNORECASE),
+    re.compile(r'\bCOMMENT\s+ON\s+FUNCTION\b', re.IGNORECASE),
+    re.compile(r'\bGRANT\b.+\bFUNCTION\b', re.IGNORECASE),
+]
+skip_keywords = ('auth.', 'auth"', 'storage.')
+
+with open(source, encoding='utf-8') as f:
+    statements = list(iter_statements(f))
+
+filtered = []
+for stmt in statements:
+    upper = stmt.upper()
+    lower = stmt.lower()
+    normalized = lower.replace('"', '')
+    if any(pattern.search(upper) for pattern in skip_patterns):
+        continue
+    if any(keyword in lower or keyword in normalized for keyword in skip_keywords):
+        continue
+    filtered.append(stmt)
+
+with open(target, 'w', encoding='utf-8') as out:
+    out.write(''.join(filtered))
+PY
+
+echo "[INFO] Data dump をフィルタリングしています (auth/storage を除外)..."
+"$PYTHON_BIN" - "$DATA_SQL" "$FILTERED_DATA_SQL" <<'PY'
+import sys
+
+source, target = sys.argv[1], sys.argv[2]
+
+skip_keywords = ('auth.', 'auth"', 'storage.')
+
+with open(source, encoding='utf-8') as f:
+    statements = f.read().splitlines()
+
+filtered_lines = []
+for line in statements:
+    lowered = line.lower()
+    normalized = lowered.replace('"', '')
+    if any(keyword in lowered or keyword in normalized for keyword in skip_keywords):
+        continue
+    filtered_lines.append(line)
+
+with open(target, 'w', encoding='utf-8') as out:
+    out.write('\n'.join(filtered_lines))
+PY
+
+if [[ ! -s "$FILTERED_SCHEMA_SQL" ]]; then
+  echo "[ERROR] フィルタ後の schema SQL が空です: $FILTERED_SCHEMA_SQL" >&2
+  exit 1
+fi
+
+if [[ ! -s "$FILTERED_DATA_SQL" ]]; then
+  echo "[ERROR] フィルタ後の data SQL が空です: $FILTERED_DATA_SQL" >&2
+  exit 1
+fi
 
 echo "[INFO] Creating docker network $NETWORK_NAME (if not exists)..."
 if ! docker network inspect "$NETWORK_NAME" > /dev/null 2>&1; then
@@ -95,34 +344,75 @@ if ! docker network inspect "$NETWORK_NAME" > /dev/null 2>&1; then
 fi
 
 echo "[INFO] Starting ephemeral Postgres container $DB_CONTAINER..."
-docker run --rm -d \
+docker run -d \
+  --platform "$POSTGRES_PLATFORM" \
   --name "$DB_CONTAINER" \
   --network "$NETWORK_NAME" \
   -e POSTGRES_USER="$LOCAL_DB_USER" \
   -e POSTGRES_PASSWORD="$LOCAL_DB_PASS" \
-  -e POSTGRES_DB="$LOCAL_DB_NAME" \
+  -e POSTGRES_DB="$LOCAL_DB_CONNECT_DB" \
   -p "${LOCAL_DB_PORT}:5432" \
   "$POSTGRES_IMAGE" > /dev/null
 
-cleanup() {
-  echo "[INFO] Cleaning up Postgres container..."
-  docker rm -f "$DB_CONTAINER" > /dev/null 2>&1 || true
-}
-trap cleanup EXIT
-
 echo "[INFO] Waiting for Postgres to become ready..."
 tries=0
-until docker exec "$DB_CONTAINER" pg_isready -U "$LOCAL_DB_USER" -d "$LOCAL_DB_NAME" > /dev/null 2>&1; do
+until docker exec "$DB_CONTAINER" env PGPASSWORD="$LOCAL_DB_PASS" pg_isready -h 127.0.0.1 -p 5432 -U "$LOCAL_DB_USER" -d "$LOCAL_DB_CONNECT_DB" > /dev/null 2>&1; do
   sleep 1
   tries=$((tries+1))
-  if [[ $tries -gt 30 ]]; then
+  if [[ $tries -gt $LOCAL_DB_STARTUP_TIMEOUT ]]; then
     echo "[ERROR] Postgres container did not become ready in time" >&2
+    docker logs "$DB_CONTAINER" 2>&1 || true
     exit 1
   fi
 done
 
-echo "[INFO] Loading dump into local Postgres..."
-docker exec -i "$DB_CONTAINER" psql -U "$LOCAL_DB_USER" -d "$LOCAL_DB_NAME" < "$DUMP_FILE"
+# Give the server a brief moment before applying migrations, to avoid race conditions
+sleep 2
+
+if [[ "$LOCAL_DB_NAME" != "$LOCAL_DB_CONNECT_DB" ]]; then
+  db_exists=$(docker exec "$DB_CONTAINER" \
+    env PGPASSWORD="$LOCAL_DB_PASS" \
+    psql --host=127.0.0.1 --port=5432 --username "$LOCAL_DB_USER" --dbname "$LOCAL_DB_CONNECT_DB" \
+         -At -c "SELECT 1 FROM pg_database WHERE datname = '$LOCAL_DB_NAME'" | tr -d '[:space:]')
+  if [[ "$db_exists" != "1" ]]; then
+    docker exec "$DB_CONTAINER" \
+      env PGPASSWORD="$LOCAL_DB_PASS" \
+      psql --host=127.0.0.1 --port=5432 --username "$LOCAL_DB_USER" --dbname "$LOCAL_DB_CONNECT_DB" \
+           -v ON_ERROR_STOP=1 -c "CREATE DATABASE \"$LOCAL_DB_NAME\""
+  fi
+fi
+
+docker exec "$DB_CONTAINER" \
+  env PGPASSWORD="$LOCAL_DB_PASS" \
+  psql --host=127.0.0.1 --port=5432 --username "$LOCAL_DB_USER" --dbname "$LOCAL_DB_NAME" \
+       -v ON_ERROR_STOP=1 -c 'CREATE EXTENSION IF NOT EXISTS vector' >/dev/null
+
+docker exec "$DB_CONTAINER" \
+  env PGPASSWORD="$LOCAL_DB_PASS" \
+  psql --host=127.0.0.1 --port=5432 --username "$LOCAL_DB_USER" --dbname "$LOCAL_DB_NAME" \
+       -v ON_ERROR_STOP=1 -c 'CREATE EXTENSION IF NOT EXISTS pg_trgm' >/dev/null
+
+vector_half_support=$(docker exec "$DB_CONTAINER" \
+  env PGPASSWORD="$LOCAL_DB_PASS" \
+  psql --host=127.0.0.1 --port=5432 --username "$LOCAL_DB_USER" --dbname "$LOCAL_DB_NAME" \
+       -At -c "SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace WHERE n.nspname = 'public' AND p.proname = 'halfvec_in' LIMIT 1" \
+  | tr -d '[:space:]')
+
+if [[ "$vector_half_support" != "1" ]]; then
+  echo "[ERROR] pgvector の halfvec 型が利用できません。POSTGRES_IMAGE=${POSTGRES_IMAGE} が pgvector 0.5 以降を含むことを確認してください。" >&2
+  echo "[HINT] 例: POSTGRES_IMAGE=supabase/postgres:17.6.1.021 bash scripts/prep_two_tower/run_with_remote_db.sh ..." >&2
+  exit 1
+fi
+
+echo "[INFO] Applying schema to local Postgres..."
+cat "$FILTERED_SCHEMA_SQL" | docker exec -i "$DB_CONTAINER" \
+  env PGPASSWORD="$LOCAL_DB_PASS" \
+  psql -v ON_ERROR_STOP=1 --host=127.0.0.1 --port=5432 --username "$LOCAL_DB_USER" --dbname "$LOCAL_DB_NAME"
+
+echo "[INFO] Loading data into local Postgres..."
+cat "$FILTERED_DATA_SQL" | docker exec -i "$DB_CONTAINER" \
+  env PGPASSWORD="$LOCAL_DB_PASS" \
+  psql --single-transaction -v ON_ERROR_STOP=1 --host=127.0.0.1 --port=5432 --username "$LOCAL_DB_USER" --dbname "$LOCAL_DB_NAME"
 
 echo "[INFO] Building prep image..."
 docker build -f "$SCRIPT_DIR/Dockerfile" -t "$PREP_IMAGE" "$REPO_ROOT"
@@ -135,6 +425,7 @@ docker run --rm -it \
   -v "$REPO_ROOT":/workspace \
   -w /workspace \
   "$PREP_IMAGE" \
+  python scripts/prep_two_tower/prep_two_tower_dataset.py \
   --db-url "$DB_URL_FOR_PREP" "${FORWARD_ARGS[@]}"
 
 echo "[INFO] Prep completed successfully (run_id=$RUN_ID)"

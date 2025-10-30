@@ -22,6 +22,7 @@
 ## 非機能要件
 - [ ] すべての前処理・学習は専用 Docker コンテナ経由で再現可能にする（ホスト Python 依存を排除）。
 - [ ] 埋め込み次元は 256 とし、pgvector インデックス (`vector_cosine_ops`) を維持する。
+- [ ] pgvector 拡張は halfvec 型を提供する 0.5 以降のバージョンを前提とする。
 - [ ] 学習ジョブは再実行時に同一成果物パスへ上書きしても安全（idempotent）であること。
 - [ ] Storage / DB 転送時に機密キーを `.env` から安全に読み取る。
 - [ ] `ml/data` のディレクトリ構成を `raw/`（生データ）・`processed/two_tower/latest/`（最新出力）・`processed/two_tower/runs/<run-id>/`（スナップショット）の形で整理し、前処理スクリプトがこの構造を前提に動作する。

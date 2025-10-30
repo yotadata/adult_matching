@@ -3,3 +3,8 @@ docker/env/*.env.generated
 docker/.env
 supabase/.tmp/
 scripts/**/.tmp/
+# ML pipeline outputs (dumps, processed datasets, artifacts)
+ml/data/raw/db_dumps/
+ml/data/raw/reviews/
+ml/data/processed/
+ml/artifacts/
