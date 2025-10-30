@@ -118,13 +118,21 @@ bash scripts/train_two_tower/run.sh \
   --train ml/data/processed/two_tower/latest/interactions_train.parquet \
   --val ml/data/processed/two_tower/latest/interactions_val.parquet \
   --user-features ml/data/processed/two_tower/latest/user_features.parquet \
-  --item-key video_id \
   --item-features ml/data/processed/two_tower/latest/item_features.parquet \
+  --item-key video_id \
   --embedding-dim 256 \
   --hidden-dim 512 \
-  --epochs 5 --batch-size 1024 --lr 1e-3 \
+  --epochs 5 \
+  --batch-size 1024 \
+  --lr 1e-3 \
+  --max-tag-features 2048 \
+  --max-performer-features 512 \
+  # --use-price-feature \
   --out-dir ml/artifacts
 ```
+
+- `--max-tag-features` / `--max-performer-features` はタグ・出演者の多値カテゴリを頻度上位で打ち切るオプション。ローカル実行でメモリ使用量を抑えたい場合に指定する。0 以下を渡すと全候補を保持する。
+- 価格を特徴量に含める場合は `--use-price-feature` を付与する。既定では価格を除外し、期待しないドメインバイアスを避ける。
 
 - 出力: `ml/artifacts/` に `two_tower_latest.pt`, `two_tower_latest.onnx`, `user_embeddings.parquet`, `video_embeddings.parquet`, `model_meta.json` など。`user_embeddings.parquet` / `video_embeddings.parquet` は `user_features.parquet` / `item_features.parquet` の特徴量を MLP エンコーダに通して得た埋め込みを保存する。
 - ONNX 入力は `user_features` / `item_features`（いずれも `float32`）で、ID マップは生成しない。推論時は前処理で同一ベクトルを作成し ONNX に入力する。
@@ -144,7 +152,19 @@ bash scripts/eval_two_tower/run.sh \
 - Dockerfile / requirements / run.sh を `scripts/eval_two_tower/` に追加し、共通の評価ロジックを実装予定。
 - PyTorch で生成した埋め込みと ONNX で生成した埋め込みを比較し、コサイン距離・L2 誤差が許容範囲かを回帰テストする。
 
-### 4. 埋め込み反映（upsert, 実装予定）
+### 4. 定性評価（Streamlit）
+
+```
+bash scripts/streamlit_qual_eval/run.sh
+```
+
+- ブラウザで `http://localhost:8501/` を開き、以下のタブで確認する。
+  - **User-level recommendations**: Model A（既定 `ml/artifacts/`）と任意の Model B を指定すると、同一ユーザーに対する推薦リストを左右で比較できる。既知アイテムを除外するかはサイドバーで切り替え可能。
+  - **Dataset bias**: `item_features.parquet` の属性（maker / source / label / series / tags / performer_ids）ごとの出現数と正例数を可視化し、データの偏りを把握する。タグ文字列はカンマ区切りで分割、出演者は `performer_ids`（UUID）のまま集計する（現状は名前マッピング未実装）。
+  - **Recommendation distribution**: 推薦結果に登場する属性分布（件数・ユニークアイテム数・到達ユーザー数）を集計し、モデルの偏りを定量的に確認する。タグはカンマ区切りで解析するため、独立したキーワード単位で確認できる。出演者は `performer_ids` の UUID で集計される。
+- デフォルトでは Model A のみを読み込む。比較が必要な場合はサイドバーで Model B のアーティファクトパスを指定する（`user_embeddings.parquet` / `video_embeddings.parquet` / `metrics.json` が同ディレクトリにあること）。
+
+### 5. 埋め込み反映（upsert, 実装予定）
 
 ```bash
 bash scripts/upsert_two_tower/run.sh \

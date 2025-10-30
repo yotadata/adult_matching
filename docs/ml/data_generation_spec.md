@@ -88,7 +88,7 @@ Two-Tower 推薦モデル向けの学習データを生成するための標準�
 | `public.profiles` | `signup_days` | int32 | `124` | `now() - created_at` を日数換算。アクティブ度の proxy。 |
 | `public.profiles` + 集計 | `preferred_tag_ids` | uuid[] | `["0c8c...", "9f2b..."]` | LIKE した動画タグの上位 N 件。タグ軸のユーザー嗜好を表現。 |
 > `user_features.parquet` を追加する際は、上記列を含む長形式（主キー: `reviewer_id`）で保存し、欠損は `null` のまま後段でマスク処理する。数値列は `float32` / `int32` ベースで書き出し、ONNX 入力テンソルのスキーマは `model_meta.json` の `input_schema_version` と同期させる。  
-> レビューデータ（星評価 CSV）は初期モデル構築時の暫定データであり、恒常運用の特徴量には利用しない方針とする。ユーザー集計は `user_video_decisions` / `profiles` / `video_tags` を参照するため、`--db-url` を指定して Postgres から直接取得する。
+> レビューデータ（星評価 CSV）は初期モデル構築時の暫定データであり、恒常運用の特徴量には利用しない方針とする。ユーザー集計は `user_video_decisions` / `profiles` / `video_tags` を参照するため、`--db-url` を指定して Postgres から直接取得する。ローカル開発で DB 接続が難しい場合は、`interactions_train/val.parquet` を元に LIKE 件数やタグ頻度など最小限の統計量を合成し、`preferred_tag_ids` などの多値列を空配列で埋める暫定措置を取ってもよい（本番前には必ず DB 集計版に差し替える）。
 
 #### アイテム特徴量（現行＋拡張）
 

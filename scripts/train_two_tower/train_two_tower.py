@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import argparse
 import json
+from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, Iterable, List, Tuple
@@ -27,6 +28,9 @@ class TrainConfig:
     batch_size: int
     lr: float
     out_dir: Path
+    max_tag_features: int
+    max_performer_features: int
+    use_price_feature: bool
 
 
 def _ensure_list(value) -> List[str]:
@@ -195,16 +199,28 @@ def build_feature_vectors(
     user_df: pd.DataFrame,
     item_df: pd.DataFrame,
     item_key: str,
+    max_tag_features: int | None,
+    max_performer_features: int | None,
+    use_price_feature: bool,
 ) -> Tuple[Dict[str, np.ndarray], Dict[str, np.ndarray], int, int, Dict[str, Dict[str, int]], Dict[str, Dict[str, int]]]:
     # Prepare vocabularies
-    tag_values = set()
+    tag_counter: Counter[str] = Counter()
     for values in item_df.get("tag_ids", []):
-        tag_values.update(_ensure_list(values))
+        tag_counter.update(_ensure_list(values))
     for values in user_df.get("preferred_tag_ids", []):
-        tag_values.update(_ensure_list(values))
-    performer_values = set()
+        tag_counter.update(_ensure_list(values))
+    if max_tag_features is not None and max_tag_features > 0:
+        tag_values = [tag for tag, _ in tag_counter.most_common(max_tag_features)]
+    else:
+        tag_values = sorted(tag_counter)
+
+    performer_counter: Counter[str] = Counter()
     for values in item_df.get("performer_ids", []):
-        performer_values.update(_ensure_list(values))
+        performer_counter.update(_ensure_list(values))
+    if max_performer_features is not None and max_performer_features > 0:
+        performer_values = [performer for performer, _ in performer_counter.most_common(max_performer_features)]
+    else:
+        performer_values = sorted(performer_counter)
 
     user_space = FeatureSpace(
         categorical_fields={},
@@ -226,7 +242,9 @@ def build_feature_vectors(
     )
 
     user_numeric_fields = ["like_count_30d", "positive_ratio_30d", "signup_days"]
-    item_numeric_fields = ["price"]
+    item_numeric_fields: List[str] = []
+    if use_price_feature:
+        item_numeric_fields.append("price")
 
     for col in user_numeric_fields:
         if col not in user_df.columns:
@@ -257,12 +275,17 @@ def build_feature_vectors(
         item_df["tag_ids"] = [[] for _ in range(len(item_df))]
     if "performer_ids" not in item_df.columns:
         item_df["performer_ids"] = [[] for _ in range(len(item_df))]
-    if "price" not in item_df.columns:
-        item_df["price"] = 0.0
     if not item_df.empty:
-        i_numeric = item_df[item_numeric_fields].copy()
-        i_numeric["price"] = _log1p_safe(i_numeric["price"].fillna(0))
-        item_numeric_array = i_numeric.to_numpy(dtype=np.float32)
+        if item_numeric_fields:
+            for field in item_numeric_fields:
+                if field not in item_df.columns:
+                    item_df[field] = 0.0
+            i_numeric = item_df[item_numeric_fields].copy()
+            if "price" in item_numeric_fields:
+                i_numeric["price"] = _log1p_safe(i_numeric["price"].fillna(0))
+            item_numeric_array = i_numeric.to_numpy(dtype=np.float32)
+        else:
+            item_numeric_array = np.zeros((len(item_df), 0), dtype=np.float32)
 
         for idx, row in enumerate(item_df.itertuples(index=False)):
             vec = np.zeros(item_space.base_dim + item_numeric_array.shape[1], dtype=np.float32)
@@ -303,6 +326,9 @@ def main() -> None:
     ap.add_argument("--lr", type=float, default=1e-3)
     ap.add_argument("--out-dir", type=Path, default=Path("ml/artifacts"))
     ap.add_argument("--item-key", choices=["product_url", "video_id"], default="video_id", help="Column to treat as item identifier.")
+    ap.add_argument("--max-tag-features", type=int, default=2048, help="Maximum number of tag IDs to encode (by frequency). Use <=0 to keep all.")
+    ap.add_argument("--max-performer-features", type=int, default=512, help="Maximum number of performer IDs to encode (by frequency). Use <=0 to keep all.")
+    ap.add_argument("--use-price-feature", action="store_true", help="Include the price column as a numeric feature.")
     args = ap.parse_args()
 
     cfg = TrainConfig(
@@ -316,6 +342,9 @@ def main() -> None:
         batch_size=args.batch_size,
         lr=args.lr,
         out_dir=args.out_dir,
+        max_tag_features=args.max_tag_features if args.max_tag_features > 0 else None,
+        max_performer_features=args.max_performer_features if args.max_performer_features > 0 else None,
+        use_price_feature=args.use_price_feature,
     )
 
     if not cfg.user_features_path.exists():
@@ -334,6 +363,9 @@ def main() -> None:
         user_df=user_df,
         item_df=item_df,
         item_key=item_key,
+        max_tag_features=cfg.max_tag_features,
+        max_performer_features=cfg.max_performer_features,
+        use_price_feature=cfg.use_price_feature,
     )
 
     train_ds = InteractionsDataset(train_df, user_vectors, item_vectors, item_key=item_key)
@@ -394,6 +426,7 @@ def main() -> None:
         "tag_vocab_size": int(len(item_multi_vocab.get("tag_ids", {}))),
         "performer_vocab_size": int(len(item_multi_vocab.get("performer_ids", {}))),
         "preferred_tag_vocab_size": int(len(user_multi_vocab.get("preferred_tag_ids", {}))),
+        "use_price_feature": cfg.use_price_feature,
         "input_schema_version": 1,
         "format": "two_tower.feature_mlp",
     }
