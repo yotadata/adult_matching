@@ -18,6 +18,7 @@ Two-Tower 推薦モデル向けの学習データを生成するための標準�
 - スクリプト: `scripts/scrape_dmm_reviews/scrape_dmm_reviews.py`
 - 実行方法: `bash scripts/scrape_dmm_reviews/run.sh --output ml/data/raw/reviews/dmm_reviews_videoa_2024-06-01.csv`
 - 主な引数:
+  - `--ranking-period <period>`: ランキング期間（`year`/`month`/`3month`/`halfyear`/`all`）を指定。複数回指定すると結合して重複を除外。
   - `--max-reviewers`（既定100）: ランキング上位レビュアー数
   - `--delay`（既定1.2秒）: リクエスト間隔（レートリミット対策）
   - `--only-reviewers <ID...>`: 指定レビュアーのみ巡回（ランキング取得をスキップ）
@@ -32,13 +33,16 @@ Two-Tower 推薦モデル向けの学習データを生成するための標準�
 ### FANZA API からの動画取り込み
 - スクリプト: `scripts/ingest_fanza/index.ts`
 - 実行方法: `bash scripts/ingest_fanza/run.sh`
-- 必須環境変数（`docker/env/dev.env` 想定）:
-  - `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- 必須環境変数（`docker/env/prd.env` を既定利用。別ファイルを使う場合は `INGEST_FANZA_ENV_FILE=<path>` を指定すると、Docker の `--env-file` と Node 側の dotenv 両方でそのファイルを参照する）:
+  - `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`（なければ `NEXT_PUBLIC_SUPABASE_ANON_KEY` で代用するが、RLS が有効なテーブルは失敗する）
   - `FANZA_API_ID`, `FANZA_API_AFFILIATE_ID`, `FANZA_LINK_AFFILIATE_ID`
+- 任意指定: `GTE_RELEASE_DATE`, `LTE_RELEASE_DATE`（`YYYY-MM-DD` または `YYYYMMDD` 形式）を環境変数で渡すと対象期間を変更できる（未指定時は「今日から1年前」が基準）。API へは ISO 8601 形式の `gte_date`（`T00:00:00`）/`lte_date`（`T23:59:59`）として伝播する。`bash` 実行時に付けた値はコンテナ側へ自動で引き継がれる。
+- デバッグ用途で詳細ログを見たい場合は `INGEST_FANZA_DEBUG=1 bash scripts/ingest_fanza/run.sh` のように実行。
 - 仕様:
   - FANZA Affiliate API `ItemList` を 1 年分（`gte_release_date`, `lte_release_date`）でページング取得。
-  - `external_id`（FANZA CID）をキーに既存 `videos` テーブルと重複排除。
-  - 取得項目を `videos` に挿入し、ジャンルは `tags` / `video_tags`、出演者は `performers` / `video_performers` に upsert。
+  - `external_id`（FANZA CID）をキーに `videos` を upsert し、既存レコードも最新情報で更新。
+  - ジャンルは `tags` / `video_tags`、出演者は `performers` / `video_performers` に upsert。実行中は名前/IDをキャッシュしておき、重複する API 呼び出しを避ける。
+  - 動画1件につき `videos`・`video_tags`・`video_performers` への upsert をそれぞれ1リクエストにまとめ、Supabase REST の呼び出し回数を削減。API 取得は発売日の降順（新しい順）で進め、途中で中断してもリスタートしやすい構成にする。
   - 価格・収録時間は文字列を数値化して格納。リンクはアフィリエイト ID 付き URL に書き換え。
   - すべて Supabase REST API（`supabase-js`）経由で実行するため、Docker コンテナから直接 Supabase に書き込む。
 

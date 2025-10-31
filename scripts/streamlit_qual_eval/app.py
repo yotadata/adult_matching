@@ -355,6 +355,10 @@ def main() -> None:
         render_metrics_card("Model A", model_a.metrics)
         if model_b is not None:
             render_metrics_card("Model B", model_b.metrics)
+        st.caption(
+            f"Model A users/items: {len(model_a.user_df):,} / {len(model_a.item_df):,}"
+            + ("" if model_b is None else f" | Model B users/items: {len(model_b.user_df):,} / {len(model_b.item_df):,}")
+        )
 
         user_ids = model_a.user_df["reviewer_id"].tolist()
         if model_b is not None:
@@ -512,6 +516,7 @@ def main() -> None:
             if dist_df.empty:
                 st.write("推論結果から分布を算出できませんでした。")
             else:
+                st.caption(f"Total users: {len(chosen_model.user_df):,} | user_coverage = 推薦が提示されたユニークユーザー数")
                 label_angle = -45 if attribute in {"tags", "performer_ids"} else 0
                 st.dataframe(dist_df, use_container_width=True)
                 chart = (

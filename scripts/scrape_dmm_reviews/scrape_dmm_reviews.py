@@ -7,7 +7,7 @@ Scrape DMM Review top-100 reviewers' reviews and export CSV.
 Outputs columns: product_url, reviewer_id, stars
 
 Assumptions and notes:
-- Ranking source: https://review.dmm.co.jp/review-front/ranking/1year
+- Ranking source: https://review.dmm.co.jp/review-front/ranking/<period>
 - Each reviewer entry links to a reviewer review-list URL that includes the reviewer ID
     (e.g., contains reviewer_id=12345 or id=12345). We extract the numeric/slug ID from URL.
 - Each review list page contains product links whose URL includes a CID (e.g., cid=abcd12345).
@@ -47,7 +47,15 @@ import requests
 from bs4 import BeautifulSoup
 
 
-RANKING_URL = "https://review.dmm.co.jp/review-front/ranking/1year"
+RANKING_PERIOD_PATHS = {
+    "week": "1week",
+    "month": "1month",
+    "3month": "3month",
+    "halfyear": "6month",
+    "year": "1year",
+    "all": "total",
+}
+DEFAULT_RANKING_PERIODS = ["year"]
 AGE_CHECK_COOKIE_NAME = "age_check_done"
 AGE_CHECK_COOKIE_VALUE = "1"
 MAX_MISSING_STAR_LOGS = 50
@@ -607,6 +615,15 @@ def append_csv_rows(output_path: str, rows: Iterable[Tuple[str, str, int]]) -> i
 def main():
     parser = argparse.ArgumentParser(description="Scrape DMM Review top-100 reviewers' reviews → CSV")
     parser.add_argument("--output", required=True, help="Output CSV path (e.g., ml/data/raw/reviews/dmm_reviews.csv)")
+    parser.add_argument(
+        "--ranking-period",
+        action="append",
+        choices=sorted(RANKING_PERIOD_PATHS.keys()),
+        help=(
+            "Ranking period(s) to crawl (e.g., year, month, all). "
+            "Can be specified multiple times; defaults to year only."
+        ),
+    )
     parser.add_argument("--max-reviewers", type=int, default=100, help="Max reviewers to process (default: 100)")
     parser.add_argument("--delay", type=float, default=1.2, help="Delay seconds between page requests (default: 1.2)")
     parser.add_argument("--timeout", type=int, default=20, help="HTTP request timeout seconds (default: 20)")
@@ -699,9 +716,20 @@ def main():
             return
         logging.info(f"Processing only specified reviewer(s): {', '.join([r.reviewer_id for r in reviewers])}")
     else:
-        # 1) Fetch ranking page and extract up to max-reviewers
-        soup = fetch_soup(session, RANKING_URL)
-        reviewers = parse_ranking_for_reviewers(soup)
+        period_keys = args.ranking_period or DEFAULT_RANKING_PERIODS
+        reviewer_map: Dict[str, ReviewerLink] = {}
+        for period in period_keys:
+            period_path = RANKING_PERIOD_PATHS[period]
+            ranking_url = f"https://review.dmm.co.jp/review-front/ranking/{period_path}"
+            try:
+                soup = fetch_soup(session, ranking_url)
+                period_reviewers = parse_ranking_for_reviewers(soup)
+                for reviewer in period_reviewers:
+                    reviewer_map.setdefault(reviewer.reviewer_id, reviewer)
+                logging.info(f"Fetched {len(period_reviewers)} reviewers from {ranking_url}")
+            except Exception as exc:
+                logging.error(f"Failed to fetch ranking for period '{period}' ({ranking_url}): {exc}")
+        reviewers = list(reviewer_map.values())
 
         if not reviewers:
             logging.warning("No reviewers found on ranking page. The page structure may have changed.")

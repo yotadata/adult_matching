@@ -8,3 +8,5 @@ ml/data/raw/db_dumps/
 ml/data/raw/reviews/
 ml/data/processed/
 ml/artifacts/
+__pycache__/
+*.pyc
