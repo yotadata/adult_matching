@@ -7,7 +7,7 @@
 - 目的: ユーザー×動画の嗜好を Two‑Tower で学習し、初期の個人化推薦を可能にする。
 - 埋め込み次元: 256 に固定。
 - 学習アウトプット（本仕様）
-  - モデル（PyTorch state_dict と ONNX）を Storage へ配置（Python/TypeScript から読み込み可能）
+  - モデル（PyTorch state_dict と ONNX）を Storage へ配置（Python/TypeScript から読み込み可能）。成果物は `ml/artifacts/runs/<run-id>/` に保存し、直近の出力を `ml/artifacts/latest/` にミラーする。
 
 ## ローカル開発 4 ステップ構成（Docker 実行）
 
@@ -17,7 +17,7 @@
 
 2. **学習（train）**  
    - 上記 Parquet を入力に Two‑Tower を学習。  
-   - `ml/artifacts/` に成果物（`.pt`, `.onnx`, `user_embeddings.parquet`, `video_embeddings.parquet`, `model_meta.json`）を保存。ONNX はユーザー/アイテム特徴量を入力して埋め込みベクトルを生成できる推論モデルとする。
+   - `ml/artifacts/runs/<run-id>/` に成果物（`.pt`, `.onnx`, `user_embeddings.parquet`, `video_embeddings.parquet`, `model_meta.json`）を保存し、`ml/artifacts/latest/` に同期する。ONNX はユーザー/アイテム特徴量を入力して埋め込みベクトルを生成できる推論モデルとする。
 
 3. **評価（eval）**  
    - 学習済みモデル＋検証データから指標（例: AUC, Recall@K, MAP@K）を算出し、閾値を満たすか判定。  
@@ -30,6 +30,53 @@
 
 > 各ステップは `scripts/<name>/run.sh` 経由で Docker 上から実行する。  
 > 将来的な GitHub Actions 化では、この順番でジョブ／ステップを構成すればそのまま流用可能。
+
+### クイック手順（手動再学習）
+
+1. **レビュー/API 取得（必要に応じて）**
+   ```bash
+   # 例: FANZA API から取得（env は docker/env/prd.env を想定）
+   GTE_RELEASE_DATE=2025-01-01 bash scripts/ingest_fanza/run.sh
+   ```
+2. **前処理**
+   ```bash
+   source docker/env/prd.env
+   bash scripts/prep_two_tower/run_with_remote_db.sh \
+     --project-ref "$SUPABASE_PROJECT_REF" -- \
+     --mode reviews \
+     --input ml/data/raw/reviews/dmm_reviews_videoa_2025-10-04.csv \
+     --min-stars 4 --neg-per-pos 3 \
+     --run-id auto --snapshot-inputs
+   ```
+   出力は `ml/data/processed/two_tower/latest/` と `runs/<timestamp>/` に保存される。
+3. **学習**
+   ```bash
+   bash scripts/train_two_tower/run.sh \
+     --run-id auto \
+     --train ml/data/processed/two_tower/latest/interactions_train.parquet \
+     --val ml/data/processed/two_tower/latest/interactions_val.parquet \
+     --user-features ml/data/processed/two_tower/latest/user_features.parquet \
+     --item-features ml/data/processed/two_tower/latest/item_features.parquet \
+     --item-key video_id \
+     --embedding-dim 256 --hidden-dim 512 \
+     --epochs 8 --batch-size 1024 \
+     --max-tag-features 4096 --max-performer-features 1024 \
+     --out-dir ml/artifacts
+   ```
+   成果物は `ml/artifacts/runs/<run-id>/` に保存され、`ml/artifacts/latest/` が上書きされる。
+4. **評価**
+   ```bash
+   bash scripts/eval_two_tower/run.sh \
+     --artifacts-root ml/artifacts \
+     --run-id latest \
+     --val ml/data/processed/two_tower/latest/interactions_val.parquet \
+     --recall-k 20
+   ```
+   `latest/metrics.json` と run ディレクトリ内の `metrics.json` が更新される。
+5. **定性確認／アップサート**
+   - `bash scripts/streamlit_qual_eval/run.sh`
+   - `bash scripts/upsert_two_tower/run.sh --artifacts-dir ml/artifacts/latest ...`
+
 
 ## データソース（優先: 明示フィードバック）
 
@@ -115,6 +162,7 @@ bash scripts/prep_two_tower/run_with_remote_db.sh \
 
 ```bash
 bash scripts/train_two_tower/run.sh \
+  --run-id auto \
   --train ml/data/processed/two_tower/latest/interactions_train.parquet \
   --val ml/data/processed/two_tower/latest/interactions_val.parquet \
   --user-features ml/data/processed/two_tower/latest/user_features.parquet \
@@ -134,7 +182,7 @@ bash scripts/train_two_tower/run.sh \
 - `--max-tag-features` / `--max-performer-features` はタグ・出演者の多値カテゴリを頻度上位で打ち切るオプション。ローカル実行でメモリ使用量を抑えたい場合に指定する。0 以下を渡すと全候補を保持する。
 - 価格を特徴量に含める場合は `--use-price-feature` を付与する。既定では価格を除外し、期待しないドメインバイアスを避ける。
 
-- 出力: `ml/artifacts/` に `two_tower_latest.pt`, `two_tower_latest.onnx`, `user_embeddings.parquet`, `video_embeddings.parquet`, `model_meta.json` など。`user_embeddings.parquet` / `video_embeddings.parquet` は `user_features.parquet` / `item_features.parquet` の特徴量を MLP エンコーダに通して得た埋め込みを保存する。
+- 出力: `ml/artifacts/runs/<run-id>/` に `two_tower_latest.pt`, `two_tower_latest.onnx`, `user_embeddings.parquet`, `video_embeddings.parquet`, `model_meta.json` などが保存され、`ml/artifacts/latest/` に同内容がコピーされる。`user_embeddings.parquet` / `video_embeddings.parquet` は `user_features.parquet` / `item_features.parquet` の特徴量を MLP エンコーダに通して得た埋め込みを保存する。
 - ONNX 入力は `user_features` / `item_features`（いずれも `float32`）で、ID マップは生成しない。推論時は前処理で同一ベクトルを作成し ONNX に入力する。
 - 標準出力に epoch ごとの val loss を JSON で出力するので、ログ収集と比較が容易。
 
@@ -142,13 +190,13 @@ bash scripts/train_two_tower/run.sh \
 
 ```bash
 bash scripts/eval_two_tower/run.sh \
-  --artifacts-dir ml/artifacts \
+  --artifacts-root ml/artifacts \
+  --run-id latest \
   --val ml/data/processed/two_tower/latest/interactions_val.parquet \
-  --metrics-json ml/artifacts/metrics.json \
-  --recall-k 20 --auc-threshold 0.6
+  --recall-k 20
 ```
 
-- 期待出力: `metrics.json`（AUC, Recall@K, MAP@K など）。閾値を満たさない場合は終了コード ≠ 0 とし、後続ステップを止める。
+- 期待出力: `ml/artifacts/runs/<run-id>/metrics.json`（AUC, Recall@K, MAP@K など）。閾値を満たさない場合は終了コード ≠ 0 とし、後続ステップを止める。`--run-id latest` を指定すると `ml/artifacts/latest/metrics.json` へもコピーされる。
 - Dockerfile / requirements / run.sh を `scripts/eval_two_tower/` に追加し、共通の評価ロジックを実装予定。
 - PyTorch で生成した埋め込みと ONNX で生成した埋め込みを比較し、コサイン距離・L2 誤差が許容範囲かを回帰テストする。
 
@@ -159,7 +207,7 @@ bash scripts/streamlit_qual_eval/run.sh
 ```
 
 - ブラウザで `http://localhost:8501/` を開き、以下のタブで確認する。
-  - **User-level recommendations**: Model A（既定 `ml/artifacts/`）と任意の Model B を指定すると、同一ユーザーに対する推薦リストを左右で比較できる。既知アイテムを除外するかはサイドバーで切り替え可能。
+  - **User-level recommendations**: Model A（既定 `ml/artifacts/latest/`）と任意の Model B を指定すると、同一ユーザーに対する推薦リストを左右で比較できる。既知アイテムを除外するかはサイドバーで切り替え可能。
   - **Dataset bias**: `item_features.parquet` の属性（maker / source / label / series / tags / performer_ids）ごとの出現数と正例数を可視化し、データの偏りを把握する。タグ文字列はカンマ区切りで分割、出演者は `performer_ids`（UUID）のまま集計する（現状は名前マッピング未実装）。
   - **Recommendation distribution**: 推薦結果に登場する属性分布（件数・ユニークアイテム数・到達ユーザー数）を集計し、モデルの偏りを定量的に確認する。タグはカンマ区切りで解析するため、独立したキーワード単位で確認できる。出演者は `performer_ids` の UUID で集計される。
 - デフォルトでは Model A のみを読み込む。比較が必要な場合はサイドバーで Model B のアーティファクトパスを指定する（`user_embeddings.parquet` / `video_embeddings.parquet` / `metrics.json` が同ディレクトリにあること）。
@@ -168,7 +216,7 @@ bash scripts/streamlit_qual_eval/run.sh
 
 ```bash
 bash scripts/upsert_two_tower/run.sh \
-  --artifacts-dir ml/artifacts \
+  --artifacts-dir ml/artifacts/latest \
   --env-file docker/env/dev.env \
   --dry-run
 ```

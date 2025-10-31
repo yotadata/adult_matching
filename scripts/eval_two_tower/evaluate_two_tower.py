@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import shutil
 from collections import defaultdict
 from pathlib import Path
 from typing import Dict, Iterable, List, Tuple
@@ -120,21 +121,32 @@ def evaluate(
 def parse_args() -> argparse.Namespace:
     ap = argparse.ArgumentParser(description="Evaluate Two-Tower model artifacts.")
     ap.add_argument(
+        "--artifacts-root",
+        type=Path,
+        default=Path("ml/artifacts"),
+        help="Root directory where training artifacts are stored.",
+    )
+    ap.add_argument(
+        "--run-id",
+        default="latest",
+        help="Run identifier under artifacts-root/runs. Use 'latest' to evaluate the latest snapshot.",
+    )
+    ap.add_argument(
         "--val",
         type=Path,
-        default=Path("ml/data/processed/two_tower/latest/interactions_val.parquet"),
+        default=None,
         help="Validation interactions parquet.",
     )
     ap.add_argument(
         "--user-embeddings",
         type=Path,
-        default=Path("ml/artifacts/user_embeddings.parquet"),
+        default=None,
         help="User embeddings parquet exported during training.",
     )
     ap.add_argument(
         "--item-embeddings",
         type=Path,
-        default=Path("ml/artifacts/video_embeddings.parquet"),
+        default=None,
         help="Item embeddings parquet exported during training.",
     )
     ap.add_argument(
@@ -152,7 +164,7 @@ def parse_args() -> argparse.Namespace:
     ap.add_argument(
         "--out-json",
         type=Path,
-        default=Path("ml/artifacts/metrics.json"),
+        default=None,
         help="Path to write evaluation metrics as JSON.",
     )
     return ap.parse_args()
@@ -160,6 +172,23 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
+
+    if args.run_id == "latest":
+        base_dir = args.artifacts_root / "latest"
+    else:
+        base_dir = args.artifacts_root / "runs" / args.run_id
+
+    if not base_dir.exists():
+        raise FileNotFoundError(f"Artifacts directory not found: {base_dir}")
+
+    if args.user_embeddings is None:
+        args.user_embeddings = base_dir / "user_embeddings.parquet"
+    if args.item_embeddings is None:
+        args.item_embeddings = base_dir / "video_embeddings.parquet"
+    if args.out_json is None:
+        args.out_json = base_dir / "metrics.json"
+    if args.val is None:
+        args.val = Path("ml/data/processed/two_tower/latest/interactions_val.parquet")
 
     metrics, stats = evaluate(
         val_path=args.val,
@@ -176,10 +205,17 @@ def main() -> None:
         "val_path": str(args.val),
         "user_embeddings": str(args.user_embeddings),
         "item_embeddings": str(args.item_embeddings),
+        "run_id": args.run_id,
+        "artifacts_dir": str(base_dir),
     }
 
     args.out_json.parent.mkdir(parents=True, exist_ok=True)
     args.out_json.write_text(json.dumps(result, ensure_ascii=False, indent=2))
+
+    if args.run_id != "latest":
+        latest_dir = args.artifacts_root / "latest"
+        latest_dir.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(args.out_json, latest_dir / "metrics.json")
 
     print(json.dumps(result, ensure_ascii=False, indent=2))
 

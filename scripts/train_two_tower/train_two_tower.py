@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 import argparse
 import json
+import shutil
 from collections import Counter
 from dataclasses import dataclass
+from datetime import datetime
 from pathlib import Path
-from typing import Dict, Iterable, List, Tuple
+from typing import Dict, Iterable, List, Optional, Tuple
 
 import numpy as np
 import onnx
@@ -28,9 +30,12 @@ class TrainConfig:
     batch_size: int
     lr: float
     out_dir: Path
-    max_tag_features: int
-    max_performer_features: int
+    max_tag_features: Optional[int]
+    max_performer_features: Optional[int]
     use_price_feature: bool
+    run_id: str
+    run_dir: Path
+    latest_dir: Path
 
 
 def _ensure_list(value) -> List[str]:
@@ -103,29 +108,35 @@ class InteractionsDataset(Dataset):
         *,
         item_key: str,
     ):
-        rows: List[Tuple[np.ndarray, np.ndarray, float]] = []
+        self.user_vectors = user_vectors
+        self.item_vectors = item_vectors
+        self.user_ids: List[str] = []
+        self.item_ids: List[str] = []
+        self.labels: List[float] = []
         dropped = 0
         for record in df.itertuples(index=False):
-            user_vec = user_vectors.get(str(record.reviewer_id))
-            item_id = getattr(record, item_key)
-            item_vec = item_vectors.get(str(item_id))
+            reviewer_id = str(record.reviewer_id)
+            item_id = str(getattr(record, item_key))
+            user_vec = user_vectors.get(reviewer_id)
+            item_vec = item_vectors.get(item_id)
             if user_vec is None or item_vec is None:
                 dropped += 1
                 continue
-            rows.append((user_vec, item_vec, float(record.label)))
-        if not rows:
+            self.user_ids.append(reviewer_id)
+            self.item_ids.append(item_id)
+            self.labels.append(float(record.label))
+        if not self.labels:
             raise ValueError("No interactions remain after aligning features. Check user/item feature coverage.")
-
-        self.user = torch.tensor(np.stack([r[0] for r in rows]), dtype=torch.float32)
-        self.item = torch.tensor(np.stack([r[1] for r in rows]), dtype=torch.float32)
-        self.y = torch.tensor([r[2] for r in rows], dtype=torch.float32)
         self.dropped = dropped
 
     def __len__(self) -> int:
-        return self.y.shape[0]
+        return len(self.labels)
 
     def __getitem__(self, idx: int):
-        return self.user[idx], self.item[idx], self.y[idx]
+        user_tensor = torch.from_numpy(self.user_vectors[self.user_ids[idx]])
+        item_tensor = torch.from_numpy(self.item_vectors[self.item_ids[idx]])
+        label_tensor = torch.tensor(self.labels[idx], dtype=torch.float32)
+        return user_tensor, item_tensor, label_tensor
 
 
 class MLPEncoder(nn.Module):
@@ -178,20 +189,23 @@ def export_onnx(model: TwoTower, user_dim: int, item_dim: int, out_path: Path) -
     model.eval()
     dummy_user = torch.zeros(1, user_dim, dtype=torch.float32)
     dummy_item = torch.zeros(1, item_dim, dtype=torch.float32)
-    torch.onnx.export(
-        model,
-        (dummy_user, dummy_item),
-        out_path.as_posix(),
-        input_names=["user_features", "item_features"],
-        output_names=["score"],
-        opset_version=17,
-        dynamic_axes={
-            "user_features": {0: "batch"},
-            "item_features": {0: "batch"},
-            "score": {0: "batch"},
-        },
-    )
-    onnx.load(out_path.as_posix())
+    try:
+        torch.onnx.export(
+            model,
+            (dummy_user, dummy_item),
+            out_path.as_posix(),
+            input_names=["user_features", "item_features"],
+            output_names=["score"],
+            opset_version=18,
+            dynamic_axes={
+                "user_features": {0: "batch"},
+                "item_features": {0: "batch"},
+                "score": {0: "batch"},
+            },
+        )
+        onnx.load(out_path.as_posix())
+    except Exception as exc:
+        print(json.dumps({"warning": "onnx_export_failed", "error": str(exc)}))
 
 
 def build_feature_vectors(
@@ -307,7 +321,10 @@ def compute_embeddings(model: TwoTower, vectors: Dict[str, np.ndarray], encode_f
     model.eval()
     with torch.no_grad():
         for entity_id, vec in vectors.items():
-            tens = torch.from_numpy(vec).unsqueeze(0).to(device)
+            if isinstance(vec, torch.Tensor):
+                tens = vec.unsqueeze(0).to(device)
+            else:
+                tens = torch.from_numpy(vec).unsqueeze(0).to(device)
             emb = encode_fn(tens).cpu().numpy()[0]
             rows.append({id_key: entity_id, "embedding": emb.tolist()})
     return pd.DataFrame(rows)
@@ -329,7 +346,22 @@ def main() -> None:
     ap.add_argument("--max-tag-features", type=int, default=2048, help="Maximum number of tag IDs to encode (by frequency). Use <=0 to keep all.")
     ap.add_argument("--max-performer-features", type=int, default=512, help="Maximum number of performer IDs to encode (by frequency). Use <=0 to keep all.")
     ap.add_argument("--use-price-feature", action="store_true", help="Include the price column as a numeric feature.")
+    ap.add_argument("--run-id", default="auto", help="Identifier for this training run. Use 'auto' to generate a UTC timestamp.")
     args = ap.parse_args()
+
+    run_id = args.run_id
+    if run_id == "auto":
+        run_id = datetime.utcnow().strftime("%Y%m%dT%H%M%SZ")
+
+    out_dir = args.out_dir
+    run_dir = (out_dir / "runs" / run_id).resolve()
+    latest_dir = (out_dir / "latest").resolve()
+
+    out_dir.mkdir(parents=True, exist_ok=True)
+    if run_dir.exists():
+        raise FileExistsError(f"Run directory already exists: {run_dir}")
+    run_dir.mkdir(parents=True, exist_ok=False)
+    latest_dir.parent.mkdir(parents=True, exist_ok=True)
 
     cfg = TrainConfig(
         train_path=args.train,
@@ -341,99 +373,150 @@ def main() -> None:
         epochs=args.epochs,
         batch_size=args.batch_size,
         lr=args.lr,
-        out_dir=args.out_dir,
+        out_dir=out_dir,
         max_tag_features=args.max_tag_features if args.max_tag_features > 0 else None,
         max_performer_features=args.max_performer_features if args.max_performer_features > 0 else None,
         use_price_feature=args.use_price_feature,
+        run_id=run_id,
+        run_dir=run_dir,
+        latest_dir=latest_dir,
     )
 
-    if not cfg.user_features_path.exists():
-        raise FileNotFoundError(f"user features not found: {cfg.user_features_path}")
-    if not cfg.item_features_path.exists():
-        raise FileNotFoundError(f"item features not found: {cfg.item_features_path}")
-
-    train_df = pd.read_parquet(cfg.train_path)
-    val_df = pd.read_parquet(cfg.val_path)
-    user_df = pd.read_parquet(cfg.user_features_path)
-    item_df = pd.read_parquet(cfg.item_features_path)
-
-    item_key = args.item_key if args.item_key in item_df.columns else "video_id"
-
-    user_vectors, item_vectors, user_dim, item_dim, user_multi_vocab, item_multi_vocab = build_feature_vectors(
-        user_df=user_df,
-        item_df=item_df,
-        item_key=item_key,
-        max_tag_features=cfg.max_tag_features,
-        max_performer_features=cfg.max_performer_features,
-        use_price_feature=cfg.use_price_feature,
+    print(
+        json.dumps(
+            {
+                "config": {
+                    "train": str(cfg.train_path),
+                    "val": str(cfg.val_path),
+                    "user_features": str(cfg.user_features_path),
+                    "item_features": str(cfg.item_features_path),
+                    "embedding_dim": cfg.embedding_dim,
+                    "hidden_dim": cfg.hidden_dim,
+                    "epochs": cfg.epochs,
+                    "batch_size": cfg.batch_size,
+                    "lr": cfg.lr,
+                    "max_tag_features": cfg.max_tag_features,
+                    "max_performer_features": cfg.max_performer_features,
+                    "use_price_feature": cfg.use_price_feature,
+                    "run_id": cfg.run_id,
+                    "run_dir": str(cfg.run_dir),
+                    "latest_dir": str(cfg.latest_dir),
+                }
+            }
+        )
     )
 
-    train_ds = InteractionsDataset(train_df, user_vectors, item_vectors, item_key=item_key)
-    val_ds = InteractionsDataset(val_df, user_vectors, item_vectors, item_key=item_key)
-    if train_ds.dropped:
-        print(json.dumps({"info": "dropped_train_rows_missing_features", "count": train_ds.dropped}))
-    if val_ds.dropped:
-        print(json.dumps({"info": "dropped_val_rows_missing_features", "count": val_ds.dropped}))
+    try:
+        if not cfg.user_features_path.exists():
+            raise FileNotFoundError(f"user features not found: {cfg.user_features_path}")
+        if not cfg.item_features_path.exists():
+            raise FileNotFoundError(f"item features not found: {cfg.item_features_path}")
 
-    train_loader = DataLoader(train_ds, batch_size=cfg.batch_size, shuffle=True, num_workers=0)
-    val_loader = DataLoader(val_ds, batch_size=cfg.batch_size, shuffle=False, num_workers=0)
+        train_df = pd.read_parquet(cfg.train_path)
+        val_df = pd.read_parquet(cfg.val_path)
+        user_df = pd.read_parquet(cfg.user_features_path)
+        item_df = pd.read_parquet(cfg.item_features_path)
 
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model = TwoTower(user_dim=user_dim, item_dim=item_dim, hidden_dim=cfg.hidden_dim, embedding_dim=cfg.embedding_dim).to(device)
-    optimizer = torch.optim.AdamW(model.parameters(), lr=cfg.lr)
-    loss_fn = nn.BCEWithLogitsLoss()
+        item_key = args.item_key if args.item_key in item_df.columns else "video_id"
 
-    cfg.out_dir.mkdir(parents=True, exist_ok=True)
-    best_val = float("inf")
+        user_vectors, item_vectors, user_dim, item_dim, user_multi_vocab, item_multi_vocab = build_feature_vectors(
+            user_df=user_df,
+            item_df=item_df,
+            item_key=item_key,
+            max_tag_features=cfg.max_tag_features,
+            max_performer_features=cfg.max_performer_features,
+            use_price_feature=cfg.use_price_feature,
+        )
 
-    for epoch in range(1, cfg.epochs + 1):
-        model.train()
-        pbar = tqdm(train_loader, desc=f"Epoch {epoch}/{cfg.epochs}")
-        for user_vec, item_vec, y in pbar:
-            user_vec, item_vec, y = user_vec.to(device), item_vec.to(device), y.to(device)
-            optimizer.zero_grad(set_to_none=True)
-            logits = model(user_vec, item_vec)
-            loss = loss_fn(logits, y)
-            loss.backward()
-            optimizer.step()
-            pbar.set_postfix({"loss": loss.item()})
+        train_ds = InteractionsDataset(train_df, user_vectors, item_vectors, item_key=item_key)
+        val_ds = InteractionsDataset(val_df, user_vectors, item_vectors, item_key=item_key)
+        if train_ds.dropped:
+            print(json.dumps({"info": "dropped_train_rows_missing_features", "count": train_ds.dropped}))
+        if val_ds.dropped:
+            print(json.dumps({"info": "dropped_val_rows_missing_features", "count": val_ds.dropped}))
 
-        val_loss = evaluate(model, val_loader, device)
-        print(json.dumps({"epoch": epoch, "val_loss": val_loss}))
-        if val_loss < best_val:
-            best_val = val_loss
-            torch.save(model.state_dict(), cfg.out_dir / "two_tower_latest.pt")
+        train_loader = DataLoader(train_ds, batch_size=cfg.batch_size, shuffle=True, num_workers=0)
+        val_loader = DataLoader(val_ds, batch_size=cfg.batch_size, shuffle=False, num_workers=0)
 
-    model.load_state_dict(torch.load(cfg.out_dir / "two_tower_latest.pt", map_location=device))
-    model.eval()
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        model = TwoTower(user_dim=user_dim, item_dim=item_dim, hidden_dim=cfg.hidden_dim, embedding_dim=cfg.embedding_dim).to(device)
+        optimizer = torch.optim.AdamW(model.parameters(), lr=cfg.lr)
+        loss_fn = nn.BCEWithLogitsLoss()
 
-    export_onnx(model.cpu(), user_dim, item_dim, cfg.out_dir / "two_tower_latest.onnx")
+        best_val = float("inf")
+        best_model_path = cfg.run_dir / "two_tower_latest.pt"
 
-    # Compute embeddings
-    model = model.to(device)
-    user_embeddings_df = compute_embeddings(model, user_vectors, model.encode_user, device, "reviewer_id")
-    item_embeddings_df = compute_embeddings(model, item_vectors, model.encode_item, device, item_key)
-    user_embeddings_df.to_parquet(cfg.out_dir / "user_embeddings.parquet", index=False)
-    item_embeddings_df.to_parquet(cfg.out_dir / "video_embeddings.parquet", index=False)
+        for epoch in range(1, cfg.epochs + 1):
+            print(json.dumps({"event": "epoch_start", "epoch": epoch, "total_epochs": cfg.epochs}))
+            model.train()
+            pbar = tqdm(train_loader, desc=f"Epoch {epoch}/{cfg.epochs}")
+            for user_vec, item_vec, y in pbar:
+                user_vec, item_vec, y = user_vec.to(device), item_vec.to(device), y.to(device)
+                optimizer.zero_grad(set_to_none=True)
+                logits = model(user_vec, item_vec)
+                loss = loss_fn(logits, y)
+                loss.backward()
+                optimizer.step()
+                pbar.set_postfix({"loss": loss.item()})
 
-    meta = {
-        "embedding_dim": cfg.embedding_dim,
-        "hidden_dim": cfg.hidden_dim,
-        "user_feature_dim": int(user_dim),
-        "item_feature_dim": int(item_dim),
-        "num_users_training": int(len(train_df["reviewer_id"].unique())),
-        "num_items_training": int(len(train_df[item_key].unique())),
-        "tag_vocab_size": int(len(item_multi_vocab.get("tag_ids", {}))),
-        "performer_vocab_size": int(len(item_multi_vocab.get("performer_ids", {}))),
-        "preferred_tag_vocab_size": int(len(user_multi_vocab.get("preferred_tag_ids", {}))),
-        "use_price_feature": cfg.use_price_feature,
-        "input_schema_version": 1,
-        "format": "two_tower.feature_mlp",
-    }
-    with (cfg.out_dir / "model_meta.json").open("w") as f:
-        json.dump(meta, f, ensure_ascii=False, indent=2)
+            val_loss = evaluate(model, val_loader, device)
+            print(json.dumps({"epoch": epoch, "val_loss": val_loss}))
+            if val_loss < best_val:
+                best_val = val_loss
+                torch.save(model.state_dict(), best_model_path)
 
-    print("Saved artifacts to", cfg.out_dir)
+        model.load_state_dict(torch.load(best_model_path, map_location=device))
+        model.eval()
+
+        onnx_path = cfg.run_dir / "two_tower_latest.onnx"
+        export_onnx(model.cpu(), user_dim, item_dim, onnx_path)
+
+        # Compute embeddings
+        model = model.to(device)
+        user_embeddings_df = compute_embeddings(model, user_vectors, model.encode_user, device, "reviewer_id")
+        item_embeddings_df = compute_embeddings(model, item_vectors, model.encode_item, device, item_key)
+        user_embeddings_path = cfg.run_dir / "user_embeddings.parquet"
+        item_embeddings_path = cfg.run_dir / "video_embeddings.parquet"
+        user_embeddings_df.to_parquet(user_embeddings_path, index=False)
+        item_embeddings_df.to_parquet(item_embeddings_path, index=False)
+
+        meta = {
+            "embedding_dim": cfg.embedding_dim,
+            "hidden_dim": cfg.hidden_dim,
+            "user_feature_dim": int(user_dim),
+            "item_feature_dim": int(item_dim),
+            "num_users_training": int(len(train_df["reviewer_id"].unique())),
+            "num_items_training": int(len(train_df[item_key].unique())),
+            "tag_vocab_size": int(len(item_multi_vocab.get("tag_ids", {}))),
+            "performer_vocab_size": int(len(item_multi_vocab.get("performer_ids", {}))),
+            "preferred_tag_vocab_size": int(len(user_multi_vocab.get("preferred_tag_ids", {}))),
+            "use_price_feature": cfg.use_price_feature,
+            "run_id": cfg.run_id,
+            "input_schema_version": 1,
+            "format": "two_tower.feature_mlp",
+        }
+        meta_path = cfg.run_dir / "model_meta.json"
+        with meta_path.open("w") as f:
+            json.dump(meta, f, ensure_ascii=False, indent=2)
+
+        # Refresh latest snapshot
+        if cfg.latest_dir.exists():
+            shutil.rmtree(cfg.latest_dir)
+        shutil.copytree(cfg.run_dir, cfg.latest_dir)
+
+        print(
+            json.dumps(
+                {
+                    "event": "artifacts_saved",
+                    "run_id": cfg.run_id,
+                    "run_dir": str(cfg.run_dir),
+                    "latest_dir": str(cfg.latest_dir),
+                }
+            )
+        )
+    except Exception:
+        shutil.rmtree(cfg.run_dir, ignore_errors=True)
+        raise
 
 
 if __name__ == "__main__":

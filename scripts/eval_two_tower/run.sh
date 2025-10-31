@@ -15,4 +15,6 @@ fi
 exec docker run "${DOCKER_FLAGS[@]}" \
   -v "$(pwd)":/workspace \
   -w /workspace \
-  "$IMAGE" "$@"
+  "$IMAGE" \
+  python scripts/eval_two_tower/evaluate_two_tower.py \
+  "$@"
