@@ -37,6 +37,9 @@ bash scripts/setup_dev_env/run.sh --write
 
 # 生成内容をファイルで確認したい場合
 # bash scripts/setup_dev_env/run.sh  # docker/env/dev.env.generated に出力（Realtime の SECRET_KEY_BASE も含む）
+
+# pgvector 拡張を使う場合（Two-Tower 埋め込みで必要）
+bash scripts/install_pgvector/run.sh  # supabase/cli コンテナ経由で extensions.sql を生成
 ```
 
 必須キー（dev.env）
@@ -65,16 +68,16 @@ bash scripts/setup_dev_env/run.sh --write
 docker compose -f docker/compose.yml pull
 
 # フォアグラウンド起動（-d なし）: ログをその場で確認できます
-docker compose -f docker/compose.yml up --build
+docker compose --env-file docker/env/dev.env -f docker/compose.yml up --build
 
 # 停止方法（フォアグラウンド起動時）: ターミナルで Ctrl + C
 
 # バックグラウンドで起動した場合の停止:
-# docker compose -f docker/compose.yml stop
+# docker compose --env-file docker/env/dev.env -f docker/compose.yml stop
 # 完全停止（コンテナ削除）:
-# docker compose -f docker/compose.yml down
+# docker compose --env-file docker/env/dev.env -f docker/compose.yml down
 # ボリュームも削除（DB初期化などリセットしたい時のみ推奨）:
-# docker compose -f docker/compose.yml down -v
+# docker compose --env-file docker/env/dev.env -f docker/compose.yml down -v
 
 # フロントにアクセス
 # http://localhost:3000
@@ -83,9 +86,9 @@ docker compose -f docker/compose.yml up --build
 補助コマンド
 ```bash
 # 稼働状況
-docker compose -f docker/compose.yml ps
+docker compose --env-file docker/env/dev.env -f docker/compose.yml ps
 # ログ追尾
-docker compose -f docker/compose.yml logs -f
+docker compose --env-file docker/env/dev.env -f docker/compose.yml logs -f
 ```
 
 ## マイグレーション適用（未適用のみ）
@@ -93,10 +96,10 @@ docker compose -f docker/compose.yml logs -f
 開発中に `supabase/migrations/*.sql` が増えた場合、未適用分だけを適用するには以下を実行します。
 
 ```bash
-docker compose -f docker/compose.yml up db-migrate
+docker compose --env-file docker/env/dev.env -f docker/compose.yml up db-migrate
 
 # REST のスキーマキャッシュを更新（必要時）
-docker compose -f docker/compose.yml restart rest
+docker compose --env-file docker/env/dev.env -f docker/compose.yml restart rest
 ```
 
 初回セットアップやボリューム消去後（完全初期化）の場合は、`db-init` が `docker/db/init/*.sql` と `supabase/migrations/*.sql` を昇順で全適用します。

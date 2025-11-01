@@ -214,12 +214,37 @@ bash scripts/streamlit_qual_eval/run.sh
 
 ### 5. 埋め込み反映（upsert, 実装予定）
 
+> 初回セットアップ時に `pgvector` 拡張を入れておく必要があります。Supabase CLI が利用可能な場合は以下を実行してください。
+> ```bash
+> bash scripts/install_pgvector/run.sh       # supabase/cli コンテナ経由で extensions.sql を生成
+> docker compose --env-file docker/env/dev.env -f docker/compose.yml down -v
+> docker compose --env-file docker/env/dev.env -f docker/compose.yml up --build
+> ```
+> 既存ボリュームを維持したい場合は Supabase が提供する方法（supabase db install / reset）で拡張を有効化してから続行してください。
+
 ```bash
+# Supabase を起動したターミナルとは別に、環境変数と Compose ネットワーク名をセットして実行
+source docker/env/dev.env
+export UPSERT_TT_NETWORK=adult-mathing_default
+
+# Dry-run: 件数のみ確認
 bash scripts/upsert_two_tower/run.sh \
-  --artifacts-dir ml/artifacts/latest \
   --env-file docker/env/dev.env \
+  --artifacts-dir ml/artifacts/latest \
+  --db-url postgresql://postgres:${POSTGRES_PASSWORD}@db:5432/postgres \
+  --min-user-interactions 20 \
   --dry-run
+
+# 実書き込み（dry-run を外す）
+bash scripts/upsert_two_tower/run.sh \
+  --env-file docker/env/dev.env \
+  --artifacts-dir ml/artifacts/latest \
+  --db-url postgresql://postgres:${POSTGRES_PASSWORD}@db:5432/postgres \
+  --min-user-interactions 20
 ```
+- `--dry-run` を外すと `public.video_embeddings`（必要に応じて `--include-users` で `public.user_embeddings`）へ upsert し、`updated_at` を現在時刻で更新する。
+- `--db-url` でローカル Postgres に接続可能。`--min-user-interactions` で指定件数以上のユーザーのみ upsert できる。
+- `--include-users` を付けるとユーザー埋め込みも upsert（`reviewer_id` が Supabase のユーザー UUID である前提）。
 
 - 期待動作: `user_embeddings.parquet` / `video_embeddings.parquet` を pgvector テーブルへ upsert し、`two_tower_latest.onnx` などを Storage `models/` バケットへアップロード。
 - `--dry-run=false` で実際に書き込み。成功時は更新件数と新モデル バージョンをログ出力する。
