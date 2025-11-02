@@ -120,12 +120,13 @@
 
 3. **ファイルの配置準備**  
    - `ml/artifacts/latest/` から Storage へアップロードするファイルを収集。  
-   - `manifest.json`, `summary.md` を生成（手動でも可）。`summary.md` には学習条件・気づき・既知の制約を箇条書きする。
+   - `summary.md` を作成（手動でも可）。`summary.md` には学習条件・気づき・既知の制約を箇条書きする。  
+   - manifest に記載する予定値（`run_id`, `onnx_path`, `metrics_path` など）をまとめたドラフトを準備しておくが、この段階ではアップロードしない。
 
-4. **Supabase Storage へのアップロード**  
-   - 推奨: スクリプト化（例: `scripts/publish_two_tower/run.sh`）。  
+4. **成果物アップロード（Upload ジョブ）**  
+   - 推奨: スクリプト化（例: `scripts/publish_two_tower/upload.sh`）。  
    - 必要な環境変数: `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_PROJECT_REF`。  
-   - 手順例:
+   - 手順例（manifest は触らない）:
      ```bash
      RUN_ID=20251031T093831Z
      supabase storage cp ml/artifacts/latest/two_tower_latest.onnx \
@@ -136,17 +137,26 @@
        models/two_tower/${RUN_ID}/model_meta.json
      supabase storage cp ml/artifacts/latest/metrics.json \
        models/two_tower/${RUN_ID}/metrics.json
-     supabase storage cp tmp/manifest.json \
-       models/two_tower/latest/manifest.json
+     supabase storage cp tmp/summary.md \
+       models/two_tower/${RUN_ID}/summary.md
      ```
+   - アップロード後は検証が終わるまで manifest を据え置き、新バージョンが `latest` から参照されない状態を保つ。
 
-5. **公開・監視**  
-   - Storage へのアップロード完了後、Edge Function / API 側で新バージョンを参照できるか確認。  
-   - Streamlit アプリ等で定性チェックを行い、異常があれば `previous` のバージョンへロールバックする。
+5. **マニフェスト切り替え（Activate ジョブ）**  
+   - 検証完了後、`latest/manifest.json` の `current` を新しい `run_id` に差し替える。  
+   - Activate ジョブでは以下を行う:
+     1. 旧 `current` を `previous` 配列に追加または更新。  
+     2. `current.run_id` / `published_at` / 各パスを新バージョンへ置き換え。  
+     3. 生成した manifest を `models/two_tower/latest/manifest.json`（もしくは環境別パス）にアップロード。  
+   - `production/manifest.json`, `staging/manifest.json` のように環境別のポインタを分ける場合は、Activate ジョブを環境ごとに実行する。
+
+6. **公開後確認・監視**  
+   - manifest 更新後、Edge Function / API / バッチ処理が新バージョンを使用していることを確認する。  
+   - Streamlit アプリ等で定性チェックを行い、異常があれば Activate ジョブを再実行し、`current` を `previous` の run_id へ戻す。
 
 ## 5. 残課題・要検討事項
 
-- ロールバック手順: `latest/manifest.json` のみを指針にする場合、旧バージョンへ戻すには manifest の `current` を過去の `run_id` に差し替え、`published_at` を更新する。万一 manifest 更新前に異常が発生した場合に備え、`previous` リストに直近の安定バージョンを必ず保持し、Manifest 更新と pgvector 反映をワンステップで行うスクリプトを用意する。さらに、安全策として `production/` `staging/` 等の固定パスを分け、環境ごとのポインタを持たせる案も検討する。
+- ロールバック手順: `latest/manifest.json` のみを指針にする場合、旧バージョンへ戻すには manifest の `current` を過去の `run_id` に差し替え、`published_at` を更新する。万一 Activate ジョブ実行前後で差異が出た場合に備え、`previous` リストに直近の安定バージョンを必ず保持し、pgvector 反映やキャッシュ更新との整合をどう確保するかを詰める。必要に応じて `production/` `staging/` 等の固定パスを分け、環境ごとのポインタを持たせる案も検討する。
 - `latest` 参照の是非: 直接 `latest` ディレクトリ配下のファイルを利用する運用は、意図しないバージョン切り替えを招く可能性がある。基本は `latest/manifest.json` を読み、そこに記録された `run_id` を明示的に解決することで、参照整合性とロールバック容易性を両立させる。クライアント実装では manifest の署名検証や `published_at` の監視を追加し、切り替えトランザクションを観測できるようにしておく。
 - CI/CD への組み込み: GitHub Actions で自動的にアップロードする際のアクセスキー管理（Service Role 秘密鍵の扱い、OIDC 連携など）。
 - モデルの署名・検証: ダウンロード時にハッシュチェックを行うか。
