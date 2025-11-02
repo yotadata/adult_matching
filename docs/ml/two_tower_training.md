@@ -26,7 +26,7 @@
 
 4. **埋め込み反映（upsert / オンライン更新）**  
    - 評価 OK の成果物だけを Supabase Postgres の `public.user_embeddings` / `public.video_embeddings`（vector(256)）へアップサート。  
-   - Storage には `models/two_tower_latest.onnx` 等をアップロードし、バージョン管理 (`two_tower_YYYYMMDDHHMM.*`) を行う。
+   - Storage には `models/two_tower_latest.onnx` 等をアップロードし、バージョン管理 (`two_tower_YYYYMMDD_HHMMSS.*`) を行う。
 
 > 各ステップは `scripts/<name>/run.sh` 経由で Docker 上から実行する。  
 > 将来的な GitHub Actions 化では、この順番でジョブ／ステップを構成すればそのまま流用可能。
@@ -335,7 +335,7 @@ jobs:
 初期学習と同一パイプラインを週次で自動実行します。
 
 - スケジュール: `cron: '0 4 * * 0'`（毎週日曜 04:00 JST）
-- バージョニング: `two_tower_YYYYMMDDHHMM.pkl` を保存しつつ、`two_tower_latest.pkl` を上書き
+- バージョニング: `two_tower_YYYYMMDD_HHMMSS.pkl.gz` を保存しつつ、`two_tower_latest.pkl` を上書き
 - 品質ゲート（推奨）:
   - 評価指標の下限（例: Recall@10 が前回値から大幅悪化しない）を満たさない場合は `latest` の更新を抑止
   - 失敗時フォールバック: 直近安定版の `latest` を維持し、埋め込み Upsert はスキップ

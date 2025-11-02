@@ -4,7 +4,7 @@ import json
 import shutil
 from collections import Counter
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from typing import Dict, Iterable, List, Optional, Tuple
 
@@ -36,6 +36,13 @@ class TrainConfig:
     run_id: str
     run_dir: Path
     latest_dir: Path
+
+
+JST = timezone(timedelta(hours=9))
+
+
+def _generate_run_id() -> str:
+    return datetime.now(JST).strftime("%Y%m%d_%H%M%S")
 
 
 def _ensure_list(value) -> List[str]:
@@ -346,12 +353,12 @@ def main() -> None:
     ap.add_argument("--max-tag-features", type=int, default=2048, help="Maximum number of tag IDs to encode (by frequency). Use <=0 to keep all.")
     ap.add_argument("--max-performer-features", type=int, default=512, help="Maximum number of performer IDs to encode (by frequency). Use <=0 to keep all.")
     ap.add_argument("--use-price-feature", action="store_true", help="Include the price column as a numeric feature.")
-    ap.add_argument("--run-id", default="auto", help="Identifier for this training run. Use 'auto' to generate a UTC timestamp.")
+    ap.add_argument("--run-id", default="auto", help="Identifier for this training run. Use 'auto' to generate a JST timestamp (YYYY-MM-DD_HH-MM-SS).")
     args = ap.parse_args()
 
     run_id = args.run_id
     if run_id == "auto":
-        run_id = datetime.utcnow().strftime("%Y%m%dT%H%M%SZ")
+        run_id = _generate_run_id()
 
     out_dir = args.out_dir
     run_dir = (out_dir / "runs" / run_id).resolve()

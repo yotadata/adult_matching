@@ -4,7 +4,7 @@ import json
 import shutil
 import sys
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from os import path as _path
 from pathlib import Path
 from typing import Dict, Tuple
@@ -17,6 +17,13 @@ import psycopg
 DEFAULT_PROCESSED_ROOT = Path("ml/data/processed/two_tower")
 DEFAULT_LATEST_DIR = DEFAULT_PROCESSED_ROOT / "latest"
 DEFAULT_SNAPSHOT_ROOT = DEFAULT_PROCESSED_ROOT / "runs"
+
+
+JST = timezone(timedelta(hours=9))
+
+
+def _generate_run_id() -> str:
+    return datetime.now(JST).strftime("%Y%m%d_%H%M%S")
 
 
 @dataclass
@@ -409,7 +416,7 @@ def main():
     ap.add_argument("--out-val", type=Path, default=DEFAULT_LATEST_DIR / "interactions_val.parquet")
     ap.add_argument("--out-items", type=Path, default=DEFAULT_LATEST_DIR / "item_features.parquet", help="Output path for per-item attributes (if videos CSV is supplied)")
     ap.add_argument("--out-user-features", type=Path, default=DEFAULT_LATEST_DIR / "user_features.parquet", help="Output path for aggregated user features (requires --db-url)")
-    ap.add_argument("--run-id", type=str, default=None, help="Optional identifier to snapshot this run under --snapshot-root/<run-id>. Use 'auto' to generate a timestamp.")
+    ap.add_argument("--run-id", type=str, default=None, help="Optional identifier to snapshot this run under --snapshot-root/<run-id>. Use 'auto' to generate a JST timestamp (YYYY-MM-DD_HH-MM-SS).")
     ap.add_argument("--snapshot-root", type=Path, default=DEFAULT_SNAPSHOT_ROOT, help="Base directory for prep run snapshots when --run-id is provided.")
     ap.add_argument("--snapshot-inputs", action="store_true", help="When used with --run-id, copy input/auxiliary CSVs into the snapshot directory.")
     ap.add_argument("--summary-out", type=Path, default=None, help="Optional path to write the prep summary JSON.")
@@ -420,7 +427,7 @@ def main():
     snapshot_root: Path | None = None
     if run_id:
         if run_id.lower() == "auto":
-            run_id = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+            run_id = _generate_run_id()
         snapshot_root = args.snapshot_root
     if args.skip_legacy_output and run_id is None:
         raise ValueError("--skip-legacy-output requires --run-id (or --run-id auto) to specify snapshot destination.")

@@ -7,7 +7,7 @@
 - 目的: ユーザー嗜好に基づく動画レコメンド。類似度は内積/コサインで評価。
 - 方式: Two‑Tower（ユーザー塔・アイテム塔）でそれぞれ埋め込みベクトルを学習し、`score = sim(E_u, E_i)` でランキング。
 - 成果物:
-  - 学習済みモデル（Storage）: `models/two_tower_latest.pkl`（任意でバージョニングファイル `two_tower_YYYYMMDDHHMM.pkl`）
+- 学習済みモデル（Storage）: `models/two_tower_latest.pkl`（任意でバージョニングファイル `two_tower_YYYYMMDD_HHMMSS.pkl.gz`）
   - 埋め込み（DB/pgvector）: `public.user_embeddings`, `public.video_embeddings`（vector(256) を想定）
 
 ## データ仕様（学習用）
@@ -53,7 +53,7 @@
   - `models/two_tower_latest.pkl`（学習済み PyTorch state_dict）
   - `models/two_tower_latest.onnx`（特徴量→ユーザー/アイテム埋め込みを生成する推論モデル）
   - `models/two_tower_latest.json`（メタデータ: `version, trained_at, dim, loss, metrics, input_schema_version`）
-  - 版管理: `two_tower_YYYYMMDDHHMM.onnx` などバージョン付きファイルを保存し、`latest` を上書き
+  - 版管理: `two_tower_YYYYMMDD_HHMMSS.onnx` や `two_tower_YYYYMMDD_HHMMSS.pt.gz` などバージョン付きファイルを保存し、`latest` を上書き
 - DB（pgvector）
   - `public.video_embeddings(video_id uuid, embedding vector(256))`
   - `public.user_embeddings(user_id text, embedding vector(256))`

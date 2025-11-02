@@ -2,10 +2,15 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.43.0"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  // Include content-type for JSON payloads; allow typical Supabase headers
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 }
+
+const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? ''
+const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY') ?? ''
+const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+const DEFAULT_LIMIT = 20
+const MAX_LIMIT = 50
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -13,31 +18,68 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // 認証ヘッダをSupabaseクライアントに伝播（auth.uid()利用のため）
     const authHeader = req.headers.get('Authorization') ?? ''
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      { global: { headers: { Authorization: authHeader } } }
-    )
+    const requestJson = await req.json().catch(() => ({}))
+    const requestedLimit = typeof requestJson.limit === 'number' ? requestJson.limit : undefined
+    const pageLimit = requestedLimit && requestedLimit > 0
+      ? Math.min(requestedLimit, MAX_LIMIT)
+      : DEFAULT_LIMIT
 
-    const { data: videos, error } = await supabase.rpc('get_videos_feed', { page_limit: 20 })
+    // Personalized branch (requires service role & authenticated user)
+    if (SUPABASE_SERVICE_ROLE_KEY && authHeader) {
+      const serviceClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+        auth: { persistSession: false },
+        global: { headers: { Authorization: authHeader } },
+      })
 
-    if (error) {
-      console.error('Error fetching videos via RPC:', error.message)
-      return new Response(JSON.stringify({ error: error.message }), {
+      const { data: userData, error: userError } = await serviceClient.auth.getUser()
+      if (!userError && userData?.user) {
+        const { data: recs, error: recError } = await serviceClient.rpc('get_videos_recommendations', {
+          user_uuid: userData.user.id,
+          page_limit: pageLimit,
+        })
+        if (!recError && recs && recs.length > 0) {
+          const payload = recs.map((item: Record<string, unknown>) => ({
+            ...item,
+            score: typeof item?.score === 'number' ? item.score : null,
+            model_version: typeof item?.model_version === 'string' ? item.model_version : null,
+          }))
+          return new Response(JSON.stringify(payload), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 200,
+          })
+        }
+      }
+    }
+
+    // Fallback to existing feed (randomized list)
+    const anonClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      auth: { persistSession: false },
+      global: authHeader ? { headers: { Authorization: authHeader } } : undefined,
+    })
+
+    const { data: feed, error: feedError } = await anonClient.rpc('get_videos_feed', { page_limit: pageLimit })
+    if (feedError) {
+      console.error('Error fetching videos via RPC:', feedError.message)
+      return new Response(JSON.stringify({ error: feedError.message }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 500,
       })
     }
 
-    return new Response(JSON.stringify(videos ?? []), {
+    const payload = (feed ?? []).map((item: Record<string, unknown>) => ({
+      ...item,
+      score: item?.score ?? null,
+      model_version: item?.model_version ?? null,
+    }))
+
+    return new Response(JSON.stringify(payload), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     })
   } catch (error) {
-    console.error('Unexpected error:', error.message);
-    return new Response(JSON.stringify({ error: error.message }), {
+    console.error('Unexpected error:', error?.message ?? error)
+    return new Response(JSON.stringify({ error: error?.message ?? 'unknown error' }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 400,
     })

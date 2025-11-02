@@ -236,26 +236,52 @@ def upsert_embeddings(
     id_column: str,
     rows: List[Tuple[uuid.UUID, List[float]]],
     chunk_size: int,
+    *,
+    version_column: str | None = None,
+    version_value: str | None = None,
 ) -> UpsertResult:
     if not rows:
         return UpsertResult(table=table, inserted=0, skipped=0, dropped=0)
 
+    if version_column and version_value is None:
+        raise ValueError(f"version_value must be provided when version_column={version_column}")
+
     inserted = 0
     with conn.cursor() as cur:
         for batch in tqdm(chunk(rows, chunk_size), desc=f"Upserting {table}", unit="batch"):
-            params = [(row_id, embedding) for row_id, embedding in batch]
-            cur.executemany(
-                sql.SQL(
-                    """
-                    INSERT INTO {table} ({id_col}, embedding, updated_at)
-                    VALUES (%s, %s, now())
-                    ON CONFLICT ({id_col}) DO UPDATE
-                      SET embedding = EXCLUDED.embedding,
-                          updated_at = EXCLUDED.updated_at
-                    """
-                ).format(table=sql.Identifier(table), id_col=sql.Identifier(id_column)),
-                params,
-            )
+            if version_column:
+                params = [(row_id, embedding, version_value) for row_id, embedding in batch]
+                cur.executemany(
+                    sql.SQL(
+                        """
+                        INSERT INTO {table} ({id_col}, embedding, {version_col}, updated_at)
+                        VALUES (%s, %s, %s, now())
+                        ON CONFLICT ({id_col}) DO UPDATE
+                          SET embedding = EXCLUDED.embedding,
+                              {version_col} = EXCLUDED.{version_col},
+                              updated_at = EXCLUDED.updated_at
+                        """
+                    ).format(
+                        table=sql.Identifier(table),
+                        id_col=sql.Identifier(id_column),
+                        version_col=sql.Identifier(version_column),
+                    ),
+                    params,
+                )
+            else:
+                params = [(row_id, embedding) for row_id, embedding in batch]
+                cur.executemany(
+                    sql.SQL(
+                        """
+                        INSERT INTO {table} ({id_col}, embedding, updated_at)
+                        VALUES (%s, %s, now())
+                        ON CONFLICT ({id_col}) DO UPDATE
+                          SET embedding = EXCLUDED.embedding,
+                              updated_at = EXCLUDED.updated_at
+                        """
+                    ).format(table=sql.Identifier(table), id_col=sql.Identifier(id_column)),
+                    params,
+                )
             inserted += len(batch)
     return UpsertResult(table=table, inserted=inserted, skipped=0, dropped=0)
 
@@ -408,11 +434,21 @@ def main() -> None:
     print(json.dumps({"info": "db_url", "url": db_url}, ensure_ascii=False))
 
     model_meta_path = artifacts_dir / "model_meta.json"
+    meta: dict | None = None
     if model_meta_path.exists():
         meta = json.loads(model_meta_path.read_text())
         print(json.dumps({"info": "model_meta", "path": str(model_meta_path), "meta": meta}, ensure_ascii=False))
     else:
         print(f"[WARN] model_meta.json not found in {artifacts_dir}", file=sys.stderr)
+
+    model_version = None
+    if meta:
+        raw_version = meta.get("run_id")
+        if raw_version:
+            model_version = str(raw_version).strip()
+    if not model_version:
+        model_version = "unknown"
+    print(json.dumps({"info": "model_version", "value": model_version}, ensure_ascii=False))
 
     video_df = load_embeddings(artifacts_dir / "video_embeddings.parquet", "video_id")
     video_rows, video_skipped, video_non_uuid = prepare_rows(video_df, "video_id")
@@ -482,12 +518,25 @@ def main() -> None:
                         ),
                         file=sys.stderr,
                     )
-            video_result = upsert_embeddings(conn, "video_embeddings", "video_id", video_rows, args.chunk_size)
+            video_result = upsert_embeddings(
+                conn,
+                "video_embeddings",
+                "video_id",
+                video_rows,
+                args.chunk_size,
+                version_column="model_version",
+                version_value=model_version,
+            )
             user_result = None
             if args.include_users and user_rows:
                 user_result = upsert_embeddings(conn, "user_embeddings", "user_id", user_rows, args.chunk_size)
         summaries = [
-            {"table": video_result.table, "inserted": video_result.inserted, "skipped": video_skipped},
+            {
+                "table": video_result.table,
+                "inserted": video_result.inserted,
+                "skipped": video_skipped,
+                "model_version": model_version,
+            },
         ]
         if args.include_users:
             summaries.append({

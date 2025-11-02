@@ -9,13 +9,13 @@
   ```
   models/
     two_tower/
-      20251031T093831Z/          # run_id（UTC タイムスタンプ or 任意ID）
-        two_tower_20251031T093831Z.onnx
-        two_tower_20251031T093831Z.pt
+      20251031_183831/            # run_id（JST タイムスタンプ）
+        two_tower_20251031_183831.onnx
+        two_tower_20251031_183831.pt.gz
         model_meta.json
         metrics.json
         summary.md                # 任意（変更点・注意点）
-      20251015T112233Z/
+      20251015_202233/
         ...
       latest/
         manifest.json             # 現行リリースのポインタ
@@ -28,12 +28,12 @@
 | 対象 | 命名例 | 備考 |
 | ---- | ------ | ---- |
 | ONNX | `two_tower_<run_id>.onnx` | 推論用（ユーザー/アイテム両対応） |
-| PyTorch state_dict | `two_tower_<run_id>.pt` | 再学習・デバッグ用の元モデル |
+| PyTorch state_dict | `two_tower_<run_id>.pt.gz` | 再学習・デバッグ用の元モデル（アップロード時に gzip 圧縮） |
 | メタ情報 | `model_meta.json` | 特徴量次元・語彙サイズ等を含む |
 | 評価結果 | `metrics.json` | 指標（Recall@K, AUC など） |
 | マニフェスト | `latest/manifest.json` | 現在の稼働バージョンと関連情報 |
 
-`run_id` は `YYYYMMDDTHHMMSSZ` 形式（UTC）を基本とし、GitHub Actions 等の CI では `workflow_run.id` などと組み合わせてもよい。手動リリース時は一意性が担保できるようにすること。
+`run_id` は JST（UTC+9）の `YYYYMMDD_HHMMSS` 形式（例: `20251031_183831`）を基本とする。CI などで別形式を採用する場合も、この命名規則へ変換してから保存すること。
 
 ## 3. メタデータ・マニフェスト仕様
 
@@ -43,8 +43,8 @@
 {
   "model_name": "two_tower",
   "format": "two_tower.feature_mlp",
-  "run_id": "20251031T093831Z",
-  "trained_at": "2025-10-31T09:38:31Z",
+  "run_id": "20251031_183831",
+  "trained_at": "2025-10-31T18:38:31+09:00",
   "git_commit": "<commit-hash>",
   "input_schema_version": 1,
   "embedding_dim": 256,
@@ -56,7 +56,7 @@
   "preferred_tag_vocab_size": 4096,
   "use_price_feature": false,
   "data_snapshot": {
-    "prep_run_id": "20251030T100538Z",
+    "prep_run_id": "20251030_190538",
     "source_csv": "ml/data/raw/reviews/dmm_reviews_videoa_2025-10-04.csv"
   }
 }
@@ -69,8 +69,8 @@
 
 ```jsonc
 {
-  "run_id": "20251031T093831Z",
-  "evaluated_at": "2025-10-31T10:02:15Z",
+  "run_id": "20251031_183831",
+  "evaluated_at": "2025-10-31T19:02:15+09:00",
   "metrics": {
     "recall@20": 0.695,
     "map@20": 0.421,
@@ -89,16 +89,16 @@
 {
   "model_name": "two_tower",
   "current": {
-    "run_id": "20251031T093831Z",
+    "run_id": "20251031_183831",
     "published_at": "2025-11-01T02:40:10Z",
-    "onnx_path": "two_tower/20251031T093831Z/two_tower_20251031T093831Z.onnx",
-    "meta_path": "two_tower/20251031T093831Z/model_meta.json",
-    "metrics_path": "two_tower/20251031T093831Z/metrics.json"
+    "onnx_path": "two_tower/20251031_183831/two_tower_20251031_183831.onnx",
+    "meta_path": "two_tower/20251031_183831/model_meta.json",
+    "metrics_path": "two_tower/20251031_183831/metrics.json"
   },
   "previous": [
     {
-      "run_id": "20251015T112233Z",
-      "onnx_path": "two_tower/20251015T112233Z/two_tower_20251015T112233Z.onnx"
+      "run_id": "20251015_202233",
+      "onnx_path": "two_tower/20251015_202233/two_tower_20251015_202233.onnx"
     }
   ],
   "release_notes": "Recall@20 が 0.68→0.70 に改善。price feature を OFF に固定。"

@@ -148,7 +148,7 @@ Two-Tower 推薦モデル向けの学習データを生成するための標準�
   - `ml/data/processed/two_tower/latest/item_features.parquet`（動画マスタが利用できた場合）
   - `ml/data/processed/two_tower/latest/summary.json`（統計と出力ファイル情報を JSON で記録）
 - `--run-id` を指定すると `runs/<run-id>/` 以下にスナップショットを残す。
-  - `--run-id auto` で `UTC YYYYMMDDThhmmssZ` 形式を自動採番。
+  - `--run-id auto` で JST（UTC+9）の `YYYY-MM-DD_HH-MM-SS` 形式を自動採番。
   - `--snapshot-inputs` で参照した CSV を `runs/<run-id>/inputs/` にコピー。
   - `--skip-legacy-output` を併用するとスナップショットのみを書き出し、`latest/` は更新しない。
 
