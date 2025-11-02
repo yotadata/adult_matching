@@ -124,30 +124,16 @@
    - manifest に記載する予定値（`run_id`, `onnx_path`, `metrics_path` など）をまとめたドラフトを準備しておくが、この段階ではアップロードしない。
 
 4. **成果物アップロード（Upload ジョブ）**  
-   - 推奨: スクリプト化（例: `scripts/publish_two_tower/upload.sh`）。  
-   - 必要な環境変数: `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_PROJECT_REF`。  
-   - 手順例（manifest は触らない）:
-     ```bash
-     RUN_ID=20251031T093831Z
-     supabase storage cp ml/artifacts/latest/two_tower_latest.onnx \
-       models/two_tower/${RUN_ID}/two_tower_${RUN_ID}.onnx
-     supabase storage cp ml/artifacts/latest/two_tower_latest.pt \
-       models/two_tower/${RUN_ID}/two_tower_${RUN_ID}.pt
-     supabase storage cp ml/artifacts/latest/model_meta.json \
-       models/two_tower/${RUN_ID}/model_meta.json
-     supabase storage cp ml/artifacts/latest/metrics.json \
-       models/two_tower/${RUN_ID}/metrics.json
-     supabase storage cp tmp/summary.md \
-       models/two_tower/${RUN_ID}/summary.md
-     ```
+   - 実装済みスクリプト: `bash scripts/publish_two_tower/run.sh --env-file docker/env/prd.env upload`  
+     - 主な引数: `--run-id <id>`（省略時は `model_meta.json` から解決）、`--summary <path>`（省略時は `ml/artifacts/latest/summary.md` を探索）、`--dry-run`。  
+   - 内部では Service Role Key と Storage REST API を用いて `models/two_tower/<run_id>/` に ONNX / ONNX 付随データ（`.onnx.data` が存在する場合は `.onnx.data.gz` として圧縮）、PT（`.pt.gz`）、`model_meta.json`、`metrics.json`、`summary.md` をアップロードする。  
+   - `.onnx.data.gz` / `.pt.gz` はダウンロード後に解凍してから利用する前提（例: `gzip -dc file.pt.gz > file.pt`）。推論側で自動解凍するラッパーを用意しておくと安全。  
    - アップロード後は検証が終わるまで manifest を据え置き、新バージョンが `latest` から参照されない状態を保つ。
 
 5. **マニフェスト切り替え（Activate ジョブ）**  
-   - 検証完了後、`latest/manifest.json` の `current` を新しい `run_id` に差し替える。  
-   - Activate ジョブでは以下を行う:
-     1. 旧 `current` を `previous` 配列に追加または更新。  
-     2. `current.run_id` / `published_at` / 各パスを新バージョンへ置き換え。  
-     3. 生成した manifest を `models/two_tower/latest/manifest.json`（もしくは環境別パス）にアップロード。  
+   - 実装済みスクリプト: `bash scripts/publish_two_tower/run.sh --env-file docker/env/prd.env activate --run-id <id>`  
+     - 主な引数: `--manifest-path two_tower/latest/manifest.json`（既定）、`--max-previous 5`、`--release-notes "<text>"` or `--release-notes-file <path>`、`--dry-run`。  
+   - ジョブでは現行 manifest を取得し、旧 `current` を `previous` に退避した上で新しい `run_id` を `current` に設定し、`published_at` を現在時刻で更新する。  
    - `production/manifest.json`, `staging/manifest.json` のように環境別のポインタを分ける場合は、Activate ジョブを環境ごとに実行する。
 
 6. **公開後確認・監視**  

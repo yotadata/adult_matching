@@ -77,6 +77,7 @@
    - `bash scripts/streamlit_qual_eval/run.sh`
    - 本番/ステージングのユーザー LIKE 履歴を元に最新のベクトルを生成する場合は、まず `bash scripts/gen_user_embeddings/run.sh --min-interactions 5 --env-file docker/env/prd.env` を実行する。`--min-interactions` に指定した値以上の LIKE（`public.user_video_decisions.decision_type = 'like'`）を持つユーザーのみが対象となり、集計は常に Supabase DB の最新データから取得される。
    - 生成済みの `ml/artifacts/live/*.parquet` をそのまま反映する場合は `bash scripts/upsert_two_tower/run.sh --artifacts-dir ml/artifacts/live --include-users --min-user-interactions 5` のように実行する（こちらも DB 上の LIKE 件数でフィルタされる。フォールバックとして学習用 parquet を参照するロジックは残しているが、基本は DB 集計が利用される）。
+   - モデル成果物を Supabase Storage へ配置する際は、検証前に `bash scripts/publish_two_tower/run.sh --env-file docker/env/prd.env upload` で run_id ディレクトリへアップロードし、公開準備が整ったら `bash scripts/publish_two_tower/run.sh --env-file docker/env/prd.env activate` で manifest を切り替える。
 
 
 ## データソース（優先: 明示フィードバック）
