@@ -8,7 +8,6 @@ const corsHeaders = {
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? ''
 const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY') ?? ''
-const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
 const DEFAULT_LIMIT = 20
 const MAX_LIMIT = 50
 
@@ -25,16 +24,15 @@ Deno.serve(async (req) => {
       ? Math.min(requestedLimit, MAX_LIMIT)
       : DEFAULT_LIMIT
 
-    // Personalized branch (requires service role & authenticated user)
-    if (SUPABASE_SERVICE_ROLE_KEY && authHeader) {
-      const serviceClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
-        auth: { persistSession: false },
-        global: { headers: { Authorization: authHeader } },
-      })
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      auth: { persistSession: false },
+      global: authHeader ? { headers: { Authorization: authHeader } } : undefined,
+    })
 
-      const { data: userData, error: userError } = await serviceClient.auth.getUser()
+    if (authHeader) {
+      const { data: userData, error: userError } = await supabase.auth.getUser()
       if (!userError && userData?.user) {
-        const { data: recs, error: recError } = await serviceClient.rpc('get_videos_recommendations', {
+        const { data: recs, error: recError } = await supabase.rpc('get_videos_recommendations', {
           user_uuid: userData.user.id,
           page_limit: pageLimit,
         })
@@ -53,12 +51,7 @@ Deno.serve(async (req) => {
     }
 
     // Fallback to existing feed (randomized list)
-    const anonClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-      auth: { persistSession: false },
-      global: authHeader ? { headers: { Authorization: authHeader } } : undefined,
-    })
-
-    const { data: feed, error: feedError } = await anonClient.rpc('get_videos_feed', { page_limit: pageLimit })
+    const { data: feed, error: feedError } = await supabase.rpc('get_videos_feed', { page_limit: pageLimit })
     if (feedError) {
       console.error('Error fetching videos via RPC:', feedError.message)
       return new Response(JSON.stringify({ error: feedError.message }), {
