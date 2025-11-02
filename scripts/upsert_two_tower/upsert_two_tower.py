@@ -4,9 +4,13 @@ import json
 import os
 import sys
 import uuid
+import socket
+import urllib.error
+import urllib.request
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterable, List, Sequence, Tuple
+from typing import Iterable, List, Optional, Sequence, Tuple
+from urllib.parse import parse_qs, urlencode, urlsplit, urlunsplit, quote
 
 import pandas as pd
 import psycopg
@@ -142,6 +146,85 @@ def prepare_user_rows(
     return rows, skipped, filtered, non_uuid
 
 
+def _eligible_users_from_parquet(
+    interaction_paths: Iterable[Path] | None,
+    min_interactions: int,
+) -> Optional[List[str]]:
+    paths = list(interaction_paths or [])
+    if not paths:
+        paths = [
+            Path("ml/data/processed/two_tower/latest/interactions_train.parquet"),
+            Path("ml/data/processed/two_tower/latest/interactions_val.parquet"),
+        ]
+    frames: List[pd.DataFrame] = []
+    for ipath in paths:
+        if ipath.exists():
+            frames.append(pd.read_parquet(ipath, columns=["reviewer_id"]))
+    if not frames:
+        return None
+    interaction_df = pd.concat(frames, ignore_index=True)
+    counts = interaction_df["reviewer_id"].astype(str).value_counts()
+    return counts[counts >= min_interactions].index.tolist()
+
+
+def _eligible_users_from_db(db_url: str, min_interactions: int) -> Optional[List[str]]:
+    sql_query = """
+        SELECT au.id AS user_id
+        FROM public.user_video_decisions uvd
+        JOIN auth.users au ON au.id = uvd.user_id
+        WHERE uvd.decision_type = 'like'
+        GROUP BY au.id
+        HAVING COUNT(*) >= %s
+    """
+    try:
+        with psycopg.connect(db_url, row_factory=dict_row) as conn:
+            with conn.cursor() as cur:
+                cur.execute(sql_query, (min_interactions,))
+                rows = cur.fetchall()
+    except Exception as exc:
+        print(
+            json.dumps(
+                {
+                    "warn": "user_interaction_filter_db_failed",
+                    "error": str(exc),
+                },
+                ensure_ascii=False,
+            ),
+            file=sys.stderr,
+        )
+        return None
+    if not rows:
+        return []
+    eligible: List[str] = []
+    for row in rows:
+        value = row["user_id"] if isinstance(row, dict) else row[0]
+        if value is None:
+            continue
+        eligible.append(str(value))
+    return eligible
+
+
+def _filter_existing_auth_users(
+    conn: psycopg.Connection,
+    rows: List[Tuple[uuid.UUID, List[float]]],
+) -> Tuple[List[Tuple[uuid.UUID, List[float]]], int]:
+    if not rows:
+        return rows, 0
+    user_ids = [row_id for row_id, _ in rows]
+    with conn.cursor() as cur:
+        cur.execute("SELECT id FROM auth.users WHERE id = ANY(%s)", (user_ids,))
+        fetched = cur.fetchall()
+    existing_ids: set[uuid.UUID] = set()
+    for row in fetched:
+        value = row["id"] if isinstance(row, dict) else row[0]
+        if value is None:
+            continue
+        existing_ids.add(uuid.UUID(str(value)))
+    filtered_rows = [row for row in rows if row[0] in existing_ids]
+    dropped = len(rows) - len(filtered_rows)
+    return filtered_rows, dropped
+
+
 def chunk(sequence: Sequence[Tuple[uuid.UUID, List[float]]], size: int) -> Iterable[List[Tuple[uuid.UUID, List[float]]]]:
     for idx in range(0, len(sequence), size):
         yield list(sequence[idx : idx + size])
@@ -177,6 +260,142 @@ def upsert_embeddings(
     return UpsertResult(table=table, inserted=inserted, skipped=0, dropped=0)
 
 
+def _ensure_embedding_schema(conn: psycopg.Connection, target_dim: int | None) -> None:
+    if target_dim is None:
+        target_dim = 256
+    dim_sql = sql.SQL(str(target_dim))
+    changed = False
+    with conn.cursor() as cur:
+        current_video_dim = _get_vector_dim(cur, "public.video_embeddings", "embedding")
+        current_user_dim = _get_vector_dim(cur, "public.user_embeddings", "embedding")
+        if current_video_dim != target_dim:
+            print(json.dumps({"info": "adjust_video_dim", "from": current_video_dim, "to": target_dim}, ensure_ascii=False))
+            cur.execute("DROP INDEX IF EXISTS idx_video_embeddings_cosine")
+            cur.execute("TRUNCATE TABLE public.video_embeddings RESTART IDENTITY")
+            cur.execute(sql.SQL("ALTER TABLE public.video_embeddings ALTER COLUMN embedding TYPE vector({dim})").format(dim=dim_sql))
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_video_embeddings_cosine ON public.video_embeddings USING ivfflat (embedding vector_cosine_ops)")
+            changed = True
+        if current_user_dim and current_user_dim != target_dim:
+            print(json.dumps({"info": "adjust_user_dim", "from": current_user_dim, "to": target_dim}, ensure_ascii=False))
+            cur.execute("DROP INDEX IF EXISTS idx_user_embeddings_cosine")
+            cur.execute("TRUNCATE TABLE public.user_embeddings RESTART IDENTITY")
+            cur.execute(sql.SQL("ALTER TABLE public.user_embeddings ALTER COLUMN embedding TYPE vector({dim})").format(dim=dim_sql))
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_user_embeddings_cosine ON public.user_embeddings USING ivfflat (embedding vector_cosine_ops)")
+            changed = True
+    if changed:
+        conn.commit()
+
+
+def _get_vector_dim(cur: psycopg.Cursor, table: str, column: str) -> int | None:
+    cur.execute(
+        """
+        SELECT NULLIF(atttypmod, -1) AS dims
+        FROM pg_attribute
+        WHERE attrelid = %s::regclass
+          AND attname = %s
+          AND NOT attisdropped
+        """,
+        (table, column),
+    )
+    row = cur.fetchone()
+    if not row:
+        return None
+    if isinstance(row, dict):
+        return row.get("dims")
+    return row[0]
+
+
+def _ensure_ipv4_hostaddr(conninfo: str, allow_pooler: bool = True) -> str:
+    """Append hostaddr=<ipv4> to conninfo; fall back to pooler URL when needed."""
+    try:
+        parsed = urlsplit(conninfo)
+    except Exception:
+        return conninfo
+
+    if not parsed.hostname:
+        return conninfo
+
+    query = parse_qs(parsed.query, keep_blank_values=True)
+    if "hostaddr" in query:
+        return conninfo
+
+    addrinfo = []
+    try:
+        addrinfo = socket.getaddrinfo(parsed.hostname, parsed.port or 5432, family=socket.AF_INET)
+    except socket.gaierror:
+        addrinfo = []
+
+    ipv4_addr = next((info[4][0] for info in addrinfo if info[0] == socket.AF_INET), None)
+
+    if not ipv4_addr and allow_pooler:
+        project_ref = os.environ.get("SUPABASE_PROJECT_REF")
+        if not project_ref:
+            parts = parsed.hostname.split('.')
+            if len(parts) >= 3 and parts[0] == "db":
+                project_ref = parts[1]
+
+        # Prefer explicit pooler host via env
+        pooler_host = os.environ.get("SUPABASE_POOLER_HOST")
+        if not pooler_host:
+            region = os.environ.get("SUPABASE_REGION")
+            if region:
+                pooler_host = f"{region}.pooler.supabase.com"
+
+        if pooler_host:
+            pooler_port = os.environ.get("SUPABASE_POOLER_PORT") or "6543"
+            pooler_user = os.environ.get("SUPABASE_POOLER_USER")
+            if not pooler_user and project_ref and parsed.username:
+                pooler_user = f"{parsed.username}.{project_ref}"
+            username = pooler_user or parsed.username or ""
+            password = parsed.password or ""
+            auth = quote(username)
+            if password:
+                auth = f"{auth}:{quote(password)}"
+            netloc = f"{auth}@{pooler_host}:{pooler_port}"
+            pooler_conn = urlunsplit((parsed.scheme, netloc, parsed.path, parsed.query, parsed.fragment))
+            print(json.dumps({
+                "info": "pooler_url_computed",
+                "url": pooler_conn
+            }, ensure_ascii=False))
+            return _ensure_ipv4_hostaddr(pooler_conn, allow_pooler=False)
+
+        token = os.environ.get("SUPABASE_ACCESS_TOKEN")
+        pooler_url = _fetch_pooler_connection(project_ref, token)
+        if pooler_url:
+            return _ensure_ipv4_hostaddr(pooler_url, allow_pooler=False)
+
+    if not ipv4_addr:
+        return conninfo
+
+    query.setdefault("hostaddr", []).append(ipv4_addr)
+    new_query = urlencode(query, doseq=True)
+    return urlunsplit((parsed.scheme, parsed.netloc, parsed.path, new_query, parsed.fragment))
+
+
+def _fetch_pooler_connection(project_ref: str | None, token: str | None) -> str | None:
+    if not project_ref or not token:
+        return None
+    try:
+        params = urlencode({"pooler": "true", "type": "psql"})
+        url = f"https://api.supabase.com/v1/projects/{project_ref}/db/connection-string?{params}"
+        headers = {
+            "Authorization": f"Bearer {token}",
+            "apikey": token,
+        }
+        req = urllib.request.Request(url, headers=headers)
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            data = json.load(resp)
+        conn = data.get("connectionString") or data.get("connection_string")
+        if conn:
+            print(json.dumps({"info": "pooler_url_used", "url": conn}, ensure_ascii=False))
+        return conn
+    except urllib.error.HTTPError as exc:
+        print(json.dumps({"warn": "pooler_fetch_failed", "status": exc.code}, ensure_ascii=False), file=sys.stderr)
+    except Exception as exc:
+        print(json.dumps({"warn": "pooler_fetch_failed", "error": str(exc)}, ensure_ascii=False), file=sys.stderr)
+    return None
+
+
 def main() -> None:
     args = parse_args()
     artifacts_dir = args.artifacts_dir.resolve()
@@ -184,6 +403,9 @@ def main() -> None:
     db_url = args.db_url or os.environ.get("SUPABASE_DB_URL") or os.environ.get("REMOTE_DATABASE_URL")
     if not db_url:
         raise ValueError("Database URL not provided. Set --db-url or SUPABASE_DB_URL / REMOTE_DATABASE_URL env.")
+
+    db_url = _ensure_ipv4_hostaddr(db_url)
+    print(json.dumps({"info": "db_url", "url": db_url}, ensure_ascii=False))
 
     model_meta_path = artifacts_dir / "model_meta.json"
     if model_meta_path.exists():
@@ -208,26 +430,26 @@ def main() -> None:
         user_df = load_embeddings(artifacts_dir / "user_embeddings.parquet", "reviewer_id")
         eligible_ids: Iterable[str] | None = None
         if args.min_user_interactions > 0:
-            interaction_paths = args.interactions
-            if not interaction_paths:
-                interaction_paths = [
-                    Path("ml/data/processed/two_tower/latest/interactions_train.parquet"),
-                    Path("ml/data/processed/two_tower/latest/interactions_val.parquet"),
-                ]
-            frames: List[pd.DataFrame] = []
-            for ipath in interaction_paths:
-                if ipath.exists():
-                    frames.append(pd.read_parquet(ipath, columns=["reviewer_id"]))
-            if not frames:
-                raise FileNotFoundError("No interactions parquet found for user filtering. Provide --interactions explicitly.")
-            interaction_df = pd.concat(frames, ignore_index=True)
-            counts = interaction_df["reviewer_id"].astype(str).value_counts()
-            eligible_ids = counts[counts >= args.min_user_interactions].index.tolist()
-            print(json.dumps({
-                "info": "user_interaction_filter",
-                "min_interactions": args.min_user_interactions,
-                "eligible_users": len(eligible_ids),
-            }))
+            eligible_ids = _eligible_users_from_db(db_url, args.min_user_interactions)
+            source = "database"
+            if eligible_ids is None:
+                eligible_ids = _eligible_users_from_parquet(args.interactions, args.min_user_interactions)
+                source = "parquet"
+            if eligible_ids is None:
+                raise FileNotFoundError(
+                    "Failed to determine eligible users. Database query failed and no interactions parquet available."
+                )
+            print(
+                json.dumps(
+                    {
+                        "info": "user_interaction_filter",
+                        "source": source,
+                        "min_interactions": args.min_user_interactions,
+                        "eligible_users": len(eligible_ids),
+                    },
+                    ensure_ascii=False,
+                )
+            )
         user_rows, user_skipped, user_filtered, user_non_uuid = prepare_user_rows(user_df, "reviewer_id", eligible_ids)
         print(json.dumps({
             "info": "user_embeddings_loaded",
@@ -244,7 +466,22 @@ def main() -> None:
     conn = psycopg.connect(db_url, autocommit=False, row_factory=dict_row)
     try:
         register_vector(conn)
+        _ensure_embedding_schema(conn, target_dim=len(video_rows[0][1]) if video_rows else None)
         with conn:
+            dropped_fk = 0
+            if args.include_users and user_rows:
+                user_rows, dropped_fk = _filter_existing_auth_users(conn, user_rows)
+                if dropped_fk:
+                    print(
+                        json.dumps(
+                            {
+                                "warn": "user_embeddings_fk_missing",
+                                "dropped": dropped_fk,
+                            },
+                            ensure_ascii=False,
+                        ),
+                        file=sys.stderr,
+                    )
             video_result = upsert_embeddings(conn, "video_embeddings", "video_id", video_rows, args.chunk_size)
             user_result = None
             if args.include_users and user_rows:
@@ -258,6 +495,7 @@ def main() -> None:
                 "inserted": user_result.inserted if user_result else 0,
                 "skipped": user_skipped,
                 "filtered": user_filtered,
+                "dropped_fk": dropped_fk,
                 "min_interactions": args.min_user_interactions,
             })
         print(json.dumps({"event": "upsert_completed", "summaries": summaries}, ensure_ascii=False))
@@ -267,3 +505,16 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+def _get_vector_dim(cur: psycopg.Cursor, table: str, column: str) -> int | None:
+    cur.execute(
+        """
+        SELECT NULLIF(atttypmod, -1)
+        FROM pg_attribute
+        WHERE attrelid = %s::regclass
+          AND attname = %s
+          AND NOT attisdropped
+        """,
+        (table, column),
+    )
+    row = cur.fetchone()
+    return row[0] if row else None

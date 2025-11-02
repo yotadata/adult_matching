@@ -31,3 +31,33 @@ BEGIN
     NULL;
   END;
 END$$;
+
+-- Allow Supabase's extension bootstrap scripts to read custom SQL hooks (required for pgvector)
+DO $$
+DECLARE
+  fn RECORD;
+  supabase_admin_exists BOOLEAN := EXISTS (
+    SELECT 1 FROM pg_roles WHERE rolname = 'supabase_admin'
+  );
+BEGIN
+  FOR fn IN
+    SELECT format('%I.%I(%s)', n.nspname, p.proname, pg_get_function_identity_arguments(p.oid)) AS signature
+    FROM pg_proc p
+    JOIN pg_namespace n ON n.oid = p.pronamespace
+    WHERE n.nspname = 'pg_catalog'
+      AND p.proname = 'pg_read_file'
+  LOOP
+    EXECUTE format('GRANT EXECUTE ON FUNCTION %s TO postgres', fn.signature);
+    IF supabase_admin_exists THEN
+      EXECUTE format('GRANT EXECUTE ON FUNCTION %s TO supabase_admin', fn.signature);
+    END IF;
+  END LOOP;
+END$$;
+
+-- For local development, make supabase_admin superuser so extensions can be created
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'supabase_admin') THEN
+    EXECUTE 'ALTER ROLE supabase_admin SUPERUSER';
+  END IF;
+END$$;

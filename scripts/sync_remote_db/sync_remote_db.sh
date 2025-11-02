@@ -17,7 +17,7 @@
 # - Mode "full": Keeps local schema and imports ALL remote data including supabase_migrations history.
 #
 # Usage:
-#   scripts/sync-remote-db-to-local.sh [--env-file docker/env/dev.env] [--project-ref <ref>] [--mode schema-mirror|full|data] [--db-password <pass>] [--exclude <schema.tbl[,..]>] [--exclude-embeddings] [--yes] [--no-start]
+#   scripts/sync-remote-db-to-local.sh [--env-file docker/env/dev.env] [--local-env-file docker/env/dev.env] [--project-ref <ref>] [--mode schema-mirror|full|data] [--db-password <pass>] [--exclude <schema.tbl[,..]>] [--exclude-embeddings] [--yes] [--no-start]
 #
 # Examples:
 #   scripts/sync-remote-db-to-local.sh --yes
@@ -33,10 +33,11 @@
 
 set -euo pipefail
 
-ROOT_DIR=$(cd "$(dirname "$0")/.." && pwd)
+ROOT_DIR=$(cd "$(dirname "$0")/../.." && pwd)
 cd "$ROOT_DIR"
 
 ENV_FILE="docker/env/dev.env"
+LOCAL_ENV_FILE="docker/env/dev.env"
 PROJECT_REF=""
 CONFIRM="false"
 START_LOCAL="false" # default to post-apply against existing local stack
@@ -45,6 +46,13 @@ DB_PASSWORD=""
 EXCLUDE_LIST=""
 EXCLUDE_EMBEDDINGS="false"
 INCLUDE_MANAGED_SCHEMAS="false" # include auth, storage, graphql_public data in schema-mirror
+LOCAL_DB_HOST_VALUE=""
+LOCAL_DB_PORT_VALUE=""
+LOCAL_DB_USER_VALUE=""
+LOCAL_DB_PASS_VALUE=""
+LOCAL_DB_NAME_VALUE=""
+LOCAL_DB_SSLMODE_VALUE=""
+LOCAL_DB_SSLROOTCERT_VALUE=""
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -56,6 +64,8 @@ while [[ $# -gt 0 ]]; do
       MODE="$2"; shift 2;;
     --db-password)
       DB_PASSWORD="$2"; shift 2;;
+    --local-env-file)
+      LOCAL_ENV_FILE="$2"; shift 2;;
     --exclude)
       EXCLUDE_LIST="$2"; shift 2;;
     --exclude-embeddings)
@@ -81,12 +91,48 @@ if ! command -v supabase >/dev/null 2>&1; then
 fi
 
 # Always load env file for local DB credentials and defaults
-if [[ -f "$ENV_FILE" ]]; then
+# Load local env first so we capture local DB creds before remote overrides
+if [[ -n "$LOCAL_ENV_FILE" && -f "$LOCAL_ENV_FILE" ]]; then
   set -a
   # shellcheck disable=SC1090
-  . "$ENV_FILE"
+  . "$LOCAL_ENV_FILE"
   set +a
 fi
+
+# Snapshot local DB connection details before loading remote env (which may override POSTGRES_PASSWORD, etc.)
+LOCAL_DB_HOST_VALUE="${LOCAL_DB_HOST:-127.0.0.1}"
+LOCAL_DB_PORT_VALUE="${LOCAL_DB_PORT:-}"
+LOCAL_DB_USER_VALUE="${LOCAL_DB_USER:-${POSTGRES_USER:-postgres}}"
+LOCAL_DB_PASS_VALUE="${LOCAL_DB_PASSWORD:-${POSTGRES_PASSWORD:-postgres}}"
+LOCAL_DB_NAME_VALUE="${LOCAL_DB_NAME:-postgres}"
+LOCAL_DB_SSLMODE_VALUE="${LOCAL_DB_SSLMODE:-disable}"
+LOCAL_DB_SSLROOTCERT_VALUE="${LOCAL_DB_SSLROOTCERT:-}"
+
+# Load remote env (may be same as local; skip re-sourcing to avoid double work)
+if [[ -f "$ENV_FILE" ]]; then
+  if [[ "$ENV_FILE" != "$LOCAL_ENV_FILE" ]]; then
+    set -a
+    # shellcheck disable=SC1090
+    . "$ENV_FILE"
+    set +a
+  fi
+else
+  echo "Warning: env file '$ENV_FILE' not found. Continuing with current environment." >&2
+fi
+
+# Remote dumps require password; default to PGPASSWORD from env if DB_PASSWORD not set
+DB_PASSWORD="${DB_PASSWORD:-${PGPASSWORD:-}}"
+
+# Prefer direct DB URL when available to avoid pooler TLS issues
+REMOTE_DB_URL="${REMOTE_DB_URL:-${REMOTE_DATABASE_URL:-${SUPABASE_DB_URL:-}}}"
+
+# Ensure stored local defaults are set even if env lacked values
+LOCAL_DB_HOST_VALUE="${LOCAL_DB_HOST_VALUE:-127.0.0.1}"
+LOCAL_DB_USER_VALUE="${LOCAL_DB_USER_VALUE:-postgres}"
+LOCAL_DB_PASS_VALUE="${LOCAL_DB_PASS_VALUE:-postgres}"
+LOCAL_DB_NAME_VALUE="${LOCAL_DB_NAME_VALUE:-postgres}"
+LOCAL_DB_SSLMODE_VALUE="${LOCAL_DB_SSLMODE_VALUE:-disable}"
+LOCAL_DB_SSLROOTCERT_VALUE="${LOCAL_DB_SSLROOTCERT_VALUE:-}"
 
 # Load project ref from URL only if not provided
 if [[ -z "$PROJECT_REF" ]]; then
@@ -123,8 +169,12 @@ else
   echo "Skipping 'supabase start' (per --no-start)"
 fi
 
-echo "Linking to remote project (if not already linked)..."
-supabase link --project-ref "$PROJECT_REF" --yes >/dev/null || true
+if [[ -z "$REMOTE_DB_URL" ]]; then
+  echo "Linking to remote project (if not already linked)..."
+  supabase link --project-ref "$PROJECT_REF" --yes >/dev/null || true
+else
+  echo "Using direct database URL; skipping 'supabase link'."
+fi
 
 TMP_DIR="$ROOT_DIR/supabase/.tmp/db-sync"
 mkdir -p "$TMP_DIR"
@@ -142,57 +192,36 @@ _detect_db_port() {
 
 run_sql() {
   local sql="$1"
-  local host="${LOCAL_DB_HOST:-127.0.0.1}"
-  local user="${LOCAL_DB_USER:-postgres}"
-  local pass="${LOCAL_DB_PASSWORD:-${POSTGRES_PASSWORD:-postgres}}"
-  local dbname="${LOCAL_DB_NAME:-postgres}"
-  local port
-  port=$(_detect_db_port)
+  local host="$LOCAL_DB_HOST_VALUE"
+  local user="$LOCAL_DB_USER_VALUE"
+  local pass="$LOCAL_DB_PASS_VALUE"
+  local dbname="$LOCAL_DB_NAME_VALUE"
+  local port="${LOCAL_DB_PORT_VALUE:-$(_detect_db_port)}"
+  local sslmode="$LOCAL_DB_SSLMODE_VALUE"
+  local sslroot="$LOCAL_DB_SSLROOTCERT_VALUE"
   if ! command -v psql >/dev/null 2>&1; then
     echo "Error: psql not found. Please install the Postgres client (psql)." >&2
     exit 1
   fi
-  PGPASSWORD="$pass" psql -h "$host" -p "$port" -U "$user" -d "$dbname" -v ON_ERROR_STOP=1 -c "$sql"
+  if [[ "$sslmode" == "disable" || -z "$sslmode" ]]; then
+    PGSSLMODE=disable PGSSLROOTCERT= PGPASSWORD="$pass" \
+      psql -h "$host" -p "$port" -U "$user" -d "$dbname" -v ON_ERROR_STOP=1 -c "$sql"
+  else
+    PGSSLMODE="$sslmode" PGSSLROOTCERT="$sslroot" PGPASSWORD="$pass" \
+      psql -h "$host" -p "$port" -U "$user" -d "$dbname" -v ON_ERROR_STOP=1 -c "$sql"
+  fi
 }
 
-echo "Dumping remote data ($MODE mode)... (this may take a while)"
-dump_data() {
-  local mode="$1"
-  local -a args=(--linked --data-only --use-copy)
-  local -a exclude_args=()
-  if [[ "$mode" == "data" ]]; then
-    args+=( -s public,auth,storage,graphql_public )
-    exclude_args+=( -x supabase_migrations.schema_migrations )
-  fi
-  if [[ "$EXCLUDE_EMBEDDINGS" == "true" ]]; then
-    exclude_args+=( -x public.user_embeddings -x public.video_embeddings )
-  fi
-  if [[ -n "$EXCLUDE_LIST" ]]; then
-    # Convert comma-separated to space and append -x for each
-    IFS=',' read -r -a _items <<< "$EXCLUDE_LIST"
-    for it in "${_items[@]}"; do
-      [[ -n "$it" ]] && exclude_args+=( -x "$it" )
-    done
-  fi
-  # Append excludes only if any were collected to avoid set -u issues
-  if [[ ${#exclude_args[@]:-0} -gt 0 ]]; then
-    args+=( "${exclude_args[@]}" )
-  fi
-  args+=( -f "$DATA_FILE" )
-  if [[ -n "$DB_PASSWORD" ]]; then
-    args+=( -p "$DB_PASSWORD" )
-  fi
-  supabase db dump "${args[@]}"
-}
 
 restore_with_psql() {
   local file="$1"
-  local host="${LOCAL_DB_HOST:-127.0.0.1}"
-  local user="${LOCAL_DB_USER:-postgres}"
-  local pass="${LOCAL_DB_PASSWORD:-${POSTGRES_PASSWORD:-postgres}}"
-  local dbname="${LOCAL_DB_NAME:-postgres}"
-  local port
-  port=$(_detect_db_port)
+  local host="$LOCAL_DB_HOST_VALUE"
+  local user="$LOCAL_DB_USER_VALUE"
+  local pass="$LOCAL_DB_PASS_VALUE"
+  local dbname="$LOCAL_DB_NAME_VALUE"
+  local port="${LOCAL_DB_PORT_VALUE:-$(_detect_db_port)}"
+  local sslmode="$LOCAL_DB_SSLMODE_VALUE"
+  local sslroot="$LOCAL_DB_SSLROOTCERT_VALUE"
 
   if ! command -v psql >/dev/null 2>&1; then
     echo "Error: psql not found. Please install the Postgres client (psql)." >&2
@@ -200,20 +229,49 @@ restore_with_psql() {
   fi
 
   echo "Applying file to local database via psql: $file"
-  if ! PGPASSWORD="$pass" psql -h "$host" -p "$port" -U "$user" -d "$dbname" -v ON_ERROR_STOP=1 -f "$file"; then
-    echo "Direct TCP connection failed. Falling back to docker exec into 'supabase_db'..." >&2
-    if ! docker ps --format '{{.Names}}' | grep -Fxq supabase_db; then
-      echo "Error: Container 'supabase_db' not found. Set LOCAL_DB_HOST/PORT/USER/PASSWORD or ensure the container name matches." >&2
-      exit 1
+  if [[ "$sslmode" == "disable" || -z "$sslmode" ]]; then
+    if PGSSLMODE=disable PGSSLROOTCERT= PGPASSWORD="$pass" \
+        psql -h "$host" -p "$port" -U "$user" -d "$dbname" -v ON_ERROR_STOP=1 -f "$file"; then
+      return 0
     fi
-    docker exec -i -e PGPASSWORD="$pass" supabase_db psql -U "$user" -d "$dbname" -v ON_ERROR_STOP=1 -f - < "$file"
+    sslmode="disable"
+  else
+    if PGSSLMODE="$sslmode" PGSSLROOTCERT="$sslroot" PGPASSWORD="$pass" \
+        psql -h "$host" -p "$port" -U "$user" -d "$dbname" -v ON_ERROR_STOP=1 -f "$file"; then
+      return 0
+    fi
+  fi
+
+  echo "Direct TCP connection failed. Falling back to docker exec into 'supabase_db'..." >&2
+  if ! docker ps --format '{{.Names}}' | grep -Fxq supabase_db; then
+    echo "Error: Container 'supabase_db' not found. Set LOCAL_DB_HOST/PORT/USER/PASSWORD or ensure the container name matches." >&2
+    exit 1
+  fi
+
+  if [[ "$sslmode" == "disable" || -z "$sslmode" ]]; then
+    docker exec -i \
+      -e PGSSLMODE=disable \
+      -e PGSSLROOTCERT= \
+      -e PGPASSWORD="$pass" \
+      supabase_db psql -U "$user" -d "$dbname" -v ON_ERROR_STOP=1 -f - < "$file"
+  else
+    docker exec -i \
+      -e PGSSLMODE="$sslmode" \
+      -e PGSSLROOTCERT="$sslroot" \
+      -e PGPASSWORD="$pass" \
+      supabase_db psql -U "$user" -d "$dbname" -v ON_ERROR_STOP=1 -f - < "$file"
   fi
 }
+
 
 if [[ "$MODE" == "schema-mirror" ]]; then
   echo "Dumping remote SCHEMA (no data)..."
   # No --data-only to get schema DDL
-  supabase db dump --linked -f "$SCHEMA_FILE"
+  if [[ -n "$REMOTE_DB_URL" ]]; then
+    supabase db dump --db-url "$REMOTE_DB_URL" -f "$SCHEMA_FILE"
+  else
+    supabase db dump --linked -f "$SCHEMA_FILE"
+  fi
 
   echo "Dropping local schema: public ..."
   # Drop only 'public' to avoid permission issues on managed schemas (auth/storage/graphql_public)
@@ -222,6 +280,21 @@ if [[ "$MODE" == "schema-mirror" ]]; then
   run_sql "CREATE SCHEMA IF NOT EXISTS public; ALTER SCHEMA public OWNER TO postgres;"
 
   echo "Applying remote schema to local..."
+  # Ensure auxiliary schemas referenced by Supabase extensions exist before replay
+  for schema in graphql extensions vault; do
+    run_sql "CREATE SCHEMA IF NOT EXISTS ${schema};"
+  done
+  # Supabase's schema dump assumes publication exists; create stub if missing
+  pub_sql=$(cat <<'SQL'
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_publication WHERE pubname = 'supabase_realtime') THEN
+    CREATE PUBLICATION supabase_realtime;
+  END IF;
+END$$;
+SQL
+)
+  run_sql "$pub_sql"
   restore_with_psql "$SCHEMA_FILE"
 
   if [[ "$INCLUDE_MANAGED_SCHEMAS" == "true" ]]; then
@@ -229,15 +302,20 @@ if [[ "$MODE" == "schema-mirror" ]]; then
     run_sql "DO \$\$DECLARE r record; BEGIN FOR r IN SELECT format('%I.%I', n.nspname, c.relname) AS fqtn FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace WHERE c.relkind IN ('r','p') AND n.nspname IN ('public','auth','storage','graphql_public') AND has_table_privilege(c.oid, 'TRUNCATE') LOOP EXECUTE format('TRUNCATE TABLE %s RESTART IDENTITY CASCADE', r.fqtn); END LOOP; END\$\$;"
     echo "Dumping remote DATA (public + managed schemas)..."
     # Include all key schemas
-    DATA_ARGS=(--linked --data-only --use-copy -s public,auth,storage,graphql_public -f "$DATA_FILE")
+    DATA_ARGS=(--data-only --use-copy -s public,auth,storage,graphql_public -f "$DATA_FILE")
   else
     echo "Preparing local DB for data import (truncate public)..."
     run_sql "DO \$\$DECLARE r record; BEGIN FOR r IN SELECT format('%I.%I', n.nspname, c.relname) AS fqtn FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace WHERE c.relkind IN ('r','p') AND n.nspname IN ('public') LOOP EXECUTE format('TRUNCATE TABLE %s RESTART IDENTITY CASCADE', r.fqtn); END LOOP; END\$\$;"
     echo "Dumping remote DATA (public only)..."
-    DATA_ARGS=(--linked --data-only --use-copy -s public -f "$DATA_FILE")
+    DATA_ARGS=(--data-only --use-copy -s public -f "$DATA_FILE")
   fi
   if [[ -n "$DB_PASSWORD" ]]; then
     DATA_ARGS+=( -p "$DB_PASSWORD" )
+  fi
+  if [[ -n "$REMOTE_DB_URL" ]]; then
+    DATA_ARGS+=( --db-url "$REMOTE_DB_URL" )
+  else
+    DATA_ARGS+=( --linked )
   fi
   supabase db dump "${DATA_ARGS[@]}"
 

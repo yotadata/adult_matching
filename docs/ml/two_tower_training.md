@@ -75,7 +75,8 @@
    `latest/metrics.json` と run ディレクトリ内の `metrics.json` が更新される。
 5. **定性確認／アップサート**
    - `bash scripts/streamlit_qual_eval/run.sh`
-   - `bash scripts/upsert_two_tower/run.sh --artifacts-dir ml/artifacts/latest ...`
+   - 本番/ステージングのユーザー LIKE 履歴を元に最新のベクトルを生成する場合は、まず `bash scripts/gen_user_embeddings/run.sh --min-interactions 5 --env-file docker/env/prd.env` を実行する。`--min-interactions` に指定した値以上の LIKE（`public.user_video_decisions.decision_type = 'like'`）を持つユーザーのみが対象となり、集計は常に Supabase DB の最新データから取得される。
+   - 生成済みの `ml/artifacts/live/*.parquet` をそのまま反映する場合は `bash scripts/upsert_two_tower/run.sh --artifacts-dir ml/artifacts/live --include-users --min-user-interactions 5` のように実行する（こちらも DB 上の LIKE 件数でフィルタされる。フォールバックとして学習用 parquet を参照するロジックは残しているが、基本は DB 集計が利用される）。
 
 
 ## データソース（優先: 明示フィードバック）
@@ -212,44 +213,60 @@ bash scripts/streamlit_qual_eval/run.sh
   - **Recommendation distribution**: 推薦結果に登場する属性分布（件数・ユニークアイテム数・到達ユーザー数）を集計し、モデルの偏りを定量的に確認する。タグはカンマ区切りで解析するため、独立したキーワード単位で確認できる。出演者は `performer_ids` の UUID で集計される。
 - デフォルトでは Model A のみを読み込む。比較が必要な場合はサイドバーで Model B のアーティファクトパスを指定する（`user_embeddings.parquet` / `video_embeddings.parquet` / `metrics.json` が同ディレクトリにあること）。
 
-### 5. 埋め込み反映（upsert, 実装予定）
+### 5. ライブユーザー埋め込み生成（gen_user_embeddings）
 
-> 初回セットアップ時に `pgvector` 拡張を入れておく必要があります。Supabase CLI が利用可能な場合は以下を実行してください。
-> ```bash
-> bash scripts/install_pgvector/run.sh       # supabase/cli コンテナ経由で extensions.sql を生成
-> docker compose --env-file docker/env/dev.env -f docker/compose.yml down -v
-> docker compose --env-file docker/env/dev.env -f docker/compose.yml up --build
-> ```
-> 既存ボリュームを維持したい場合は Supabase が提供する方法（supabase db install / reset）で拡張を有効化してから続行してください。
+訓練時は学習データに含まれる「仮想ユーザー」の埋め込みのみ生成される。実ユーザーの埋め込みを最新の決定履歴から作り直したい場合は、以下のスクリプトを実行して `ml/artifacts/live/user_embeddings.parquet` を作成する。
 
 ```bash
-# Supabase を起動したターミナルとは別に、環境変数と Compose ネットワーク名をセットして実行
-source docker/env/dev.env
-export UPSERT_TT_NETWORK=adult-mathing_default
+# 本番 DB から生成（Supabase プール経由で IPv4 に解決される）
+bash scripts/gen_user_embeddings/run.sh \
+  --env-file docker/env/prd.env \
+  --output-dir ml/artifacts/live \
+  --min-interactions 20    # LIKE が一定数あるユーザーのみ出力
 
-# Dry-run: 件数のみ確認
+# ローカル環境で検証する場合（dry-run で件数だけ確認）
+bash scripts/gen_user_embeddings/run.sh \
+  --env-file docker/env/dev.env \
+  --dry-run \
+  --limit-users 5
+```
+
+- 既定では最新アーティファクト (`ml/artifacts/latest/two_tower_latest.pt` / `model_meta.json`) と参照用 `user_features.parquet` から vocab を復元する。
+- `--output-dir` を変えれば複数世代のライブ埋め込みを共存させられる。
+- 実行時に **最小インタラクション数 (`--min-interactions`) を満たすユーザーのみ** を対象とし、学習時と異なるフィーチャー数だった場合は自動的にゼロ埋めで補正した上で推論する。
+- `--dry-run` 以外で実行すると、完了後に `scripts/upsert_two_tower/run.sh --include-users` を自動起動して DB を更新する。生成だけ行いたい場合は `--dry-run` もしくは `--skip-upsert` を渡す。
+- 自動 upsert 時はモデルメタ情報（`model_meta.json`）を `ml/artifacts/latest/` からコピーし、`--min-user-interactions 0` でフィルタリングせずに反映する。閾値を変えたい場合は `--skip-upsert` の上で `upsert_two_tower/run.sh` を手動実行する。
+
+### 6. 埋め込み反映（upsert）
+
+> 初回に `docker/db/init/001-roles.sql` が適用されていれば、Supabase のローカルスタック起動時に `CREATE EXTENSION vector;` が自動で通ります。古いボリュームを利用している場合は `docker compose --env-file docker/env/dev.env -f docker/compose.yml down -v` でリセットしてから再起動してください。
+
+```bash
+# 例: ローカル Supabase を更新
 bash scripts/upsert_two_tower/run.sh \
   --env-file docker/env/dev.env \
   --artifacts-dir ml/artifacts/latest \
-  --db-url postgresql://postgres:${POSTGRES_PASSWORD}@db:5432/postgres \
-  --min-user-interactions 20 \
   --dry-run
 
-# 実書き込み（dry-run を外す）
+# 例: 本番 Supabase を更新（動画埋め込みのみ）
 bash scripts/upsert_two_tower/run.sh \
-  --env-file docker/env/dev.env \
-  --artifacts-dir ml/artifacts/latest \
-  --db-url postgresql://postgres:${POSTGRES_PASSWORD}@db:5432/postgres \
+  --env-file docker/env/prd.env \
+  --artifacts-dir ml/artifacts/latest
+
+# 例: 本番で動画 + ライブユーザー埋め込みを反映
+bash scripts/upsert_two_tower/run.sh \
+  --env-file docker/env/prd.env \
+  --artifacts-dir ml/artifacts/live \
+  --include-users \
   --min-user-interactions 20
 ```
-- `--dry-run` を外すと `public.video_embeddings`（必要に応じて `--include-users` で `public.user_embeddings`）へ upsert し、`updated_at` を現在時刻で更新する。
-- `--db-url` でローカル Postgres に接続可能。`--min-user-interactions` で指定件数以上のユーザーのみ upsert できる。
-- `--include-users` を付けるとユーザー埋め込みも upsert（`reviewer_id` が Supabase のユーザー UUID である前提）。
+- `gen_user_embeddings/run.sh` を実行した場合は、既定で本スクリプトが自動的に呼ばれる（`--skip-upsert` を指定した場合を除く）。
+- `--dry-run` を付けると件数だけ確認し、テーブルへは書き込まない。
+- `--include-users` を指定すると `user_embeddings.parquet` も upsert する（事前に `gen_user_embeddings` で実ユーザーの埋め込みを生成しておく）。
+- スクリプト側で IPv4 へのフォールバックや特徴量次元の差異を自動調整するため、既存テーブルに `vector(768)` 列が残っていても `vector(256)` に再構築された上で upsert が進行する。
 
 - 期待動作: `user_embeddings.parquet` / `video_embeddings.parquet` を pgvector テーブルへ upsert し、`two_tower_latest.onnx` などを Storage `models/` バケットへアップロード。
-- `--dry-run=false` で実際に書き込み。成功時は更新件数と新モデル バージョンをログ出力する。
-
-> 評価・アップサートのスクリプトは未実装。今後追加し、GitHub Actions から `prep → train → eval → upsert` の順に実行する構成を前提とする。
+- 実行ログには処理件数・対象 DB URL（IPv4/プールホストに分解済み）・必要に応じてテーブル再構成の情報が出力される。
 
 ## GitHub Actions（将来移行の雛形）
 

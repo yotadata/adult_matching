@@ -37,9 +37,6 @@ bash scripts/setup_dev_env/run.sh --write
 
 # 生成内容をファイルで確認したい場合
 # bash scripts/setup_dev_env/run.sh  # docker/env/dev.env.generated に出力（Realtime の SECRET_KEY_BASE も含む）
-
-# pgvector 拡張を使う場合（Two-Tower 埋め込みで必要）
-bash scripts/install_pgvector/run.sh  # supabase/cli コンテナ経由で extensions.sql を生成
 ```
 
 必須キー（dev.env）

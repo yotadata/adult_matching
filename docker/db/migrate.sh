@@ -55,6 +55,31 @@ AS $$
 $$;
 SQL
 
+VECTOR_EXTENSION_PRESENT=$(psql -At -c "select 1 from pg_extension where extname = 'vector' limit 1;" || true)
+
+transform_sql() {
+  src="$1"
+  dest="$2"
+  if [ -z "$VECTOR_EXTENSION_PRESENT" ]; then
+    sed -r \
+      -e 's/^\s*create\s+extension\s+if\s+not\s+exists.*$//' \
+      -e 's/\bgen_random_uuid\s*\(\s*\)/public.uuid_v4()/g' \
+      -e 's/\buuid_generate_v4\s*\(\s*\)/public.uuid_v4()/g' \
+      -e 's/\bvector\s*\([0-9]+\)/double precision[]/g' \
+      -e '/gin_trgm_ops/d' \
+      -e '/^CREATE INDEX IF NOT EXISTS idx_video_embeddings_cosine/d' \
+      -e '/^CREATE INDEX IF NOT EXISTS idx_user_embeddings_cosine/d' \
+      -e '/ON public\.video_embeddings USING ivfflat/d' \
+      -e '/ON public\.user_embeddings USING ivfflat/d' \
+      "$src" > "$dest"
+  else
+    sed -r \
+      -e 's/\bgen_random_uuid\s*\(\s*\)/public.uuid_v4()/g' \
+      -e 's/\buuid_generate_v4\s*\(\s*\)/public.uuid_v4()/g' \
+      "$src" > "$dest"
+  fi
+}
+
 calc_sha256() {
   if command -v sha256sum >/dev/null 2>&1; then
     sha256sum "$1" | awk '{print $1}'
@@ -94,18 +119,7 @@ for f in "$MIG_DIR"/*.sql; do
 
       echo "Applying $base (version $ver) ..."
       tmpf=$(mktemp)
-      # Strip extension creation and replace UUID funcs with extension-free helper
-      sed -r \
-        -e 's/^\s*create\s+extension\s+if\s+not\s+exists.*$//' \
-        -e 's/\bgen_random_uuid\s*\(\s*\)/public.uuid_v4()/g' \
-        -e 's/\buuid_generate_v4\s*\(\s*\)/public.uuid_v4()/g' \
-        -e 's/\bvector\s*\([0-9]+\)/double precision[]/g' \
-        -e '/gin_trgm_ops/d' \
-        -e '/^CREATE INDEX IF NOT EXISTS idx_video_embeddings_cosine/d' \
-        -e '/^CREATE INDEX IF NOT EXISTS idx_user_embeddings_cosine/d' \
-        -e '/ON public\.video_embeddings USING ivfflat/d' \
-        -e '/ON public\.user_embeddings USING ivfflat/d' \
-        "$f" > "$tmpf"
+      transform_sql "$f" "$tmpf"
       if psql -f "$tmpf"; then
         # Detect optional name column
         has_name=$(psql -At -c "select 1 from information_schema.columns where table_schema='supabase_migrations' and table_name='schema_migrations' and column_name='name' limit 1;" || true)
@@ -133,17 +147,7 @@ for f in "$MIG_DIR"/*.sql; do
   if [ -z "$existing" ]; then
     echo "Applying $base ..."
     tmpf=$(mktemp)
-    sed -r \
-      -e 's/^\s*create\s+extension\s+if\s+not\s+exists.*$//' \
-      -e 's/\bgen_random_uuid\s*\(\s*\)/public.uuid_v4()/g' \
-      -e 's/\buuid_generate_v4\s*\(\s*\)/public.uuid_v4()/g' \
-      -e 's/\bvector\s*\([0-9]+\)/double precision[]/g' \
-      -e '/gin_trgm_ops/d' \
-      -e '/^CREATE INDEX IF NOT EXISTS idx_video_embeddings_cosine/d' \
-      -e '/^CREATE INDEX IF NOT EXISTS idx_user_embeddings_cosine/d' \
-      -e '/ON public\.video_embeddings USING ivfflat/d' \
-      -e '/ON public\.user_embeddings USING ivfflat/d' \
-      "$f" > "$tmpf"
+    transform_sql "$f" "$tmpf"
     if psql -f "$tmpf"; then
       psql -c "insert into supabase_migrations.local_sql_migrations(filename, checksum) values ('$base', '$sum');"
       echo "Applied $base"
