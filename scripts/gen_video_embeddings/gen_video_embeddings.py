@@ -321,10 +321,13 @@ def fetch_target_videos(
     }
     if since is None:
         params["since"] = None
+        since_type = "none"
     elif isinstance(since, datetime):
         params["since"] = since
+        since_type = "datetime"
     elif isinstance(since, date):
-        params["since"] = since
+        params["since"] = datetime.combine(since, datetime.min.time(), tzinfo=timezone.utc)
+        since_type = "date"
     else:
         raise TypeError(f"Unsupported type for since: {type(since)}")
     if limit is not None and limit > 0:
@@ -333,6 +336,7 @@ def fetch_target_videos(
 
     with psycopg.connect(db_url, row_factory=dict_row) as conn:
         with conn.cursor() as cur:
+            print(json.dumps({"debug": "query_params", "since": params.get("since"), "since_type": since_type}, default=str, ensure_ascii=False))
             cur.execute(sql, params)
             rows = cur.fetchall()
     if not rows:
