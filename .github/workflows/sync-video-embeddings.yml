@@ -29,6 +29,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
       NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
       REMOTE_DATABASE_URL: ${{ secrets.REMOTE_DATABASE_URL }}
@@ -45,7 +46,7 @@ jobs:
           mkdir -p docker/env
           cat <<EOF > docker/env/prd.ci.env
           NEXT_PUBLIC_SUPABASE_URL=${SUPABASE_URL}
-          NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY:-${SUPABASE_ANON_KEY}}
           SUPABASE_URL=${SUPABASE_URL}
           SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
           SUPABASE_SERVICE_ROLE_JWT_AUDIENCE=authenticated
