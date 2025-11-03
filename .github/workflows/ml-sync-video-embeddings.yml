@@ -1,4 +1,4 @@
-name: [ML] Ops - Sync Video Embeddings
+name: "[ML] Ops - Sync Video Embeddings"
 
 on:
   workflow_dispatch:

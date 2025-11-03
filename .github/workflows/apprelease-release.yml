@@ -1,4 +1,4 @@
-name: [AppRelease] Ops - Release Pipeline
+name: "[AppRelease] Ops - Release Pipeline"
 
 on:
   push:
