@@ -290,6 +290,9 @@ bash scripts/sync_video_embeddings/run.sh
 
 # 直近1日分だけ FANZA から再取得したい場合
 bash scripts/sync_video_embeddings/run.sh --lookback-days 1
+
+# 埋め込みのみ再実行したい場合（インジェスト済みデータを利用）
+bash scripts/sync_video_embeddings/run.sh --mode embeddings
 ```
 
 - `--skip-ingest` や `--skip-fetch` を付けると各工程を飛ばせる。`--` 以降の引数は `gen_video_embeddings/run.sh` にそのまま渡される（例: `--skip-upsert`）。
@@ -315,6 +318,7 @@ Secrets を設定した後は手動 `workflow_dispatch` もしくはスケジュ
 | `start_date`, `end_date` | `GTE_RELEASE_DATE` / `LTE_RELEASE_DATE` を直接指定。`YYYY-MM-DD`（JST基準） |
 | `lookback_days` | 日数で指定したい場合に利用（デフォルト 3 日） |
 | `skip_ingest`, `skip_fetch` | FANZA 取得／Storage 取得ステップをスキップするブール値（`true` / `false`） |
+| `mode` | `full`（取得+埋め込み）/ `embeddings`（埋め込みのみ再実行） |
 
 ローカルで同じ流れを再現したい場合は上記 `scripts/sync_video_embeddings/run.sh` を利用するだけでよい。
 

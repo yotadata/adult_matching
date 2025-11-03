@@ -1,4 +1,4 @@
-name: Deploy DB Migrations (Supabase)
+name: [CiCd] Sub - Deploy DB Migrations
 
 on:
   pull_request:

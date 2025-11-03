@@ -1,4 +1,4 @@
-name: Deploy DB Docs to GitHub Pages
+name: [CiCd] Sub - Deploy DB Docs
 
 on:
   push:

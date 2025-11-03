@@ -1,4 +1,4 @@
-name: Deploy Supabase Edge Functions
+name: [CiCd] Ops - Deploy Supabase Edge Functions
 
 on:
   workflow_dispatch:

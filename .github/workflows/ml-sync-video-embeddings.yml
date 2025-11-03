@@ -1,4 +1,4 @@
-name: Sync Video Embeddings
+name: [ML] Ops - Sync Video Embeddings
 
 on:
   workflow_dispatch:
@@ -21,6 +21,10 @@ on:
         description: 'Storage からモデルを取得するステップをスキップする'
         required: false
         default: 'false'
+      mode:
+        description: '処理モード (full: 取得+埋め込み, embeddings: 埋め込みのみ)'
+        required: false
+        default: 'full'
   schedule:
     - cron: '0 18 * * *' # 03:00 JST
 
@@ -29,6 +33,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
       NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
       REMOTE_DATABASE_URL: ${{ secrets.REMOTE_DATABASE_URL }}
@@ -45,7 +50,8 @@ jobs:
           mkdir -p docker/env
           cat <<EOF > docker/env/prd.ci.env
           NEXT_PUBLIC_SUPABASE_URL=${SUPABASE_URL}
-          NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY:-${SUPABASE_ANON_KEY}}
+          SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY:-${NEXT_PUBLIC_SUPABASE_ANON_KEY}}
           SUPABASE_URL=${SUPABASE_URL}
           SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
           SUPABASE_SERVICE_ROLE_JWT_AUDIENCE=authenticated
@@ -58,7 +64,17 @@ jobs:
           FANZA_LINK_AFFILIATE_ID=${FANZA_LINK_AFFILIATE_ID}
           PGSSLMODE=require
           PGSSLROOTCERT=/etc/ssl/certs/ca-certificates.crt
+          sslmode=require
+          sslrootcert=/etc/ssl/certs/ca-certificates.crt
           EOF
+
+      - name: Debug env
+        run: |
+          echo "==== docker/env/prd.ci.env ===="
+          cat docker/env/prd.ci.env
+          echo "SUPABASE_URL env: ${SUPABASE_URL}"
+          echo "NEXT_PUBLIC_SUPABASE_ANON_KEY env set? ${NEXT_PUBLIC_SUPABASE_ANON_KEY:+yes}"
+          echo "SUPABASE_ANON_KEY env set? ${SUPABASE_ANON_KEY:+yes}"
 
       - name: Sync embeddings
         env:
@@ -69,6 +85,7 @@ jobs:
           INPUT_END_DATE: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.end_date || '' }}
           INPUT_SKIP_INGEST: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.skip_ingest || '' }}
           INPUT_SKIP_FETCH: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.skip_fetch || '' }}
+          INPUT_MODE: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.mode || '' }}
         run: |
           LOOKBACK="${INPUT_LOOKBACK_DAYS:-$DEFAULT_LOOKBACK_DAYS}"
           export SYNC_VIDEO_LOOKBACK_DAYS="$LOOKBACK"
@@ -85,6 +102,11 @@ jobs:
           fi
           if [[ -n "${INPUT_END_DATE:-}" ]]; then
             export LTE_RELEASE_DATE="${INPUT_END_DATE}"
+          fi
+
+          if [[ "${INPUT_MODE}" == "embeddings" ]]; then
+            export SYNC_VIDEO_MODE="embeddings"
+            args+=(--mode embeddings)
           fi
 
           bash scripts/sync_video_embeddings/run.sh "${args[@]}"

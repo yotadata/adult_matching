@@ -1,4 +1,4 @@
-name: Release (DB -> Functions -> Frontend)
+name: [AppRelease] Ops - Release Pipeline
 
 on:
   push:

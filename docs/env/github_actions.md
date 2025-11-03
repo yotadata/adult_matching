@@ -3,6 +3,8 @@
 各ワークフローが参照する Secrets（もしくは Workflow 用 Variables）と、手動トリガー時の入力パラメータを整理しました。  
 Secrets 名はリポジトリ設定（Settings → Secrets and variables → Actions）で事前に登録してください。
 
+命名規約や Ops/Sub の分類は `docs/workflows/naming_conventions.md` を参照してください。
+
 ## 共通で使う Secrets
 
 以下は複数ワークフローで共有されるため、まず最初に登録しておくことを推奨します。
@@ -20,7 +22,7 @@ Secrets 名はリポジトリ設定（Settings → Secrets and variables → Act
 
 ## ワークフロー別の追加要素
 
-### 1. `.github/workflows/deploy-db.yml`
+### 1. `.github/workflows/cicd-deploy-db.yml`
 - **Secrets**（上記共通に加えて必須）
   - `SUPABASE_DB_PASSWORD`
   - `SUPABASE_ACCESS_TOKEN`
@@ -30,7 +32,7 @@ Secrets 名はリポジトリ設定（Settings → Secrets and variables → Act
   | `target` | デプロイ先の project ref。未指定時は `SUPABASE_PROJECT_REF` を使用 | 空 |
   | `schema` | 適用する schema（例: `public`）。空なら全体 | 空 |
 
-### 2. `.github/workflows/deploy-functions.yml`
+### 2. `.github/workflows/cicd-deploy-functions.yml`
 - **Secrets**
   - 共通のほか `SUPABASE_DB_PASSWORD`, `SUPABASE_ACCESS_TOKEN`
 - **workflow_dispatch inputs**
@@ -38,7 +40,7 @@ Secrets 名はリポジトリ設定（Settings → Secrets and variables → Act
   | --- | --- | --- |
   | `function` | デプロイする Edge Function 名。空なら `supabase/functions/` 配下を全てデプロイ | 空 |
 
-### 3. `.github/workflows/deploy-frontend.yml`
+### 3. `.github/workflows/apprelease-deploy-frontend.yml`
 - **Secrets**
   - `VERCEL_TOKEN`
   - `VERCEL_ORG_ID`
@@ -47,7 +49,7 @@ Secrets 名はリポジトリ設定（Settings → Secrets and variables → Act
 - **workflow_dispatch inputs**
   なし（手動トリガー時もデフォルト設定でデプロイ）
 
-### 4. `.github/workflows/release.yml`
+### 4. `.github/workflows/apprelease-release.yml`
 - **Secrets**
   - `SUPABASE_ACCESS_TOKEN`
   - `SUPABASE_PROJECT_REF`
@@ -57,7 +59,7 @@ Secrets 名はリポジトリ設定（Settings → Secrets and variables → Act
   | --- | --- | --- |
   | `targets` | デプロイ対象の環境（例: `staging,production`） | `staging` |
 
-### 5. `.github/workflows/sync-video-embeddings.yml`
+### 5. `.github/workflows/ml-sync-video-embeddings.yml`
 - **Secrets**
   - 共通のもの + FANZA 系
   - `SUPABASE_URL`
@@ -74,11 +76,12 @@ Secrets 名はリポジトリ設定（Settings → Secrets and variables → Act
   | --- | --- | --- |
   | `start_date` | FANZA 取得範囲の開始日（`YYYY-MM-DD` JST） | 空 |
   | `end_date` | FANZA 取得範囲の終了日 | 空 |
-  | `lookback_days` | 上記が未指定の場合の取得日数 | `3` |
-  | `skip_ingest` | FANZA 取得ステップをスキップするか | `false` |
-  | `skip_fetch` | Storage からモデルを取得するステップをスキップするか | `false` |
+| `lookback_days` | 上記が未指定の場合の取得日数 | `3` |
+| `skip_ingest` | FANZA 取得ステップをスキップするか | `false` |
+| `skip_fetch` | Storage からモデルを取得するステップをスキップするか | `false` |
+| `mode` | `full` (取得+埋め込み) / `embeddings` (埋め込みのみ) | `full` |
 
-### 6. その他ワークフロー（例: `deploy-docs.yml`, `deploy-db-docs.yml`, `deploy-functions.yml` 以外）
+### 6. その他ワークフロー（例: `cicd-deploy-docs.yml`, `cicd-deploy-db-docs.yml`）
 - それぞれ README / ワークフローコメントに記載されている Secrets を参照してください。  
  追加で共通化したい変数が発生した場合は、このドキュメントを更新して一覧化してください。
 

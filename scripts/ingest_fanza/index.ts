@@ -10,7 +10,7 @@ dotenv.config({ path: envFilePath });
 console.log(`[ingest_fanza] Loaded environment from ${envFilePath}`);
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const fanzaApiId = process.env.FANZA_API_ID;
 // API用とリンク用でアフィリエイトIDを分離（後方互換のためFANZA_AFFILIATE_IDも許容）

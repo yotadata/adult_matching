@@ -2,7 +2,8 @@
 
 本プロジェクトで開発・運用する機能の要件を記録します。新規機能や仕様変更時は、ここをまず更新してから実装に着手してください。
 
-- 環境変数の一覧／設定方針は `docs/env/variables.md` に集約しています。GitHub Actions ごとの必要 Secrets や入力パラメータは `docs/env/github_actions.md` も参照してください。フロントエンド・バックエンド・ワークフローで利用するキーを追加・変更した場合は併せて更新してください。
+- 環境変数の一覧／設定方針は `docs/env/variables.md` に集約しています。GitHub Actions ごとの必要 Secrets や入力パラメータは `docs/env/github_actions.md` を参照してください。
+- GitHub Actions の命名規約および現在の命名一覧は `docs/workflows/naming_conventions.md` で管理します。ワークフローを追加・改名した場合は同ドキュメントを更新してください。
 
 ## 目的/背景
 - Two-Tower ベースの推薦モデルでユーザー嗜好に応じた動画レコメンドを提供し、初期体験の価値を高める。

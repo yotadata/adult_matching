@@ -328,8 +328,12 @@ def _ensure_ipv4_hostaddr(conninfo: str, allow_pooler: bool = True) -> str:
     if not parsed.hostname:
         return conninfo
     query = parse_qs(parsed.query, keep_blank_values=True)
+    if "sslmode" not in query:
+        query["sslmode"] = ["require"]
+    if "sslrootcert" not in query and os.environ.get("PGSSLROOTCERT"):
+        query["sslrootcert"] = [os.environ["PGSSLROOTCERT"]]
     if "hostaddr" in query:
-        return conninfo
+        return urlunsplit((parsed.scheme, parsed.netloc, parsed.path, urlencode(query, doseq=True), parsed.fragment))
 
     addrinfo = []
     try:
@@ -364,7 +368,7 @@ def _ensure_ipv4_hostaddr(conninfo: str, allow_pooler: bool = True) -> str:
             return _ensure_ipv4_hostaddr(pooler_conn, allow_pooler=False)
 
     if not ipv4_addr:
-        return conninfo
+        return urlunsplit((parsed.scheme, parsed.netloc, parsed.path, urlencode(query, doseq=True), parsed.fragment))
     query.setdefault("hostaddr", []).append(ipv4_addr)
     return urlunsplit((parsed.scheme, parsed.netloc, parsed.path, urlencode(query, doseq=True), parsed.fragment))
 
@@ -400,6 +404,18 @@ def main() -> None:
     )
 
     encoder = UserFeatureSpace(preferred_vocab, numeric_fields=["like_count_30d", "positive_ratio_30d", "signup_days"])
+
+    print(
+        json.dumps(
+            {
+                "debug": "connection_info",
+                "db_url": db_url,
+                "env_sslmode": os.environ.get("PGSSLMODE"),
+                "env_sslrootcert": os.environ.get("PGSSLROOTCERT"),
+            },
+            ensure_ascii=False,
+        )
+    )
 
     live_df = _load_live_user_features(db_url, args.min_interactions)
     if args.limit_users:
