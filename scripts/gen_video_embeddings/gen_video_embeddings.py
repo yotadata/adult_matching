@@ -11,6 +11,7 @@ from typing import Dict, Iterable, List, Optional, Sequence
 from urllib.parse import parse_qs, urlencode, urlsplit, urlunsplit, quote
 import urllib.error
 import urllib.request
+from functools import lru_cache
 
 import numpy as np
 import pandas as pd
@@ -23,6 +24,27 @@ from tqdm import tqdm
 
 
 JST = timezone(timedelta(hours=9))
+
+
+@lru_cache(maxsize=1)
+def _resolve_project_ref() -> Optional[str]:
+    project_id = os.environ.get("SUPABASE_PROJECT_ID")
+    if project_id:
+        return project_id
+    legacy = os.environ.get("SUPABASE_PROJECT_REF")
+    if legacy:
+        print(
+            json.dumps(
+                {
+                    "warn": "deprecated_env_var",
+                    "details": "Set SUPABASE_PROJECT_ID; SUPABASE_PROJECT_REF is deprecated.",
+                },
+                ensure_ascii=False,
+            ),
+            file=sys.stderr,
+        )
+        return legacy
+    return None
 
 
 def parse_args() -> argparse.Namespace:
@@ -221,7 +243,7 @@ def _ensure_ipv4_hostaddr(conninfo: str, allow_pooler: bool = True) -> str:
         ipv4_addr = None
 
     if allow_pooler and not ipv4_addr:
-        project_ref = os.environ.get("SUPABASE_PROJECT_REF")
+        project_ref = _resolve_project_ref()
         if not project_ref:
             parts = parsed.hostname.split(".") if parsed.hostname else []
             if len(parts) >= 3 and parts[0] == "db":

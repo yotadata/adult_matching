@@ -42,7 +42,7 @@
    ```bash
    source docker/env/prd.env
    bash scripts/prep_two_tower/run_with_remote_db.sh \
-     --project-ref "$SUPABASE_PROJECT_REF" -- \
+     --project-ref "$SUPABASE_PROJECT_ID" -- \
      --mode reviews \
      --input ml/data/raw/reviews/dmm_reviews_videoa_2025-10-04.csv \
      --min-stars 4 --neg-per-pos 3 \
@@ -305,7 +305,7 @@ bash scripts/sync_video_embeddings/run.sh --lookback-days 1
 | `SUPABASE_URL` / `SUPABASE_ANON_KEY` | プロジェクト URL と anon key |
 | `SUPABASE_SERVICE_ROLE_KEY` | Storage / DB 書き込み用 |
 | `REMOTE_DATABASE_URL` | pgvector を含む Postgres 接続文字列 |
-| `SUPABASE_PROJECT_REF` / `SUPABASE_REGION` | プール接続を解決するために利用（任意） |
+| `SUPABASE_PROJECT_ID` (`SUPABASE_PROJECT_REF`) / `SUPABASE_REGION` | プール接続を解決するために利用（任意） |
 | `FANZA_API_ID` / `FANZA_API_AFFILIATE_ID` / `FANZA_LINK_AFFILIATE_ID` | ingest 用 FANZA API 認証 |
 
 Secrets を設定した後は手動 `workflow_dispatch` もしくはスケジュール実行で、日次の動画取り込みと埋め込み反映が走る。手動実行時は以下の入力を指定できる（省略可）:
@@ -317,6 +317,31 @@ Secrets を設定した後は手動 `workflow_dispatch` もしくはスケジュ
 | `skip_ingest`, `skip_fetch` | FANZA 取得／Storage 取得ステップをスキップするブール値（`true` / `false`） |
 
 ローカルで同じ流れを再現したい場合は上記 `scripts/sync_video_embeddings/run.sh` を利用するだけでよい。
+
+#### 6.1 環境変数一覧
+
+sync パイプラインをローカル／CI で実行する際に必要となる主な環境変数の一覧です。`.env` ファイル（例: `docker/env/prd.env`）や GitHub Secrets へ設定してください。
+
+| 変数名 | 必須 | 用途 |
+| --- | :---: | --- |
+| `SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_URL` | ○ | Supabase プロジェクトのベース URL（`https://<ref>.supabase.co`） |
+| `SUPABASE_ANON_KEY` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` | ○ | フロント／CLI で使用する anon key |
+| `SUPABASE_SERVICE_ROLE_KEY` | ○ | Storage/DB 書き込みを行うための Service Role key |
+| `SUPABASE_SERVICE_ROLE_JWT_AUDIENCE` | △ | Supabase JS クライアント用の audience（通常 `authenticated`） |
+| `REMOTE_DATABASE_URL` | ○ | 本番 Postgres 接続文字列（`postgresql://user:pass@host:port/db?sslmode=require`） |
+| `SUPABASE_DB_URL` | △ | `REMOTE_DATABASE_URL` を再利用する場合にセット。未指定時は自動で補完される |
+| `SUPABASE_PROJECT_ID` (`SUPABASE_PROJECT_REF`) | △ | Supabase プロジェクト Ref（プール接続補助） |
+| `SUPABASE_REGION` | △ | `aws-1-ap-northeast-1` などのリージョン名（プール接続補助） |
+| `SUPABASE_POOLER_HOST` / `SUPABASE_POOLER_PORT` | △ | プールホストを固定したい場合に利用（未指定でも自動推測） |
+| `FANZA_API_ID` | ○ | DMM/FANZA API のアプリケーション ID |
+| `FANZA_API_AFFILIATE_ID` | ○ | API 用アフィリエイト ID（動画データ取得時に使用） |
+| `FANZA_LINK_AFFILIATE_ID` | ○ | リンク作成用のアフィリエイト ID（product_url 生成に使用） |
+| `PGSSLMODE` / `PGSSLROOTCERT` | △ | GitHub Actions 等で SSL 接続する際の設定（例: `require` / `/etc/ssl/certs/ca-certificates.crt`） |
+| `SYNC_VIDEO_LOOKBACK_DAYS` | △ | デフォルトの取得日数（未指定時は 3 日） |
+
+※「△」は任意項目ですが、プロジェクトによっては必須になる場合があります。
+
+> **補足:** 他コンポーネント（フロントエンド、Edge Functions、学習パイプライン等）で利用する環境変数も含めた網羅的な一覧は `docs/env/variables.md` を参照してください。環境変数を追加・更新した場合は同ドキュメントも忘れずに更新します。`SUPABASE_PROJECT_ID` を正として扱い、旧 `SUPABASE_PROJECT_REF` は後方互換用のみに残しています。
 
 ## GitHub Actions（将来移行の雛形）
 

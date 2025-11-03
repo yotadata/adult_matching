@@ -38,7 +38,7 @@ EOF
 }
 
 ENV_FILE="${SUPABASE_ENV_FILE:-docker/env/prd.env}"
-PROJECT_REF="${PROJECT_REF:-${SUPABASE_PROJECT_REF:-}}"
+PROJECT_REF="${PROJECT_REF:-}"
 FORWARD_ARGS=()
 
 while [[ $# -gt 0 ]]; do
@@ -72,6 +72,13 @@ if [[ -f "$ENV_FILE" ]]; then
   # shellcheck disable=SC1090
   . "$ENV_FILE"
   set +a
+fi
+
+if [[ -z "$PROJECT_REF" && -n "${SUPABASE_PROJECT_ID:-}" ]]; then
+  PROJECT_REF="$SUPABASE_PROJECT_ID"
+elif [[ -z "$PROJECT_REF" && -n "${SUPABASE_PROJECT_REF:-}" ]]; then
+  echo "[WARN] SUPABASE_PROJECT_REF is deprecated; set SUPABASE_PROJECT_ID instead." >&2
+  PROJECT_REF="$SUPABASE_PROJECT_REF"
 fi
 
 if ! command -v supabase >/dev/null 2>&1; then
