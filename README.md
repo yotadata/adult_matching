@@ -65,16 +65,16 @@ bash scripts/setup_dev_env/run.sh --write
 docker compose -f docker/compose.yml pull
 
 # フォアグラウンド起動（-d なし）: ログをその場で確認できます
-docker compose -f docker/compose.yml up --build
+docker compose --env-file docker/env/dev.env -f docker/compose.yml up --build
 
 # 停止方法（フォアグラウンド起動時）: ターミナルで Ctrl + C
 
 # バックグラウンドで起動した場合の停止:
-# docker compose -f docker/compose.yml stop
+# docker compose --env-file docker/env/dev.env -f docker/compose.yml stop
 # 完全停止（コンテナ削除）:
-# docker compose -f docker/compose.yml down
+# docker compose --env-file docker/env/dev.env -f docker/compose.yml down
 # ボリュームも削除（DB初期化などリセットしたい時のみ推奨）:
-# docker compose -f docker/compose.yml down -v
+# docker compose --env-file docker/env/dev.env -f docker/compose.yml down -v
 
 # フロントにアクセス
 # http://localhost:3000
@@ -83,9 +83,9 @@ docker compose -f docker/compose.yml up --build
 補助コマンド
 ```bash
 # 稼働状況
-docker compose -f docker/compose.yml ps
+docker compose --env-file docker/env/dev.env -f docker/compose.yml ps
 # ログ追尾
-docker compose -f docker/compose.yml logs -f
+docker compose --env-file docker/env/dev.env -f docker/compose.yml logs -f
 ```
 
 ## マイグレーション適用（未適用のみ）
@@ -93,10 +93,10 @@ docker compose -f docker/compose.yml logs -f
 開発中に `supabase/migrations/*.sql` が増えた場合、未適用分だけを適用するには以下を実行します。
 
 ```bash
-docker compose -f docker/compose.yml up db-migrate
+docker compose --env-file docker/env/dev.env -f docker/compose.yml up db-migrate
 
 # REST のスキーマキャッシュを更新（必要時）
-docker compose -f docker/compose.yml restart rest
+docker compose --env-file docker/env/dev.env -f docker/compose.yml restart rest
 ```
 
 初回セットアップやボリューム消去後（完全初期化）の場合は、`db-init` が `docker/db/init/*.sql` と `supabase/migrations/*.sql` を昇順で全適用します。
@@ -108,13 +108,13 @@ docker compose -f docker/compose.yml restart rest
 - 前処理（reviews → interactions）
 
 ```bash
-bash scripts/prep_two_tower/run.sh \
+# Remote DB から動画メタデータを取り込みつつデータ生成
+bash scripts/prep_two_tower/run_with_remote_db.sh \
+  --remote-db-url "$REMOTE_DATABASE_URL" \
   --mode reviews \
-  --input ml/data/dmm_reviews_videoa_YYYY-MM-DD.csv \
-  --min-stars 4 --neg-per-pos 3 \
-  --val-ratio 0.2 \
-  --out-train ml/data/interactions_train.parquet \
-  --out-val ml/data/interactions_val.parquet
+  --input ml/data/raw/reviews/dmm_reviews_videoa_YYYY-MM-DD.csv \
+  --min-stars 4 --neg-per-pos 3 --val-ratio 0.2 \
+  --run-id auto
 ```
 
 - 学習
@@ -126,7 +126,7 @@ bash scripts/train_two_tower/run.sh --embedding-dim 256 --epochs 5
 - スクレイピング（DMM レビュー）
 
 ```bash
-bash scripts/scrape_dmm_reviews/run.sh --output ml/data/dmm_reviews.csv
+bash scripts/scrape_dmm_reviews/run.sh --output ml/data/raw/reviews/dmm_reviews.csv
 ```
 
 - データ取り込み（FANZA API）
@@ -175,7 +175,7 @@ HARD=true bash scripts/db_reset/run.sh
 - すべて Docker 前提です。ローカルの `.nvmrc`, `.python-version`, `.venv` は不要です。
 - 機密情報は `docker/env/*.env` に保持し、Git にはコミットしないでください。
 - Supabase は self-hosted 構成（db/rest/auth/realtime/storage/kong/studio + edge-runtime）。Edge Functions は `VERIFY_JWT=false` で起動します。
-- 詳細は `docs/docker.md`, `docs/two_tower_training.md` も参照してください。
+- 詳細は `docs/docker.md`, `docs/ml/two_tower_training.md` も参照してください。
 # 補足: 自動初期化
 # - `db` の起動をヘルスチェックで待ち、`db-init` ジョブが init SQL を idempotent に適用します
 #   （空ボリュームでも、既存ボリュームでも安全に前提を整備します）

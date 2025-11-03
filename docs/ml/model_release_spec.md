@@ -1,0 +1,155 @@
+# Two‑Tower モデルリリース仕様（案）
+
+本ドキュメントは、学習済み Two‑Tower モデルを Supabase Storage に配置する際のガイドラインを定めるためのドラフトです。命名規則・リリース手順・付随メタデータの保持方式を整理し、運用設計のたたき台とします。最終確定前に関係者でレビューし、必要に応じて修正してください。
+
+## 1. ストレージ構成
+
+- バケット: `models`
+- 階層構造（例）
+  ```
+  models/
+    two_tower/
+      20251031_183831/            # run_id（JST タイムスタンプ）
+        two_tower_20251031_183831.onnx
+        two_tower_20251031_183831.pt.gz
+        model_meta.json
+        metrics.json
+        summary.md                # 任意（変更点・注意点）
+      20251015_202233/
+        ...
+      latest/
+        manifest.json             # 現行リリースのポインタ
+  ```
+- `run_id` ディレクトリは再学習ごとに追加し、履歴を残す（最低 n=3 バージョン保持を想定）。
+- `latest/manifest.json` には現在稼働中のバージョン情報を記録し、クライアントやワークフローはこのファイルを起点に参照する。
+
+## 2. ファイル命名規則
+
+| 対象 | 命名例 | 備考 |
+| ---- | ------ | ---- |
+| ONNX | `two_tower_<run_id>.onnx` | 推論用（ユーザー/アイテム両対応） |
+| PyTorch state_dict | `two_tower_<run_id>.pt.gz` | 再学習・デバッグ用の元モデル（アップロード時に gzip 圧縮） |
+| メタ情報 | `model_meta.json` | 特徴量次元・語彙サイズ等を含む |
+| 評価結果 | `metrics.json` | 指標（Recall@K, AUC など） |
+| マニフェスト | `latest/manifest.json` | 現在の稼働バージョンと関連情報 |
+
+`run_id` は JST（UTC+9）の `YYYYMMDD_HHMMSS` 形式（例: `20251031_183831`）を基本とする。CI などで別形式を採用する場合も、この命名規則へ変換してから保存すること。
+
+## 3. メタデータ・マニフェスト仕様
+
+### 3.1 `model_meta.json`（run_id 配下）
+
+```jsonc
+{
+  "model_name": "two_tower",
+  "format": "two_tower.feature_mlp",
+  "run_id": "20251031_183831",
+  "trained_at": "2025-10-31T18:38:31+09:00",
+  "git_commit": "<commit-hash>",
+  "input_schema_version": 1,
+  "embedding_dim": 256,
+  "hidden_dim": 512,
+  "user_feature_dim": 4099,
+  "item_feature_dim": 21671,
+  "tag_vocab_size": 4096,
+  "performer_vocab_size": 1024,
+  "preferred_tag_vocab_size": 4096,
+  "use_price_feature": false,
+  "data_snapshot": {
+    "prep_run_id": "20251030_190538",
+    "source_csv": "ml/data/raw/reviews/dmm_reviews_videoa_2025-10-04.csv"
+  }
+}
+```
+
+- 既存の `model_meta.json` に加え、`trained_at`、`git_commit`、`data_snapshot` など運用上必要な情報を追加する。
+- `data_snapshot` は再現性を担保するために、前処理時の run_id や入力 CSV 名を保持する。
+
+### 3.2 `metrics.json`（run_id 配下）
+
+```jsonc
+{
+  "run_id": "20251031_183831",
+  "evaluated_at": "2025-10-31T19:02:15+09:00",
+  "metrics": {
+    "recall@20": 0.695,
+    "map@20": 0.421,
+    "auc": 0.913
+  },
+  "validation_set": "ml/data/processed/two_tower/latest/interactions_val.parquet",
+  "notes": "価格特徴量を OFF に切り替え。"
+}
+```
+
+- 評価スクリプトの出力をそのまま格納する。必要に応じて `baseline_diff`（前回との差分）や `threshold_passed`（bool）を追加。
+
+### 3.3 `latest/manifest.json`
+
+```jsonc
+{
+  "model_name": "two_tower",
+  "current": {
+    "run_id": "20251031_183831",
+    "published_at": "2025-11-01T02:40:10Z",
+    "onnx_path": "two_tower/20251031_183831/two_tower_20251031_183831.onnx",
+    "meta_path": "two_tower/20251031_183831/model_meta.json",
+    "metrics_path": "two_tower/20251031_183831/metrics.json"
+  },
+  "previous": [
+    {
+      "run_id": "20251015_202233",
+      "onnx_path": "two_tower/20251015_202233/two_tower_20251015_202233.onnx"
+    }
+  ],
+  "release_notes": "Recall@20 が 0.68→0.70 に改善。price feature を OFF に固定。"
+}
+```
+
+- `current` は最新リリースを指し示す。
+- `previous` に過去の代表バージョン（直近 1～2 件）を記録しておくとロールバックが容易。
+- `release_notes` は要約レベルの文章で OK。詳細はバージョン配下の `summary.md` に記載。
+
+## 4. リリース手順（案）
+
+1. **前処理・学習**  
+   `scripts/prep_two_tower` → `scripts/train_two_tower` → `scripts/eval_two_tower` を実行し、`ml/artifacts/latest/` を更新。
+
+2. **評価合格の確認**  
+   - `metrics.json` の閾値（例: `recall@20 >= 0.65`, `auc >= 0.88`）を満たすかチェック。  
+   - `gen_user_embeddings` と `upsert_two_tower` でローカル/ステージング環境の検証を行う。
+
+3. **ファイルの配置準備**  
+   - `ml/artifacts/latest/` から Storage へアップロードするファイルを収集。  
+   - `summary.md` を作成（手動でも可）。`summary.md` には学習条件・気づき・既知の制約を箇条書きする。  
+   - manifest に記載する予定値（`run_id`, `onnx_path`, `metrics_path` など）をまとめたドラフトを準備しておくが、この段階ではアップロードしない。
+
+4. **成果物アップロード（Upload ジョブ）**  
+   - 実装済みスクリプト: `bash scripts/publish_two_tower/run.sh --env-file docker/env/prd.env upload`  
+     - 主な引数: `--run-id <id>`（省略時は `model_meta.json` から解決）、`--summary <path>`（省略時は `ml/artifacts/latest/summary.md` を探索）、`--dry-run`。  
+   - 内部では Service Role Key と Storage REST API を用いて `models/two_tower/<run_id>/` に ONNX / ONNX 付随データ（`.onnx.data` が存在する場合は `.onnx.data.gz` として圧縮）、PT（`.pt.gz`）、`model_meta.json`、`metrics.json`、`summary.md` をアップロードする。  
+   - `.onnx.data.gz` / `.pt.gz` はダウンロード後に解凍してから利用する前提（例: `gzip -dc file.pt.gz > file.pt`）。推論側で自動解凍するラッパーを用意しておくと安全。  
+   - アップロード後は検証が終わるまで manifest を据え置き、新バージョンが `latest` から参照されない状態を保つ。
+
+5. **マニフェスト切り替え（Activate ジョブ）**  
+   - 実装済みスクリプト: `bash scripts/publish_two_tower/run.sh --env-file docker/env/prd.env activate --run-id <id>`  
+     - 主な引数: `--manifest-path two_tower/latest/manifest.json`（既定）、`--max-previous 5`、`--release-notes "<text>"` or `--release-notes-file <path>`、`--dry-run`。  
+   - ジョブでは現行 manifest を取得し、旧 `current` を `previous` に退避した上で新しい `run_id` を `current` に設定し、`published_at` を現在時刻で更新する。  
+   - `production/manifest.json`, `staging/manifest.json` のように環境別のポインタを分ける場合は、Activate ジョブを環境ごとに実行する。
+
+6. **公開後確認・監視**  
+   - manifest 更新後、Edge Function / API / バッチ処理が新バージョンを使用していることを確認する。  
+   - Streamlit アプリ等で定性チェックを行い、異常があれば Activate ジョブを再実行し、`current` を `previous` の run_id へ戻す。
+
+## 5. 残課題・要検討事項
+
+- ロールバック手順: `latest/manifest.json` のみを指針にする場合、旧バージョンへ戻すには manifest の `current` を過去の `run_id` に差し替え、`published_at` を更新する。万一 Activate ジョブ実行前後で差異が出た場合に備え、`previous` リストに直近の安定バージョンを必ず保持し、pgvector 反映との整合をどう確保するかを詰める。現在の想定では Edge Function が毎リクエスト manifest を読み直し、CDN も使用していないため追加のキャッシュ無効化は不要だが、将来的にブラウザ直アクセスや分散キャッシュが導入された場合に備えてフックを用意しておくと安心。
+- `latest` 参照の是非: 直接 `latest` ディレクトリ配下のファイルを利用する運用は、意図しないバージョン切り替えを招く可能性がある。基本は `latest/manifest.json` を読み、そこに記録された `run_id` を明示的に解決することで、参照整合性とロールバック容易性を両立させる。クライアント実装では manifest の署名検証や `published_at` の監視を追加し、切り替えトランザクションを観測できるようにしておく。
+- CI/CD への組み込み: GitHub Actions で自動的にアップロードする際のアクセスキー管理（Service Role 秘密鍵の扱い、OIDC 連携など）。
+- モデルの署名・検証: ダウンロード時にハッシュチェックを行うか。
+- 保存期間・コスト最適化: 古いバージョンをどこまで残すか、Glacier 相当の層が必要か。
+- モデルカテゴリの拡張: `two_tower` 以外のモデル（例: reranker, re-ranker）と共存させるための命名ルール。
+- モデル切り替え通知: `manifest.json` 更新をトリガーに、フロントやエッジへ通知する仕組み（Webhook / Slack 等）が必要か。
+
+---
+
+上記はドラフトであり、運用設計の議論に向けた叩き台です。実装時に決定した内容は本ドキュメントを更新し、関連スクリプト（publish/upsert 等）と整合を取ってください。

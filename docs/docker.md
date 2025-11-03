@@ -5,9 +5,10 @@ This repo includes a Docker setup to run:
 - ML workspace container for training/inference
 - Supabase local stack managed via Supabase CLI inside a container
 
-## Prerequisites
+-## Prerequisites
 - Docker + Docker Compose
 - Copy `docker/env/dev.env.example` to `docker/env/dev.env` and fill values
+- Copy `docker/env/prd.env.example` to `docker/env/prd.env` when接続テストや本番用スクリプトを実行する（`REMOTE_DATABASE_URL` や Supabase の鍵を設定）
 - Login to GitHub Container Registry (for Supabase CLI image):
   - Create a GitHub Personal Access Token with `read:packages`
   - `echo <TOKEN> | docker login ghcr.io -u <GITHUB_USERNAME> --password-stdin`
@@ -29,9 +30,11 @@ The container uses Node 20, mounts the `frontend` directory for live reload, and
 ## Commands (per-script Docker)
 - Start all services: `docker compose -f docker/compose.yml up -d --build` (uses `docker/env/dev.env`)
 - Stop all services: `docker compose -f docker/compose.yml down`
-- Prep dataset: `bash scripts/prep_two_tower/run.sh --mode reviews --input ml/data/dmm_reviews_videoa_....csv --out-train ml/data/interactions_train.parquet --out-val ml/data/interactions_val.parquet`
-- Train model: `bash scripts/train_two_tower/run.sh --embedding-dim 256 --epochs 5`
-- Scrape reviews: `bash scripts/scrape_dmm_reviews/run.sh --output ml/data/dmm_reviews.csv`
+- Prep dataset: `bash scripts/prep_two_tower/run_with_remote_db.sh --remote-db-url "$REMOTE_DATABASE_URL" --mode reviews --input ml/data/raw/reviews/dmm_reviews_videoa_....csv --run-id auto`
+- Train model: `bash scripts/train_two_tower/run.sh --train ml/data/processed/two_tower/latest/interactions_train.parquet --val ml/data/processed/two_tower/latest/interactions_val.parquet --user-features ml/data/processed/two_tower/latest/user_features.parquet --item-features ml/data/processed/two_tower/latest/item_features.parquet --item-key video_id --embedding-dim 256 --hidden-dim 512 --epochs 5 --batch-size 1024 --lr 1e-3 --max-tag-features 2048 --max-performer-features 512 --out-dir ml/artifacts`
+- Evaluate model: `bash scripts/eval_two_tower/run.sh python scripts/eval_two_tower/evaluate_two_tower.py --item-key video_id --recall-k 20 --out-json ml/artifacts/metrics.json`
+- Streamlit review: `bash scripts/streamlit_qual_eval/run.sh`（ブラウザで `http://localhost:8501/` を開き、Model A/B を指定するとユーザー別の推薦比較やバイアス分布が確認できる。タブを切り替えることで maker / source / label / series / tags / performer_ids などの偏りを確認可能）
+- Scrape reviews: `bash scripts/scrape_dmm_reviews/run.sh --output ml/data/raw/reviews/dmm_reviews.csv`
 
 ## Notes
 - Edge Functions: In dev, you can run `supabase functions serve` on the host alongside `supabase start`. The frontend will call them via the Supabase API URL (use the same `host.docker.internal` host if needed).

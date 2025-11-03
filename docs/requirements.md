@@ -3,24 +3,43 @@
 本プロジェクトで開発・運用する機能の要件を記録します。新規機能や仕様変更時は、ここをまず更新してから実装に着手してください。
 
 ## 目的/背景
-- 例: 初期レコメンドの精度向上、スクレイピングの自動化 など
+- Two-Tower ベースの推薦モデルでユーザー嗜好に応じた動画レコメンドを提供し、初期体験の価値を高める。
+- Supabase 上に蓄積した LIKE / レビュー履歴を活用し、ランキング品質を継続的に改善する。
 
 ## ユースケース
-- 例: ユーザーが動画をスワイプして LIKE/DISLIKE を記録 など
+- エンドユーザーがアプリで LIKE / DISLIKE を行い、その履歴を元にパーソナライズされた動画一覧を取得する。
+- 管理者が学習済みモデル（ONNX）とマッピング JSON をロードして推論品質を可視検証する（`frontend/src/app/admin/page.tsx`）。
+- バッチ処理（例: 週次）でモデル・埋め込みを再生成し、Supabase Storage / pgvector テーブルへ反映する。
 
 ## 機能要件
-- [ ] 要件1
-- [ ] 要件2
+- [ ] レビュー/LIKE データから `interactions_train/val.parquet` を生成する Docker スクリプトを整備する（現状: `scripts/prep_two_tower/run.sh` でベース実装あり。動画 ID 取得やデータ品質検証を自動化する TODO）。
+- [ ] Two-Tower 学習コンテナを実行し、ONNX / state_dict / 埋め込み Parquet / メタ情報を出力する。ONNX は特徴量→ユーザー/アイテム埋め込みを生成できるよう設計する（評価・ログ整備は要追加）。
+- [ ] 学習済み埋め込みを `public.video_embeddings` / `public.user_embeddings`（vector(256)）へアップサートするユーティリティを実装する。
+- [ ] モデル成果物（`two_tower_latest.onnx` + メタデータ）を Supabase Storage `models/` バケットへアップロードし、バージョニング/`latest` 更新を管理する。日次のアイテム更新・適時のユーザー更新で ONNX を利用するパイプラインを整備する。
+- [ ] Supabase Storage へのモデル配置手順・命名規則・付随メタデータの保持方式を仕様化し、リリース時に参照可能なドキュメントを整備する。
+- [ ] Edge Function `supabase/functions/ai-recommend` で Two-Tower 類似検索を行い、現在のスタブ（最新/トレンド一覧返却）を置き換える。
+- [ ] PyTorch と ONNX の出力ベクトル差分・ランキング指標を自動で計測する評価スクリプト（Recall@K, AUC など）を整備する。
 
 ## 非機能要件
-- [ ] パフォーマンス
-- [ ] セキュリティ
+- [ ] すべての前処理・学習は専用 Docker コンテナ経由で再現可能にする（ホスト Python 依存を排除）。
+- [ ] 埋め込み次元は 256 とし、pgvector インデックス (`vector_cosine_ops`) を維持する。
+- [ ] pgvector 拡張は halfvec 型を提供する 0.5 以降のバージョンを前提とする。
+- [ ] 学習ジョブは再実行時に同一成果物パスへ上書きしても安全（idempotent）であること。
+- [ ] Storage / DB 転送時に機密キーを `.env` から安全に読み取る。
+- [ ] `ml/data` のディレクトリ構成を `raw/`（生データ）・`processed/two_tower/latest/`（最新出力）・`processed/two_tower/runs/<run-id>/`（スナップショット）の形で整理し、前処理スクリプトがこの構造を前提に動作する。
+- [ ] ML 関連ドキュメントは `docs/ml/` 配下に配置し、再学習手順や仕様は同ディレクトリで管理する。
 
 ## インターフェース/依存
-- API/DB/外部サービスとの I/F、依存パッケージ など
+- Supabase Postgres (`public.video_embeddings`, `public.user_embeddings`, `public.video_popularity_daily`) と pgvector 拡張。
+- Supabase Storage（`models/` バケット）および Edge Functions（`ai-recommend`）。
+- Python 3.11 + PyTorch 2.2 + ONNX Runtime（Docker イメージ `python:3.11-bookworm` ベース）。
+- 入力データ: `ml/data/raw/reviews/dmm_reviews_videoa_*.csv`, `ml/data/processed/two_tower/latest/interactions_*.parquet` など。
 
 ## 受け入れ基準
-- [ ] テスト観点・完了条件
+- [ ] `bash scripts/prep_two_tower/run.sh ...` で学習データが生成でき、サマリーログに件数・欠損が記録される。
+- [ ] `bash scripts/train_two_tower/run.sh ...` 実行で ONNX / parquet / メタ JSON が `ml/artifacts/` に出力され、ONNX と PyTorch のベクトル一致テストが合格する。
+- [ ] Embeddings upsert と Storage へのアップロードが手順化され、再学習後・日次アイテム更新・適時ユーザー更新で新モデルを利用できること。
+- [ ] `ai-recommend` Edge Function がユーザー埋め込み入力時に Two-Tower 類似検索結果を返却する。
 
 ## 運用前提（Supabase 自前スタック）
 - DB 初期化: `docker/db/init/*.sql` を idempotent に適用する。

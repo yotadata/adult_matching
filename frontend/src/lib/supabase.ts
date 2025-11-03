@@ -23,10 +23,17 @@ try {
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-// Expose client for debugging in the browser (dev only)
+// Expose client for debugging in the browser (local/dev only)
 try {
-  if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'production') {
+  const isBrowser = typeof window !== 'undefined';
+  const isDev = process.env.NODE_ENV !== 'production';
+  const isLocal = isBrowser && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+  if (isBrowser && isDev && isLocal) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (window as any).supabase = supabase;
+    (window as any).__supabase = supabase;
+    if (!(window as any).__supabaseAuthLogged) {
+      console.info('[Supabase] __supabase debug client available on window.__supabase');
+      (window as any).__supabaseAuthLogged = true;
+    }
   }
 } catch {}

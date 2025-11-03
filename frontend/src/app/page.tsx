@@ -22,6 +22,20 @@ interface VideoFromApi {
   product_released_at?: string;
   performers: { id: string; name: string }[];
   tags: { id: string; name: string }[];
+  source?: string | null;
+  score?: number | null;
+  model_version?: string | null;
+  params?: Record<string, unknown> | null;
+}
+
+interface GuestDecision {
+  video_id: CardData['id'];
+  decision_type: 'like' | 'nope';
+  created_at: string;
+  recommendation_source?: string | null;
+  recommendation_score?: number | null;
+  recommendation_model_version?: string | null;
+  recommendation_params?: Record<string, unknown> | null;
 }
 
 const ORIGINAL_GRADIENT = 'linear-gradient(90deg, #C4C8E3 0%, #D7D1E3 33.333%, #F7D7E0 66.666%, #F9C9D6 100%)';
@@ -78,6 +92,10 @@ export default function Home() {
           performers: video.performers,
           tags: video.tags,
           productUrl: normalizeHttps(video.product_url) || undefined,
+          recommendationSource: video.source ?? null,
+          recommendationScore: typeof video.score === 'number' ? video.score : null,
+          recommendationModelVersion: video.model_version ?? null,
+          recommendationParams: video.params ?? null,
         };
       });
       setCards(fetchedCards);
@@ -113,7 +131,7 @@ export default function Home() {
     recalc();
   }, [windowHeight, videoAspectRatio, isMobile]);
 
-  const getGuestDecisions = useCallback((): { video_id: number; decision_type: 'like' | 'nope'; created_at: string }[] => {
+  const getGuestDecisions = useCallback((): GuestDecision[] => {
     try {
       const raw = typeof window !== 'undefined' ? localStorage.getItem('guest_decisions_v1') : null;
       const arr = raw ? JSON.parse(raw) : [];
@@ -123,7 +141,7 @@ export default function Home() {
     }
   }, []);
 
-  const setGuestDecisions = useCallback((arr: { video_id: number; decision_type: 'like' | 'nope'; created_at: string }[]) => {
+  const setGuestDecisions = useCallback((arr: GuestDecision[]) => {
     localStorage.setItem('guest_decisions_v1', JSON.stringify(arr));
   }, []);
 
@@ -138,6 +156,10 @@ export default function Home() {
         user_id: user.id,
         video_id: d.video_id,
         decision_type: d.decision_type,
+        recommendation_source: d.recommendation_source ?? null,
+        recommendation_score: d.recommendation_score ?? null,
+        recommendation_model_version: d.recommendation_model_version ?? null,
+        recommendation_params: d.recommendation_params ?? null,
       }));
       const { error } = await supabase.from('user_video_decisions').insert(chunk);
       if (error) {
@@ -177,6 +199,10 @@ export default function Home() {
           user_id: user.id,
           video_id: activeCard.id,
           decision_type: decisionType,
+          recommendation_source: activeCard.recommendationSource ?? null,
+          recommendation_score: activeCard.recommendationScore ?? null,
+          recommendation_model_version: activeCard.recommendationModelVersion ?? null,
+          recommendation_params: activeCard.recommendationParams ?? null,
         });
         if (error) {
           console.error(`Error inserting ${decisionType} decision:`, error);
@@ -188,7 +214,15 @@ export default function Home() {
           return;
         }
         const decisionType = direction === 'right' ? 'like' : 'nope';
-        current.push({ video_id: activeCard.id, decision_type: decisionType, created_at: new Date().toISOString() });
+        current.push({
+          video_id: activeCard.id,
+          decision_type: decisionType,
+          created_at: new Date().toISOString(),
+          recommendation_source: activeCard.recommendationSource ?? null,
+          recommendation_score: activeCard.recommendationScore ?? null,
+          recommendation_model_version: activeCard.recommendationModelVersion ?? null,
+          recommendation_params: activeCard.recommendationParams ?? null,
+        });
         setGuestDecisions(current);
       }
     }

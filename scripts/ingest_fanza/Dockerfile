@@ -1,14 +1,17 @@
 FROM node:20-bullseye
 
 ENV NODE_ENV=production \
-    NEXT_TELEMETRY_DISABLED=1
+    NEXT_TELEMETRY_DISABLED=1 \
+    NODE_PATH=/opt/ingest/node_modules
 
 WORKDIR /workspace
 
-# Minimal runtime deps + tsx for TS execution
-RUN npm init -y && \
-    npm install tsx @supabase/supabase-js dotenv axios
+# Install runtime deps outside the bind-mounted workspace
+RUN mkdir -p /opt/ingest && \
+    cd /opt/ingest && \
+    npm init -y && \
+    npm install @supabase/supabase-js dotenv axios && \
+    npm install -g tsx
 
 # Default command runs the TS script
-CMD ["npx", "tsx", "scripts/ingest_fanza/index.ts"]
-
+CMD ["tsx", "scripts/ingest_fanza/index.ts"]
