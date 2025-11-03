@@ -62,6 +62,14 @@ jobs:
           PGSSLROOTCERT=/etc/ssl/certs/ca-certificates.crt
           EOF
 
+      - name: Debug env
+        run: |
+          echo "==== docker/env/prd.ci.env ===="
+          cat docker/env/prd.ci.env
+          echo "SUPABASE_URL env: ${SUPABASE_URL}"
+          echo "NEXT_PUBLIC_SUPABASE_ANON_KEY env set? ${NEXT_PUBLIC_SUPABASE_ANON_KEY:+yes}"
+          echo "SUPABASE_ANON_KEY env set? ${SUPABASE_ANON_KEY:+yes}"
+
       - name: Sync embeddings
         env:
           SYNC_VIDEO_ENV_FILE: docker/env/prd.ci.env
