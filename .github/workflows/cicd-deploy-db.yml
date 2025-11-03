@@ -1,4 +1,4 @@
-name: [CiCd] Sub - Deploy DB Migrations
+name: "[CiCd] Sub - Deploy DB Migrations"
 
 on:
   pull_request:

@@ -1,4 +1,4 @@
-name: [CiCd] Sub - Deploy DB Docs
+name: "[CiCd] Sub - Deploy DB Docs"
 
 on:
   push:
