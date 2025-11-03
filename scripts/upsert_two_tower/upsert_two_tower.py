@@ -364,8 +364,12 @@ def _ensure_ipv4_hostaddr(conninfo: str, allow_pooler: bool = True) -> str:
         return conninfo
 
     query = parse_qs(parsed.query, keep_blank_values=True)
+    if "sslmode" not in query:
+        query["sslmode"] = ["require"]
+    if "sslrootcert" not in query:
+        query["sslrootcert"] = ["/etc/ssl/certs/ca-certificates.crt"]
     if "hostaddr" in query:
-        return conninfo
+        return urlunsplit((parsed.scheme, parsed.netloc, parsed.path, urlencode(query, doseq=True), parsed.fragment))
 
     addrinfo = []
     try:
@@ -413,7 +417,7 @@ def _ensure_ipv4_hostaddr(conninfo: str, allow_pooler: bool = True) -> str:
             return _ensure_ipv4_hostaddr(pooler_url, allow_pooler=False)
 
     if not ipv4_addr:
-        return conninfo
+        return urlunsplit((parsed.scheme, parsed.netloc, parsed.path, urlencode(query, doseq=True), parsed.fragment))
 
     query.setdefault("hostaddr", []).append(ipv4_addr)
     new_query = urlencode(query, doseq=True)

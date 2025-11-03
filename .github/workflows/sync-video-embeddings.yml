@@ -60,6 +60,8 @@ jobs:
           FANZA_LINK_AFFILIATE_ID=${FANZA_LINK_AFFILIATE_ID}
           PGSSLMODE=require
           PGSSLROOTCERT=/etc/ssl/certs/ca-certificates.crt
+          sslmode=require
+          sslrootcert=/etc/ssl/certs/ca-certificates.crt
           EOF
 
       - name: Debug env
