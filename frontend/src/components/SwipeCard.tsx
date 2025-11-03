@@ -18,6 +18,10 @@ export interface CardData {
   tags?: { id: string; name: string; }[]; // 追加
   product_released_at?: string; // 追加: 発売日
   productUrl?: string; // 追加: 外部再生リンク
+  recommendationSource?: string | null;
+  recommendationScore?: number | null;
+  recommendationModelVersion?: string | null;
+  recommendationParams?: Record<string, unknown> | null;
 }
 
 export interface SwipeCardHandle {
