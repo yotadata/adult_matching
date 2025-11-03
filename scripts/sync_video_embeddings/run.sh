@@ -6,7 +6,6 @@ REPO_ROOT=$(cd "$SCRIPT_DIR/../.." && pwd)
 
 ENV_FILE=${SYNC_VIDEO_ENV_FILE:-docker/env/prd.env}
 LOOKBACK_DAYS=${SYNC_VIDEO_LOOKBACK_DAYS:-3}
-MODE=${SYNC_VIDEO_MODE:-full}
 SKIP_INGEST=false
 SKIP_FETCH=false
 FORWARDED=()
@@ -19,10 +18,6 @@ while [[ $# -gt 0 ]]; do
       ;;
     --lookback-days)
       LOOKBACK_DAYS="$2"
-      shift 2
-      ;;
-    --mode)
-      MODE="$2"
       shift 2
       ;;
     --skip-ingest)
@@ -49,17 +44,6 @@ if [[ ! -f "$ENV_FILE" ]]; then
   echo "Environment file not found: $ENV_FILE" >&2
   exit 1
 fi
-
-# Normalize mode (full / embeddings)
-case "$MODE" in
-  embeddings)
-    SKIP_INGEST=true
-    echo "[sync-video] Mode set to embeddings-only. Skipping ingest step."
-    ;;
-  full|*)
-    MODE="full"
-    ;;
-esac
 
 RUN_ID=${GEN_VIDEO_RUN_ID:-$(
   python - <<'PY'

@@ -291,10 +291,6 @@ bash scripts/sync_video_embeddings/run.sh
 # 直近1日分だけ FANZA から再取得したい場合
 bash scripts/sync_video_embeddings/run.sh --lookback-days 1
 
-# 埋め込みのみ再実行したい場合（インジェスト済みデータを利用）
-bash scripts/sync_video_embeddings/run.sh --mode embeddings
-```
-
 - `--skip-ingest` や `--skip-fetch` を付けると各工程を飛ばせる。`--` 以降の引数は `gen_video_embeddings/run.sh` にそのまま渡される（例: `--skip-upsert`）。
 - `gen_video_embeddings` 単体でも利用可能。`--include-existing` を付けると最新モデルで全動画を再エンコードできる。
 - 生成されたディレクトリには `summary.json` と `model_meta.json` が自動で配置されるため、後段のアップロードや検証に再利用しやすい。
@@ -331,6 +327,7 @@ export PGSSLROOTCERT=docker/env/supabase-ca.crt
 ```
 
 GitHub Actions では同証明書を自動で取得し、`.env` の `PGSSLROOTCERT` に設定しています。
+リポジトリに登録する Secrets `SUPABASE_CA_CERT` には、上記 `supabase-ca.crt` を Base64 エンコードした文字列を登録してください（例: `base64 -w0 docker/env/supabase-ca.crt`）。
 
 #### 6.1 環境変数一覧
 

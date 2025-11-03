@@ -71,6 +71,7 @@ Secrets 名はリポジトリ設定（Settings → Secrets and variables → Act
   - `FANZA_API_ID`
   - `FANZA_API_AFFILIATE_ID`
   - `FANZA_LINK_AFFILIATE_ID`
+  - `SUPABASE_CA_CERT`（Base64 エンコード済みの Supabase CA 証明書。未設定の場合はシステム CA にフォールバック）
 - **workflow_dispatch inputs**（すべて任意）
   | 入力名 | 説明 | 既定値 |
   | --- | --- | --- |
@@ -79,9 +80,10 @@ Secrets 名はリポジトリ設定（Settings → Secrets and variables → Act
 | `lookback_days` | 上記が未指定の場合の取得日数 | `3` |
 | `skip_ingest` | FANZA 取得ステップをスキップするか | `false` |
 | `skip_fetch` | Storage からモデルを取得するステップをスキップするか | `false` |
-| `mode` | `full` (取得+埋め込み) / `embeddings` (埋め込みのみ) | `full` |
 
-> GitHub Actions では Supabase の CA 証明書を都度ダウンロードし、`docker/env/supabase-ca.crt` に配置しています。ローカルで同等の処理を行う場合も同一の CA ファイルを用意し、`PGSSLROOTCERT` をそのパスに設定してください（詳細は `docs/ml/two_tower_training.md` を参照）。
+> GitHub Actions では Secrets `SUPABASE_CA_CERT` に Base64 エンコードした Supabase の CA 証明書を登録し、`docker/env/supabase-ca.crt` に展開しています。ローカルで同等の処理を行う場合も同一の CA ファイルを用意し、`PGSSLROOTCERT` をそのパスに設定してください（詳細は `docs/ml/two_tower_training.md` を参照）。
+
+Base64 エンコード例: `base64 -w0 docker/env/supabase-ca.crt`
 
 ### 6. その他ワークフロー（例: `cicd-deploy-docs.yml`, `cicd-deploy-db-docs.yml`）
 - それぞれ README / ワークフローコメントに記載されている Secrets を参照してください。  
