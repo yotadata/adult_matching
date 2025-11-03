@@ -1,4 +1,4 @@
-name: Sync Video Embeddings
+name: [ML] Ops - Sync Video Embeddings
 
 on:
   workflow_dispatch:
@@ -21,6 +21,10 @@ on:
         description: 'Storage からモデルを取得するステップをスキップする'
         required: false
         default: 'false'
+      mode:
+        description: '処理モード (full: 取得+埋め込み, embeddings: 埋め込みのみ)'
+        required: false
+        default: 'full'
   schedule:
     - cron: '0 18 * * *' # 03:00 JST
 
@@ -81,6 +85,7 @@ jobs:
           INPUT_END_DATE: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.end_date || '' }}
           INPUT_SKIP_INGEST: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.skip_ingest || '' }}
           INPUT_SKIP_FETCH: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.skip_fetch || '' }}
+          INPUT_MODE: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.mode || '' }}
         run: |
           LOOKBACK="${INPUT_LOOKBACK_DAYS:-$DEFAULT_LOOKBACK_DAYS}"
           export SYNC_VIDEO_LOOKBACK_DAYS="$LOOKBACK"
@@ -97,6 +102,11 @@ jobs:
           fi
           if [[ -n "${INPUT_END_DATE:-}" ]]; then
             export LTE_RELEASE_DATE="${INPUT_END_DATE}"
+          fi
+
+          if [[ "${INPUT_MODE}" == "embeddings" ]]; then
+            export SYNC_VIDEO_MODE="embeddings"
+            args+=(--mode embeddings)
           fi
 
           bash scripts/sync_video_embeddings/run.sh "${args[@]}"
