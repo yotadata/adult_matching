@@ -18,14 +18,36 @@ from pgvector.psycopg import register_vector
 from psycopg import sql
 from psycopg.rows import dict_row
 from tqdm import tqdm
+from functools import lru_cache
 
 
 @dataclass
 class UpsertResult:
     table: str
-    inserted: int
-    skipped: int
-    dropped: int
+   inserted: int
+   skipped: int
+   dropped: int
+
+
+@lru_cache(maxsize=1)
+def _resolve_project_ref() -> Optional[str]:
+    project_id = os.environ.get("SUPABASE_PROJECT_ID")
+    if project_id:
+        return project_id
+    legacy = os.environ.get("SUPABASE_PROJECT_REF")
+    if legacy:
+        print(
+            json.dumps(
+                {
+                    "warn": "deprecated_env_var",
+                    "details": "Set SUPABASE_PROJECT_ID; SUPABASE_PROJECT_REF is deprecated.",
+                },
+                ensure_ascii=False,
+            ),
+            file=sys.stderr,
+        )
+        return legacy
+    return None
 
 
 def parse_args() -> argparse.Namespace:
@@ -354,7 +376,7 @@ def _ensure_ipv4_hostaddr(conninfo: str, allow_pooler: bool = True) -> str:
     ipv4_addr = next((info[4][0] for info in addrinfo if info[0] == socket.AF_INET), None)
 
     if not ipv4_addr and allow_pooler:
-        project_ref = os.environ.get("SUPABASE_PROJECT_REF")
+        project_ref = _resolve_project_ref()
         if not project_ref:
             parts = parsed.hostname.split('.')
             if len(parts) >= 3 and parts[0] == "db":
