@@ -142,7 +142,10 @@ def _parse_since(value: Optional[str]) -> Optional[datetime]:
             raise ValueError(f"Invalid --since value: {value}") from exc
     if dt.tzinfo is None:
         dt = datetime(dt.year, dt.month, dt.day, tzinfo=JST)
-    return dt.astimezone(timezone.utc)
+    dt_utc = dt.astimezone(timezone.utc)
+    if dt_utc.time() == datetime.min.time():
+        return dt_utc.date()
+    return dt_utc
 
 
 class FeatureSpace:
