@@ -31,8 +31,8 @@ export default function AdminModelTestPage() {
         // Try setting CDN fallback for WASM binaries in case local resolution fails
         mod.env.wasm.wasmPaths = mod.env.wasm.wasmPaths || "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.19.0/dist/";
         if (mounted) setOrt(mod);
-      } catch (e: any) {
-        console.error(e);
+      } catch (error: unknown) {
+        console.error(error);
         setModelError("onnxruntime-web の読み込みに失敗しました");
       }
     })();
@@ -49,9 +49,9 @@ export default function AdminModelTestPage() {
       const buf = await file.arrayBuffer();
       const s = await ort.InferenceSession.create(buf);
       setSession(s);
-    } catch (e: any) {
-      console.error(e);
-      setModelError(`モデルロード失敗: ${e?.message ?? e}`);
+    } catch (error: unknown) {
+      console.error(error);
+      setModelError(`モデルロード失敗: ${error instanceof Error ? error.message : String(error)}`);
     } finally {
       setModelLoading(false);
     }
@@ -67,9 +67,9 @@ export default function AdminModelTestPage() {
       const buf = await resp.arrayBuffer();
       const s = await ort.InferenceSession.create(buf);
       setSession(s);
-    } catch (e: any) {
-      console.error(e);
-      setModelError(`URLからのモデル読み込み失敗: ${e?.message ?? e}`);
+    } catch (error: unknown) {
+      console.error(error);
+      setModelError(`URLからのモデル読み込み失敗: ${error instanceof Error ? error.message : String(error)}`);
     } finally {
       setModelLoading(false);
     }
@@ -80,7 +80,7 @@ export default function AdminModelTestPage() {
       const txt = await file.text();
       const obj = JSON.parse(txt);
       setUserMap(obj);
-    } catch (e: any) {
+    } catch (error: unknown) {
       alert("user_id_map.json の読み込みに失敗しました");
     }
   };
@@ -90,7 +90,7 @@ export default function AdminModelTestPage() {
       const txt = await file.text();
       const obj = JSON.parse(txt);
       setItemMap(obj);
-    } catch (e: any) {
+    } catch (error: unknown) {
       alert("item_id_map.json の読み込みに失敗しました");
     }
   };
@@ -98,7 +98,7 @@ export default function AdminModelTestPage() {
   const canRun = useMemo(() => !!session && !!userMap && !!itemMap && userId && itemId, [session, userMap, itemMap, userId, itemId]);
 
   const runTest = async () => {
-    if (!session || !userMap || !itemMap) return;
+    if (!session || !userMap || !itemMap || !ort) return;
     setRunError(null);
     setScore(null);
     setProb(null);
@@ -108,20 +108,22 @@ export default function AdminModelTestPage() {
       if (uidx === undefined) throw new Error("user_id がマッピングに存在しません");
       if (iidx === undefined) throw new Error("video_id がマッピングに存在しません");
       // int64 tensors via BigInt64Array
-      const feeds: Record<string, any> = {};
-      const userTensor = new (ort as any).Tensor("int64", new BigInt64Array([BigInt(uidx)]), [1]);
-      const itemTensor = new (ort as any).Tensor("int64", new BigInt64Array([BigInt(iidx)]), [1]);
+      const feeds: Record<string, ORT.Tensor> = {};
+      const userTensor = new ort.Tensor("int64", new BigInt64Array([BigInt(uidx)]), [1]);
+      const itemTensor = new ort.Tensor("int64", new BigInt64Array([BigInt(iidx)]), [1]);
       feeds["user_idx"] = userTensor;
       feeds["item_idx"] = itemTensor;
       const out = await session.run(feeds);
       // Expect output named 'score'
-      const arr = out[Object.keys(out)[0]].data as Float32Array | number[];
-      const logit = Number((arr as any)[0]);
+      const firstKey = Object.keys(out)[0];
+      const arr = out[firstKey]?.data;
+      if (!arr) throw new Error("推論結果が空です");
+      const logit = Number((arr as Float32Array | number[])[0]);
       setScore(logit);
       setProb(sigmoid(logit));
-    } catch (e: any) {
-      console.error(e);
-      setRunError(e?.message ?? String(e));
+    } catch (error: unknown) {
+      console.error(error);
+      setRunError(error instanceof Error ? error.message : String(error));
     }
   };
 
@@ -202,4 +204,3 @@ function ModelFromUrl({ onLoad, loading }: { onLoad: (url: string) => void; load
     </div>
   );
 }
-
