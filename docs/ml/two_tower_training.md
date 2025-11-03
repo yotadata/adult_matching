@@ -269,6 +269,55 @@ bash scripts/upsert_two_tower/run.sh \
 - 期待動作: `user_embeddings.parquet` / `video_embeddings.parquet` を pgvector テーブルへ upsert し、`two_tower_latest.onnx` などを Storage `models/` バケットへアップロード。
 - 実行ログには処理件数・対象 DB URL（IPv4/プールホストに分解済み）・必要に応じてテーブル再構成の情報が出力される。
 
+## 日次動画埋め込み更新（自動）
+
+新作動画が Supabase `public.videos` に追加された際は、Two‑Tower モデルを再学習せずに「既存モデルで推論した埋め込み」を追加入力するだけでよいケースが多い。この日次バッチでは以下を自動化する。
+
+1. **最新モデル成果物の取得**  
+   `scripts/publish_two_tower/run.sh fetch` が `models/two_tower/latest/manifest.json` を参照し、現在稼働中の ONNX / `.pt` / `model_meta.json` を `ml/artifacts/latest/` にダウンロードする。
+2. **動画メタデータの同期**  
+   `scripts/ingest_fanza/run.sh` を所定の期間（既定: 直近 3 日）で実行し、新着の作品を `videos`・`video_tags`・`video_performers` に upsert する。
+3. **不足動画の埋め込み生成**  
+   `scripts/gen_video_embeddings/run.sh` が Supabase DB から「`videos` に存在するが `video_embeddings` に未登録、または旧 `model_version` のまま」のレコードのみを抽出し、Two‑Tower の item encoder でベクトル化する。出力は `ml/artifacts/live/video_embedding_syncs/<JST-run-id>/video_embeddings.parquet` に保存され、完了後に `upsert_two_tower` が自動起動して差分を反映する。
+
+ハンドオフ用スクリプトとして `scripts/sync_video_embeddings/run.sh` を追加した。基本的な利用例は以下の通り。
+
+```bash
+# 本番相当の環境変数を docker/env/prd.env に準備した状態で
+SYNC_VIDEO_ENV_FILE=docker/env/prd.env \
+SYNC_VIDEO_LOOKBACK_DAYS=3 \
+bash scripts/sync_video_embeddings/run.sh
+
+# 直近1日分だけ FANZA から再取得したい場合
+bash scripts/sync_video_embeddings/run.sh --lookback-days 1
+```
+
+- `--skip-ingest` や `--skip-fetch` を付けると各工程を飛ばせる。`--` 以降の引数は `gen_video_embeddings/run.sh` にそのまま渡される（例: `--skip-upsert`）。
+- `gen_video_embeddings` 単体でも利用可能。`--include-existing` を付けると最新モデルで全動画を再エンコードできる。
+- 生成されたディレクトリには `summary.json` と `model_meta.json` が自動で配置されるため、後段のアップロードや検証に再利用しやすい。
+
+### GitHub Actions による日次運用
+
+`.github/workflows/sync-video-embeddings.yml` を追加し、UTC 18:00（JST 03:00）に上記 3 ステップを実行する。必要な Secrets は以下を想定:
+
+| Secret 名 | 説明 |
+| --- | --- |
+| `SUPABASE_URL` / `SUPABASE_ANON_KEY` | プロジェクト URL と anon key |
+| `SUPABASE_SERVICE_ROLE_KEY` | Storage / DB 書き込み用 |
+| `REMOTE_DATABASE_URL` | pgvector を含む Postgres 接続文字列 |
+| `SUPABASE_PROJECT_REF` / `SUPABASE_REGION` | プール接続を解決するために利用（任意） |
+| `FANZA_API_ID` / `FANZA_API_AFFILIATE_ID` / `FANZA_LINK_AFFILIATE_ID` | ingest 用 FANZA API 認証 |
+
+Secrets を設定した後は手動 `workflow_dispatch` もしくはスケジュール実行で、日次の動画取り込みと埋め込み反映が走る。手動実行時は以下の入力を指定できる（省略可）:
+
+| Input | 役割 |
+| --- | --- |
+| `start_date`, `end_date` | `GTE_RELEASE_DATE` / `LTE_RELEASE_DATE` を直接指定。`YYYY-MM-DD`（JST基準） |
+| `lookback_days` | 日数で指定したい場合に利用（デフォルト 3 日） |
+| `skip_ingest`, `skip_fetch` | FANZA 取得／Storage 取得ステップをスキップするブール値（`true` / `false`） |
+
+ローカルで同じ流れを再現したい場合は上記 `scripts/sync_video_embeddings/run.sh` を利用するだけでよい。
+
 ## GitHub Actions（将来移行の雛形）
 
 以下は学習 → ストレージへモデル配置 →（任意で）埋め込みをDBに反映、までの一例です。実際にはリポジトリにスクリプトを実装した後、このワークフローを `.github/workflows/train_two_tower.yml` として追加します。
