@@ -27,7 +27,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onClose }) => {
     setIsLoading(true);
     try {
       // クライアントで直接ログインし、ブラウザにセッションを保存する
-      const { data: signInData, error } = await supabase.auth.signInWithPassword({
+      const { error } = await supabase.auth.signInWithPassword({
         email: data.email,
         password: data.password,
       });

@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import React from 'react';
 
 export default function MobileDesignPreview() {
@@ -11,14 +12,17 @@ export default function MobileDesignPreview() {
           This page renders <code>docs/sp_design.svg</code> via an internal API for quick review.
         </p>
         <div className="w-full overflow-auto rounded-lg border border-gray-200 bg-white shadow-sm">
-          <img
+          <Image
             src="/api/design/sp"
             alt="Mobile Design SVG"
+            width={1200}
+            height={2400}
             className="w-full h-auto block"
+            priority
+            unoptimized
           />
         </div>
       </div>
     </div>
   );
 }
-

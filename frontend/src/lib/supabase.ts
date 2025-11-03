@@ -23,17 +23,22 @@ try {
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
+type BrowserWindow = typeof window & {
+  __supabase?: ReturnType<typeof createClient>;
+  __supabaseAuthLogged?: boolean;
+};
+
 // Expose client for debugging in the browser (local/dev only)
 try {
   const isBrowser = typeof window !== 'undefined';
   const isDev = process.env.NODE_ENV !== 'production';
   const isLocal = isBrowser && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
   if (isBrowser && isDev && isLocal) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (window as any).__supabase = supabase;
-    if (!(window as any).__supabaseAuthLogged) {
+    const win = window as BrowserWindow;
+    win.__supabase = supabase;
+    if (!win.__supabaseAuthLogged) {
       console.info('[Supabase] __supabase debug client available on window.__supabase');
-      (window as any).__supabaseAuthLogged = true;
+      win.__supabaseAuthLogged = true;
     }
   }
 } catch {}
