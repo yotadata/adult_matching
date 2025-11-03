@@ -13,6 +13,13 @@ if [[ ! -f "$ENV_FILE" ]]; then
   exit 1
 fi
 
+DOCKER_FLAGS=(--rm)
+if [ -t 1 ]; then
+  DOCKER_FLAGS+=(-it)
+else
+  DOCKER_FLAGS+=(-i)
+fi
+
 DOCKER_ENV_ARGS=()
 if [[ "${GTE_RELEASE_DATE:-}" != "" ]]; then
   DOCKER_ENV_ARGS+=(--env "GTE_RELEASE_DATE=${GTE_RELEASE_DATE}")
@@ -24,7 +31,7 @@ if [[ "${INGEST_FANZA_DEBUG:-}" != "" ]]; then
   DOCKER_ENV_ARGS+=(--env "INGEST_FANZA_DEBUG=${INGEST_FANZA_DEBUG}")
 fi
 
-exec docker run --rm -it \
+exec docker run "${DOCKER_FLAGS[@]}" \
   --env-file "$ENV_FILE" \
   --env INGEST_FANZA_ENV_FILE="$ENV_FILE" \
   "${DOCKER_ENV_ARGS[@]}" \
