@@ -24,18 +24,18 @@ try {
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 type BrowserWindow = typeof window & {
-  __supabase?: ReturnType<typeof createClient>;
+  __supabase?: typeof supabase;
   __supabaseAuthLogged?: boolean;
 };
 
 // Expose client for debugging in the browser (local/dev only)
 try {
-  const isBrowser = typeof window !== 'undefined';
-  const isDev = process.env.NODE_ENV !== 'production';
-  const isLocal = isBrowser && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-  if (isBrowser && isDev && isLocal) {
-    const win = window as BrowserWindow;
-    win.__supabase = supabase;
+ const isBrowser = typeof window !== 'undefined';
+ const isDev = process.env.NODE_ENV !== 'production';
+ const isLocal = isBrowser && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+ if (isBrowser && isDev && isLocal) {
+   const win = window as BrowserWindow;
+    win.__supabase = supabase as typeof supabase;
     if (!win.__supabaseAuthLogged) {
       console.info('[Supabase] __supabase debug client available on window.__supabase');
       win.__supabaseAuthLogged = true;
