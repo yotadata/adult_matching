@@ -60,7 +60,6 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--output-dir", type=Path, default=Path("ml/artifacts/live/video_embeddings"), help="Directory to write embeddings.")
     parser.add_argument("--output-name", type=str, default="video_embeddings.parquet", help="Output parquet filename.")
-    parser.add_argument("--since", type=str, default=None, help="Lower bound for product_released_at (ISO date). Interpreted as JST if timezone omitted.")
     parser.add_argument("--limit", type=int, default=None, help="Optional maximum number of videos to encode (for debugging).")
     parser.add_argument(
         "--include-existing",
@@ -123,30 +122,6 @@ def load_reference_item_features(path: Path) -> pd.DataFrame:
             else:
                 df[col] = ""
     return df
-
-
-def _parse_since(value: Optional[str]) -> Optional[datetime]:
-    if not value:
-        return None
-    text = value.strip()
-    if not text:
-        return None
-    if text.endswith("Z"):
-        text = text[:-1] + "+00:00"
-    try:
-        dt = datetime.fromisoformat(text)
-    except ValueError:
-        try:
-            dt = datetime.strptime(text, "%Y-%m-%d")
-        except ValueError as exc:
-            raise ValueError(f"Invalid --since value: {value}") from exc
-    if dt.tzinfo is None:
-        dt = datetime(dt.year, dt.month, dt.day, tzinfo=JST)
-    dt_utc = dt.astimezone(timezone.utc)
-    if dt_utc.time() == datetime.min.time():
-        return dt_utc.date()
-    return dt_utc
-
 
 class FeatureSpace:
     """Utility copied from training script to build consistent categorical/multi-hot encodings."""
@@ -284,7 +259,6 @@ def _ensure_ipv4_hostaddr(conninfo: str, allow_pooler: bool = True) -> str:
 def fetch_target_videos(
     db_url: str,
     *,
-    since: Optional[datetime],
     limit: Optional[int],
     model_version: str,
     include_existing: bool,
@@ -305,12 +279,11 @@ def fetch_target_videos(
         LEFT JOIN public.video_tags vt ON vt.video_id = v.id
         LEFT JOIN public.video_performers vp ON vp.video_id = v.id
         LEFT JOIN public.video_embeddings ve ON ve.video_id = v.id
-        WHERE (%(since)s IS NULL OR v.product_released_at >= %(since)s)
-          AND (
+        WHERE (
             %(include_existing)s
             OR ve.video_id IS NULL
             OR ve.model_version IS NULL
-          OR ve.model_version <> %(model_version)s
+            OR ve.model_version <> %(model_version)s
         )
         GROUP BY v.id, v.source, v.maker, v.label, v.series, v.price, v.product_released_at
         ORDER BY v.product_released_at DESC NULLS LAST, v.id DESC
@@ -319,24 +292,12 @@ def fetch_target_videos(
         "include_existing": include_existing,
         "model_version": model_version,
     }
-    if since is None:
-        params["since"] = None
-        since_type = "none"
-    elif isinstance(since, datetime):
-        params["since"] = since
-        since_type = "datetime"
-    elif isinstance(since, date):
-        params["since"] = datetime.combine(since, datetime.min.time(), tzinfo=timezone.utc)
-        since_type = "date"
-    else:
-        raise TypeError(f"Unsupported type for since: {type(since)}")
     if limit is not None and limit > 0:
         sql = sql + " LIMIT %(limit)s"
         params["limit"] = limit
 
     with psycopg.connect(db_url, row_factory=dict_row) as conn:
         with conn.cursor() as cur:
-            print(json.dumps({"debug": "query_params", "since": params.get("since"), "since_type": since_type}, default=str, ensure_ascii=False))
             cur.execute(sql, params)
             rows = cur.fetchall()
     if not rows:
@@ -492,7 +453,6 @@ def main() -> None:
         )
     )
 
-    since_dt = _parse_since(args.since)
     print(
         json.dumps(
             {
@@ -506,7 +466,6 @@ def main() -> None:
 
     selected_df = fetch_target_videos(
         db_url,
-        since=since_dt,
         limit=args.limit,
         model_version=model_version,
         include_existing=args.include_existing,
@@ -517,7 +476,6 @@ def main() -> None:
             json.dumps(
                 {
                     "event": "no_videos_selected",
-                    "since": since_dt.isoformat() if since_dt else None,
                     "include_existing": args.include_existing,
                 },
                 ensure_ascii=False,
@@ -530,7 +488,6 @@ def main() -> None:
             {
                 "info": "video_candidates",
                 "count": len(selected_df),
-                "since": since_dt.isoformat() if since_dt else None,
                 "include_existing": args.include_existing,
             },
             ensure_ascii=False,
@@ -570,7 +527,6 @@ def main() -> None:
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "run_id": model_version,
         "rows": int(len(embeddings_df)),
-        "since": since_dt.isoformat() if since_dt else None,
         "include_existing": args.include_existing,
     }
     summary_path = args.output_dir / "summary.json"
