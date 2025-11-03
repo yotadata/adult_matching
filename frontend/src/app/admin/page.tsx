@@ -108,7 +108,7 @@ export default function AdminModelTestPage() {
       if (uidx === undefined) throw new Error("user_id がマッピングに存在しません");
       if (iidx === undefined) throw new Error("video_id がマッピングに存在しません");
       // int64 tensors via BigInt64Array
-      const feeds: Record<string, ORT.Tensor> = {};
+      const feeds: Record<string, import("onnxruntime-web").Tensor> = {};
       const userTensor = new ort.Tensor("int64", new BigInt64Array([BigInt(uidx)]), [1]);
       const itemTensor = new ort.Tensor("int64", new BigInt64Array([BigInt(iidx)]), [1]);
       feeds["user_idx"] = userTensor;
@@ -193,7 +193,7 @@ function StatusLine({ loading, ok, error, okText }: { loading: boolean; ok: bool
   return <div className="text-sm text-gray-600">未読み込み</div>;
 }
 
-function ModelFromUrl({ onLoad, loading }: { onLoad: (url: string) => void; loading: boolean }) {
+function ModelFromUrl({ onLoad, loading }: { onLoad: (url: string) => Promise<void> | void; loading: boolean }) {
   const [url, setUrl] = useState("");
   return (
     <div className="flex items-center gap-2">
