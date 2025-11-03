@@ -310,16 +310,23 @@ def fetch_target_videos(
             %(include_existing)s
             OR ve.video_id IS NULL
             OR ve.model_version IS NULL
-            OR ve.model_version <> %(model_version)s
-          )
+          OR ve.model_version <> %(model_version)s
+        )
         GROUP BY v.id, v.source, v.maker, v.label, v.series, v.price, v.product_released_at
         ORDER BY v.product_released_at DESC NULLS LAST, v.id DESC
     """
     params = {
-        "since": since,
         "include_existing": include_existing,
         "model_version": model_version,
     }
+    if since is None:
+        params["since"] = None
+    elif isinstance(since, datetime):
+        params["since"] = since
+    elif isinstance(since, date):
+        params["since"] = since
+    else:
+        raise TypeError(f"Unsupported type for since: {type(since)}")
     if limit is not None and limit > 0:
         sql = sql + " LIMIT %(limit)s"
         params["limit"] = limit
