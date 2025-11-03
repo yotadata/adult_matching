@@ -45,6 +45,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Download Supabase CA certificate
+        run: |
+          mkdir -p docker/env
+          curl -sSLo docker/env/supabase-ca.crt \
+            https://download.supabase.com/storage/v1/object/public/supabase-ca-certs/2021/root.crt
+
       - name: Prepare runtime env file
         run: |
           mkdir -p docker/env
@@ -63,9 +69,9 @@ jobs:
           FANZA_API_AFFILIATE_ID=${FANZA_API_AFFILIATE_ID}
           FANZA_LINK_AFFILIATE_ID=${FANZA_LINK_AFFILIATE_ID}
           PGSSLMODE=require
-          PGSSLROOTCERT=/etc/ssl/certs/ca-certificates.crt
+          PGSSLROOTCERT=docker/env/supabase-ca.crt
           sslmode=require
-          sslrootcert=/etc/ssl/certs/ca-certificates.crt
+          sslrootcert=docker/env/supabase-ca.crt
           EOF
 
       - name: Debug env

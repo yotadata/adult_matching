@@ -74,12 +74,14 @@ Secrets 名はリポジトリ設定（Settings → Secrets and variables → Act
 - **workflow_dispatch inputs**（すべて任意）
   | 入力名 | 説明 | 既定値 |
   | --- | --- | --- |
-  | `start_date` | FANZA 取得範囲の開始日（`YYYY-MM-DD` JST） | 空 |
-  | `end_date` | FANZA 取得範囲の終了日 | 空 |
+| `start_date` | FANZA 取得範囲の開始日（`YYYY-MM-DD` JST） | 空 |
+| `end_date` | FANZA 取得範囲の終了日 | 空 |
 | `lookback_days` | 上記が未指定の場合の取得日数 | `3` |
 | `skip_ingest` | FANZA 取得ステップをスキップするか | `false` |
 | `skip_fetch` | Storage からモデルを取得するステップをスキップするか | `false` |
 | `mode` | `full` (取得+埋め込み) / `embeddings` (埋め込みのみ) | `full` |
+
+> GitHub Actions では Supabase の CA 証明書を都度ダウンロードし、`docker/env/supabase-ca.crt` に配置しています。ローカルで同等の処理を行う場合も同一の CA ファイルを用意し、`PGSSLROOTCERT` をそのパスに設定してください（詳細は `docs/ml/two_tower_training.md` を参照）。
 
 ### 6. その他ワークフロー（例: `cicd-deploy-docs.yml`, `cicd-deploy-db-docs.yml`）
 - それぞれ README / ワークフローコメントに記載されている Secrets を参照してください。  

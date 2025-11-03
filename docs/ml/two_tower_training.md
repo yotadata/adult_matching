@@ -322,6 +322,16 @@ Secrets を設定した後は手動 `workflow_dispatch` もしくはスケジュ
 
 ローカルで同じ流れを再現したい場合は上記 `scripts/sync_video_embeddings/run.sh` を利用するだけでよい。
 
+> Supabase の pooler へ接続する際は、専用の CA 証明書をローカルにも配置してください。以下のコマンドでダウンロードし、`PGSSLROOTCERT` をそのパスに設定してから実行すると安全です。
+
+```bash
+curl -sSLo docker/env/supabase-ca.crt \
+  https://download.supabase.com/storage/v1/object/public/supabase-ca-certs/2021/root.crt
+export PGSSLROOTCERT=docker/env/supabase-ca.crt
+```
+
+GitHub Actions では同証明書を自動で取得し、`.env` の `PGSSLROOTCERT` に設定しています。
+
 #### 6.1 環境変数一覧
 
 sync パイプラインをローカル／CI で実行する際に必要となる主な環境変数の一覧です。`.env` ファイル（例: `docker/env/prd.env`）や GitHub Secrets へ設定してください。
