@@ -1,0 +1,90 @@
+name: Sync Video Embeddings
+
+on:
+  workflow_dispatch:
+    inputs:
+      start_date:
+        description: '開始日（GTE_RELEASE_DATE, YYYY-MM-DD JST 基準）'
+        required: false
+      end_date:
+        description: '終了日（LTE_RELEASE_DATE, YYYY-MM-DD JST 基準）'
+        required: false
+      lookback_days:
+        description: '取得対象日数（指定がない場合は3日）'
+        required: false
+        default: '3'
+      skip_ingest:
+        description: 'FANZA 取得をスキップする'
+        required: false
+        default: 'false'
+      skip_fetch:
+        description: 'Storage からモデルを取得するステップをスキップする'
+        required: false
+        default: 'false'
+  schedule:
+    - cron: '0 18 * * *' # 03:00 JST
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      REMOTE_DATABASE_URL: ${{ secrets.REMOTE_DATABASE_URL }}
+      SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+      SUPABASE_REGION: ${{ secrets.SUPABASE_REGION }}
+      FANZA_API_ID: ${{ secrets.FANZA_API_ID }}
+      FANZA_API_AFFILIATE_ID: ${{ secrets.FANZA_API_AFFILIATE_ID }}
+      FANZA_LINK_AFFILIATE_ID: ${{ secrets.FANZA_LINK_AFFILIATE_ID }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prepare runtime env file
+        run: |
+          mkdir -p docker/env
+          cat <<EOF > docker/env/prd.ci.env
+          NEXT_PUBLIC_SUPABASE_URL=${SUPABASE_URL}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
+          SUPABASE_URL=${SUPABASE_URL}
+          SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+          SUPABASE_SERVICE_ROLE_JWT_AUDIENCE=authenticated
+          REMOTE_DATABASE_URL=${REMOTE_DATABASE_URL}
+          SUPABASE_DB_URL=${REMOTE_DATABASE_URL}
+          SUPABASE_PROJECT_REF=${SUPABASE_PROJECT_REF}
+          SUPABASE_REGION=${SUPABASE_REGION}
+          FANZA_API_ID=${FANZA_API_ID}
+          FANZA_API_AFFILIATE_ID=${FANZA_API_AFFILIATE_ID}
+          FANZA_LINK_AFFILIATE_ID=${FANZA_LINK_AFFILIATE_ID}
+          PGSSLMODE=require
+          PGSSLROOTCERT=/etc/ssl/certs/ca-certificates.crt
+          EOF
+
+      - name: Sync embeddings
+        env:
+          SYNC_VIDEO_ENV_FILE: docker/env/prd.ci.env
+          DEFAULT_LOOKBACK_DAYS: "3"
+          INPUT_LOOKBACK_DAYS: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.lookback_days || '' }}
+          INPUT_START_DATE: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.start_date || '' }}
+          INPUT_END_DATE: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.end_date || '' }}
+          INPUT_SKIP_INGEST: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.skip_ingest || '' }}
+          INPUT_SKIP_FETCH: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.skip_fetch || '' }}
+        run: |
+          LOOKBACK="${INPUT_LOOKBACK_DAYS:-$DEFAULT_LOOKBACK_DAYS}"
+          export SYNC_VIDEO_LOOKBACK_DAYS="$LOOKBACK"
+
+          args=()
+          if [[ "${INPUT_SKIP_INGEST}" == "true" ]]; then
+            args+=(--skip-ingest)
+          fi
+          if [[ "${INPUT_SKIP_FETCH}" == "true" ]]; then
+            args+=(--skip-fetch)
+          fi
+          if [[ -n "${INPUT_START_DATE:-}" ]]; then
+            export GTE_RELEASE_DATE="${INPUT_START_DATE}"
+          fi
+          if [[ -n "${INPUT_END_DATE:-}" ]]; then
+            export LTE_RELEASE_DATE="${INPUT_END_DATE}"
+          fi
+
+          bash scripts/sync_video_embeddings/run.sh "${args[@]}"

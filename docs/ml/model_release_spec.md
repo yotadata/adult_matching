@@ -129,6 +129,7 @@
    - 内部では Service Role Key と Storage REST API を用いて `models/two_tower/<run_id>/` に ONNX / ONNX 付随データ（`.onnx.data` が存在する場合は `.onnx.data.gz` として圧縮）、PT（`.pt.gz`）、`model_meta.json`、`metrics.json`、`summary.md` をアップロードする。  
    - `.onnx.data.gz` / `.pt.gz` はダウンロード後に解凍してから利用する前提（例: `gzip -dc file.pt.gz > file.pt`）。推論側で自動解凍するラッパーを用意しておくと安全。  
    - アップロード後は検証が終わるまで manifest を据え置き、新バージョンが `latest` から参照されない状態を保つ。
+   - 運用チームが最新モデルを取得する場合は `bash scripts/publish_two_tower/run.sh --env-file docker/env/prd.env fetch --dest ml/artifacts/latest` を実行すると、manifest の `current` が指す成果物一式がローカルに展開される。
 
 5. **マニフェスト切り替え（Activate ジョブ）**  
    - 実装済みスクリプト: `bash scripts/publish_two_tower/run.sh --env-file docker/env/prd.env activate --run-id <id>`  

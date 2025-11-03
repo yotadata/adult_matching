@@ -8,6 +8,7 @@ Usage: scripts/publish_two_tower/run.sh [--env-file <path>] [--network <name>] <
 Commands:
   upload     Upload model artifacts to Supabase Storage.
   activate   Update manifest to point at a specific run_id.
+  fetch      Download artifacts referenced by the manifest.
 USAGE
   exit 1
 fi
@@ -30,7 +31,7 @@ while [[ $# -gt 0 ]]; do
       NETWORK="$2"
       shift 2
       ;;
-    upload|activate)
+    upload|activate|fetch)
       POSITIONAL+=("$1")
       shift
       POSITIONAL+=("$@")
@@ -44,7 +45,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 if [[ ${#POSITIONAL[@]} -eq 0 ]]; then
-  echo "Error: command (upload|activate) is required." >&2
+  echo "Error: command (upload|activate|fetch) is required." >&2
   exit 1
 fi
 
