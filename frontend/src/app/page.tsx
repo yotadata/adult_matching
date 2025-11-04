@@ -183,6 +183,8 @@ export default function Home() {
 
   useEffect(() => {
     const { data: authListener } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      console.log(`[DEBUG] onAuthStateChange triggered. Event: ${_event}, Session: ${session ? 'exists' : 'null'}`);
+
       const loggedIn = !!session?.user;
       setIsLoggedIn(loggedIn);
 
