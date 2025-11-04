@@ -86,8 +86,8 @@ export default function Home() {
         const responseData = await response.json();
         console.log('[FETCH TEST] Response data:', responseData);
 
-      } catch (fetchError: any) {
-        if (fetchError.name === 'AbortError') {
+      } catch (fetchError) {
+        if (fetchError instanceof Error && fetchError.name === 'AbortError') {
           console.error('[FETCH TEST] FAILED: Request timed out.');
         } else {
           console.error('[FETCH TEST] FAILED: Uncaught error:', fetchError);
