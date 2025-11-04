@@ -1,6 +1,8 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
-let supabase: SupabaseClient;
+// Initialize with a dummy client to prevent build errors and crashes.
+// This will be overwritten by the real client if env vars are present.
+let supabase: SupabaseClient = createClient('https://dummy.co', 'dummy.key');
 
 console.log('[DEBUG] supabase.ts: Script start');
 
@@ -18,13 +20,11 @@ try {
       supabaseUrl: supabaseUrl ? 'OK' : 'MISSING',
       supabaseAnonKey: supabaseAnonKey ? 'OK' : 'MISSING'
     });
-    // Create a dummy client to avoid crashes, but it will not work
-    supabase = createClient('https://dummy.co', 'dummy.key');
   } else {
-    console.log('[DEBUG] supabase.ts: URL and Key are present. Creating client...');
+    console.log('[DEBUG] supabase.ts: URL and Key are present. Creating real client...');
     console.log(`[DEBUG] supabase.ts: URL = ${supabaseUrl}`);
     supabase = createClient(supabaseUrl, supabaseAnonKey);
-    console.log('[DEBUG] supabase.ts: Supabase client created successfully.');
+    console.log('[DEBUG] supabase.ts: Supabase real client created successfully.');
   }
 
   // Warn in browser if running on HTTPS while Supabase URL is HTTP (blocked mixed content)
@@ -59,10 +59,6 @@ try {
 
 } catch (error) {
   console.error('[DEBUG] supabase.ts: CRITICAL: Uncaught error during supabase client initialization.', error);
-  // Create a dummy client to avoid crashes
-  if (!supabase) {
-    supabase = createClient('https://dummy.co', 'dummy.key');
-  }
 }
 
 export { supabase };
