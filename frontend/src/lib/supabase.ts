@@ -56,10 +56,17 @@ const createSupabaseClient = () => {
   });
 };
 
-// In development, use a global variable to preserve the client across HMR.
-// In production, always create a new client.
-const supabase = process.env.NODE_ENV === 'development'
-  ? (globalThis.__supabase = globalThis.__supabase ?? createSupabaseClient())
-  : createSupabaseClient();
+let supabase: SupabaseClient;
+
+if (typeof window === 'undefined') {
+  // Server-side: always create a new client
+  supabase = createSupabaseClient();
+} else {
+  // Client-side: use a global variable to preserve the client across page navigations
+  if (!globalThis.__supabase) {
+    globalThis.__supabase = createSupabaseClient();
+  }
+  supabase = globalThis.__supabase;
+}
 
 export { supabase };
