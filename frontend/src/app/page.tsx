@@ -111,7 +111,7 @@ export default function Home() {
       setIsFetchingVideos(false);
       console.log('--- [DEBUG] refetchVideos: END ---');
     }
-  }, []); // Empty dependency array for stability during debugging
+  }, [setIsFetchingVideos, setIsLoggedIn, setCards, setActiveIndex]);
 
   useEffect(() => {
     console.log('[DEBUG] Home component: useEffect for refetchVideos is running');
