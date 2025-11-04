@@ -73,7 +73,7 @@ export default function Home() {
         const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
         
         console.log('[FETCH TEST] Calling native fetch...');
-        const response = await fetch(`https://${process.env.NEXT_PUBLIC_SUPABASE_URL}/auth/v1/token?type=session`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/auth/v1/token?type=session`, {
           method: 'POST',
           headers: {
             'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,

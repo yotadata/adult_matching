@@ -1,9 +1,15 @@
 import { createClient } from '@supabase/supabase-js';
 
+const ensureHttps = (url?: string) => {
+  if (!url) return undefined;
+  if (url.startsWith('https://')) return url;
+  return `https://${url}`;
+};
+
 // Use internal URL when running on the server (inside Docker network)
 const isServer = typeof window === 'undefined';
-const publicUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const internalUrl = process.env.SUPABASE_INTERNAL_URL;
+const publicUrl = ensureHttps(process.env.NEXT_PUBLIC_SUPABASE_URL);
+const internalUrl = ensureHttps(process.env.SUPABASE_INTERNAL_URL);
 const supabaseUrl = isServer ? (internalUrl || publicUrl) : publicUrl;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
