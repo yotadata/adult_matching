@@ -43,7 +43,7 @@ const LEFT_SWIPE_GRADIENT = ORIGINAL_GRADIENT;
 const RIGHT_SWIPE_GRADIENT = ORIGINAL_GRADIENT;
 
 export default function Home() {
-  console.log('[DEBUG] Home component: Rendering');
+
   const [cards, setCards] = useState<CardData[]>([]);
   const [activeIndex, setActiveIndex] = useState(0);
   const [isFetchingVideos, setIsFetchingVideos] = useState(false);
@@ -62,27 +62,23 @@ export default function Home() {
     const activeCard = activeIndex < cards.length ? cards[activeIndex] : null;
   
     const refetchVideos = useCallback(async () => {
-      console.log('--- [DEBUG] refetchVideos: START ---');
       try {
         setIsFetchingVideos(true);
   
         // Debugging localStorage content
         if (typeof window !== 'undefined') {
           const supabaseAuthToken = localStorage.getItem('sb-mfleexehdteobgsyokex-auth-token');
-          console.log('[DEBUG] localStorage: sb-mfleexehdteobgsyokex-auth-token =', supabaseAuthToken);
         }
   
         const { data: { session } } = await supabase.auth.getSession();
-        console.log('[DEBUG] refetchVideos: getSession result:', { session });
         const headers: HeadersInit = {};
         if (session?.access_token) headers.Authorization = `Bearer ${session.access_token}`;
         const timeoutMs = 12000;
         const timeoutPromise = new Promise<never>((_, reject) => setTimeout(() => reject(new Error('videos-feed timeout')), timeoutMs));
         const invokePromise = supabase.functions.invoke('videos-feed', { headers, body: {} });
         const { data, error } = await Promise.race([invokePromise, timeoutPromise]);
-        console.log('[DEBUG] refetchVideos: videos-feed invoke result:', { data, error });
         if (error) {
-          console.error('[DEBUG] refetchVideos: Error from videos-feed invoke:', error);
+          console.error('Error from videos-feed invoke:', error);
           return;
         }
         const normalizeHttps = (u?: string) => u?.startsWith('http://') ? u.replace('http://', 'https://') : u;
@@ -111,12 +107,10 @@ export default function Home() {
         });
         setCards(fetchedCards);
         setActiveIndex(0);
-        console.log(`[DEBUG] refetchVideos: Processed ${fetchedCards.length} cards.`);
       } catch (err) {
-        console.error('[DEBUG] refetchVideos: UNCAUGHT ERROR:', err);
+        console.error('UNCAUGHT ERROR:', err);
       } finally {
         setIsFetchingVideos(false);
-        console.log('--- [DEBUG] refetchVideos: END ---');
       }
     }, [setIsFetchingVideos, setCards, setActiveIndex]);
   
@@ -181,7 +175,6 @@ export default function Home() {
   
     useEffect(() => {
       const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
-        console.log(`[DEBUG] onAuthStateChange triggered. Event: ${_event}, Session: ${session ? 'exists' : 'null'}`);
         setIsLoggedIn(!!session?.user);
         setAuthReady(true);
         if (!!session?.user) {
@@ -196,10 +189,8 @@ export default function Home() {
   
     useEffect(() => {
       if (!authReady) {
-        console.log('[DEBUG] Auth not ready, skipping video fetch.');
         return;
       }
-      console.log('[DEBUG] Auth is ready, fetching videos...');
       refetchVideos();
     }, [authReady, refetchVideos]);
   

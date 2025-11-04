@@ -6,7 +6,7 @@ declare global {
 }
 
 const createSupabaseClient = () => {
-  console.log('[DEBUG] createSupabaseClient: Called to create a new instance.');
+
 
   const isServer = typeof window === 'undefined';
   const publicUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -15,7 +15,6 @@ const createSupabaseClient = () => {
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   if (!supabaseUrl || !supabaseAnonKey) {
-    console.error('[DEBUG] supabase.ts: CRITICAL: Supabase URL or Anon Key is missing.');
     // Return a dummy client to avoid crashes, but it will fail on any request.
     return createClient('https://dummy.co', 'dummy.key', { 
       auth: { persistSession: false },
@@ -23,7 +22,7 @@ const createSupabaseClient = () => {
     });
   }
 
-  console.log(`[DEBUG] supabase.ts: Creating new client for URL: ${supabaseUrl}`);
+
 
   return createClient(supabaseUrl, supabaseAnonKey, {
     auth: {
