@@ -80,6 +80,9 @@ export default function Home() {
       const timeoutPromise = new Promise<never>((_, reject) => setTimeout(() => reject(new Error('videos-feed timeout')), timeoutMs));
       const invokePromise = supabase.functions.invoke('videos-feed', { headers, body: {} });
       const { data, error } = await Promise.race([invokePromise, timeoutPromise]);
+
+      console.log('[Home Debug] videos-feed invoke result:', { data, error });
+
       if (error) {
         console.error('[Home Debug] Error from videos-feed invoke or timeout:', error);
         return;
