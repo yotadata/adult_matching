@@ -60,9 +60,17 @@ export default function Home() {
   const activeCard = activeIndex < cards.length ? cards[activeIndex] : null;
 
   const refetchVideos = useCallback(async () => {
+    console.log('[Home Debug] refetchVideos called.');
     try {
       setIsFetchingVideos(true);
-      const { data: { session } } = await supabase.auth.getSession();
+      console.log('[Home Debug] Calling supabase.auth.getSession()');
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      console.log('[Home Debug] getSession result:', { session, sessionError });
+
+      if (sessionError) {
+        console.error('[Home Debug] Error getting session:', sessionError);
+      }
+
       setIsLoggedIn(!!session?.user);
       const headers: HeadersInit = {};
       if (session?.access_token) headers.Authorization = `Bearer ${session.access_token}`;
