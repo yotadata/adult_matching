@@ -24,7 +24,11 @@ const createSupabaseClient = () => {
   }
 
   console.log(`[DEBUG] supabase.ts: Creating new client for URL: ${supabaseUrl}`);
-  return createClient(supabaseUrl, supabaseAnonKey);
+  return createClient(supabaseUrl, supabaseAnonKey, {
+    auth: {
+      autoRefreshToken: false,
+    },
+  });
 };
 
 // In development, use a global variable to preserve the client across HMR.
