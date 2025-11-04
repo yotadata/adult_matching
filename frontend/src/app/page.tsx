@@ -65,7 +65,7 @@ export default function Home() {
       setIsFetchingVideos(true);
       console.log('[Home Debug] Calling supabase.auth.getSession()');
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      console.log('[Home Debug] getSession result:', { session, sessionError });
+      console.log('[Home Debug] getSession result (after await):', { session, sessionError });
 
       if (sessionError) {
         console.error('[Home Debug] Error getting session:', sessionError);
@@ -74,12 +74,14 @@ export default function Home() {
       setIsLoggedIn(!!session?.user);
       const headers: HeadersInit = {};
       if (session?.access_token) headers.Authorization = `Bearer ${session.access_token}`;
+
+      console.log('[Home Debug] Invoking videos-feed function with headers:', headers);
       const timeoutMs = 12000;
       const timeoutPromise = new Promise<never>((_, reject) => setTimeout(() => reject(new Error('videos-feed timeout')), timeoutMs));
       const invokePromise = supabase.functions.invoke('videos-feed', { headers, body: {} });
       const { data, error } = await Promise.race([invokePromise, timeoutPromise]);
       if (error) {
-        console.error('Error refetching videos:', error);
+        console.error('[Home Debug] Error from videos-feed invoke or timeout:', error);
         return;
       }
       const normalizeHttps = (u?: string) => u?.startsWith('http://') ? u.replace('http://', 'https://') : u;
