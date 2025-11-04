@@ -27,6 +27,7 @@ const createSupabaseClient = () => {
   return createClient(supabaseUrl, supabaseAnonKey, {
     auth: {
       autoRefreshToken: false,
+      persistSession: false,
     },
   });
 };
