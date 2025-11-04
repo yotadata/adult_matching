@@ -25,33 +25,10 @@ const createSupabaseClient = () => {
 
   console.log(`[DEBUG] supabase.ts: Creating new client for URL: ${supabaseUrl}`);
 
-  // Custom fetch implementation for Supabase client to log requests
-  const customFetch = async (input: RequestInfo | URL, init?: RequestInit) => {
-    console.log(`--- [DEBUG FETCH] Supabase is calling fetch ---`);
-    let urlString: string;
-    if (typeof input === 'string') {
-      urlString = input;
-    } else if (input instanceof URL) {
-      urlString = input.href;
-    } else {
-      urlString = input.url;
-    }
-    console.log(`[DEBUG FETCH] URL: ${urlString}`);
-    console.log(`[DEBUG FETCH] Options:`, init);
-    
-    // Proceed with the native fetch
-    const response = await fetch(input, init);
-
-    console.log(`[DEBUG FETCH] Response Status: ${response.status}`);
-    return response;
-  };
-
   return createClient(supabaseUrl, supabaseAnonKey, {
     auth: {
-      autoRefreshToken: false,
-    },
-    global: {
-      fetch: customFetch,
+      autoRefreshToken: true,
+      persistSession: true,
     },
   });
 };
