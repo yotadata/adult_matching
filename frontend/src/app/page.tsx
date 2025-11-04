@@ -64,6 +64,13 @@ export default function Home() {
     console.log('--- [DEBUG] refetchVideos: START ---');
     try {
       setIsFetchingVideos(true);
+
+      // Debugging localStorage content
+      if (typeof window !== 'undefined') {
+        const supabaseAuthToken = localStorage.getItem('sb-mfleexehdteobgsyokex-auth-token');
+        console.log('[DEBUG] localStorage: sb-mfleexehdteobgsyokex-auth-token =', supabaseAuthToken);
+      }
+
       const { data: { session } } = await supabase.auth.getSession();
       console.log('[DEBUG] refetchVideos: getSession result:', { session });
       setIsLoggedIn(!!session?.user);
