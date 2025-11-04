@@ -66,6 +66,36 @@ export default function Home() {
     try {
       console.log(`[DEBUG] 1. Browser online status: ${navigator.onLine}`);
 
+      // --- NATIVE FETCH TEST ---
+      console.log('--- [FETCH TEST] START ---');
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+        
+        console.log('[FETCH TEST] Calling native fetch...');
+        const response = await fetch(`https://${process.env.NEXT_PUBLIC_SUPABASE_URL}/auth/v1/token?type=session`, {
+          method: 'POST',
+          headers: {
+            'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+          },
+          signal: controller.signal,
+        });
+        clearTimeout(timeoutId);
+
+        console.log(`[FETCH TEST] Response received. Status: ${response.status}`);
+        const responseData = await response.json();
+        console.log('[FETCH TEST] Response data:', responseData);
+
+      } catch (fetchError: any) {
+        if (fetchError.name === 'AbortError') {
+          console.error('[FETCH TEST] FAILED: Request timed out.');
+        } else {
+          console.error('[FETCH TEST] FAILED: Uncaught error:', fetchError);
+        }
+      }
+      console.log('--- [FETCH TEST] END ---');
+      // --- END OF NATIVE FETCH TEST ---
+
       if (typeof supabase === 'undefined') {
         console.error('[DEBUG] 2. supabase object is UNDEFINED. Aborting.');
         setIsFetchingVideos(false);
