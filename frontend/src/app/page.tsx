@@ -73,7 +73,6 @@ export default function Home() {
 
       const { data: { session } } = await supabase.auth.getSession();
       console.log('[DEBUG] refetchVideos: getSession result:', { session });
-      setIsLoggedIn(!!session?.user);
       const headers: HeadersInit = {};
       if (session?.access_token) headers.Authorization = `Bearer ${session.access_token}`;
       const timeoutMs = 12000;
@@ -118,7 +117,7 @@ export default function Home() {
       setIsFetchingVideos(false);
       console.log('--- [DEBUG] refetchVideos: END ---');
     }
-  }, [setIsFetchingVideos, setIsLoggedIn, setCards, setActiveIndex]);
+  }, [setIsFetchingVideos, setCards, setActiveIndex]);
 
 
 
