@@ -52,160 +52,163 @@ export default function Home() {
   const isMobile = useMediaQuery('(max-width: 639px)');
   const { height: windowHeight } = useWindowSize();
   const [cardWidth, setCardWidth] = useState<number | undefined>(400);
-  const { decisionCount, incrementDecisionCount } = useDecisionCount();
-  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
-  const guestLimit = Number(process.env.NEXT_PUBLIC_GUEST_DECISIONS_LIMIT || 20);
-  const mainRef = useRef<HTMLDivElement | null>(null);
-
-  const videoAspectRatio = 4 / 3;
-  const activeCard = activeIndex < cards.length ? cards[activeIndex] : null;
-
-  const refetchVideos = useCallback(async () => {
-    console.log('--- [DEBUG] refetchVideos: START ---');
-    try {
-      setIsFetchingVideos(true);
-
-      // Debugging localStorage content
-      if (typeof window !== 'undefined') {
-        const supabaseAuthToken = localStorage.getItem('sb-mfleexehdteobgsyokex-auth-token');
-        console.log('[DEBUG] localStorage: sb-mfleexehdteobgsyokex-auth-token =', supabaseAuthToken);
+    const { decisionCount, incrementDecisionCount } = useDecisionCount();
+    const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
+    const [authReady, setAuthReady] = useState<boolean>(false);
+    const guestLimit = Number(process.env.NEXT_PUBLIC_GUEST_DECISIONS_LIMIT || 20);
+    const mainRef = useRef<HTMLDivElement | null>(null);
+  
+    const videoAspectRatio = 4 / 3;
+    const activeCard = activeIndex < cards.length ? cards[activeIndex] : null;
+  
+    const refetchVideos = useCallback(async () => {
+      console.log('--- [DEBUG] refetchVideos: START ---');
+      try {
+        setIsFetchingVideos(true);
+  
+        // Debugging localStorage content
+        if (typeof window !== 'undefined') {
+          const supabaseAuthToken = localStorage.getItem('sb-mfleexehdteobgsyokex-auth-token');
+          console.log('[DEBUG] localStorage: sb-mfleexehdteobgsyokex-auth-token =', supabaseAuthToken);
+        }
+  
+        const { data: { session } } = await supabase.auth.getSession();
+        console.log('[DEBUG] refetchVideos: getSession result:', { session });
+        const headers: HeadersInit = {};
+        if (session?.access_token) headers.Authorization = `Bearer ${session.access_token}`;
+        const timeoutMs = 12000;
+        const timeoutPromise = new Promise<never>((_, reject) => setTimeout(() => reject(new Error('videos-feed timeout')), timeoutMs));
+        const invokePromise = supabase.functions.invoke('videos-feed', { headers, body: {} });
+        const { data, error } = await Promise.race([invokePromise, timeoutPromise]);
+        console.log('[DEBUG] refetchVideos: videos-feed invoke result:', { data, error });
+        if (error) {
+          console.error('[DEBUG] refetchVideos: Error from videos-feed invoke:', error);
+          return;
+        }
+        const normalizeHttps = (u?: string) => u?.startsWith('http://') ? u.replace('http://', 'https://') : u;
+        const fetchedCards: CardData[] = (data as VideoFromApi[]).map((video) => {
+          const fanzaEmbedUrl = `https://www.dmm.co.jp/litevideo/-/part/=/affi_id=${process.env.NEXT_PUBLIC_FANZA_AFFILIATE_ID}/cid=${video.external_id}/size=1280_720/`;
+          const normalizedSampleUrl = normalizeHttps(video.sample_video_url);
+          const normalizedPreviewUrl = normalizeHttps(video.preview_video_url);
+          return {
+            id: video.id,
+            title: video.title,
+            genre: video.tags.map((tag) => tag.name),
+            description: video.description,
+            videoUrl: fanzaEmbedUrl,
+            sampleVideoUrl: normalizedSampleUrl || normalizedPreviewUrl,
+            embedUrl: fanzaEmbedUrl,
+            thumbnail_url: video.thumbnail_url,
+            product_released_at: video.product_released_at,
+            performers: video.performers,
+            tags: video.tags,
+            productUrl: normalizeHttps(video.product_url) || undefined,
+            recommendationSource: video.source ?? null,
+            recommendationScore: typeof video.score === 'number' ? video.score : null,
+            recommendationModelVersion: video.model_version ?? null,
+            recommendationParams: video.params ?? null,
+          };
+        });
+        setCards(fetchedCards);
+        setActiveIndex(0);
+        console.log(`[DEBUG] refetchVideos: Processed ${fetchedCards.length} cards.`);
+      } catch (err) {
+        console.error('[DEBUG] refetchVideos: UNCAUGHT ERROR:', err);
+      } finally {
+        setIsFetchingVideos(false);
+        console.log('--- [DEBUG] refetchVideos: END ---');
       }
-
-      const { data: { session } } = await supabase.auth.getSession();
-      console.log('[DEBUG] refetchVideos: getSession result:', { session });
-      const headers: HeadersInit = {};
-      if (session?.access_token) headers.Authorization = `Bearer ${session.access_token}`;
-      const timeoutMs = 12000;
-      const timeoutPromise = new Promise<never>((_, reject) => setTimeout(() => reject(new Error('videos-feed timeout')), timeoutMs));
-      const invokePromise = supabase.functions.invoke('videos-feed', { headers, body: {} });
-      const { data, error } = await Promise.race([invokePromise, timeoutPromise]);
-      console.log('[DEBUG] refetchVideos: videos-feed invoke result:', { data, error });
-      if (error) {
-        console.error('[DEBUG] refetchVideos: Error from videos-feed invoke:', error);
-        return;
-      }
-      const normalizeHttps = (u?: string) => u?.startsWith('http://') ? u.replace('http://', 'https://') : u;
-      const fetchedCards: CardData[] = (data as VideoFromApi[]).map((video) => {
-        const fanzaEmbedUrl = `https://www.dmm.co.jp/litevideo/-/part/=/affi_id=${process.env.NEXT_PUBLIC_FANZA_AFFILIATE_ID}/cid=${video.external_id}/size=1280_720/`;
-        const normalizedSampleUrl = normalizeHttps(video.sample_video_url);
-        const normalizedPreviewUrl = normalizeHttps(video.preview_video_url);
-        return {
-          id: video.id,
-          title: video.title,
-          genre: video.tags.map((tag) => tag.name),
-          description: video.description,
-          videoUrl: fanzaEmbedUrl,
-          sampleVideoUrl: normalizedSampleUrl || normalizedPreviewUrl,
-          embedUrl: fanzaEmbedUrl,
-          thumbnail_url: video.thumbnail_url,
-          product_released_at: video.product_released_at,
-          performers: video.performers,
-          tags: video.tags,
-          productUrl: normalizeHttps(video.product_url) || undefined,
-          recommendationSource: video.source ?? null,
-          recommendationScore: typeof video.score === 'number' ? video.score : null,
-          recommendationModelVersion: video.model_version ?? null,
-          recommendationParams: video.params ?? null,
-        };
-      });
-      setCards(fetchedCards);
-      setActiveIndex(0);
-      console.log(`[DEBUG] refetchVideos: Processed ${fetchedCards.length} cards.`);
-    } catch (err) {
-      console.error('[DEBUG] refetchVideos: UNCAUGHT ERROR:', err);
-    } finally {
-      setIsFetchingVideos(false);
-      console.log('--- [DEBUG] refetchVideos: END ---');
-    }
-  }, [setIsFetchingVideos, setCards, setActiveIndex]);
-
-
-
-  useEffect(() => {
-    const recalc = () => {
-      if (!isMobile) {
-        const mainH = mainRef.current?.clientHeight;
-        if (mainH && mainH > 0) {
-          const targetVideoHeight = mainH * (3 / 5);
+    }, [setIsFetchingVideos, setCards, setActiveIndex]);
+  
+    useEffect(() => {
+      const recalc = () => {
+        if (!isMobile) {
+          const mainH = mainRef.current?.clientHeight;
+          if (mainH && mainH > 0) {
+            const targetVideoHeight = mainH * (3 / 5);
+            const calculatedCardWidth = targetVideoHeight * videoAspectRatio;
+            setCardWidth(calculatedCardWidth);
+            return;
+          }
+        }
+        if (windowHeight) {
+          const targetVideoHeight = (!isMobile ? windowHeight * (3 / 5) : windowHeight / 2);
           const calculatedCardWidth = targetVideoHeight * videoAspectRatio;
           setCardWidth(calculatedCardWidth);
+        }
+      };
+      recalc();
+    }, [windowHeight, videoAspectRatio, isMobile]);
+  
+    const getGuestDecisions = useCallback((): GuestDecision[] => {
+      try {
+        const raw = typeof window !== 'undefined' ? localStorage.getItem('guest_decisions_v1') : null;
+        const arr = raw ? JSON.parse(raw) : [];
+        return Array.isArray(arr) ? arr : [];
+      } catch {
+        return [];
+      }
+    }, []);
+  
+    const setGuestDecisions = useCallback((arr: GuestDecision[]) => {
+      localStorage.setItem('guest_decisions_v1', JSON.stringify(arr));
+    }, []);
+  
+    const flushGuestDecisions = useCallback(async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const items = getGuestDecisions();
+      if (!items.length) return;
+      const batchSize = 100;
+      for (let i = 0; i < items.length; i += batchSize) {
+        const chunk = items.slice(i, i + batchSize).map((d) => ({
+          user_id: user.id,
+          video_id: d.video_id,
+          decision_type: d.decision_type,
+          recommendation_source: d.recommendation_source ?? null,
+          recommendation_score: d.recommendation_score ?? null,
+          recommendation_model_version: d.recommendation_model_version ?? null,
+          recommendation_params: d.recommendation_params ?? null,
+        }));
+        const { error } = await supabase.from('user_video_decisions').insert(chunk);
+        if (error) {
+          console.error('Error flushing guest decisions:', error);
           return;
         }
       }
-      if (windowHeight) {
-        const targetVideoHeight = (!isMobile ? windowHeight * (3 / 5) : windowHeight / 2);
-        const calculatedCardWidth = targetVideoHeight * videoAspectRatio;
-        setCardWidth(calculatedCardWidth);
-      }
-    };
-    recalc();
-  }, [windowHeight, videoAspectRatio, isMobile]);
-
-  const getGuestDecisions = useCallback((): GuestDecision[] => {
-    try {
-      const raw = typeof window !== 'undefined' ? localStorage.getItem('guest_decisions_v1') : null;
-      const arr = raw ? JSON.parse(raw) : [];
-      return Array.isArray(arr) ? arr : [];
-    } catch {
-      return [];
-    }
-  }, []);
-
-  const setGuestDecisions = useCallback((arr: GuestDecision[]) => {
-    localStorage.setItem('guest_decisions_v1', JSON.stringify(arr));
-  }, []);
-
-  const flushGuestDecisions = useCallback(async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-    const items = getGuestDecisions();
-    if (!items.length) return;
-    const batchSize = 100;
-    for (let i = 0; i < items.length; i += batchSize) {
-      const chunk = items.slice(i, i + batchSize).map((d) => ({
-        user_id: user.id,
-        video_id: d.video_id,
-        decision_type: d.decision_type,
-        recommendation_source: d.recommendation_source ?? null,
-        recommendation_score: d.recommendation_score ?? null,
-        recommendation_model_version: d.recommendation_model_version ?? null,
-        recommendation_params: d.recommendation_params ?? null,
-      }));
-      const { error } = await supabase.from('user_video_decisions').insert(chunk);
-      if (error) {
-        console.error('Error flushing guest decisions:', error);
+      setGuestDecisions([]);
+    }, [getGuestDecisions, setGuestDecisions]);
+  
+    useEffect(() => {
+      const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+        console.log(`[DEBUG] onAuthStateChange triggered. Event: ${_event}, Session: ${session ? 'exists' : 'null'}`);
+        setIsLoggedIn(!!session?.user);
+        setAuthReady(true);
+        if (!!session?.user) {
+          flushGuestDecisions();
+        }
+      });
+  
+      return () => {
+        authListener.subscription.unsubscribe();
+      };
+    }, [flushGuestDecisions]);
+  
+    useEffect(() => {
+      if (!authReady) {
+        console.log('[DEBUG] Auth not ready, skipping video fetch.');
         return;
       }
-    }
-    setGuestDecisions([]);
-  }, [getGuestDecisions, setGuestDecisions]);
-
-  useEffect(() => {
-    const { data: authListener } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      console.log(`[DEBUG] onAuthStateChange triggered. Event: ${_event}, Session: ${session ? 'exists' : 'null'}`);
-
-      const loggedIn = !!session?.user;
-      setIsLoggedIn(loggedIn);
-
-      // Call refetchVideos whenever the auth state is determined.
-      // This ensures the API call is made with the correct user context.
+      console.log('[DEBUG] Auth is ready, fetching videos...');
       refetchVideos();
-
-      if (loggedIn) {
-        await flushGuestDecisions();
-      }
-    });
-    return () => {
-      authListener.subscription.unsubscribe();
-    };
-  }, [flushGuestDecisions, refetchVideos]);
-
-  useEffect(() => {
-    (async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) await flushGuestDecisions();
-    })();
-  }, [flushGuestDecisions]);
+    }, [authReady, refetchVideos]);
+  
+    useEffect(() => {
+      (async () => {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) await flushGuestDecisions();
+      })();
+    }, [flushGuestDecisions]);
 
   const handleSwipe = async (direction: 'left' | 'right') => {
     if (activeCard) {
