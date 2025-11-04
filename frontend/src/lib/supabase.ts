@@ -21,6 +21,12 @@ try {
   }
 } catch {}
 
+console.log(
+  '[Supabase Debug] Initializing client. isServer:', isServer,
+  'URL:', supabaseUrl,
+  'Anon Key (first 8):', supabaseAnonKey?.substring(0, 8)
+);
+
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 type BrowserWindow = typeof window & {
