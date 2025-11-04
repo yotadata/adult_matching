@@ -9,6 +9,7 @@ import { DecisionCountProvider } from '@/hooks/useDecisionCount';
 import PersonalityHeader from '@/components/PersonalityHeader';
 
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
+  console.log('[DEBUG] ClientLayout: Rendering');
   const pathname = usePathname();
   const isPersonalityPage = pathname.startsWith('/personality');
   const isHome = pathname === '/';

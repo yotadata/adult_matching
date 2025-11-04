@@ -43,6 +43,7 @@ const LEFT_SWIPE_GRADIENT = ORIGINAL_GRADIENT;
 const RIGHT_SWIPE_GRADIENT = ORIGINAL_GRADIENT;
 
 export default function Home() {
+  console.log('[DEBUG] Home component: Rendering');
   const [cards, setCards] = useState<CardData[]>([]);
   const [activeIndex, setActiveIndex] = useState(0);
   const [isFetchingVideos, setIsFetchingVideos] = useState(false);
@@ -108,6 +109,7 @@ export default function Home() {
   }, [setIsFetchingVideos, setIsLoggedIn, setCards, setActiveIndex]);
 
   useEffect(() => {
+    console.log('[DEBUG] Home component: useEffect for refetchVideos is running');
     refetchVideos();
   }, [refetchVideos]);
 
