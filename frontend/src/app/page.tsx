@@ -120,10 +120,7 @@ export default function Home() {
     }
   }, [setIsFetchingVideos, setIsLoggedIn, setCards, setActiveIndex]);
 
-  useEffect(() => {
-    console.log('[DEBUG] Home component: useEffect for refetchVideos is running');
-    refetchVideos();
-  }, [refetchVideos]);
+
 
   useEffect(() => {
     const recalc = () => {
@@ -188,6 +185,11 @@ export default function Home() {
     const { data: authListener } = supabase.auth.onAuthStateChange(async (_event, session) => {
       const loggedIn = !!session?.user;
       setIsLoggedIn(loggedIn);
+
+      // Call refetchVideos whenever the auth state is determined.
+      // This ensures the API call is made with the correct user context.
+      refetchVideos();
+
       if (loggedIn) {
         await flushGuestDecisions();
       }
@@ -195,7 +197,7 @@ export default function Home() {
     return () => {
       authListener.subscription.unsubscribe();
     };
-  }, [flushGuestDecisions]);
+  }, [flushGuestDecisions, refetchVideos]);
 
   useEffect(() => {
     (async () => {
