@@ -60,96 +60,20 @@ export default function Home() {
   const activeCard = activeIndex < cards.length ? cards[activeIndex] : null;
 
   const refetchVideos = useCallback(async () => {
-    console.log('--- [DEBUG] refetchVideos: START ---');
-    setIsFetchingVideos(true);
-
     try {
-      console.log(`[DEBUG] 1. Browser online status: ${navigator.onLine}`);
-
-      // --- NATIVE FETCH TEST ---
-      console.log('--- [FETCH TEST] START ---');
-      try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
-        
-        console.log('[FETCH TEST] Calling native fetch...');
-        const response = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/auth/v1/token?type=session`, {
-          method: 'POST',
-          headers: {
-            'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-          },
-          signal: controller.signal,
-        });
-        clearTimeout(timeoutId);
-
-        console.log(`[FETCH TEST] Response received. Status: ${response.status}`);
-        const responseData = await response.json();
-        console.log('[FETCH TEST] Response data:', responseData);
-
-      } catch (fetchError) {
-        if (fetchError instanceof Error && fetchError.name === 'AbortError') {
-          console.error('[FETCH TEST] FAILED: Request timed out.');
-        } else {
-          console.error('[FETCH TEST] FAILED: Uncaught error:', fetchError);
-        }
-      }
-      console.log('--- [FETCH TEST] END ---');
-      // --- END OF NATIVE FETCH TEST ---
-
-      if (typeof supabase === 'undefined') {
-        console.error('[DEBUG] 2. supabase object is UNDEFINED. Aborting.');
-        setIsFetchingVideos(false);
-        return;
-      }
-      console.log('[DEBUG] 2. supabase object exists.');
-
-      if (typeof supabase.auth === 'undefined') {
-        console.error('[DEBUG] 3. supabase.auth object is UNDEFINED. Aborting.');
-        setIsFetchingVideos(false);
-        return;
-      }
-      console.log('[DEBUG] 3. supabase.auth object exists.');
-
-      if (typeof supabase.auth.getSession !== 'function') {
-        console.error('[DEBUG] 4. supabase.auth.getSession is NOT a function. Aborting.');
-        setIsFetchingVideos(false);
-        return;
-      }
-      console.log('[DEBUG] 4. supabase.auth.getSession is a function.');
-
-      console.log('[DEBUG] 5. Calling supabase.auth.getSession()... (awaiting promise)');
-      const sessionPromise = supabase.auth.getSession();
-      const { data: { session }, error: sessionError } = await sessionPromise;
-      console.log('[DEBUG] 6. getSession() promise RESOLVED.');
-      console.log('[DEBUG] 7. Session data:', { session, sessionError });
-
-      if (sessionError) {
-        console.error('[DEBUG] 8. Error detected in getSession() result:', sessionError);
-      }
-
+      setIsFetchingVideos(true);
+      const { data: { session } } = await supabase.auth.getSession();
       setIsLoggedIn(!!session?.user);
       const headers: HeadersInit = {};
-      if (session?.access_token) {
-        headers.Authorization = `Bearer ${session.access_token}`;
-        console.log('[DEBUG] 9. Access token found, setting Authorization header.');
-      } else {
-        console.log('[DEBUG] 9. Access token NOT found.');
-      }
-
-      console.log('[DEBUG] 10. Invoking videos-feed function...');
+      if (session?.access_token) headers.Authorization = `Bearer ${session.access_token}`;
+      const timeoutMs = 12000;
+      const timeoutPromise = new Promise<never>((_, reject) => setTimeout(() => reject(new Error('videos-feed timeout')), timeoutMs));
       const invokePromise = supabase.functions.invoke('videos-feed', { headers, body: {} });
-      const timeoutPromise = new Promise<never>((_, reject) => setTimeout(() => reject(new Error('videos-feed timeout')), 12000));
-      
       const { data, error } = await Promise.race([invokePromise, timeoutPromise]);
-      console.log('[DEBUG] 11. videos-feed invoke result:', { data, error });
-
       if (error) {
-        console.error('[DEBUG] 12. Error from videos-feed invoke or timeout:', error);
-        setIsFetchingVideos(false);
+        console.error('Error refetching videos:', error);
         return;
       }
-
-      console.log('[DEBUG] 13. videos-feed invocation successful. Processing data...');
       const normalizeHttps = (u?: string) => u?.startsWith('http://') ? u.replace('http://', 'https://') : u;
       const fetchedCards: CardData[] = (data as VideoFromApi[]).map((video) => {
         const fanzaEmbedUrl = `https://www.dmm.co.jp/litevideo/-/part/=/affi_id=${process.env.NEXT_PUBLIC_FANZA_AFFILIATE_ID}/cid=${video.external_id}/size=1280_720/`;
@@ -176,13 +100,10 @@ export default function Home() {
       });
       setCards(fetchedCards);
       setActiveIndex(0);
-      console.log(`[DEBUG] 14. Processed and set ${fetchedCards.length} cards.`);
-
     } catch (err) {
-      console.error('--- [DEBUG] refetchVideos: UNCAUGHT ERROR ---', err);
+      console.error('[Home] refetchVideos failed:', err);
     } finally {
       setIsFetchingVideos(false);
-      console.log('--- [DEBUG] refetchVideos: END ---');
     }
   }, [setIsFetchingVideos, setIsLoggedIn, setCards, setActiveIndex]);
 
