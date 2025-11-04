@@ -9,6 +9,10 @@
    - `Ops - ...` : 日常運用で直接実行するワークフロー（手動実行・定期実行）
    - `Sub - ...` : Ops から呼び出される補助ワークフローや内部処理
 3. **ファイル名も `<category>-<description>.yml` とし、検索しやすくする**（例: `ml-sync-video-embeddings.yml`）
+4. **カテゴリとトリガーの対応**
+   - `[AppRelease]` : main へのマージやリリースフローで実行されるワークフロー
+   - `[CiCd]` : push / PR で走るテストやビルド確認のワークフロー
+   - `[ML]`, `[FetchData]` など、用途が明確な専用カテゴリは用途に合わせて定義
 
 ## 現在のワークフロー対応表
 
@@ -21,5 +25,15 @@
 | `.github/workflows/cicd-deploy-db.yml` | `[CiCd] Sub - Deploy DB Migrations` | CiCd / Sub |
 | `.github/workflows/cicd-deploy-docs.yml` | `[CiCd] Sub - Deploy Docs` | CiCd / Sub |
 | `.github/workflows/cicd-deploy-db-docs.yml` | `[CiCd] Sub - Deploy DB Docs` | CiCd / Sub |
+
+### 未整備のワークフロー
+
+以下のワークフローは命名／配置が未確定です。追加・改名する際は本規約に沿って命名し、この一覧を更新してください。
+
+| 想定カテゴリ | 想定ファイル名 | 想定 name | メモ |
+| --- | --- | --- | --- |
+| `[CiCd]` | `cicd-performance-benchmark.yml` | `[CiCd] Ops - Performance Benchmark` | push / PR 時の性能ベンチマークを想定 |
+| `[ML]` | `ml-train-two-tower.yml` | `[ML] Ops - Train Two-Tower` | ML モデル学習パイプライン |
+| `[AppRelease]` | `apprelease-pages-build-deployment.yml` | `[AppRelease] Sub - Pages Build Deployment` | GitHub Pages 自動デプロイ（必要であれば手動ワークフロー化） |
 
 今後ワークフローを追加・改名する場合は、この表を更新しながら命名規約に沿って運用してください。

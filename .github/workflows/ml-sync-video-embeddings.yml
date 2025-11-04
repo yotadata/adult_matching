@@ -21,10 +21,6 @@ on:
         description: 'Storage からモデルを取得するステップをスキップする'
         required: false
         default: 'false'
-      mode:
-        description: '処理モード (full: 取得+埋め込み, embeddings: 埋め込みのみ)'
-        required: false
-        default: 'full'
   schedule:
     - cron: '0 18 * * *' # 03:00 JST
 
@@ -42,8 +38,19 @@ jobs:
       FANZA_API_ID: ${{ secrets.FANZA_API_ID }}
       FANZA_API_AFFILIATE_ID: ${{ secrets.FANZA_API_AFFILIATE_ID }}
       FANZA_LINK_AFFILIATE_ID: ${{ secrets.FANZA_LINK_AFFILIATE_ID }}
+      SUPABASE_CA_CERT: ${{ secrets.SUPABASE_CA_CERT }}
     steps:
       - uses: actions/checkout@v4
+
+      - name: Setup Supabase CA certificate
+        run: |
+          mkdir -p docker/env
+          if [[ -n "${SUPABASE_CA_CERT}" ]]; then
+            echo "${SUPABASE_CA_CERT}" | base64 -d > docker/env/supabase-ca.crt
+            echo "[info] Supabase CA certificate written to docker/env/supabase-ca.crt"
+          else
+            echo "[warn] SUPABASE_CA_CERT secret not set; relying on system CA bundle"
+          fi
 
       - name: Prepare runtime env file
         run: |
@@ -63,10 +70,18 @@ jobs:
           FANZA_API_AFFILIATE_ID=${FANZA_API_AFFILIATE_ID}
           FANZA_LINK_AFFILIATE_ID=${FANZA_LINK_AFFILIATE_ID}
           PGSSLMODE=require
-          PGSSLROOTCERT=/etc/ssl/certs/ca-certificates.crt
-          sslmode=require
-          sslrootcert=/etc/ssl/certs/ca-certificates.crt
           EOF
+          if [[ -f docker/env/supabase-ca.crt ]]; then
+            cat <<EOF >> docker/env/prd.ci.env
+          PGSSLROOTCERT=docker/env/supabase-ca.crt
+          sslmode=require
+          sslrootcert=docker/env/supabase-ca.crt
+          EOF
+          else
+            cat <<EOF >> docker/env/prd.ci.env
+          sslmode=require
+          EOF
+          fi
 
       - name: Debug env
         run: |
@@ -75,6 +90,11 @@ jobs:
           echo "SUPABASE_URL env: ${SUPABASE_URL}"
           echo "NEXT_PUBLIC_SUPABASE_ANON_KEY env set? ${NEXT_PUBLIC_SUPABASE_ANON_KEY:+yes}"
           echo "SUPABASE_ANON_KEY env set? ${SUPABASE_ANON_KEY:+yes}"
+          if [[ -f docker/env/supabase-ca.crt ]]; then
+            echo "Supabase CA cert present"
+          else
+            echo "Supabase CA cert missing"
+          fi
 
       - name: Sync embeddings
         env:
@@ -85,7 +105,6 @@ jobs:
           INPUT_END_DATE: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.end_date || '' }}
           INPUT_SKIP_INGEST: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.skip_ingest || '' }}
           INPUT_SKIP_FETCH: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.skip_fetch || '' }}
-          INPUT_MODE: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.mode || '' }}
         run: |
           LOOKBACK="${INPUT_LOOKBACK_DAYS:-$DEFAULT_LOOKBACK_DAYS}"
           export SYNC_VIDEO_LOOKBACK_DAYS="$LOOKBACK"
@@ -102,11 +121,6 @@ jobs:
           fi
           if [[ -n "${INPUT_END_DATE:-}" ]]; then
             export LTE_RELEASE_DATE="${INPUT_END_DATE}"
-          fi
-
-          if [[ "${INPUT_MODE}" == "embeddings" ]]; then
-            export SYNC_VIDEO_MODE="embeddings"
-            args+=(--mode embeddings)
           fi
 
           bash scripts/sync_video_embeddings/run.sh "${args[@]}"

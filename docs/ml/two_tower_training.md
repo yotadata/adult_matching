@@ -291,10 +291,6 @@ bash scripts/sync_video_embeddings/run.sh
 # 直近1日分だけ FANZA から再取得したい場合
 bash scripts/sync_video_embeddings/run.sh --lookback-days 1
 
-# 埋め込みのみ再実行したい場合（インジェスト済みデータを利用）
-bash scripts/sync_video_embeddings/run.sh --mode embeddings
-```
-
 - `--skip-ingest` や `--skip-fetch` を付けると各工程を飛ばせる。`--` 以降の引数は `gen_video_embeddings/run.sh` にそのまま渡される（例: `--skip-upsert`）。
 - `gen_video_embeddings` 単体でも利用可能。`--include-existing` を付けると最新モデルで全動画を再エンコードできる。
 - 生成されたディレクトリには `summary.json` と `model_meta.json` が自動で配置されるため、後段のアップロードや検証に再利用しやすい。
@@ -321,6 +317,17 @@ Secrets を設定した後は手動 `workflow_dispatch` もしくはスケジュ
 | `mode` | `full`（取得+埋め込み）/ `embeddings`（埋め込みのみ再実行） |
 
 ローカルで同じ流れを再現したい場合は上記 `scripts/sync_video_embeddings/run.sh` を利用するだけでよい。
+
+> Supabase の pooler へ接続する際は、専用の CA 証明書をローカルにも配置してください。以下のコマンドでダウンロードし、`PGSSLROOTCERT` をそのパスに設定してから実行すると安全です。
+
+```bash
+curl -sSLo docker/env/supabase-ca.crt \
+  https://download.supabase.com/storage/v1/object/public/supabase-ca-certs/2021/root.crt
+export PGSSLROOTCERT=docker/env/supabase-ca.crt
+```
+
+GitHub Actions では同証明書を自動で取得し、`.env` の `PGSSLROOTCERT` に設定しています。
+リポジトリに登録する Secrets `SUPABASE_CA_CERT` には、上記 `supabase-ca.crt` を Base64 エンコードした文字列を登録してください（例: `base64 -w0 docker/env/supabase-ca.crt`）。
 
 #### 6.1 環境変数一覧
 
