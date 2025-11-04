@@ -61,9 +61,11 @@ export default function Home() {
   const activeCard = activeIndex < cards.length ? cards[activeIndex] : null;
 
   const refetchVideos = useCallback(async () => {
+    console.log('--- [DEBUG] refetchVideos: START ---');
     try {
       setIsFetchingVideos(true);
       const { data: { session } } = await supabase.auth.getSession();
+      console.log('[DEBUG] refetchVideos: getSession result:', { session });
       setIsLoggedIn(!!session?.user);
       const headers: HeadersInit = {};
       if (session?.access_token) headers.Authorization = `Bearer ${session.access_token}`;
@@ -71,8 +73,9 @@ export default function Home() {
       const timeoutPromise = new Promise<never>((_, reject) => setTimeout(() => reject(new Error('videos-feed timeout')), timeoutMs));
       const invokePromise = supabase.functions.invoke('videos-feed', { headers, body: {} });
       const { data, error } = await Promise.race([invokePromise, timeoutPromise]);
+      console.log('[DEBUG] refetchVideos: videos-feed invoke result:', { data, error });
       if (error) {
-        console.error('Error refetching videos:', error);
+        console.error('[DEBUG] refetchVideos: Error from videos-feed invoke:', error);
         return;
       }
       const normalizeHttps = (u?: string) => u?.startsWith('http://') ? u.replace('http://', 'https://') : u;
@@ -101,12 +104,14 @@ export default function Home() {
       });
       setCards(fetchedCards);
       setActiveIndex(0);
+      console.log(`[DEBUG] refetchVideos: Processed ${fetchedCards.length} cards.`);
     } catch (err) {
-      console.error('[Home] refetchVideos failed:', err);
+      console.error('[DEBUG] refetchVideos: UNCAUGHT ERROR:', err);
     } finally {
       setIsFetchingVideos(false);
+      console.log('--- [DEBUG] refetchVideos: END ---');
     }
-  }, [setIsFetchingVideos, setIsLoggedIn, setCards, setActiveIndex]);
+  }, []); // Empty dependency array for stability during debugging
 
   useEffect(() => {
     console.log('[DEBUG] Home component: useEffect for refetchVideos is running');
