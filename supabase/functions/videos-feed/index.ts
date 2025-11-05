@@ -107,22 +107,17 @@ Deno.serve(async (req) => {
     let adjustedPopularityRatio = POPULARITY_RATIO
 
     if (userId) { // Logged-in user
-      if (decisionCount <= 10) {
-        adjustedPageLimit = 5
-        adjustedExploitationRatio = 0.2 // Less exploitation for new users
+      if (decisionCount <= 50) {
+        adjustedPageLimit = 20
+        adjustedExploitationRatio = 0.4 // Start with a mix of personalization and popularity
         adjustedPopularityRatio = 0.4
-      } else if (decisionCount <= 50) {
-        adjustedPageLimit = 10
-        adjustedExploitationRatio = 0.4
-        adjustedPopularityRatio = 0.3
       } else {
-        // Use default values for highly engaged users
-        adjustedPageLimit = pageLimit
-        adjustedExploitationRatio = EXPLOITATION_RATIO
-        adjustedPopularityRatio = POPULARITY_RATIO
+        adjustedPageLimit = 30 // More videos for engaged users
+        adjustedExploitationRatio = 0.7 // Heavily personalized
+        adjustedPopularityRatio = 0.1
       }
     } else { // Guest user
-      adjustedPageLimit = 10 // Guests get a smaller set
+      adjustedPageLimit = 20 // Guests always get 20
       adjustedExploitationRatio = 0 // No exploitation for guests
       adjustedPopularityRatio = 0.5
     }
