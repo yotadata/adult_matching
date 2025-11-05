@@ -379,6 +379,14 @@ def build_item_vectors(
         bundle.item_space.encode_multi(vec, "performer_ids", _ensure_list(getattr(row, "performer_ids", [])))
         if numeric_matrix.size > 0:
             vec[bundle.item_space.base_dim :] = numeric_matrix[idx]
+        
+        if len(vec) > expected_dim:
+            vec = vec[:expected_dim]
+        elif len(vec) < expected_dim:
+            padded_vec = np.zeros(expected_dim, dtype=np.float32)
+            padded_vec[:len(vec)] = vec
+            vec = padded_vec
+
         vectors[str(getattr(row, "video_id"))] = vec
 
     computed_dim = bundle.item_space.base_dim + numeric_matrix.shape[1]
