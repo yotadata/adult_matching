@@ -67,9 +67,9 @@ export default function AdminModelTestPage() {
       const buf = await resp.arrayBuffer();
       const s = await ort.InferenceSession.create(buf);
       setSession(s);
-    } catch (error: unknown) {
-      console.error(error);
-      setModelError(`URLからのモデル読み込み失敗: ${error instanceof Error ? error.message : String(error)}`);
+    } catch (_error: unknown) {
+      console.error(_error);
+      setModelError(`URLからのモデル読み込み失敗: ${_error instanceof Error ? _error.message : String(_error)}`);
     } finally {
       setModelLoading(false);
     }
@@ -121,9 +121,9 @@ export default function AdminModelTestPage() {
       const logit = Number((arr as Float32Array | number[])[0]);
       setScore(logit);
       setProb(sigmoid(logit));
-    } catch (error: unknown) {
-      console.error(error);
-      setRunError(error instanceof Error ? error.message : String(error));
+    } catch (_error: unknown) {
+      console.error(_error);
+      setRunError(_error instanceof Error ? _error.message : String(_error));
     }
   };
 
