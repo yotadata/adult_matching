@@ -4,6 +4,7 @@ import json
 import os
 import socket
 import sys
+from collections import Counter
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -324,19 +325,35 @@ class ItemFeatureBundle:
     numeric_fields: List[str]
 
 
-def build_item_feature_space(reference_df: pd.DataFrame, *, use_price_feature: bool) -> ItemFeatureBundle:
+def build_item_feature_space(
+    reference_df: pd.DataFrame,
+    *,
+    use_price_feature: bool,
+    max_tag_features: Optional[int],
+    max_performer_features: Optional[int],
+) -> ItemFeatureBundle:
     cat_vocabs = {
         "source": reference_df.get("source", []).astype(str),
         "maker": reference_df.get("maker", []).astype(str),
         "label": reference_df.get("label", []).astype(str),
         "series": reference_df.get("series", []).astype(str),
     }
-    tag_vocab: set[str] = set()
+
+    tag_counter: Counter[str] = Counter()
     for values in reference_df.get("tag_ids", []):
-        tag_vocab.update(_normalize_array(values))
-    performer_vocab: set[str] = set()
+        tag_counter.update(_normalize_array(values))
+    if max_tag_features is not None and max_tag_features > 0:
+        tag_vocab = [tag for tag, _ in tag_counter.most_common(max_tag_features)]
+    else:
+        tag_vocab = sorted(tag_counter)
+
+    performer_counter: Counter[str] = Counter()
     for values in reference_df.get("performer_ids", []):
-        performer_vocab.update(_normalize_array(values))
+        performer_counter.update(_normalize_array(values))
+    if max_performer_features is not None and max_performer_features > 0:
+        performer_vocab = [p for p, _ in performer_counter.most_common(max_performer_features)]
+    else:
+        performer_vocab = sorted(performer_counter)
 
     item_space = FeatureSpace(
         categorical_fields=cat_vocabs,
@@ -424,9 +441,16 @@ def main() -> None:
     user_feature_dim = int(meta["user_feature_dim"])
     item_feature_dim = int(meta["item_feature_dim"])
     use_price_feature = bool(meta.get("use_price_feature", False))
+    max_tag_features = meta.get("max_tag_features")
+    max_performer_features = meta.get("max_performer_features")
 
     reference_df = load_reference_item_features(args.reference_item_features)
-    bundle = build_item_feature_space(reference_df, use_price_feature=use_price_feature)
+    bundle = build_item_feature_space(
+        reference_df,
+        use_price_feature=use_price_feature,
+        max_tag_features=max_tag_features,
+        max_performer_features=max_performer_features,
+    )
 
     print(
         json.dumps(
