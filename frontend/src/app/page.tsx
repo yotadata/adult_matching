@@ -38,6 +38,11 @@ interface GuestDecision {
   recommendation_params?: Record<string, unknown> | null;
 }
 
+interface VideosFeedMetadata {
+  swipes_until_next_embed: number;
+  decision_count: number;
+}
+
 const ORIGINAL_GRADIENT = 'linear-gradient(90deg, #C4C8E3 0%, #D7D1E3 33.333%, #F7D7E0 66.666%, #F9C9D6 100%)';
 const LEFT_SWIPE_GRADIENT = ORIGINAL_GRADIENT;
 const RIGHT_SWIPE_GRADIENT = ORIGINAL_GRADIENT;
@@ -78,7 +83,7 @@ export default function Home() {
           return;
         }
 
-        const responseData = data as { videos: VideoFromApi[], metadata: any };
+        const responseData = data as { videos: VideoFromApi[], metadata: VideosFeedMetadata };
         const fetchedVideos = responseData.videos || [];
         const metadata = responseData.metadata;
 
