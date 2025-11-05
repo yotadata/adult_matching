@@ -498,6 +498,8 @@ def main() -> None:
             "performer_vocab_size": int(len(item_multi_vocab.get("performer_ids", {}))),
             "preferred_tag_vocab_size": int(len(user_multi_vocab.get("preferred_tag_ids", {}))),
             "use_price_feature": cfg.use_price_feature,
+            "max_tag_features": cfg.max_tag_features,
+            "max_performer_features": cfg.max_performer_features,
             "run_id": cfg.run_id,
             "input_schema_version": 1,
             "format": "two_tower.feature_mlp",
