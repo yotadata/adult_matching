@@ -498,6 +498,8 @@ def main() -> None:
             "performer_vocab_size": int(len(item_multi_vocab.get("performer_ids", {}))),
             "preferred_tag_vocab_size": int(len(user_multi_vocab.get("preferred_tag_ids", {}))),
             "use_price_feature": cfg.use_price_feature,
+            "max_tag_features": cfg.max_tag_features,
+            "max_performer_features": cfg.max_performer_features,
             "run_id": cfg.run_id,
             "input_schema_version": 1,
             "format": "two_tower.feature_mlp",
@@ -505,6 +507,17 @@ def main() -> None:
         meta_path = cfg.run_dir / "model_meta.json"
         with meta_path.open("w") as f:
             json.dump(meta, f, ensure_ascii=False, indent=2)
+
+        # Copy item_features.parquet to the run directory
+        shutil.copy(cfg.item_features_path, cfg.run_dir / "item_features.parquet")
+
+        metrics = {
+            "final_val_loss": best_val,
+            "epochs_trained": cfg.epochs,
+        }
+        metrics_path = cfg.run_dir / "metrics.json"
+        with metrics_path.open("w") as f:
+            json.dump(metrics, f, ensure_ascii=False, indent=2)
 
         # Refresh latest snapshot
         if cfg.latest_dir.exists():

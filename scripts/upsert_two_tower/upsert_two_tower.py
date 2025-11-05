@@ -24,9 +24,9 @@ from functools import lru_cache
 @dataclass
 class UpsertResult:
     table: str
-   inserted: int
-   skipped: int
-   dropped: int
+    inserted: int
+    skipped: int
+    dropped: int
 
 
 @lru_cache(maxsize=1)
@@ -592,16 +592,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-def _get_vector_dim(cur: psycopg.Cursor, table: str, column: str) -> int | None:
-    cur.execute(
-        """
-        SELECT NULLIF(atttypmod, -1)
-        FROM pg_attribute
-        WHERE attrelid = %s::regclass
-          AND attname = %s
-          AND NOT attisdropped
-        """,
-        (table, column),
-    )
-    row = cur.fetchone()
-    return row[0] if row else None
