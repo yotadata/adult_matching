@@ -52,6 +52,7 @@ export default function Home() {
   const isMobile = useMediaQuery('(max-width: 639px)');
   const { height: windowHeight } = useWindowSize();
   const [cardWidth, setCardWidth] = useState<number | undefined>(400);
+  const [swipesUntilNextEmbed, setSwipesUntilNextEmbed] = useState<number | null>(null);
     const { decisionCount, incrementDecisionCount } = useDecisionCount();
     const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
     const [authReady, setAuthReady] = useState<boolean>(false);
@@ -65,11 +66,6 @@ export default function Home() {
       try {
         setIsFetchingVideos(true);
   
-        // Debugging localStorage content
-        if (typeof window !== 'undefined') {
-          const supabaseAuthToken = localStorage.getItem('sb-mfleexehdteobgsyokex-auth-token');
-        }
-  
         const { data: { session } } = await supabase.auth.getSession();
         const headers: HeadersInit = {};
         if (session?.access_token) headers.Authorization = `Bearer ${session.access_token}`;
@@ -81,8 +77,17 @@ export default function Home() {
           console.error('Error from videos-feed invoke:', error);
           return;
         }
+
+        const responseData = data as { videos: VideoFromApi[], metadata: any };
+        const fetchedVideos = responseData.videos || [];
+        const metadata = responseData.metadata;
+
+        if (metadata) {
+          setSwipesUntilNextEmbed(metadata.swipes_until_next_embed);
+        }
+
         const normalizeHttps = (u?: string) => u?.startsWith('http://') ? u.replace('http://', 'https://') : u;
-        const fetchedCards: CardData[] = (data as VideoFromApi[]).map((video) => {
+        const fetchedCards: CardData[] = fetchedVideos.map((video) => {
           const fanzaEmbedUrl = `https://www.dmm.co.jp/litevideo/-/part/=/affi_id=${process.env.NEXT_PUBLIC_FANZA_AFFILIATE_ID}/cid=${video.external_id}/size=1280_720/`;
           const normalizedSampleUrl = normalizeHttps(video.sample_video_url);
           const normalizedPreviewUrl = normalizeHttps(video.preview_video_url);
@@ -244,6 +249,30 @@ export default function Home() {
       const current = getGuestDecisions();
       if (current.length >= guestLimit) {
         try { window.dispatchEvent(new Event('open-register-modal')); } catch {}
+      }
+    }
+
+    // Decrement swipe counter and trigger embed-user if it reaches zero
+    if (isLoggedIn && swipesUntilNextEmbed !== null) {
+      const newCount = swipesUntilNextEmbed - 1;
+      setSwipesUntilNextEmbed(newCount);
+
+      if (newCount <= 0) {
+        console.log("Triggering embed-user API call...");
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          supabase.functions.invoke('embed-user', {
+            headers: { Authorization: `Bearer ${session.access_token}` }
+          }).then(({ error }) => {
+            if (error) {
+              console.error("Error calling embed-user:", error.message);
+            } else {
+              console.log("embed-user API call successful.");
+              // Optionally, refetch videos to get the new countdown
+              refetchVideos();
+            }
+          });
+        }
       }
     }
   };
