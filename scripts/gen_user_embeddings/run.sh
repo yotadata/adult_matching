@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-IMAGE=adult-matching-gen-user-embeddings:latest
+IMAGE=adult-matching-gen-video-embeddings:latest
 
-docker build -f scripts/gen_user_embeddings/Dockerfile -t "$IMAGE" .
+docker build --no-cache -f scripts/gen_video_embeddings/Dockerfile -t "$IMAGE" .
 
 DOCKER_FLAGS=(--rm)
 if [ -t 1 ]; then
@@ -12,14 +12,23 @@ else
   DOCKER_FLAGS+=(-i)
 fi
 
-ENV_FILE=${GEN_USER_ENV_FILE:-docker/env/dev.env}
-PY_ARGS=()
-OUTPUT_DIR="ml/artifacts/live"
-OUTPUT_NAME="user_embeddings.parquet"
-MIN_INTERACTIONS=0
+ENV_FILE=${GEN_VIDEO_ENV_FILE:-docker/env/dev.env}
+NETWORK=${GEN_VIDEO_NETWORK:-}
+RUN_ID=${GEN_VIDEO_RUN_ID:-$(
+  python - <<'PY'
+from datetime import datetime, timezone, timedelta
+JST = timezone(timedelta(hours=9))
+print(datetime.now(JST).strftime("%Y%m%d_%H%M%S"))
+PY
+)}
+DEFAULT_OUTPUT_DIR="ml/artifacts/live/video_embeddings/${RUN_ID}"
+OUTPUT_DIR=${GEN_VIDEO_OUTPUT_DIR:-$DEFAULT_OUTPUT_DIR}
+OUTPUT_NAME="video_embeddings.parquet"
 DRY_RUN=false
 SKIP_UPSERT=false
-NETWORK=${GEN_USER_NETWORK:-}
+
+PY_ARGS=(--output-dir "$OUTPUT_DIR" --output-name "$OUTPUT_NAME")
+
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --env-file)
@@ -28,26 +37,17 @@ while [[ $# -gt 0 ]]; do
       ;;
     --output-dir)
       OUTPUT_DIR="$2"
-      PY_ARGS+=("$1" "$2")
+      PY_ARGS+=(--output-dir "$2")
       shift 2
       ;;
     --output-name)
       OUTPUT_NAME="$2"
-      PY_ARGS+=("$1" "$2")
-      shift 2
-      ;;
-    --min-interactions)
-      MIN_INTERACTIONS="$2"
-      PY_ARGS+=("$1" "$2")
+      PY_ARGS+=(--output-name "$2")
       shift 2
       ;;
     --dry-run)
       DRY_RUN=true
-      PY_ARGS+=("$1")
-      shift
-      ;;
-    --no-copy-video-embeddings)
-      PY_ARGS+=("$1")
+      PY_ARGS+=(--dry-run)
       shift
       ;;
     --skip-upsert)
@@ -72,7 +72,7 @@ done
 
 if [[ ! -f "$ENV_FILE" ]]; then
   echo "Environment file not found: $ENV_FILE" >&2
-  echo "Set GEN_USER_ENV_FILE or pass --env-file <path> to a valid env file." >&2
+  echo "Set GEN_VIDEO_ENV_FILE or pass --env-file <path> to a valid env file." >&2
   exit 1
 fi
 
@@ -82,7 +82,6 @@ set -a
 . "$ENV_FILE"
 set +a
 
-# Best effort: append hostaddr to remote URLs to avoid IPv6-only DNS
 if [[ -n "${REMOTE_DATABASE_URL:-}" ]]; then
   ipv4_url=$(python - <<'PY2'
 import os, socket, urllib.parse
@@ -118,28 +117,29 @@ PY2
   fi
 fi
 
-# Persist resolved variables to a temporary env file for docker
 TMP_ENV_FILE=$(mktemp)
 trap 'rm -f "$TMP_ENV_FILE"' EXIT
 
 env_keys=$(grep -E "^[A-Za-z_][A-Za-z0-9_]*=" "$ENV_FILE" | cut -d= -f1)
-filtered_keys=""
+printed=""
 while IFS= read -r key; do
   [[ -z "$key" ]] && continue
-  case " $filtered_keys " in
-    *" $key "*) continue;;
+  case " $printed " in
+    *" $key "*) continue ;;
   esac
-  filtered_keys+=" $key"
+  printed+=" $key"
   if [[ -n ${!key+x} ]]; then
-    printf "%s=%s\n" "$key" "${!key}" >> "$TMP_ENV_FILE"
+    printf "%s=%s\n" "$key" "${!key}" >>"$TMP_ENV_FILE"
   fi
-done <<< "$env_keys"
+done <<<"$env_keys"
+
+mkdir -p "$OUTPUT_DIR"
 
 DOCKER_CMD=(docker run "${DOCKER_FLAGS[@]}")
 if [[ -n "$NETWORK" ]]; then
   DOCKER_CMD+=(--network "$NETWORK")
 fi
-DOCKER_CMD+=(--add-host host.docker.internal:host-gateway --env-file "$TMP_ENV_FILE" -v "$(pwd)":/workspace -w /workspace "$IMAGE" python scripts/gen_user_embeddings/gen_user_embeddings.py)
+DOCKER_CMD+=(--add-host host.docker.internal:host-gateway --env-file "$TMP_ENV_FILE" -v "$(pwd)":/workspace -w /workspace "$IMAGE" python3 /workspace/scripts/gen_user_embeddings/gen_user_embeddings.py "$@")
 if [[ ${#PY_ARGS[@]} -gt 0 ]]; then
   DOCKER_CMD+=("${PY_ARGS[@]}")
 fi
@@ -154,19 +154,13 @@ if [[ "$DRY_RUN" == "true" || "$SKIP_UPSERT" == "true" ]]; then
   exit 0
 fi
 
-UPSERT_ARGS=(--env-file "$ENV_FILE" --artifacts-dir "$OUTPUT_DIR" --include-users)
-
-# Ensure model_meta.json is available alongside generated embeddings (required by upsert)
+# Ensure model_meta is available in output dir for upsert script
 META_SRC="ml/artifacts/latest/model_meta.json"
-META_DST="$OUTPUT_DIR/model_meta.json"
-if [[ -f "$META_SRC" && ! -f "$META_DST" ]]; then
-  mkdir -p "$OUTPUT_DIR"
-  cp "$META_SRC" "$META_DST"
+if [[ -f "$META_SRC" ]]; then
+  cp "$META_SRC" "$OUTPUT_DIR/model_meta.json"
 fi
 
-# When反映済みのユーザー埋め込みを upsert するときは、ここでフィルタリングせずに全件反映する
-UPSERT_ARGS+=(--min-user-interactions "$MIN_INTERACTIONS")
-
+UPSERT_ARGS=(--env-file "$ENV_FILE" --artifacts-dir "$OUTPUT_DIR")
 if [[ -n "$NETWORK" ]]; then
   UPSERT_TT_NETWORK="$NETWORK" bash scripts/upsert_two_tower/run.sh "${UPSERT_ARGS[@]}"
 else
