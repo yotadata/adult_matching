@@ -55,7 +55,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--reference-item-features",
         type=Path,
-        default=Path("ml/data/processed/two_tower/latest/item_features.parquet"),
+        default=Path("ml/artifacts/latest/item_features.parquet"),
         help="Training-time item_features parquet used to rebuild vocabularies.",
     )
     parser.add_argument("--output-dir", type=Path, default=Path("ml/artifacts/live/video_embeddings"), help="Directory to write embeddings.")
@@ -379,14 +379,6 @@ def build_item_vectors(
         bundle.item_space.encode_multi(vec, "performer_ids", _ensure_list(getattr(row, "performer_ids", [])))
         if numeric_matrix.size > 0:
             vec[bundle.item_space.base_dim :] = numeric_matrix[idx]
-        
-        if len(vec) > expected_dim:
-            vec = vec[:expected_dim]
-        elif len(vec) < expected_dim:
-            padded_vec = np.zeros(expected_dim, dtype=np.float32)
-            padded_vec[:len(vec)] = vec
-            vec = padded_vec
-
         vectors[str(getattr(row, "video_id"))] = vec
 
     computed_dim = bundle.item_space.base_dim + numeric_matrix.shape[1]

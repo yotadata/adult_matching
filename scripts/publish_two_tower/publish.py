@@ -164,6 +164,16 @@ def build_upload_plan(
             False,
         )
     )
+    item_features_path = artifacts_dir / "item_features.parquet"
+    if item_features_path.exists():
+        plan.append(
+            (
+                item_features_path,
+                f"{prefix}/{run_id}/item_features.parquet",
+                "application/octet-stream",
+                True,  # Compress parquet file
+            )
+        )
     if summary_path:
         plan.append((summary_path, f"{prefix}/{run_id}/summary.md", "text/markdown", False))
     return plan
@@ -275,6 +285,12 @@ def cmd_activate(args: argparse.Namespace) -> None:
     if onnx_data_path:
         current_entry["onnx_data_path"] = onnx_data_path
 
+    item_features_path = None
+    if (artifacts_dir / "item_features.parquet").exists():
+        item_features_path = f"{artifacts_prefix}/{run_id}/item_features.parquet.gz"
+    if item_features_path:
+        current_entry["item_features_path"] = item_features_path
+
     manifest["model_name"] = args.model_name
     manifest["current"] = current_entry
     manifest["previous"] = previous_entries
@@ -336,6 +352,8 @@ def cmd_fetch(args: argparse.Namespace) -> None:
         downloads.append(("onnx_data_path", "two_tower_latest.onnx.data", True))
     if entry.get("summary_path"):
         downloads.append(("summary_path", "summary.md", False))
+    if entry.get("item_features_path"):
+        downloads.append(("item_features_path", "item_features.parquet", True))
 
     written: List[Dict[str, str]] = []
     for key, filename, decompress in downloads:
