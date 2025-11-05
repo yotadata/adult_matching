@@ -25,8 +25,8 @@ from functools import lru_cache
 class UpsertResult:
     table: str
     inserted: int
-   skipped: int
-   dropped: int
+    skipped: int
+    dropped: int
 
 
 @lru_cache(maxsize=1)
