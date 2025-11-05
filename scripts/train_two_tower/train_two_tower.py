@@ -509,6 +509,14 @@ def main() -> None:
         # Copy item_features.parquet to the run directory
         shutil.copy(cfg.item_features_path, cfg.run_dir / "item_features.parquet")
 
+        metrics = {
+            "final_val_loss": best_val,
+            "epochs_trained": cfg.epochs,
+        }
+        metrics_path = cfg.run_dir / "metrics.json"
+        with metrics_path.open("w") as f:
+            json.dump(metrics, f, ensure_ascii=False, indent=2)
+
         # Refresh latest snapshot
         if cfg.latest_dir.exists():
             shutil.rmtree(cfg.latest_dir)
