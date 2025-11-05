@@ -107,12 +107,12 @@ Deno.serve(async (req) => {
     let adjustedPopularityRatio = POPULARITY_RATIO
 
     if (userId) { // Logged-in user
-      if (decisionCount <= 50) {
+      if (decisionCount <= 100) {
         adjustedPageLimit = 20
-        adjustedExploitationRatio = 0.4 // Start with a mix of personalization and popularity
-        adjustedPopularityRatio = 0.4
+        adjustedExploitationRatio = 0.5 // Increase personalization as the user has shown significant engagement
+        adjustedPopularityRatio = 0.3
       } else {
-        adjustedPageLimit = 30 // More videos for engaged users
+        adjustedPageLimit = 30 // More videos for highly engaged users
         adjustedExploitationRatio = 0.7 // Heavily personalized
         adjustedPopularityRatio = 0.1
       }
