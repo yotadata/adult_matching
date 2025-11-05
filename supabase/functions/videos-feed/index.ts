@@ -262,19 +262,28 @@ Deno.serve(async (req) => {
       }
     }
 
-    const payload = final.slice(0, pageLimit).map((item) => ({
-      ...item,
-      params: {
-        requested_limit: pageLimit,
-        exploitation_ratio: EXPLOITATION_RATIO,
-        popularity_ratio: POPULARITY_RATIO,
-        exploration_ratio: Math.max(0, 1 - EXPLOITATION_RATIO - POPULARITY_RATIO),
-        popularity_lookback_days: popularLookbackDays,
-        exploitation_returned: exploitation.length,
-        popularity_returned: popularity.length,
-        exploration_returned: exploration.length,
+    const remainder = decisionCount % 20
+    const swipes_until_next_embed = 20 - remainder
+
+    const payload = {
+      videos: final.slice(0, adjustedPageLimit).map((item) => ({
+        ...item,
+        params: {
+          requested_limit: adjustedPageLimit,
+          exploitation_ratio: adjustedExploitationRatio,
+          popularity_ratio: adjustedPopularityRatio,
+          exploration_ratio: Math.max(0, 1 - adjustedExploitationRatio - adjustedPopularityRatio),
+          popularity_lookback_days: popularLookbackDays,
+          exploitation_returned: exploitation.length,
+          popularity_returned: popularity.length,
+          exploration_returned: exploration.length,
+        },
+      })),
+      metadata: {
+        swipes_until_next_embed: swipes_until_next_embed,
+        decision_count: decisionCount,
       },
-    }))
+    }
 
     return new Response(JSON.stringify(payload), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
