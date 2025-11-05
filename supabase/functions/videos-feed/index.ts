@@ -82,49 +82,83 @@ Deno.serve(async (req) => {
       global: authHeader ? { headers: { Authorization: authHeader } } : undefined,
     })
 
-    const exploitationTarget = Math.max(1, Math.floor(pageLimit * EXPLOITATION_RATIO))
-    const popularityTarget = Math.max(1, Math.floor(pageLimit * POPULARITY_RATIO))
-    const explorationTarget = Math.max(0, pageLimit - exploitationTarget - popularityTarget)
+    let userId: string | null = null
+    let decisionCount = 0
+
+    if (authHeader) {
+      const { data: userData, error: userError } = await supabase.auth.getUser()
+      if (!userError && userData?.user) {
+        userId = userData.user.id
+        const { count, error: countError } = await supabase
+          .from('user_video_decisions')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', userId)
+        if (countError) {
+          console.error('user_video_decisions count error:', countError.message)
+        } else {
+          decisionCount = count ?? 0
+        }
+      }
+    }
+
+    // Adjust ratios and limit based on user engagement
+    let adjustedPageLimit = pageLimit
+    let adjustedExploitationRatio = EXPLOITATION_RATIO
+    let adjustedPopularityRatio = POPULARITY_RATIO
+
+    if (userId) { // Logged-in user
+      if (decisionCount <= 100) {
+        adjustedPageLimit = 20
+        adjustedExploitationRatio = 0.5 // Increase personalization as the user has shown significant engagement
+        adjustedPopularityRatio = 0.3
+      } else {
+        adjustedPageLimit = 30 // More videos for highly engaged users
+        adjustedExploitationRatio = 0.7 // Heavily personalized
+        adjustedPopularityRatio = 0.1
+      }
+    } else { // Guest user
+      adjustedPageLimit = 20 // Guests always get 20
+      adjustedExploitationRatio = 0 // No exploitation for guests
+      adjustedPopularityRatio = 0.5
+    }
+
+    const exploitationTarget = Math.max(1, Math.floor(adjustedPageLimit * adjustedExploitationRatio))
+    const popularityTarget = Math.max(1, Math.floor(adjustedPageLimit * adjustedPopularityRatio))
+    const explorationTarget = Math.max(0, adjustedPageLimit - exploitationTarget - popularityTarget)
 
     const seen = new Set<string>()
     const exploitation: VideoEntry[] = []
     const popularity: VideoEntry[] = []
     const exploration: VideoEntry[] = []
 
-    let userId: string | null = null
-
-    if (authHeader) {
-      const { data: userData, error: userError } = await supabase.auth.getUser()
-      if (!userError && userData?.user) {
-        userId = userData.user.id
-        const { data: recs, error: recError } = await supabase.rpc('get_videos_recommendations', {
-          user_uuid: userData.user.id,
-          page_limit: Math.max(pageLimit * CANDIDATE_MULTIPLIER, 100),
-        })
-        if (recError) {
-          console.error('get_videos_recommendations error:', recError.message)
-        } else if (recs && recs.length > 0) {
-          const shuffled = shuffle(recs as Record<string, unknown>[]) 
-          for (const item of shuffled) {
-            const id = String(item.id)
-            if (seen.has(id)) continue
-            exploitation.push({
-              id,
-              title: (item.title ?? null) as string | null,
-              description: (item.description ?? null) as string | null,
-              external_id: (item.external_id ?? null) as string | null,
-              thumbnail_url: (item.thumbnail_url ?? null) as string | null,
-              sample_video_url: (item.sample_video_url ?? null) as string | null,
-              product_released_at: (item.product_released_at ?? null) as string | null,
-              performers: item.performers ?? [],
-              tags: item.tags ?? [],
-              score: typeof item.score === 'number' ? item.score : null,
-              model_version: typeof item.model_version === 'string' ? item.model_version : null,
-              source: 'exploitation',
-            })
-            seen.add(id)
-            if (exploitation.length >= exploitationTarget) break
-          }
+    if (userId && adjustedExploitationRatio > 0) {
+      const { data: recs, error: recError } = await supabase.rpc('get_videos_recommendations', {
+        user_uuid: userId,
+        page_limit: Math.max(adjustedPageLimit * CANDIDATE_MULTIPLIER, 100),
+      })
+      if (recError) {
+        console.error('get_videos_recommendations error:', recError.message)
+      } else if (recs && recs.length > 0) {
+        const shuffled = shuffle(recs as Record<string, unknown>[]) 
+        for (const item of shuffled) {
+          const id = String(item.id)
+          if (seen.has(id)) continue
+          exploitation.push({
+            id,
+            title: (item.title ?? null) as string | null,
+            description: (item.description ?? null) as string | null,
+            external_id: (item.external_id ?? null) as string | null,
+            thumbnail_url: (item.thumbnail_url ?? null) as string | null,
+            sample_video_url: (item.sample_video_url ?? null) as string | null,
+            product_released_at: (item.product_released_at ?? null) as string | null,
+            performers: item.performers ?? [],
+            tags: item.tags ?? [],
+            score: typeof item.score === 'number' ? item.score : null,
+            model_version: typeof item.model_version === 'string' ? item.model_version : null,
+            source: 'exploitation',
+          })
+          seen.add(id)
+          if (exploitation.length >= exploitationTarget) break
         }
       }
     }
@@ -228,19 +262,28 @@ Deno.serve(async (req) => {
       }
     }
 
-    const payload = final.slice(0, pageLimit).map((item) => ({
-      ...item,
-      params: {
-        requested_limit: pageLimit,
-        exploitation_ratio: EXPLOITATION_RATIO,
-        popularity_ratio: POPULARITY_RATIO,
-        exploration_ratio: Math.max(0, 1 - EXPLOITATION_RATIO - POPULARITY_RATIO),
-        popularity_lookback_days: popularLookbackDays,
-        exploitation_returned: exploitation.length,
-        popularity_returned: popularity.length,
-        exploration_returned: exploration.length,
+    const remainder = decisionCount % 20
+    const swipes_until_next_embed = 20 - remainder
+
+    const payload = {
+      videos: final.slice(0, adjustedPageLimit).map((item) => ({
+        ...item,
+        params: {
+          requested_limit: adjustedPageLimit,
+          exploitation_ratio: adjustedExploitationRatio,
+          popularity_ratio: adjustedPopularityRatio,
+          exploration_ratio: Math.max(0, 1 - adjustedExploitationRatio - adjustedPopularityRatio),
+          popularity_lookback_days: popularLookbackDays,
+          exploitation_returned: exploitation.length,
+          popularity_returned: popularity.length,
+          exploration_returned: exploration.length,
+        },
+      })),
+      metadata: {
+        swipes_until_next_embed: swipes_until_next_embed,
+        decision_count: decisionCount,
       },
-    }))
+    }
 
     return new Response(JSON.stringify(payload), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
