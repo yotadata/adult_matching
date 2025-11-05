@@ -82,49 +82,88 @@ Deno.serve(async (req) => {
       global: authHeader ? { headers: { Authorization: authHeader } } : undefined,
     })
 
-    const exploitationTarget = Math.max(1, Math.floor(pageLimit * EXPLOITATION_RATIO))
-    const popularityTarget = Math.max(1, Math.floor(pageLimit * POPULARITY_RATIO))
-    const explorationTarget = Math.max(0, pageLimit - exploitationTarget - popularityTarget)
+    let userId: string | null = null
+    let decisionCount = 0
+
+    if (authHeader) {
+      const { data: userData, error: userError } = await supabase.auth.getUser()
+      if (!userError && userData?.user) {
+        userId = userData.user.id
+        const { count, error: countError } = await supabase
+          .from('user_video_decisions')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', userId)
+        if (countError) {
+          console.error('user_video_decisions count error:', countError.message)
+        } else {
+          decisionCount = count ?? 0
+        }
+      }
+    }
+
+    // Adjust ratios and limit based on user engagement
+    let adjustedPageLimit = pageLimit
+    let adjustedExploitationRatio = EXPLOITATION_RATIO
+    let adjustedPopularityRatio = POPULARITY_RATIO
+
+    if (userId) { // Logged-in user
+      if (decisionCount <= 10) {
+        adjustedPageLimit = 5
+        adjustedExploitationRatio = 0.2 // Less exploitation for new users
+        adjustedPopularityRatio = 0.4
+      } else if (decisionCount <= 50) {
+        adjustedPageLimit = 10
+        adjustedExploitationRatio = 0.4
+        adjustedPopularityRatio = 0.3
+      } else {
+        // Use default values for highly engaged users
+        adjustedPageLimit = pageLimit
+        adjustedExploitationRatio = EXPLOITATION_RATIO
+        adjustedPopularityRatio = POPULARITY_RATIO
+      }
+    } else { // Guest user
+      adjustedPageLimit = 10 // Guests get a smaller set
+      adjustedExploitationRatio = 0 // No exploitation for guests
+      adjustedPopularityRatio = 0.5
+    }
+
+    const exploitationTarget = Math.max(1, Math.floor(adjustedPageLimit * adjustedExploitationRatio))
+    const popularityTarget = Math.max(1, Math.floor(adjustedPageLimit * adjustedPopularityRatio))
+    const explorationTarget = Math.max(0, adjustedPageLimit - exploitationTarget - popularityTarget)
 
     const seen = new Set<string>()
     const exploitation: VideoEntry[] = []
     const popularity: VideoEntry[] = []
     const exploration: VideoEntry[] = []
 
-    let userId: string | null = null
-
-    if (authHeader) {
-      const { data: userData, error: userError } = await supabase.auth.getUser()
-      if (!userError && userData?.user) {
-        userId = userData.user.id
-        const { data: recs, error: recError } = await supabase.rpc('get_videos_recommendations', {
-          user_uuid: userData.user.id,
-          page_limit: Math.max(pageLimit * CANDIDATE_MULTIPLIER, 100),
-        })
-        if (recError) {
-          console.error('get_videos_recommendations error:', recError.message)
-        } else if (recs && recs.length > 0) {
-          const shuffled = shuffle(recs as Record<string, unknown>[]) 
-          for (const item of shuffled) {
-            const id = String(item.id)
-            if (seen.has(id)) continue
-            exploitation.push({
-              id,
-              title: (item.title ?? null) as string | null,
-              description: (item.description ?? null) as string | null,
-              external_id: (item.external_id ?? null) as string | null,
-              thumbnail_url: (item.thumbnail_url ?? null) as string | null,
-              sample_video_url: (item.sample_video_url ?? null) as string | null,
-              product_released_at: (item.product_released_at ?? null) as string | null,
-              performers: item.performers ?? [],
-              tags: item.tags ?? [],
-              score: typeof item.score === 'number' ? item.score : null,
-              model_version: typeof item.model_version === 'string' ? item.model_version : null,
-              source: 'exploitation',
-            })
-            seen.add(id)
-            if (exploitation.length >= exploitationTarget) break
-          }
+    if (userId && adjustedExploitationRatio > 0) {
+      const { data: recs, error: recError } = await supabase.rpc('get_videos_recommendations', {
+        user_uuid: userId,
+        page_limit: Math.max(adjustedPageLimit * CANDIDATE_MULTIPLIER, 100),
+      })
+      if (recError) {
+        console.error('get_videos_recommendations error:', recError.message)
+      } else if (recs && recs.length > 0) {
+        const shuffled = shuffle(recs as Record<string, unknown>[]) 
+        for (const item of shuffled) {
+          const id = String(item.id)
+          if (seen.has(id)) continue
+          exploitation.push({
+            id,
+            title: (item.title ?? null) as string | null,
+            description: (item.description ?? null) as string | null,
+            external_id: (item.external_id ?? null) as string | null,
+            thumbnail_url: (item.thumbnail_url ?? null) as string | null,
+            sample_video_url: (item.sample_video_url ?? null) as string | null,
+            product_released_at: (item.product_released_at ?? null) as string | null,
+            performers: item.performers ?? [],
+            tags: item.tags ?? [],
+            score: typeof item.score === 'number' ? item.score : null,
+            model_version: typeof item.model_version === 'string' ? item.model_version : null,
+            source: 'exploitation',
+          })
+          seen.add(id)
+          if (exploitation.length >= exploitationTarget) break
         }
       }
     }
