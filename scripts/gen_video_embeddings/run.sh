@@ -3,7 +3,7 @@ set -euo pipefail
 
 IMAGE=adult-matching-gen-video-embeddings:latest
 
-docker build -f scripts/gen_video_embeddings/Dockerfile -t "$IMAGE" .
+docker build --no-cache -f scripts/gen_video_embeddings/Dockerfile -t "$IMAGE" .
 
 DOCKER_FLAGS=(--rm)
 if [ -t 1 ]; then
