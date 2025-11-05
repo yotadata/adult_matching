@@ -506,6 +506,9 @@ def main() -> None:
         with meta_path.open("w") as f:
             json.dump(meta, f, ensure_ascii=False, indent=2)
 
+        # Copy item_features.parquet to the run directory
+        shutil.copy(cfg.item_features_path, cfg.run_dir / "item_features.parquet")
+
         # Refresh latest snapshot
         if cfg.latest_dir.exists():
             shutil.rmtree(cfg.latest_dir)
