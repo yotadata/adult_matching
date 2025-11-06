@@ -80,7 +80,7 @@ export default function AdminModelTestPage() {
       const txt = await file.text();
       const obj = JSON.parse(txt);
       setUserMap(obj);
-    } catch (error: unknown) {
+    } catch {
       alert("user_id_map.json の読み込みに失敗しました");
     }
   };
@@ -90,7 +90,7 @@ export default function AdminModelTestPage() {
       const txt = await file.text();
       const obj = JSON.parse(txt);
       setItemMap(obj);
-    } catch (error: unknown) {
+    } catch {
       alert("item_id_map.json の読み込みに失敗しました");
     }
   };
