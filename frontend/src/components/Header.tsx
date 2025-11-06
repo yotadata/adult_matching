@@ -110,9 +110,9 @@ const Header = ({ cardWidth, mobileGauge }: { cardWidth: number | undefined; mob
     setAuthChecked(true);
     toast.success('ログアウトしました');
     try { forceClearSupabaseAuth(); } catch {}
-    try { router.push('/'); } catch {}
+    try { router.push('/swipe'); } catch {}
     try { router.refresh(); } catch {}
-    try { setTimeout(() => { if (typeof window !== 'undefined') window.location.assign('/'); }, 100); } catch {}
+    try { setTimeout(() => { if (typeof window !== 'undefined') window.location.assign('/swipe'); }, 100); } catch {}
   };
 
   return (
@@ -134,7 +134,7 @@ const Header = ({ cardWidth, mobileGauge }: { cardWidth: number | undefined; mob
               <div className="grid grid-cols-3 items-center text-white">
                 <div />
                 <div className="flex justify-center">
-                  <Link href="/" aria-label="ホームへ移動" className="inline-flex">
+                  <Link href="/swipe" aria-label="ホームへ移動" className="inline-flex">
                     <Image
                       src="/seiheki_lab.png"
                       alt="Seiheki Lab Logo"
@@ -162,7 +162,7 @@ const Header = ({ cardWidth, mobileGauge }: { cardWidth: number | undefined; mob
               // 未ログイン時: 左寄せロゴ＋右端ログインボタン
               <div className="grid grid-cols-3 items-center text-white">
                 <div className="flex justify-start">
-                  <Link href="/" aria-label="ホームへ移動" className="inline-flex">
+                  <Link href="/swipe" aria-label="ホームへ移動" className="inline-flex">
                     <Image
                       src="/seiheki_lab.png"
                       alt="Seiheki Lab Logo"
@@ -210,7 +210,7 @@ const Header = ({ cardWidth, mobileGauge }: { cardWidth: number | undefined; mob
                           </div>
                           <div className="flex-1 flex flex-col">
                             <div className="flex-1 flex flex-col divide-y divide-gray-200 overflow-y-auto">
-                              <button className="w-full flex items-center gap-3 text-left px-4 py-3 text-gray-800 hover:bg-gray-100" onClick={() => { setIsMenuDrawerOpen(false); router.push('/'); }}>
+                              <button className="w-full flex items-center gap-3 text-left px-4 py-3 text-gray-800 hover:bg-gray-100" onClick={() => { setIsMenuDrawerOpen(false); router.push('/swipe'); }}>
                                 <HomeIcon size={18} />
                                 <span>ホーム画面</span>
                               </button>
@@ -260,7 +260,7 @@ const Header = ({ cardWidth, mobileGauge }: { cardWidth: number | undefined; mob
           <div className="grid grid-cols-3 items-center text-white">
             <div />
             <div className="flex justify-center">
-              <Link href="/" aria-label="ホームへ移動" className="inline-flex">
+              <Link href="/swipe" aria-label="ホームへ移動" className="inline-flex">
                 <Image
                   src="/seiheki_lab.png"
                   alt="Seiheki Lab Logo"
