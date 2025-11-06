@@ -50,3 +50,4 @@
 - 互換性: Realtime（Ecto）は `public.schema_migrations(version, inserted_at)` を期待する。
   - 他ツールにより `public.schema_migrations(version)` のみが存在する場合、`003-fix-ecto-schema-migrations.sql` で `inserted_at` を自動追加する。
   - 既存データは保持される（`inserted_at` は `now()` で補完）。
+- マイグレーション方針: 既存のマイグレーションファイルは変更しない。修正が必要な場合は新しいマイグレーションを追加して対応する。
