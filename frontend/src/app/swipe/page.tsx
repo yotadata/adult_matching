@@ -10,6 +10,7 @@ import { supabase } from "@/lib/supabase";
 import { trackEvent, generateSessionId } from "@/lib/analytics";
 import { ThumbsDown, Heart, List } from "lucide-react";
 import { useDecisionCount } from "@/hooks/useDecisionCount";
+import { toast } from "react-hot-toast";
 
 interface VideoFromApi {
   id: number;
@@ -47,6 +48,30 @@ interface VideosFeedMetadata {
 const ORIGINAL_GRADIENT = 'linear-gradient(90deg, #C4C8E3 0%, #D7D1E3 33.333%, #F7D7E0 66.666%, #F9C9D6 100%)';
 const LEFT_SWIPE_GRADIENT = ORIGINAL_GRADIENT;
 const RIGHT_SWIPE_GRADIENT = ORIGINAL_GRADIENT;
+const SWIPE_QUEUE_KEY = 'ai_rec_pending_swipe';
+
+type PendingSwipeItem = {
+  id?: string | number;
+  title?: string;
+  thumbnail_url?: string;
+  sample_video_url?: string;
+  preview_video_url?: string;
+  product_url?: string;
+  product_released_at?: string;
+  performers?: { id: string; name: string }[];
+  tags?: { id: string; name: string }[];
+  section_id?: string;
+  reason?: string;
+};
+
+const hashToNumber = (value: string): number => {
+  let hash = 0;
+  for (let i = 0; i < value.length; i += 1) {
+    hash = ((hash << 5) - hash) + value.charCodeAt(i);
+    hash |= 0;
+  }
+  return Math.abs(hash);
+};
 
 export default function Home() {
 
@@ -72,8 +97,65 @@ export default function Home() {
   const samplePlayCountRef = useRef<number>(0);
   const previousCardRef = useRef<CardData | null>(null);
   const currentPositionRef = useRef<number>(0);
+  const pendingQueueRef = useRef<CardData[] | null>(null);
+  const [queueApplied, setQueueApplied] = useState<boolean>(false);
 
   const toIsoString = useCallback((ms: number | null) => (ms != null ? new Date(ms).toISOString() : undefined), []);
+
+  const loadPendingQueue = useCallback(() => {
+    if (typeof window === 'undefined') return false;
+    if (queueApplied) return false;
+    const raw = window.localStorage.getItem(SWIPE_QUEUE_KEY);
+    if (!raw) return false;
+    try {
+      const payload = JSON.parse(raw) as { items?: PendingSwipeItem[] };
+      const items: PendingSwipeItem[] = Array.isArray(payload?.items) ? payload.items as PendingSwipeItem[] : [];
+      if (!items.length) return false;
+      const converted: CardData[] = items.map((item) => {
+        const idSource = item.id ?? (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : String(Date.now()));
+        const numericId = typeof idSource === 'number' ? idSource : hashToNumber(String(idSource));
+        const tags = Array.isArray(item.tags) ? item.tags : [];
+        const performers = Array.isArray(item.performers) ? item.performers : [];
+        return {
+          id: numericId,
+          title: item.title ?? 'タイトル未設定',
+          genre: tags.map((tag: { name?: string }) => tag?.name ?? '').filter((name: string) => name),
+          description: '',
+          videoUrl: item.sample_video_url ?? item.preview_video_url ?? '',
+          thumbnail_url: item.thumbnail_url ?? '',
+          sampleVideoUrl: item.sample_video_url ?? undefined,
+          embedUrl: item.sample_video_url ?? item.preview_video_url ?? undefined,
+          performers,
+          tags,
+          product_released_at: item.product_released_at ?? undefined,
+          productUrl: item.product_url ?? undefined,
+          recommendationSource: 'ai_concierge',
+          recommendationScore: null,
+          recommendationModelVersion: null,
+          recommendationParams: {
+            origin_video_id: item.id ?? null,
+            section_id: item.section_id ?? null,
+            reason: item.reason ?? null,
+          },
+        };
+      }).filter((card: CardData) => card.videoUrl);
+      if (!converted.length) return false;
+      pendingQueueRef.current = converted;
+      setCards(converted);
+      setActiveIndex(0);
+      setQueueApplied(true);
+      window.localStorage.removeItem(SWIPE_QUEUE_KEY);
+      toast.success('AIコンシェルジュからの候補を読み込みました');
+      return true;
+    } catch (error) {
+      console.error('[swipe] pending queue parse error:', error);
+      return false;
+    }
+  }, [queueApplied]);
+
+  useEffect(() => {
+    loadPendingQueue();
+  }, [loadPendingQueue]);
 
   const videoAspectRatio = 4 / 3;
   const activeCard = activeIndex < cards.length ? cards[activeIndex] : null;
@@ -246,7 +328,14 @@ export default function Home() {
           recommendationParams: video.params ?? null,
         };
       });
-      setCards(fetchedCards);
+      let combinedCards = fetchedCards;
+      if (pendingQueueRef.current && pendingQueueRef.current.length) {
+        const pendingIds = new Set(pendingQueueRef.current.map((card) => card.id));
+        const dedupedFetched = fetchedCards.filter((card) => !pendingIds.has(card.id));
+        combinedCards = [...pendingQueueRef.current, ...dedupedFetched];
+        pendingQueueRef.current = null;
+      }
+      setCards(combinedCards);
       setActiveIndex(0);
 
       trackEvent('recommend_fetch', {
