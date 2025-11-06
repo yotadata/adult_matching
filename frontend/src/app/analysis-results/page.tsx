@@ -327,15 +327,15 @@ export default function AnalysisResultsPage() {
                 </div>
               ) : (
                 <div className="overflow-x-auto">
-                  <table className="min-w-full table-fixed border-separate border-spacing-y-2 text-sm text-gray-700">
+                  <table className="w-full table-fixed border-separate border-spacing-y-2 text-sm text-gray-700">
                     <thead>
                       <tr className="text-xs uppercase tracking-wide text-gray-500">
-                        <th className="px-3 py-2 text-left font-semibold w-[220px]">作品</th>
-                        <th className="px-3 py-2 text-left font-semibold w-[80px]">判断</th>
-                        <th className="px-3 py-2 text-left font-semibold w-[170px]">タグ</th>
-                        <th className="px-3 py-2 text-left font-semibold w-[170px]">出演者</th>
-                        <th className="px-3 py-2 text-left font-semibold w-[120px]">決定日</th>
-                        <th className="px-3 py-2 text-left font-semibold">操作</th>
+                        <th className="px-3 py-2 text-left font-semibold w-[32%]">作品</th>
+                        <th className="px-3 py-2 text-left font-semibold w-[12%]">判断</th>
+                        <th className="px-3 py-2 text-left font-semibold w-[20%]">タグ</th>
+                        <th className="px-3 py-2 text-left font-semibold w-[20%]">出演者</th>
+                        <th className="px-3 py-2 text-left font-semibold w-[12%]">決定日</th>
+                        <th className="px-3 py-2 text-left font-semibold w-[8%]">操作</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -387,7 +387,7 @@ export default function AnalysisResultsPage() {
                           <td className="px-3 py-3 align-top text-xs text-gray-600">
                             {formatDate(item.decided_at)}
                           </td>
-                          <td className="px-3 py-3 align-top">
+                          <td className="px-3 py-3 align-top min-w-[110px]">
                             {item.product_url ? (
                               <button
                                 onClick={() => handleOpenProduct(item.product_url)}
