@@ -56,19 +56,19 @@ Google Analytics (GA4) を用いたトラッキング方針と実装手順を整
 
 2. **サンプル再生**  
    - `SwipeCard` のプレビューオーバーレイクリック時に `recommend_sample_play` を送信。  
-   - パラメータ: `session_id`, `video_id`, `source`, `position`, `elapsed_ms = Date.now() - sessionStartAt`, `sample_type`（`sample`/`embed`）、`play_count_in_session`, `surface`, `has_session`。
+   - パラメータ: `session_id`, `video_id`, `source`, `position`, `session_started_at`, `sample_play_at`, `sample_type`（`sample`/`embed`）、`play_count_in_session`, `surface`, `has_session`。
 
 3. **判断操作**  
    - LIKE/NOPE ボタン（またはスワイプ完了処理）で `recommend_decision` を送信。  
-   - パラメータ: `session_id`, `video_id`, `decision_type` (`like`/`nope`), `source`, `position`, `elapsed_ms`, `sample_played`（セッション中に `recommend_sample_play` が送信済みかどうか）、`sample_elapsed_ms`, `sample_play_count`, `has_session`。
+   - パラメータ: `session_id`, `video_id`, `decision_type` (`like`/`nope`), `source`, `position`, `session_started_at`, `decision_at`, `sample_played`, `sample_last_play_at`, `sample_play_count`, `has_session`。
 
-4. **セッション完了**  
-   - 上記の判断後に `recommend_session_complete` を送信し、`session_id`, `video_id`, `decision_type`, `total_elapsed_ms = Date.now() - sessionStartAt`, `sample_play_count`, `sample_elapsed_ms`, `has_session` を含める。  
-   - 判断を行わずにページを離脱した場合は `useEffect` の `return`（アンマウント時）や `visibilitychange` で `recommend_session_abandon` を送信し、`elapsed_ms`, `sample_play_count`, `has_session` などを記録する。
+4. **セッション完了 / 離脱**  
+   - 判断後に `recommend_session_complete` を送信し、`session_id`, `video_id`, `decision_type`, `session_started_at`, `session_completed_at`, `sample_play_count`, `sample_last_play_at`, `has_session` を含める。  
+   - 判断を行わずにページ離脱した場合は `recommend_session_abandon` を送信し、`session_id`, `video_id`, `session_started_at`, `session_abandoned_at`, `sample_play_count`, `has_session` などを記録する。
 
 5. **レポート作成**  
-   - GA4 では `elapsed_ms` / `total_elapsed_ms` をカスタムメトリクスとして登録する。  
-   - 「サンプル再生実施の有無 × 判断種別」で滞在時間や完了率を比較できるよう、探索レポートを作成する。
+   - GA4 側で `session_started_at`, `sample_play_at`, `decision_at`, `session_completed_at` などのタイムスタンプを基に、探索レポート上で滞在時間や完了率を算出する。  
+   - 「サンプル再生実施の有無 × 判断種別」で滞在時間・完了率を比較するビューを用意しておく。
 
 ## 計測イベント追加手順
 

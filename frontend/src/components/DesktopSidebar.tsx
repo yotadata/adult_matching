@@ -46,9 +46,9 @@ export default function DesktopSidebar() {
     }
     setIsLoggedIn(false);
     try { forceClearSupabaseAuth(); } catch {}
-    try { router.push('/'); } catch {}
+    try { router.push('/swipe'); } catch {}
     try { router.refresh(); } catch {}
-    try { setTimeout(() => { if (typeof window !== 'undefined') window.location.assign('/'); }, 100); } catch {}
+    try { setTimeout(() => { if (typeof window !== 'undefined') window.location.assign('/swipe'); }, 100); } catch {}
   };
 
   const NavButton = ({
@@ -110,7 +110,7 @@ export default function DesktopSidebar() {
       <div className="h-full flex flex-col">
         <div className="px-4 py-4 border-b border-white/30">
           <div className="flex items-center gap-2">
-            <Link href="/" aria-label="ホームへ移動" className="inline-flex">
+            <Link href="/swipe" aria-label="ホームへ移動" className="inline-flex">
               <Image src="/seiheki_lab.png" alt="Seiheki Lab Logo" width={120} height={40} priority draggable="false" className="cursor-pointer" />
             </Link>
           </div>
@@ -128,7 +128,7 @@ export default function DesktopSidebar() {
           )}
         </div>
         <nav className="flex-1 p-3 space-y-1">
-          <NavButton label="ホーム" icon={HomeIcon} href="/" disabled={!isLoggedIn} />
+          <NavButton label="ホーム" icon={HomeIcon} href="/swipe" disabled={!isLoggedIn} />
           <NavButtonWithGauge
             label="AIレコメンド"
             icon={Sparkles}

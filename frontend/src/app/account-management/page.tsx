@@ -38,7 +38,7 @@ export default function AccountManagementPage() {
           setDisplayName(profile.display_name);
         }
       } else {
-        router.push('/'); // ユーザーがログインしていない場合はトップページへリダイレクト
+        router.push('/swipe'); // ユーザーがログインしていない場合はトップページへリダイレクト
       }
       setLoading(false);
     };
@@ -79,7 +79,7 @@ export default function AccountManagementPage() {
       console.error('Error logging out:', error);
       setMessage('ログアウトに失敗しました。');
     } else {
-      router.push('/'); // ログアウト後にトップページへリダイレクト
+      router.push('/swipe'); // ログアウト後にトップページへリダイレクト
     }
     setLoading(false);
   };

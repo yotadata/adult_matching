@@ -43,7 +43,7 @@ const AccountManagementDrawer: React.FC<AccountManagementDrawerProps> = ({ isOpe
       console.error('logout exception', e);
     }
     onClose();
-    try { if (typeof window !== 'undefined') window.location.assign('/'); } catch {}
+    try { if (typeof window !== 'undefined') window.location.assign('/swipe'); } catch {}
   };
 
   const handleNavigate = (href: string) => {

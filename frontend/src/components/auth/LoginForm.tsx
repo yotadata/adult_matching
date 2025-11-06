@@ -37,7 +37,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onClose }) => {
 
       toast.success('ログインしました！');
       onClose();
-      router.push('/');
+      router.push('/swipe');
     } catch (error: unknown) {
       let errorMessage = '予期せぬエラーが発生しました';
       if (error instanceof Error) {

@@ -13,6 +13,7 @@
 - エンドユーザーがアプリで LIKE / DISLIKE を行い、その履歴を元にパーソナライズされた動画一覧を取得する。
 - 管理者が学習済みモデル（ONNX）とマッピング JSON をロードして推論品質を可視検証する（`frontend/src/app/admin/page.tsx`）。
 - バッチ処理（例: 週次）でモデル・埋め込みを再生成し、Supabase Storage / pgvector テーブルへ反映する。
+- エンドユーザーのスワイプ UI は `frontend/src/app/swipe/page.tsx`（ルート `/swipe`）で提供し、トップページ `/` は `/swipe` へリダイレクトする。
 
 ## 機能要件
 - [ ] レビュー/LIKE データから `interactions_train/val.parquet` を生成する Docker スクリプトを整備する（現状: `scripts/prep_two_tower/run.sh` でベース実装あり。動画 ID 取得やデータ品質検証を自動化する TODO）。

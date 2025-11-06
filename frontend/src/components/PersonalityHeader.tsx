@@ -57,7 +57,7 @@ export default function PersonalityHeader() {
   return (
     <header className="fixed top-0 left-0 w-full p-4 z-50 bg-white/30 backdrop-blur-lg border-b border-white/40">
       <div className="container mx-auto flex justify-between items-center">
-        <Link href="/" aria-label="ホームへ移動" className="inline-flex">
+        <Link href="/swipe" aria-label="ホームへ移動" className="inline-flex">
           <Image src="/seiheki_lab.png" alt="Seiheki Lab Logo" width={120} height={40} priority draggable="false" />
         </Link>
 
