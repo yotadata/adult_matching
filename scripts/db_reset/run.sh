@@ -19,12 +19,12 @@ if [[ -z "$PROJECT_NAME" ]]; then
 fi
 DB_VOLUME="${PROJECT_NAME}_db_data"
 
-docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" stop rest auth realtime storage kong studio edge-videos-feed edge-ai-recommend edge-analysis-results || true
+docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" stop rest auth realtime storage kong studio edge-videos-feed edge-ai-recommend edge-analysis-results edge-ai-recommend-playlist || true
 docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" rm -f db db-init db-migrate || true
 docker volume rm "$DB_VOLUME" || true
 
 docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" up -d db
 docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" up db-init
 docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" up db-migrate
-docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" restart rest auth realtime storage edge-videos-feed edge-ai-recommend edge-analysis-results kong
+docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" restart rest auth realtime storage edge-videos-feed edge-ai-recommend edge-analysis-results edge-ai-recommend-playlist kong
 echo "DB reset completed."
