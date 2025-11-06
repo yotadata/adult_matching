@@ -80,3 +80,10 @@ services:
       - name: functions_v1_ai_recommend
         paths:
           - /functions/v1/ai-recommend
+
+  - name: edge-analysis-results
+    url: http://edge-analysis-results:9002/
+    routes:
+      - name: functions_v1_analysis_results
+        paths:
+          - /functions/v1/analysis-results

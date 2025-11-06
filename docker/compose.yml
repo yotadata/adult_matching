@@ -250,6 +250,22 @@ services:
       - ../supabase/functions:/home/deno/functions:ro
     command: ["start", "--main-service", "/home/deno/functions/ai-recommend", "--port", "9001"]
 
+  edge-analysis-results:
+    image: supabase/edge-runtime:v1.69.11
+    platform: linux/amd64
+    container_name: supabase_edge_analysis_results
+    restart: unless-stopped
+    depends_on:
+      - rest
+      - auth
+    environment:
+      - SUPABASE_URL=http://kong:8000
+      - SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+      - VERIFY_JWT=false
+    volumes:
+      - ../supabase/functions:/home/deno/functions:ro
+    command: ["start", "--main-service", "/home/deno/functions/analysis-results", "--port", "9002"]
+
   meta:
     image: supabase/postgres-meta:v0.80.0
     platform: linux/amd64
