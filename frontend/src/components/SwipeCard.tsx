@@ -35,9 +35,10 @@ interface SwipeCardProps {
   onDragEnd?: (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => void;
   cardWidth: number | undefined; // cardWidth propを追加
   canSwipe?: boolean; // 追加: ゲスト制限時にスワイプを抑制
+  onSamplePlay?: (card: CardData) => void;
 }
 
-const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwipe, onDrag, onDragEnd, cardWidth, canSwipe = true }, ref) => {
+const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwipe, onDrag, onDragEnd, cardWidth, canSwipe = true, onSamplePlay }, ref) => {
   const controls = useAnimation();
   
   const [showVideo, setShowVideo] = useState(false);
@@ -149,6 +150,7 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwi
             onClick={() => {
               // iframe再生に統一。オーバーレイを即時非表示
               setShowOverlay(false);
+              onSamplePlay?.(cardData);
             }}
           >
             <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center">

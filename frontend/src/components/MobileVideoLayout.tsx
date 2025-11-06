@@ -8,9 +8,10 @@ interface MobileVideoLayoutProps {
   cardData: CardData;
   onSkip: () => void;
   onLike: () => void;
+  onSamplePlay?: (card: CardData) => void;
 }
 
-const MobileVideoLayout: React.FC<MobileVideoLayoutProps> = ({ cardData, onSkip, onLike }) => {
+const MobileVideoLayout: React.FC<MobileVideoLayoutProps> = ({ cardData, onSkip, onLike, onSamplePlay }) => {
   const [showVideo, setShowVideo] = useState(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [showOverlay, setShowOverlay] = useState(true);
@@ -77,6 +78,7 @@ const MobileVideoLayout: React.FC<MobileVideoLayoutProps> = ({ cardData, onSkip,
               onClick={() => {
                 // iframe再生に統一。オーバーレイを即時非表示
                 setShowOverlay(false);
+                onSamplePlay?.(cardData);
               }}
             >
               <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center">
