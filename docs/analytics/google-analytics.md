@@ -10,7 +10,8 @@ Google Analytics (GA4) を用いたトラッキング方針と実装手順を整
 
 ## 実装概要
 
-- 計測対象: すべてのフロントエンドページ。
+- 計測対象: すべてのフロントエンドページ（ページビュー）。  
+  カスタムイベントは `/swipe` 画面からのみ送信し、AI レコメンド画面や `ai-recommend` API は対象外。
 - 実装位置: `frontend/src/app/layout.tsx` (`RootLayout`) に gtag.js を埋め込み。
   - `Script` コンポーネントで `https://www.googletagmanager.com/gtag/js` を読込み。
   - `window.dataLayer` 初期化後に `gtag('config', '<MEASUREMENT_ID>')` を呼び出し、自動ページビュー送信を有効化。
@@ -31,56 +32,39 @@ Google Analytics (GA4) を用いたトラッキング方針と実装手順を整
 - Edge Function やバックエンドには GA 組み込み不要です。計測はフロントエンドのみで完結します。
 - Supabase ホスティングの場合はプロジェクト設定から該当環境変数を登録・管理します。
 
-## 推奨カスタムイベント
+## カスタムイベント設計（スワイプ画面）
 
-ユーザー行動の把握と推薦アルゴリズム検証のため、以下のイベント送信を推奨します。イベント名は GA4 側で管理しやすいスネークケースを採用します。
+カスタムイベントの対象は `/swipe` 画面のみです。AIレコメンド画面や `ai-recommend` API 経由の計測は行っていません。
 
-| イベント名 | 発火タイミング | 主なパラメータ | 想定用途 |
-| ---------- | -------------- | -------------- | -------- |
-| `recommend_fetch` | `ai-recommend` / `videos-feed` API 呼び出し完了時（成功/失敗） | `status` (`success`/`error`), `response_ms`, `videos_count`, `swipes_until_next_embed`, `decision_count`, `has_session` | 推薦レスポンスの健全性確認、API 遅延監視 |
-| `recommend_reset` | AI レコメンド画面のリセットボタン押下 | `has_session` (bool) | 画面リフレッシュ需要の把握 |
-| `video_open` | レコメンドカードの「見る」ボタン押下 | `video_id`, `source` (`personalized`/`trending`), `position`, `has_session` | クリック率計測、枠別の誘導効果比較 |
-| `video_like` / `video_dislike` | LIKE/NOPE 操作時（実装済みの場合） | `video_id`, `source`, `position`, `decision_type` | 推薦精度評価、ユーザー嗜好解析 |
-| `recommend_section_view` | 推薦/トレンド枠がビューポートに入った時（IntersectionObserver 等で検知） | `section` (`personalized`/`trending`), `impression_index` | インプレッション数の把握、CTR 算出の母数管理 |
+実装ファイル: `frontend/src/app/swipe/page.tsx`（イベント送信）, `frontend/src/lib/analytics.ts`（`trackEvent` ヘルパー）。
 
-> **補足:** PII（個人を特定可能な情報）は GA へ送信しないこと。`user_id` を渡す場合はハッシュ化済み識別子の利用や GA4 の User-ID 機能の運用ルールを定めてから実装してください。
+| イベント名 | 発火タイミング | パラメータ（主要項目） | 備考 |
+| ---------- | -------------- | ---------------------- | ---- |
+| `recommend_fetch` | スワイプ画面が Supabase Edge Function `videos-feed` を呼び出した結果（成功/失敗） | `status` (`success`/`error`), `source`（常に `videos_feed`）, `response_ms`, `has_session`, 成功時: `videos_count`, `swipes_until_next_embed`, `decision_count` / 失敗時: `error_message` | 推薦データ取得の健全性を監視 |
+| `recommend_session_start` | カードがアクティブになりセッションを開始したとき | `session_id`, `video_id`, `position`, `has_session`, `source`, `session_started_at`, `recommendation_score`, `recommendation_model_version` | `session_id` は `generateSessionId()` で生成 |
+| `recommend_sample_play` | サンプル/埋め込み動画を再生開始したとき | `session_id`, `video_id`, `position`, `has_session`, `source`, `sample_type` (`sample`/`embed`), `session_started_at`, `sample_play_at`, `play_count_in_session`, `surface` (`desktop`/`mobile`) | セッション中の再生回数をカウント |
+| `recommend_decision` | LIKE / NOPE の判断操作を行ったとき | `session_id`, `video_id`, `position`, `has_session`, `source`, `decision_type` (`like`/`nope`), `session_started_at`, `decision_at`, `sample_played` (0/1), `sample_last_play_at`, `sample_play_count` | 判断時点を記録 |
+| `recommend_session_complete` | 判断操作後にセッションを完了したとき | `session_id`, `video_id`, `position`, `has_session`, `source`, `decision_type`, `session_started_at`, `session_completed_at`, `sample_played`, `sample_last_play_at`, `sample_play_count` | 完了時刻を保持 |
+| `recommend_session_abandon` | セッション完了前に別カードへ遷移/離脱したとき | `session_id`, `video_id`, `position`, `has_session`, `source`, `session_started_at`, `session_abandoned_at`, `sample_played`, `sample_play_count` | `session_completed_at` の代わりに離脱時刻を送信 |
 
-### スワイプ画面のフロー計測（`/swipe`）
+### レポート観点
 
-スワイプ UI 上での画面操作 → サンプル再生 → LIKE/NOPE 操作までの行動と滞在時間を把握するため、以下のイベント連携を推奨します。
+- `session_started_at` / `sample_play_at` / `decision_at` / `session_completed_at` / `session_abandoned_at` を利用し、滞在時間や完了率を算出する。
+- `sample_played`・`sample_play_count` を用いることで、サンプル視聴有無と判断の関係を切り分けられる。
+- `has_session` は Supabase 認証済みかを示し、ゲスト利用との比較に用いる。
 
-1. **セッション開始**  
-   - 推薦カードが表示されたタイミングで `recommend_session_start` を送信。  
-   - パラメータ: `session_id`, `video_id`, `position`, `has_session`, `source`, `recommendation_score`, `recommendation_model_version`。  
-   - 併せて `sessionStartAt = Date.now()` をメモリ保持し、同一ユーザー操作内で利用する。
-
-2. **サンプル再生**  
-   - `SwipeCard` のプレビューオーバーレイクリック時に `recommend_sample_play` を送信。  
-   - パラメータ: `session_id`, `video_id`, `source`, `position`, `session_started_at`, `sample_play_at`, `sample_type`（`sample`/`embed`）、`play_count_in_session`, `surface`, `has_session`。
-
-3. **判断操作**  
-   - LIKE/NOPE ボタン（またはスワイプ完了処理）で `recommend_decision` を送信。  
-   - パラメータ: `session_id`, `video_id`, `decision_type` (`like`/`nope`), `source`, `position`, `session_started_at`, `decision_at`, `sample_played`, `sample_last_play_at`, `sample_play_count`, `has_session`。
-
-4. **セッション完了 / 離脱**  
-   - 判断後に `recommend_session_complete` を送信し、`session_id`, `video_id`, `decision_type`, `session_started_at`, `session_completed_at`, `sample_play_count`, `sample_last_play_at`, `has_session` を含める。  
-   - 判断を行わずにページ離脱した場合は `recommend_session_abandon` を送信し、`session_id`, `video_id`, `session_started_at`, `session_abandoned_at`, `sample_play_count`, `has_session` などを記録する。
-
-5. **レポート作成**  
-   - GA4 側で `session_started_at`, `sample_play_at`, `decision_at`, `session_completed_at` などのタイムスタンプを基に、探索レポート上で滞在時間や完了率を算出する。  
-   - 「サンプル再生実施の有無 × 判断種別」で滞在時間・完了率を比較するビューを用意しておく。
+> **注意:** PII（個人が特定できる情報）は GA4 に送信しない。必要に応じて識別子をハッシュ化し、GA4 の User-ID を利用する場合は運用ルールを整備する。
 
 ## 計測イベント追加手順
 
-1. 追加したいユーザー行動（例: 動画閲覧ボタン押下）を定義する。
-2. コンポーネント内で `window.gtag?.('event', '<event_name>', { ...params })` を呼び出す。例:
+1. 追加したいユーザー行動（例: スワイプ中の新しいインタラクション）を定義する。
+2. コンポーネント内で `trackEvent('<event_name>', { ...params })` を呼び出す。例:
    ```ts
-   if (typeof window !== 'undefined' && window.gtag) {
-     window.gtag('event', 'video_open', {
-       video_id: v.id,
-       source: 'ai_recommend_personalized',
-     });
-   }
+   trackEvent('recommend_custom_event', {
+     session_id: sessionIdRef.current,
+     video_id: card.id,
+     has_session: isLoggedIn,
+   });
    ```
 3. 追加したイベント名・パラメータを GA4 のカスタムディメンション／レポートに設定する。
 4. 新イベントを導入したら必ず以下を記録する:
@@ -89,7 +73,7 @@ Google Analytics (GA4) を用いたトラッキング方針と実装手順を整
    - 実装ファイル
    - 想定ダッシュボード・レポート
 
-> **メモ:** 現状は自動ページビュー以外のカスタムイベントは未実装です。上記手順で必要に応じて追記してください。
+> **メモ:** 現状のカスタムイベントはすべて `/swipe` 画面から送信されます。AI レコメンド画面や API 呼び出しでは送信していない点に留意してください。
 
 ## 動作確認
 
