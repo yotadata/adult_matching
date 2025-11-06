@@ -2,11 +2,17 @@
 import argparse
 import json
 import os
+import socket
 import sys
-import uuid
+from collections import Counter
 from dataclasses import dataclass
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Dict, Iterable, List, Optional
+from typing import Dict, Iterable, List, Optional, Sequence
+from urllib.parse import parse_qs, urlencode, urlsplit, urlunsplit, quote
+import urllib.error
+import urllib.request
+from functools import lru_cache
 
 import numpy as np
 import pandas as pd
@@ -14,22 +20,11 @@ import psycopg
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from functools import lru_cache
 from psycopg.rows import dict_row
 from tqdm import tqdm
-from urllib.parse import parse_qs, urlencode, urlsplit, urlunsplit, quote
-import urllib.error
-import urllib.request
-import socket
 
 
-REQUIRED_COLUMNS = [
-    "reviewer_id",
-    "preferred_tag_ids",
-    "like_count_30d",
-    "positive_ratio_30d",
-    "signup_days",
-]
+JST = timezone(timedelta(hours=9))
 
 
 @lru_cache(maxsize=1)
@@ -54,183 +49,74 @@ def _resolve_project_ref() -> Optional[str]:
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Generate live user embeddings from Supabase data.")
+    parser = argparse.ArgumentParser(description="Generate user embeddings based on their features.")
     parser.add_argument("--db-url", type=str, default=None, help="Postgres connection string (defaults to SUPABASE_DB_URL / REMOTE_DATABASE_URL).")
+    parser.add_argument("--model-meta", type=Path, default=Path("ml/artifacts/latest/model_meta.json"), help="Model metadata JSON.")
+    parser.add_argument("--model-path", type=Path, default=Path("ml/artifacts/latest/two_tower_latest.pt"), help="Two-Tower PyTorch weights.")
     parser.add_argument(
-        "--reference-user-features",
+        "--reference-item-features",
         type=Path,
-        default=Path("ml/data/processed/two_tower/latest/user_features.parquet"),
-        help="Reference user_features parquet used during training (to rebuild vocab).",
+        default=Path("ml/artifacts/latest/item_features.parquet"),
+        help="Training-time item_features parquet used to rebuild vocabularies for user features.",
     )
+    parser.add_argument("--output-dir", type=Path, default=Path("ml/artifacts/live/user_embeddings"), help="Directory to write embeddings.")
+    parser.add_argument("--output-name", type=str, default="user_embeddings.parquet", help="Output parquet filename.")
+    parser.add_argument("--limit", type=int, default=None, help="Optional maximum number of users to encode (for debugging).")
     parser.add_argument(
-        "--model-path",
-        type=Path,
-        default=Path("ml/artifacts/latest/two_tower_latest.pt"),
-        help="Trained Two-Tower PyTorch weights.",
-    )
-    parser.add_argument(
-        "--model-meta",
-        type=Path,
-        default=Path("ml/artifacts/latest/model_meta.json"),
-        help="Model metadata JSON containing feature dimensions.",
-    )
-    parser.add_argument(
-        "--output-dir",
-        type=Path,
-        default=Path("ml/artifacts/live"),
-        help="Directory to write generated embeddings (user_embeddings.parquet).",
-    )
-    parser.add_argument(
-        "--output-name",
-        type=str,
-        default="user_embeddings.parquet",
-        help="Filename for generated embeddings inside --output-dir.",
-    )
-    parser.add_argument(
-        "--no-copy-video-embeddings",
-        dest="copy_video_embeddings",
-        action="store_false",
-        help="Skip copying video embeddings into --output-dir.",
-    )
-    parser.add_argument(
-        "--video-embeddings-src",
-        type=Path,
-        default=Path("ml/artifacts/latest/video_embeddings.parquet"),
-        help="Source video embeddings parquet used when --copy-video-embeddings is set.",
-    )
-    parser.add_argument(
-        "--min-interactions",
-        type=int,
-        default=0,
-        help="Minimum LIKE interactions (all-time) required to generate a user embedding.",
-    )
-    parser.add_argument(
-        "--limit-users",
-        type=int,
-        default=None,
-        help="Optional hard limit of users to encode (useful for debugging).",
+        "--include-existing",
+        action="store_true",
+        help="Encode users even if current model_version already exists. By default only missing/outdated entries are processed.",
     )
     parser.add_argument("--dry-run", action="store_true", help="Load data and report counts without writing parquet.")
-    parser.set_defaults(copy_video_embeddings=True)
     return parser.parse_args()
 
 
 def _ensure_list(value) -> List[str]:
     if isinstance(value, (list, tuple)):
-        return [str(v) for v in value if v and str(v).strip()]
+        return [str(v) for v in value if v is not None and str(v).strip()]
     if value is None or (isinstance(value, float) and np.isnan(value)):
         return []
     return [str(value)]
 
 
-def _log1p_safe(series: pd.Series) -> pd.Series:
-    return np.log1p(series.clip(lower=0).astype(float))
+def load_meta(path: Path) -> Dict:
+    if not path.exists():
+        raise FileNotFoundError(f"model_meta.json not found at {path}")
+    with path.open("r") as fh:
+        meta = json.load(fh)
+    return meta
 
-
-def _normalize_array(value, *, sort: bool = False) -> List[str]:
-    if isinstance(value, str):
-        text = value.strip()
-        parsed = None
-        if text:
-            try:
-                parsed = json.loads(text)
-            except json.JSONDecodeError:
-                parsed = [v.strip() for v in text.split(',') if v.strip()]
-        vals = _ensure_list(parsed if parsed is not None else value)
-    else:
-        vals = _ensure_list(value)
-    if sort:
-        vals = sorted(set(vals))
-    return vals
-
-
-def _normalize_uuid(value: object, column: str) -> str:
-    try:
-        return str(uuid.UUID(str(value)))
-    except Exception as exc:
-        raise ValueError(f"Invalid UUID in column '{column}': {value}") from exc
-
-
-def _load_live_user_features(db_url: str, min_interactions: int) -> pd.DataFrame:
-    sql = (
-        "with base as ("
-        "  select"
-        "    uvd.user_id,"
-        "    (array_agg(uvd.video_id order by uvd.created_at desc)"
-        "      filter (where uvd.decision_type = 'like'))[1:20] as recent_positive_video_ids,"
-        "    count(*) filter (where uvd.decision_type = 'like' and uvd.created_at >= now() - interval '30 days') as like_count_30d,"
-        "    count(*) filter (where uvd.created_at >= now() - interval '30 days') as total_count_30d,"
-        "    count(*) filter (where uvd.decision_type = 'like') as like_count_all"
-        "  from public.user_video_decisions uvd"
-        "  group by uvd.user_id"
-        "), tag_pref as ("
-        "  select"
-        "    ranked.user_id,"
-        "    (array_agg(ranked.tag_id order by ranked.like_count desc nulls last))[1:10] as preferred_tag_ids"
-        "  from ("
-        "    select"
-        "      uvd.user_id,"
-        "      vt.tag_id,"
-        "      count(*) filter (where uvd.decision_type = 'like') as like_count"
-        "    from public.user_video_decisions uvd"
-        "    join public.video_tags vt on vt.video_id = uvd.video_id"
-        "    group by uvd.user_id, vt.tag_id"
-        "  ) ranked"
-        "  group by ranked.user_id"
-        "), profiles as ("
-        "  select"
-        "    user_id,"
-        "    greatest(0, cast(date_part('day', now() - created_at) as int)) as signup_days"
-        "  from public.profiles"
-        ") "
-        "select"
-        "  b.user_id as reviewer_id,"
-        "  coalesce(b.recent_positive_video_ids, array[]::uuid[]) as recent_positive_video_ids,"
-        "  coalesce(b.like_count_30d, 0) as like_count_30d,"
-        "  coalesce(b.like_count_all, 0) as like_count_all,"
-        "  case when coalesce(b.total_count_30d, 0) > 0"
-        "       then b.like_count_30d::double precision / b.total_count_30d"
-        "       else null end as positive_ratio_30d,"
-        "  p.signup_days,"
-        "  coalesce(tp.preferred_tag_ids, array[]::uuid[]) as preferred_tag_ids"
-        " from base b"
-        " left join profiles p on p.user_id = b.user_id"
-        " left join tag_pref tp on tp.user_id = b.user_id"
-    )
-    with psycopg.connect(db_url, row_factory=dict_row) as conn:
-        with conn.cursor() as cur:
-            cur.execute(sql)
-            rows = cur.fetchall()
-    if not rows:
-        return pd.DataFrame(columns=["reviewer_id"])
-    df = pd.DataFrame(rows)
-    df["reviewer_id"] = df["reviewer_id"].apply(lambda v: str(v) if v is not None else "")
-    df["preferred_tag_ids"] = df["preferred_tag_ids"].apply(lambda v: _normalize_array(v, sort=True))
-    df["like_count_30d"] = pd.to_numeric(df["like_count_30d"], errors="coerce").fillna(0).astype("int64")
-    df["like_count_all"] = pd.to_numeric(df.get("like_count_all", 0), errors="coerce").fillna(0).astype("int64")
-    df["positive_ratio_30d"] = pd.to_numeric(df["positive_ratio_30d"], errors="coerce")
-    df["signup_days"] = pd.to_numeric(df["signup_days"], errors="coerce").round().astype("float32")
-
-    if min_interactions > 0:
-        df = df[df["like_count_all"] >= min_interactions].copy()
+def load_reference_item_features(path: Path) -> pd.DataFrame:
+    if not path.exists():
+        raise FileNotFoundError(f"reference item_features parquet not found: {path}")
+    df = pd.read_parquet(path)
     return df
 
+class FeatureSpace:
+    """Utility copied from training script to build consistent categorical/multi-hot encodings."""
 
-class UserFeatureSpace:
-    def __init__(self, preferred_tag_vocab: Iterable[str], numeric_fields: List[str]):
-        vocab = sorted({v for v in preferred_tag_vocab if v})
-        self.preferred_vocab = {v: i for i, v in enumerate(vocab)}
-        self.numeric_fields = numeric_fields
-        self.base_dim = len(self.preferred_vocab)
+    def __init__(self, *, multi_fields: Dict[str, Iterable[str]]):
+        self.multi_offsets: Dict[str, Sequence[int]] = {}
+        self.multi_vocab: Dict[str, Dict[str, int]] = {}
+        offset = 0
 
-    def encode(self, record_tags: Iterable[str], numeric_values: np.ndarray) -> np.ndarray:
-        vec = np.zeros(self.base_dim + len(numeric_values), dtype=np.float32)
-        for tag in record_tags:
-            idx = self.preferred_vocab.get(tag)
+        for field, values in multi_fields.items():
+            vocab = sorted({v for v in values if v})
+            self.multi_vocab[field] = {v: i for i, v in enumerate(vocab)}
+            self.multi_offsets[field] = (offset, offset + len(vocab))
+            offset += len(vocab)
+
+        self.base_dim = offset
+
+    def encode_multi(self, vec: np.ndarray, field: str, values: Iterable[str]) -> None:
+        mapping = self.multi_vocab.get(field)
+        if not mapping:
+            return
+        start, _ = self.multi_offsets[field]
+        for val in values:
+            idx = mapping.get(val)
             if idx is not None:
-                vec[idx] = 1.0
-        vec[self.base_dim :] = numeric_values
-        return vec
+                vec[start + idx] = 1.0
 
 
 class TwoTower(nn.Module):
@@ -249,103 +135,52 @@ class TwoTower(nn.Module):
             nn.Linear(hidden_dim, embedding_dim),
         )
 
-    def encode_user(self, x: torch.Tensor) -> torch.Tensor:
-        return F.normalize(self.user_encoder(x), p=2, dim=-1)
+    def encode_user(self, user_features: torch.Tensor) -> torch.Tensor:
+        out = self.user_encoder(user_features)
+        return F.normalize(out, p=2, dim=-1)
 
+    def encode_item(self, item_features: torch.Tensor) -> torch.Tensor:
+        out = self.item_encoder(item_features)
+        return F.normalize(out, p=2, dim=-1)
 
-def load_meta(meta_path: Path) -> dict:
-    if not meta_path.exists():
-        raise FileNotFoundError(f"model meta not found: {meta_path}")
-    return json.loads(meta_path.read_text())
-
-
-def load_reference_user_features(path: Path) -> pd.DataFrame:
-    if not path.exists():
-        raise FileNotFoundError(f"reference user_features parquet not found: {path}")
-    df = pd.read_parquet(path)
-    missing = [col for col in REQUIRED_COLUMNS if col not in df.columns]
-    if missing:
-        raise ValueError(f"reference file missing columns: {missing}")
-    df["preferred_tag_ids"] = df["preferred_tag_ids"].apply(lambda v: _normalize_array(v, sort=True))
-    return df
-
-
-def build_user_vectors(
-    encoder: UserFeatureSpace,
-    df: pd.DataFrame,
-    expected_dim: Optional[int] = None,
-) -> Dict[str, np.ndarray]:
-    numeric_fields = ["like_count_30d", "positive_ratio_30d", "signup_days"]
-    for col in numeric_fields:
-        if col not in df.columns:
-            df[col] = 0
-    numeric = df[numeric_fields].copy()
-    numeric["like_count_30d"] = _log1p_safe(numeric["like_count_30d"].fillna(0))
-    numeric["signup_days"] = _log1p_safe(numeric["signup_days"].fillna(0))
-    numeric["positive_ratio_30d"] = numeric["positive_ratio_30d"].fillna(0).clip(0, 1)
-    numeric_array = numeric.to_numpy(dtype=np.float32)
-
-    vectors: Dict[str, np.ndarray] = {}
-    for idx, row in enumerate(df.itertuples(index=False)):
-        reviewer_id = str(row.reviewer_id)
-        try:
-            reviewer_id = _normalize_uuid(reviewer_id, "reviewer_id")
-        except ValueError:
-            continue
-        vec = encoder.encode(
-            _ensure_list(getattr(row, "preferred_tag_ids", [])),
-            numeric_array[idx],
-        )
-        if expected_dim is not None and expected_dim != vec.size:
-            padded = np.zeros(expected_dim, dtype=np.float32)
-            length = min(vec.size, expected_dim)
-            padded[:length] = vec[:length]
-            vec = padded
-        vectors[reviewer_id] = vec
-    return vectors
-
-
-def encode_embeddings(
-    model: TwoTower,
-    vectors: Dict[str, np.ndarray],
-    device: torch.device,
-) -> pd.DataFrame:
-    rows = []
-    model.eval()
-    with torch.no_grad():
-        for user_id, vec in tqdm(vectors.items(), desc="Encoding user embeddings"):
-            tensor = torch.from_numpy(vec).unsqueeze(0).to(device)
-            embedding = model.encode_user(tensor).cpu().numpy()[0]
-            rows.append({"reviewer_id": user_id, "embedding": embedding.tolist()})
-    return pd.DataFrame(rows)
+    def forward(self, user_features: torch.Tensor, item_features: torch.Tensor) -> torch.Tensor:
+        user_emb = self.encode_user(user_features)
+        item_emb = self.encode_item(item_features)
+        return (user_emb * item_emb).sum(dim=-1, keepdim=True)
 
 
 def _ensure_ipv4_hostaddr(conninfo: str, allow_pooler: bool = True) -> str:
-    try:
-        parsed = urlsplit(conninfo)
-    except Exception:
+    # (This function remains the same as in gen_video_embeddings.py)
+    parsed = urlsplit(conninfo)
+    if parsed.scheme not in ("postgresql", "postgres", "postgresql+psycopg"):
         return conninfo
-    if not parsed.hostname:
-        return conninfo
-    query = parse_qs(parsed.query, keep_blank_values=True)
+
+    query = parse_qs(parsed.query)
     if "sslmode" not in query:
         query["sslmode"] = ["require"]
     if "sslrootcert" not in query and os.environ.get("PGSSLROOTCERT"):
         query["sslrootcert"] = [os.environ["PGSSLROOTCERT"]]
-    if "hostaddr" in query:
+    if query.get("hostaddr"):
         return urlunsplit((parsed.scheme, parsed.netloc, parsed.path, urlencode(query, doseq=True), parsed.fragment))
 
-    addrinfo = []
-    try:
-        addrinfo = socket.getaddrinfo(parsed.hostname, parsed.port or 5432, family=socket.AF_INET)
-    except socket.gaierror:
-        addrinfo = []
-    ipv4_addr = next((info[4][0] for info in addrinfo if info[0] == socket.AF_INET), None)
+    host = parsed.hostname
+    port = parsed.port or 5432
+    if not host:
+        return conninfo
 
-    if not ipv4_addr and allow_pooler:
+    ipv4_addr = None
+    try:
+        for family, _, _, _, sockaddr in socket.getaddrinfo(host, port):
+            if family == socket.AF_INET:
+                ipv4_addr = sockaddr[0]
+                break
+    except socket.gaierror:
+        ipv4_addr = None
+
+    if allow_pooler and not ipv4_addr:
         project_ref = _resolve_project_ref()
         if not project_ref:
-            parts = parsed.hostname.split(".")
+            parts = parsed.hostname.split(".") if parsed.hostname else []
             if len(parts) >= 3 and parts[0] == "db":
                 project_ref = parts[1]
         pooler_host = os.environ.get("SUPABASE_POOLER_HOST")
@@ -369,8 +204,142 @@ def _ensure_ipv4_hostaddr(conninfo: str, allow_pooler: bool = True) -> str:
 
     if not ipv4_addr:
         return urlunsplit((parsed.scheme, parsed.netloc, parsed.path, urlencode(query, doseq=True), parsed.fragment))
+
     query.setdefault("hostaddr", []).append(ipv4_addr)
     return urlunsplit((parsed.scheme, parsed.netloc, parsed.path, urlencode(query, doseq=True), parsed.fragment))
+
+
+def fetch_target_users(
+    db_url: str,
+    *,
+    limit: Optional[int],
+    model_version: str,
+    include_existing: bool,
+) -> pd.DataFrame:
+    sql = """
+        SELECT
+          uf.user_id,
+          uf.liked_tags,
+          uf.liked_performers,
+          ue.model_version AS current_model_version
+        FROM public.user_features uf
+        LEFT JOIN public.user_embeddings ue ON ue.user_id = uf.user_id
+        WHERE (
+            %(include_existing)s
+            OR ue.user_id IS NULL
+            OR ue.model_version IS NULL
+            OR ue.model_version <> %(model_version)s
+        )
+        ORDER BY uf.updated_at DESC
+    """
+    params = {
+        "include_existing": include_existing,
+        "model_version": model_version,
+    }
+    if limit is not None and limit > 0:
+        sql = sql + " LIMIT %(limit)s"
+        params["limit"] = limit
+
+    with psycopg.connect(db_url, row_factory=dict_row) as conn:
+        with conn.cursor() as cur:
+            cur.execute(sql, params)
+            rows = cur.fetchall()
+    if not rows:
+        return pd.DataFrame(columns=["user_id", "liked_tags", "liked_performers"])
+    df = pd.DataFrame(rows)
+    df["user_id"] = df["user_id"].astype(str)
+    return df
+
+
+@dataclass
+class UserFeatureBundle:
+    user_space: FeatureSpace
+
+def build_user_feature_space(
+    reference_df: pd.DataFrame,
+    *,
+    max_tag_features: Optional[int],
+    max_performer_features: Optional[int],
+) -> UserFeatureBundle:
+    tag_counter: Counter[str] = Counter()
+    for values in reference_df.get("tag_ids", []):
+        tag_counter.update(_ensure_list(values))
+    if max_tag_features is not None and max_tag_features > 0:
+        tag_vocab = [tag for tag, _ in tag_counter.most_common(max_tag_features)]
+    else:
+        tag_vocab = sorted(tag_counter)
+
+    performer_counter: Counter[str] = Counter()
+    for values in reference_df.get("performer_ids", []):
+        performer_counter.update(_ensure_list(values))
+    if max_performer_features is not None and max_performer_features > 0:
+        performer_vocab = [p for p, _ in performer_counter.most_common(max_performer_features)]
+    else:
+        performer_vocab = sorted(performer_counter)
+
+    user_space = FeatureSpace(
+        multi_fields={
+            "liked_tags": tag_vocab,
+            "liked_performers": performer_vocab,
+        },
+    )
+    return UserFeatureBundle(user_space=user_space)
+
+
+def build_user_vectors(
+    df: pd.DataFrame,
+    *,
+    bundle: UserFeatureBundle,
+    expected_dim: int,
+) -> Dict[str, np.ndarray]:
+    vectors: Dict[str, np.ndarray] = {}
+    for _, row in df.iterrows():
+        vec = np.zeros(bundle.user_space.base_dim, dtype=np.float32)
+        
+        liked_tags = row.get('liked_tags', {})
+        if isinstance(liked_tags, str):
+            try:
+                liked_tags = json.loads(liked_tags)
+            except json.JSONDecodeError:
+                liked_tags = {}
+
+        liked_performers = row.get('liked_performers', {})
+        if isinstance(liked_performers, str):
+            try:
+                liked_performers = json.loads(liked_performers)
+            except json.JSONDecodeError:
+                liked_performers = {}
+
+        bundle.user_space.encode_multi(vec, "liked_tags", liked_tags.keys())
+        bundle.user_space.encode_multi(vec, "liked_performers", liked_performers.keys())
+        
+        vectors[str(row["user_id"])] = vec
+
+    if bundle.user_space.base_dim != expected_dim:
+        print(
+            json.dumps(
+                {
+                    "warn": "user_feature_dim_mismatch",
+                    "expected": expected_dim,
+                    "computed": bundle.user_space.base_dim,
+                },
+                ensure_ascii=False,
+            ),
+            file=sys.stderr,
+        )
+    return vectors
+
+
+def encode_embeddings(model: TwoTower, user_vectors: Dict[str, np.ndarray], device: torch.device) -> pd.DataFrame:
+    rows = []
+    model.eval()
+    with torch.no_grad():
+        iterator = tqdm(user_vectors.items(), desc="Encoding users", unit="user")
+        for user_id, vec in iterator:
+            tensor = torch.from_numpy(vec).unsqueeze(0).to(device)
+            embedding = model.encode_user(tensor).cpu().numpy()[0]
+            rows.append({"user_id": user_id, "embedding": embedding.tolist()})
+    return pd.DataFrame(rows)
 
 
 def main() -> None:
@@ -379,67 +348,70 @@ def main() -> None:
     db_url = args.db_url or os.environ.get("SUPABASE_DB_URL") or os.environ.get("REMOTE_DATABASE_URL")
     if not db_url:
         raise ValueError("Database URL not provided. Set --db-url or SUPABASE_DB_URL / REMOTE_DATABASE_URL env.")
-
     db_url = _ensure_ipv4_hostaddr(db_url)
 
     meta = load_meta(args.model_meta)
-    user_feature_dim = int(meta["user_feature_dim"])
-    item_feature_dim = int(meta["item_feature_dim"])
+    model_version = str(meta.get("run_id") or "unknown")
     embedding_dim = int(meta["embedding_dim"])
     hidden_dim = int(meta["hidden_dim"])
+    user_feature_dim = int(meta["user_feature_dim"])
+    item_feature_dim = int(meta["item_feature_dim"])
+    max_tag_features = meta.get("max_tag_features")
+    max_performer_features = meta.get("max_performer_features")
 
-    reference_df = load_reference_user_features(args.reference_user_features)
-    preferred_vocab = set()
-    for values in reference_df["preferred_tag_ids"]:
-        preferred_vocab.update(_ensure_list(values))
+    reference_df = load_reference_item_features(args.reference_item_features)
+    bundle = build_user_feature_space(
+        reference_df,
+        max_tag_features=max_tag_features,
+        max_performer_features=max_performer_features,
+    )
+
     print(
         json.dumps(
             {
-                "info": "reference_vocab",
-                "preferred_tags": len(preferred_vocab),
-                "reference_rows": len(reference_df),
+                "info": "user_feature_space",
+                "model_version": model_version,
+                "categorical_dims": bundle.user_space.base_dim,
+                "expected_user_dim": user_feature_dim,
             },
             ensure_ascii=False,
         )
     )
 
-    encoder = UserFeatureSpace(preferred_vocab, numeric_fields=["like_count_30d", "positive_ratio_30d", "signup_days"])
-
-    print(
-        json.dumps(
-            {
-                "debug": "connection_info",
-                "db_url": db_url,
-                "env_sslmode": os.environ.get("PGSSLMODE"),
-                "env_sslrootcert": os.environ.get("PGSSLROOTCERT"),
-            },
-            ensure_ascii=False,
-        )
+    selected_df = fetch_target_users(
+        db_url,
+        limit=args.limit,
+        model_version=model_version,
+        include_existing=args.include_existing,
     )
 
-    live_df = _load_live_user_features(db_url, args.min_interactions)
-    if args.limit_users:
-        live_df = live_df.head(args.limit_users)
-    if live_df.empty:
-        print(json.dumps({"event": "no_users_found"}, ensure_ascii=False))
-        return
-
-    user_vectors = build_user_vectors(encoder, live_df, expected_dim=user_feature_dim)
-    if not user_vectors:
-        print(json.dumps({"event": "no_valid_users"}, ensure_ascii=False))
-        return
-
-    if encoder.base_dim + 3 != user_feature_dim:
+    if selected_df.empty:
         print(
             json.dumps(
                 {
-                    "info": "user_feature_dim_adjusted",
-                    "expected": user_feature_dim,
-                    "computed": encoder.base_dim + 3,
+                    "event": "no_users_selected",
+                    "include_existing": args.include_existing,
                 },
                 ensure_ascii=False,
             )
         )
+        return
+
+    print(
+        json.dumps(
+            {
+                "info": "user_candidates",
+                "count": len(selected_df),
+                "include_existing": args.include_existing,
+            },
+            ensure_ascii=False,
+        )
+    )
+
+    user_vectors = build_user_vectors(selected_df, bundle=bundle, expected_dim=user_feature_dim)
+    if not user_vectors:
+        print(json.dumps({"event": "no_vectors_generated"}, ensure_ascii=False))
+        return
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = TwoTower(
@@ -453,6 +425,7 @@ def main() -> None:
     model = model.to(device)
 
     embeddings_df = encode_embeddings(model, user_vectors, device)
+    embeddings_df["model_version"] = model_version
     print(json.dumps({"event": "user_embeddings_encoded", "count": len(embeddings_df)}, ensure_ascii=False))
 
     if args.dry_run:
@@ -460,14 +433,18 @@ def main() -> None:
 
     args.output_dir.mkdir(parents=True, exist_ok=True)
     output_path = args.output_dir / args.output_name
-    embeddings_df.sort_values("reviewer_id").to_parquet(output_path, index=False)
+    embeddings_df.sort_values("user_id").to_parquet(output_path, index=False)
     print(json.dumps({"event": "user_embeddings_saved", "path": str(output_path)}, ensure_ascii=False))
 
-    if args.copy_video_embeddings and args.video_embeddings_src.exists():
-        target = args.output_dir / args.video_embeddings_src.name
-        if target.resolve() != args.video_embeddings_src.resolve():
-            target.write_bytes(args.video_embeddings_src.read_bytes())
-            print(json.dumps({"event": "video_embeddings_copied", "path": str(target)}, ensure_ascii=False))
+    summary = {
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "run_id": model_version,
+        "rows": int(len(embeddings_df)),
+        "include_existing": args.include_existing,
+    }
+    summary_path = args.output_dir / "summary.json"
+    summary_path.write_text(json.dumps(summary, ensure_ascii=False, indent=2))
+    print(json.dumps({"event": "user_embeddings_summary_saved", "path": str(summary_path)}, ensure_ascii=False))
 
 
 if __name__ == "__main__":
