@@ -6,7 +6,6 @@ import { X, Filter } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { supabase } from '@/lib/supabase';
-import VideoDetailModal from './VideoDetailModal';
 
 interface VideoRecord {
   id?: string;
@@ -52,8 +51,6 @@ const LikedVideosDrawer: React.FC<LikedVideosDrawerProps> = ({ isOpen, onClose }
   const [tagSearch, setTagSearch] = useState('');
   const [performerSearch, setPerformerSearch] = useState('');
   const pageSize = 40;
-  const [detailOpen, setDetailOpen] = useState(false);
-  const [detailVideoId, setDetailVideoId] = useState<string | null>(null);
   const [mobileShowFilters, setMobileShowFilters] = useState(false);
 
   const filteredTagOptions = useMemo(() => {
@@ -545,14 +542,6 @@ const LikedVideosDrawer: React.FC<LikedVideosDrawerProps> = ({ isOpen, onClose }
                                     {video.price ? `￥${video.price.toLocaleString()}~` : '価格情報なし'}
                                   </p>
                                   <div className="flex gap-2">
-                                    {video.id && (
-                                      <button
-                                        onClick={() => { setDetailVideoId(video.id!); setDetailOpen(true); }}
-                                        className="bg-transparent border border-violet-400 text-violet-500 hover:bg-violet-500 hover:text-white font-bold py-1 px-3 rounded-md transition-all duration-300 text-sm"
-                                      >
-                                        詳細を見る
-                                      </button>
-                                    )}
                                     <Link href={toFanzaAffiliate(video.product_url) || '#'} passHref target="_blank" rel="noopener noreferrer">
                                       <button className="bg-transparent border border-[#FF6B81] text-[#FF6B81] hover:bg-[#FF6B81] hover:text-white font-bold py-1 px-3 rounded-md transition-all duration-300 text-sm">
                                         見る
@@ -568,7 +557,6 @@ const LikedVideosDrawer: React.FC<LikedVideosDrawerProps> = ({ isOpen, onClose }
                         <p className="text-center text-gray-500">いいねした動画はありません。</p>
                       )}
                     </div>
-                    <VideoDetailModal isOpen={detailOpen} onClose={() => setDetailOpen(false)} videoId={detailVideoId} />
                   </div>
                 </Dialog.Panel>
               </Transition.Child>
