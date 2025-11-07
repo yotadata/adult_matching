@@ -120,3 +120,29 @@ CREATE TABLE public.user_embeddings (
 ## パイプラインの連携
 
 ユーザーが「いいね」などの行動を起こすと、クライアントは `embed-user` APIを呼び出します。これにより、`user_features` テーブルが更新されます。その後、`gen_user_embeddings.py` バッチ処理が実行されると、最新の `user_features` データに基づいてユーザーの埋め込みベクトルが再計算され、`user_embeddings` テーブルが更新されます。この更新された埋め込みベクトルは、`videos-feed` APIなどのレコメンデーション機能で利用されます。
+
+## 6. `sync_user_embeddings` ジョブ（定期実行）
+
+### 背景
+
+AI レコメンドの応答速度を維持するため、ユーザーの嗜好変化を 1 時間単位で反映させる増分更新ジョブを GitHub Actions で自動実行します。大量の全件再計算ではなく、直近 1 時間に `user_video_decisions` へ書き込みのあったユーザーのみを対象にすることで、コストを最小化します。
+
+### 実行単位
+
+1. `scripts/sync_user_embeddings/run.sh`
+   - モデル成果物を `publish_two_tower fetch` で取得
+   - `scripts/gen_user_embeddings/run.sh --include-existing --recent-hours <N>` で対象ユーザーのみの Parquet を生成
+   - `scripts/update_user_embeddings/run.sh` を呼び出し、Parquet の内容を `public.user_embeddings` に upsert
+2. GitHub Actions ワークフロー `[ML] Ops - Update User Embeddings`（`ml-update-user-embeddings.yml`）
+   - 1 時間毎に cron 起動（UTC 基準）
+   - 手動トリガー時は `recent_hours` をオーバーライド可能
+
+### 環境変数
+
+| 変数 | 用途 |
+| --- | --- |
+| `SYNC_USER_ENV_FILE` | `sync_user_embeddings` が参照する `.env` パス（未指定時は `docker/env/prd.env`） |
+| `SYNC_USER_OUTPUT_ROOT` | 生成物を保存するルートディレクトリ |
+| `SYNC_USER_RECENT_HOURS` | デフォルトの参照時間幅（既定: `1`） |
+
+これらの値は GitHub Actions では `docker/env/prd.ci.env` を動的生成して渡します。ローカル検証時は `docker/env/dev.env` を指定して実行できます。ローカル実行の際は既存の `ml/artifacts/latest` を信頼し、Storage からのダウンロードは行いません（必要な場合のみ `--fetch-latest` を付与してください）。

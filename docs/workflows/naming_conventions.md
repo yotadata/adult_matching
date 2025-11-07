@@ -19,6 +19,7 @@
 | ファイル | `name:` | カテゴリ / 種別 |
 | --- | --- | --- |
 | `.github/workflows/ml-sync-video-embeddings.yml` | `[ML] Ops - Sync Video Embeddings` | ML / Ops |
+| `.github/workflows/ml-update-user-embeddings.yml` | `[ML] Ops - Update User Embeddings` | ML / Ops |
 | `.github/workflows/apprelease-deploy-frontend.yml` | `[AppRelease] Ops - Deploy Frontend to Vercel` | AppRelease / Ops |
 | `.github/workflows/apprelease-release.yml` | `[AppRelease] Ops - Release Pipeline` | AppRelease / Ops |
 | `.github/workflows/cicd-deploy-functions.yml` | `[CiCd] Ops - Deploy Supabase Edge Functions` | CiCd / Ops |

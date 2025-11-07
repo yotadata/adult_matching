@@ -19,6 +19,7 @@
 - [ ] レビュー/LIKE データから `interactions_train/val.parquet` を生成する Docker スクリプトを整備する（現状: `scripts/prep_two_tower/run.sh` でベース実装あり。動画 ID 取得やデータ品質検証を自動化する TODO）。
 - [ ] Two-Tower 学習コンテナを実行し、ONNX / state_dict / 埋め込み Parquet / メタ情報を出力する。ONNX は特徴量→ユーザー/アイテム埋め込みを生成できるよう設計する（評価・ログ整備は要追加）。
 - [ ] 学習済み埋め込みを `public.video_embeddings` / `public.user_embeddings`（vector(256)）へアップサートするユーティリティを実装する。
+- [ ] `user_video_decisions` の最新アクティビティをもとに、直近のユーザーのみを対象にした `user_embeddings` の増分更新ジョブ（1時間毎）を提供する。`scripts/sync_user_embeddings` で Docker 実行し、`[ML] Ops - Update User Embeddings` ワークフローから自動起動できること。
 - [ ] モデル成果物（`two_tower_latest.onnx` + メタデータ）を Supabase Storage `models/` バケットへアップロードし、バージョニング/`latest` 更新を管理する。日次のアイテム更新・適時のユーザー更新で ONNX を利用するパイプラインを整備する。
 - [ ] Supabase Storage へのモデル配置手順・命名規則・付随メタデータの保持方式を仕様化し、リリース時に参照可能なドキュメントを整備する。
 - [ ] Edge Function `supabase/functions/ai-recommend` で Two-Tower 類似検索を行い、現在のスタブ（最新/トレンド一覧返却）を置き換える。

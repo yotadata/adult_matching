@@ -1,8 +1,13 @@
 FROM python:3.11-bookworm
 
+ENV PIP_NO_CACHE_DIR=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
 WORKDIR /workspace
 
-COPY scripts/gen_video_embeddings/requirements.txt /tmp/requirements.txt
+COPY scripts/update_user_embeddings/requirements.txt /tmp/requirements.txt
+
 RUN printf '%s\n' \
   'deb https://deb.debian.org/debian bookworm main' \
   'deb https://deb.debian.org/debian bookworm-updates main' \
@@ -14,4 +19,4 @@ RUN printf '%s\n' \
  && pip install --upgrade pip \
  && pip install -r /tmp/requirements.txt
 
-CMD ["python", "scripts/gen_video_embeddings/gen_video_embeddings.py"]
+CMD ["python", "scripts/update_user_embeddings/main.py"]
