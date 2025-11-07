@@ -53,11 +53,7 @@ Google Analytics (GA4) を用いたトラッキング方針と実装手順を整
 | ---------- | -------------- | ---------------------- | ---- |
 | `ai_rec_mode_switch` | モードプリセットを切り替えたとき | `mode_id`, `tone` | 画面上部プリセットの利用頻度を把握 |
 | `ai_rec_custom_apply` | カスタムモードを適用したとき | `mode_id`, `duration`, `mood`, `context` | カスタム操作の浸透度を把握 |
-| `ai_rec_playlist_add` | セクション内の作品をウォッチリストへ追加したとき | `mode_id`, `section_id`, `video_id` | コンバージョンの主要指標 |
-| `ai_rec_playlist_add_section` | セクションをまとめて追加したとき | `mode_id`, `section_id`, `added_count` | まとめ追加の利用状況を把握 |
 | `ai_rec_reason_expand` | 推薦理由を展開/閉じたとき | `mode_id`, `section_id`, `video_id`, `expanded` | 説明データ閲覧率を把握 |
-| `ai_rec_send_to_swipe` | ウォッチリストをスワイプ画面に送ったとき | `mode_id`, `count`, `duration_total` | プレイリスト→スワイプ導線の利用状況 |
-| `ai_rec_playlist_save` | ウォッチリストを保存APIへ送信したとき | `mode_id`, `count`, `visibility` | 保存機能のKPI |
 
 ### レポート観点
 
