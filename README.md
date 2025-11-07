@@ -138,7 +138,12 @@ bash scripts/ingest_fanza/run.sh --help  # 必要な引数を確認
 - リモート DB → ローカル DB 同期（上書き注意）
 
 ```bash
-bash scripts/sync_remote_db/run.sh --yes --mode data --exclude-embeddings --project-ref <your_ref>
+bash scripts/sync_remote_db/run.sh \
+    --env-file docker/env/prd.env \
+    --local-env-file docker/env/dev.env \
+    --yes \
+    --exclude-embeddings \
+    --project-ref mfleexehdteobgsyokex
 # 事後適用（デフォルト）: 既存のローカルCompose上のDBに対してデータのみ流し込みます
 # Supabase CLI のローカルスタック起動や db reset は行いません
 # CLI 管理のローカルスタックを使いたい場合のみ --start-local を付与
