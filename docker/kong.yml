@@ -88,12 +88,6 @@ services:
         paths:
           - /functions/v1/analysis-results
 
-  - name: edge-ai-recommend-playlist
-    url: http://edge-ai-recommend-playlist:9003/
-    routes:
-      - name: functions_v1_ai_recommend_playlist
-        paths:
-          - /functions/v1/ai-recommend-playlist
 
   - name: edge-embed-user
     url: http://edge-embed-user:9004/
