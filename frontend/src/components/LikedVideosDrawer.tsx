@@ -201,7 +201,7 @@ const LikedVideosDrawer: React.FC<LikedVideosDrawerProps> = ({ isOpen, onClose }
                           </button>
                         </div>
                         <div className="text-center">
-                          <Dialog.Title className="text-base font-bold text-gray-900 whitespace-nowrap">いいねしたものリスト</Dialog.Title>
+                          <Dialog.Title className="text-base font-bold text-gray-900 whitespace-nowrap">いいねしたプレイリスト</Dialog.Title>
                         </div>
                         <div className="flex justify-end">
                           <button

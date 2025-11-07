@@ -555,8 +555,8 @@ export default function Home() {
               <button
                 onClick={() => { try { window.dispatchEvent(new Event('open-liked-drawer')); } catch {} }}
                 className="w-[60px] h-[60px] rounded-full bg-[#BEBEBE] shadow-2xl drop-shadow-xl active:scale-95 transition flex items-center justify-center leading-none"
-                aria-label="お気に入りリスト"
-                title="お気に入りリスト"
+                aria-label="お気に入りプレイリスト"
+                title="お気に入りプレイリスト"
               >
                 <List size={28} className="text-white" />
               </button>

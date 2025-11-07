@@ -138,7 +138,7 @@ export default function DesktopSidebar() {
             caption={caption}
           />
           <NavButton label="性癖分析" icon={BarChart2} href="/analysis-results" disabled={!isLoggedIn} />
-          <NavButton label="リスト" icon={List} href="/lists" disabled={!isLoggedIn} />
+          <NavButton label="プレイリスト" icon={List} href="/lists" disabled={!isLoggedIn} />
           {/* 性癖パーソナリティ診断: 準備中表記・disableを解除 */}
         </nav>
         {isLoggedIn && (

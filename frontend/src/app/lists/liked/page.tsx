@@ -42,7 +42,7 @@ export default function LikedListPage() {
 
   const summaryText = useMemo(() => {
     if (loading) return '読み込み中...';
-    if (!isAuthenticated) return 'ログインして、ここにリストを作りましょう';
+    if (!isAuthenticated) return 'ログインして、ここにプレイリストを作りましょう';
     return `${videos.length} 件の作品`;
   }, [loading, isAuthenticated, videos.length]);
 
@@ -50,7 +50,7 @@ export default function LikedListPage() {
     <main className="min-h-screen px-4 sm:px-8 py-10 text-white" style={{ background: GRADIENT }}>
       <section className="w-full max-w-6xl mx-auto rounded-none sm:rounded-2xl bg-white/20 backdrop-blur-xl border border-white/30 shadow-[0_20px_60px_rgba(0,0,0,0.25)] px-4 sm:px-10 py-8 flex flex-col gap-8">
         <header className="space-y-3">
-          <p className="text-sm uppercase tracking-[0.2em] text-white/60">List</p>
+          <p className="text-sm uppercase tracking-[0.2em] text-white/60">Playlist</p>
           <h1 className="text-3xl sm:text-4xl font-bold">いいねした作品</h1>
           <p className="text-white/80 text-sm sm:text-base">{summaryText}</p>
         </header>
@@ -63,7 +63,7 @@ export default function LikedListPage() {
 
         {!isAuthenticated && !loading ? (
           <div className="rounded-2xl bg-white/10 border border-white/15 p-8 text-center space-y-4">
-            <p className="text-sm text-white/80">ログインすると、LIKE した作品を自動的にリストへ保存します。</p>
+            <p className="text-sm text-white/80">ログインすると、LIKE した作品を自動的にプレイリストへ保存します。</p>
             <button
               type="button"
               onClick={() => {
