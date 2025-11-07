@@ -76,7 +76,7 @@ if [[ ${#GEN_ARGS[@]} -gt 0 ]]; then
 fi
 GEN_VIDEO_ENV_FILE="$ENV_FILE" GEN_VIDEO_OUTPUT_DIR="$OUTPUT_DIR" "${GEN_CMD[@]}"
 
-echo "[sync-user] generator finished"
+echo "[sync-user] generator finished (parquet: ${OUTPUT_DIR}/user_embeddings.parquet)"
 if [[ "$DRY_RUN" == "true" ]]; then
   echo "[sync-user] dry-run requested; skipping upsert"
   exit 0
