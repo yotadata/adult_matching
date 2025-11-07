@@ -94,3 +94,10 @@ services:
       - name: functions_v1_ai_recommend_playlist
         paths:
           - /functions/v1/ai-recommend-playlist
+
+  - name: edge-embed-user
+    url: http://edge-embed-user:9004/
+    routes:
+      - name: functions_v1_embed_user
+        paths:
+          - /functions/v1/embed-user
