@@ -77,6 +77,11 @@ fi
 GEN_VIDEO_ENV_FILE="$ENV_FILE" GEN_VIDEO_OUTPUT_DIR="$OUTPUT_DIR" "${GEN_CMD[@]}"
 
 echo "[sync-user] generator finished (parquet: ${OUTPUT_DIR}/user_embeddings.parquet)"
+parquet_path="${OUTPUT_DIR}/user_embeddings.parquet"
+if [[ ! -f "$parquet_path" ]]; then
+  echo "[sync-user] no embeddings generated; skipping upsert"
+  exit 0
+fi
 if [[ "$DRY_RUN" == "true" ]]; then
   echo "[sync-user] dry-run requested; skipping upsert"
   exit 0

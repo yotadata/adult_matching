@@ -12,7 +12,7 @@ on:
         required: false
         default: 'false'
   schedule:
-    - cron: '0 * * * *' # 毎時 0 分 (UTC)
+    - cron: '0 */8 * * *' # 8時間毎 (UTC)
 
 jobs:
   run:
