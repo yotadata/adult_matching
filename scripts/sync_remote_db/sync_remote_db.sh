@@ -184,6 +184,34 @@ _detect_db_port() {
   printf "%s" "${db_port:-54322}"
 }
 
+_ensure_ipv4_conninfo() {
+  local conninfo="$1"
+  python - <<'PY'
+import os, socket, urllib.parse, sys
+conn = sys.argv[1]
+try:
+    parsed = urllib.parse.urlsplit(conn)
+except Exception:
+    print(conn)
+    sys.exit()
+if not parsed.hostname:
+    print(conn)
+    sys.exit()
+try:
+    infos = socket.getaddrinfo(parsed.hostname, parsed.port or 5432, socket.AF_INET)
+except socket.gaierror:
+    infos = []
+ipv4 = next((info[4][0] for info in infos if info[0] == socket.AF_INET), None)
+if not ipv4:
+    print(conn)
+    sys.exit()
+query = urllib.parse.parse_qs(parsed.query, keep_blank_values=True)
+query.setdefault('hostaddr', []).append(ipv4)
+new_query = urllib.parse.urlencode(query, doseq=True)
+print(urllib.parse.urlunsplit((parsed.scheme, parsed.netloc, parsed.path, new_query, parsed.fragment)))
+PY
+}
+
 run_sql() {
   local sql="$1"
   local host="$LOCAL_DB_HOST_VALUE"
@@ -347,26 +375,21 @@ build_target_schemas() {
   TARGET_SCHEMA_SQL_LIST="$sql_list"
 }
 
-build_exclude_args() {
-  EXCLUDE_ARGS=()
-  if [[ "$EXCLUDE_EMBEDDINGS" == "true" ]]; then
-    EXCLUDE_ARGS+=(-x public.video_embeddings -x public.user_embeddings)
+sync_schema_migrations() {
+  if [[ -z "$REMOTE_DB_URL" ]]; then
+    echo "[warn] REMOTE_DB_URL not set; skipping schema_migrations sync"
+    return
   fi
-  if [[ -n "$EXCLUDE_LIST" ]]; then
-    local -a parts
-    IFS=',' read -ra parts <<<"$EXCLUDE_LIST"
-    for part in "${parts[@]}"; do
-      local trimmed
-      trimmed=$(printf '%s' "$part" | sed 's/^ *//;s/ *$//')
-      [[ -z "$trimmed" ]] && continue
-      if [[ "$trimmed" != *.* ]]; then
-        trimmed="public.$trimmed"
-      fi
-      EXCLUDE_ARGS+=(-x "$trimmed")
-    done
-  fi
+  local schema_dump="$TMP_DIR/schema_migrations.sql"
+  echo "Dumping public.schema_migrations via supabase CLI..."
+  supabase db dump --db-url "$REMOTE_DB_URL" --data-only --use-copy -s public -f "$schema_dump"
+  # Keep only schema_migrations table
+  awk '/COPY public.schema_migrations /, /^\\./ {print} /^\\./ && in_block {in_block=0} /COPY public.schema_migrations / {in_block=1}' "$schema_dump" > "$schema_dump.filtered"
+  mv "$schema_dump.filtered" "$schema_dump"
+  echo "Restoring public.schema_migrations..."
+  run_sql "TRUNCATE TABLE public.schema_migrations;"
+  restore_with_psql "$schema_dump"
 }
-
 
 run_sync() {
   build_target_schemas
@@ -448,22 +471,12 @@ SQL
   else
     DATA_ARGS+=( --linked )
   fi
-  if [[ -n "${EXCLUDE_ARGS[*]:-}" ]]; then
-    DATA_ARGS+=("${EXCLUDE_ARGS[@]}")
-  fi
   supabase db dump "${DATA_ARGS[@]}"
 
   echo "Applying remote data to local..."
   restore_with_psql "$DATA_FILE"
 
-  echo "Syncing public.schema_migrations..."
-  if [[ -n "$REMOTE_DB_URL" ]]; then
-    supabase db dump --db-url "$REMOTE_DB_URL" --data-only --use-copy -s public -t schema_migrations -f "$TMP_DIR/schema_migrations.sql"
-  else
-    supabase db dump --linked --data-only --use-copy -s public -t schema_migrations -f "$TMP_DIR/schema_migrations.sql"
-  fi
-  run_sql "TRUNCATE TABLE public.schema_migrations;"
-  restore_with_psql "$TMP_DIR/schema_migrations.sql"
+  sync_schema_migrations
 
   echo "Done. Local DB now mirrors remote schema and data ($PROJECT_REF)."
 }
