@@ -6,7 +6,7 @@ on:
       recent_hours:
         description: '直近何時間分のユーザーを対象にするか'
         required: false
-        default: '1'
+        default: '8'
       skip_fetch:
         description: 'Storage からモデルを取得するステップをスキップ'
         required: false
