@@ -380,16 +380,13 @@ sync_schema_migrations() {
     echo "[warn] REMOTE_DB_URL not set; skipping schema_migrations sync"
     return
   fi
-  local schema_dump="$TMP_DIR/schema_migrations.sql"
-  echo "Dumping public.schema_migrations via supabase CLI..."
-  supabase db dump --db-url "$REMOTE_DB_URL" --data-only --use-copy -s public -f "$schema_dump"
-  # Keep only schema_migrations table
-  awk '/COPY public.schema_migrations /, /^\\./ {print} /^\\./ && in_block {in_block=0} /COPY public.schema_migrations / {in_block=1}' "$schema_dump" > "$schema_dump.filtered"
-  mv "$schema_dump.filtered" "$schema_dump"
-  echo "Restoring public.schema_migrations..."
-  run_sql "CREATE TABLE IF NOT EXISTS public.schema_migrations (version bigint PRIMARY KEY);"
-  run_sql "TRUNCATE TABLE public.schema_migrations;"
-  restore_with_psql "$schema_dump"
+  local supa_dump="$TMP_DIR/supabase_migrations.sql"
+  echo "Dumping supabase_migrations schema via supabase CLI..."
+  supabase db dump --db-url "$REMOTE_DB_URL" --data-only --use-copy -s supabase_migrations -f "$supa_dump"
+  echo "Restoring supabase_migrations schema..."
+  run_sql "DROP SCHEMA IF EXISTS supabase_migrations CASCADE;"
+  run_sql "CREATE SCHEMA IF NOT EXISTS supabase_migrations;"
+  restore_with_psql "$supa_dump"
 }
 
 run_sync() {
