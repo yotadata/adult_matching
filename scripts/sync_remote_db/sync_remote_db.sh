@@ -21,9 +21,7 @@
 #   scripts/sync-remote-db-to-local.sh --project-ref abcd1234 --yes --no-start
 #
 # Notes:
-# - This approach keeps local `supabase_migrations.schema_migrations` untouched, so `migration up` / `db push`
-#   work from your local migration files as usual.
-# - We import data only from common schemas (public, auth, storage, graphql_public) by default.
+# - `public.schema_migrations`（pop が参照）もリモートの値で上書きする。
 # - If you need a full mirror including schema & migration history, consider a separate "full" mode.
 
 set -euo pipefail
@@ -450,11 +448,22 @@ SQL
   else
     DATA_ARGS+=( --linked )
   fi
-  DATA_ARGS+=("${EXCLUDE_ARGS[@]}")
+  if [[ -n "${EXCLUDE_ARGS[*]:-}" ]]; then
+    DATA_ARGS+=("${EXCLUDE_ARGS[@]}")
+  fi
   supabase db dump "${DATA_ARGS[@]}"
 
   echo "Applying remote data to local..."
   restore_with_psql "$DATA_FILE"
+
+  echo "Syncing public.schema_migrations..."
+  if [[ -n "$REMOTE_DB_URL" ]]; then
+    supabase db dump --db-url "$REMOTE_DB_URL" --data-only --use-copy -s public -t schema_migrations -f "$TMP_DIR/schema_migrations.sql"
+  else
+    supabase db dump --linked --data-only --use-copy -s public -t schema_migrations -f "$TMP_DIR/schema_migrations.sql"
+  fi
+  run_sql "TRUNCATE TABLE public.schema_migrations;"
+  restore_with_psql "$TMP_DIR/schema_migrations.sql"
 
   echo "Done. Local DB now mirrors remote schema and data ($PROJECT_REF)."
 }
