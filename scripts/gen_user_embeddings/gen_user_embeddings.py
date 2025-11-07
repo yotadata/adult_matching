@@ -266,7 +266,7 @@ def fetch_target_users(
               SELECT 1
               FROM public.user_video_decisions uvd
               WHERE uvd.user_id = uf.user_id
-                AND uvd.created_at >= (now() AT TIME ZONE 'UTC') - make_interval(hours => %(recent_hours)s)
+                AND uvd.created_at >= (now() AT TIME ZONE 'UTC') - ((%(recent_hours)s)::numeric * interval '1 hour')
             )
             """
         )
