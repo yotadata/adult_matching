@@ -387,6 +387,7 @@ sync_schema_migrations() {
   awk '/COPY public.schema_migrations /, /^\\./ {print} /^\\./ && in_block {in_block=0} /COPY public.schema_migrations / {in_block=1}' "$schema_dump" > "$schema_dump.filtered"
   mv "$schema_dump.filtered" "$schema_dump"
   echo "Restoring public.schema_migrations..."
+  run_sql "CREATE TABLE IF NOT EXISTS public.schema_migrations (version bigint PRIMARY KEY);"
   run_sql "TRUNCATE TABLE public.schema_migrations;"
   restore_with_psql "$schema_dump"
 }
