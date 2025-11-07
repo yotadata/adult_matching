@@ -1,7 +1,7 @@
 'use client';
 
 import { Dialog, Transition } from '@headlessui/react';
-import { Fragment, useState, useEffect } from 'react';
+import { Fragment, useState, useEffect, useMemo } from 'react';
 import { X, Filter } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -49,10 +49,32 @@ const LikedVideosDrawer: React.FC<LikedVideosDrawerProps> = ({ isOpen, onClose }
   const [performerOptions, setPerformerOptions] = useState<{ id: string; name: string; cnt?: number }[]>([]);
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
   const [selectedPerformerIds, setSelectedPerformerIds] = useState<string[]>([]);
+  const [tagSearch, setTagSearch] = useState('');
+  const [performerSearch, setPerformerSearch] = useState('');
   const pageSize = 40;
   const [detailOpen, setDetailOpen] = useState(false);
   const [detailVideoId, setDetailVideoId] = useState<string | null>(null);
   const [mobileShowFilters, setMobileShowFilters] = useState(false);
+
+  const filteredTagOptions = useMemo(() => {
+    if (!tagSearch.trim()) return tagOptions;
+    const keyword = tagSearch.trim().toLowerCase();
+    return tagOptions.filter((tag) => tag.name.toLowerCase().includes(keyword));
+  }, [tagOptions, tagSearch]);
+
+  const filteredPerformerOptions = useMemo(() => {
+    if (!performerSearch.trim()) return performerOptions;
+    const keyword = performerSearch.trim().toLowerCase();
+    return performerOptions.filter((perf) => perf.name.toLowerCase().includes(keyword));
+  }, [performerOptions, performerSearch]);
+
+  const toggleTag = (id: string) => {
+    setSelectedTagIds((prev) => (prev.includes(id) ? prev.filter((value) => value !== id) : [...prev, id]));
+  };
+
+  const togglePerformer = (id: string) => {
+    setSelectedPerformerIds((prev) => (prev.includes(id) ? prev.filter((value) => value !== id) : [...prev, id]));
+  };
 
   // DMM/FANZA アフィリエイトリンクへ変換（既にal.fanza.co.jpならそのまま）
   const toFanzaAffiliate = (raw: string | undefined | null): string | undefined => {
@@ -252,38 +274,71 @@ const LikedVideosDrawer: React.FC<LikedVideosDrawerProps> = ({ isOpen, onClose }
                             </div>
                           )}
 
-                          {/* セレクター（選択・解除がしやすいよう残す） */}
-                          <div className="mb-3">
-                            <label className="block text-xs text-gray-600 mb-1">タグで絞り込み</label>
-                            <select
-                              multiple
-                              className="w-full border border-gray-300 rounded-lg px-2 py-2 h-28 bg-white text-gray-800"
-                              value={selectedTagIds}
-                              onChange={(e) => {
-                                const opts = Array.from(e.target.selectedOptions).map(o => o.value);
-                                setSelectedTagIds(opts);
-                              }}
-                            >
-                              {tagOptions.map((t) => (
-                                <option key={t.id} value={t.id}>{t.name}{typeof t.cnt === 'number' ? ` (${t.cnt})` : ''}</option>
-                              ))}
-                            </select>
+                          <div className="mb-3 space-y-2">
+                            <label className="block text-xs text-gray-600">タグで絞り込み</label>
+                            <input
+                              type="text"
+                              value={tagSearch}
+                              onChange={(e) => setTagSearch(e.target.value)}
+                              placeholder="タグ名で検索"
+                              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-800 focus:ring-2 focus:ring-rose-200"
+                            />
+                            <div className="flex flex-wrap gap-2 max-h-36 overflow-y-auto">
+                              {filteredTagOptions.length === 0 ? (
+                                <span className="text-xs text-gray-400">該当するタグがありません</span>
+                              ) : (
+                                filteredTagOptions.map((tag) => {
+                                  const active = selectedTagIds.includes(tag.id);
+                                  return (
+                                    <button
+                                      type="button"
+                                      key={tag.id}
+                                      onClick={() => toggleTag(tag.id)}
+                                      className={`px-2 py-1 rounded-full border text-xs transition ${
+                                        active
+                                          ? 'border-rose-400 bg-rose-500/10 text-rose-600'
+                                          : 'border-gray-300 bg-white text-gray-700 hover:border-rose-200'
+                                      }`}
+                                    >
+                                      #{tag.name}{typeof tag.cnt === 'number' ? ` (${tag.cnt})` : ''}
+                                    </button>
+                                  );
+                                })
+                              )}
+                            </div>
                           </div>
-                          <div>
-                            <label className="block text-xs text-gray-600 mb-1">出演で絞り込み</label>
-                            <select
-                              multiple
-                              className="w-full border border-gray-300 rounded-lg px-2 py-2 h-28 bg-white text-gray-800"
-                              value={selectedPerformerIds}
-                              onChange={(e) => {
-                                const opts = Array.from(e.target.selectedOptions).map(o => o.value);
-                                setSelectedPerformerIds(opts);
-                              }}
-                            >
-                              {performerOptions.map((p) => (
-                                <option key={p.id} value={p.id}>{p.name}{typeof p.cnt === 'number' ? ` (${p.cnt})` : ''}</option>
-                              ))}
-                            </select>
+                          <div className="space-y-2">
+                            <label className="block text-xs text-gray-600">出演で絞り込み</label>
+                            <input
+                              type="text"
+                              value={performerSearch}
+                              onChange={(e) => setPerformerSearch(e.target.value)}
+                              placeholder="出演者名で検索"
+                              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-800 focus:ring-2 focus:ring-violet-200"
+                            />
+                            <div className="flex flex-wrap gap-2 max-h-36 overflow-y-auto">
+                              {filteredPerformerOptions.length === 0 ? (
+                                <span className="text-xs text-gray-400">該当する出演者がありません</span>
+                              ) : (
+                                filteredPerformerOptions.map((perf) => {
+                                  const active = selectedPerformerIds.includes(perf.id);
+                                  return (
+                                    <button
+                                      type="button"
+                                      key={perf.id}
+                                      onClick={() => togglePerformer(perf.id)}
+                                      className={`px-2 py-1 rounded-full border text-xs transition ${
+                                        active
+                                          ? 'border-indigo-400 bg-indigo-500/10 text-indigo-600'
+                                          : 'border-gray-300 bg-white text-gray-700 hover:border-indigo-200'
+                                      }`}
+                                    >
+                                      {perf.name}{typeof perf.cnt === 'number' ? ` (${perf.cnt})` : ''}
+                                    </button>
+                                  );
+                                })
+                              )}
+                            </div>
                           </div>
                         </div>
                       )}
@@ -386,38 +441,72 @@ const LikedVideosDrawer: React.FC<LikedVideosDrawerProps> = ({ isOpen, onClose }
                         </div>
                         <div className="md:col-span-7" />
                         {/* Tags */}
-                        <div className="md:col-span-6">
-                          <label className="block text-xs text-gray-600 mb-1">タグで絞り込み</label>
-                          <select
-                            multiple
-                            className="w-full border border-gray-300 rounded-lg px-2 py-2 h-28 bg-white text-gray-800"
-                            value={selectedTagIds}
-                            onChange={(e) => {
-                              const opts = Array.from(e.target.selectedOptions).map(o => o.value);
-                              setSelectedTagIds(opts);
-                            }}
-                          >
-                            {tagOptions.map((t) => (
-                              <option key={t.id} value={t.id}>{t.name}{typeof t.cnt === 'number' ? ` (${t.cnt})` : ''}</option>
-                            ))}
-                          </select>
+                        <div className="md:col-span-6 space-y-2">
+                          <label className="block text-xs text-gray-600">タグで絞り込み</label>
+                          <input
+                            type="text"
+                            value={tagSearch}
+                            onChange={(e) => setTagSearch(e.target.value)}
+                            placeholder="タグ名で検索"
+                            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-800 focus:ring-2 focus:ring-rose-200"
+                          />
+                          <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto">
+                            {filteredTagOptions.length === 0 ? (
+                              <span className="text-xs text-gray-400">該当するタグがありません</span>
+                            ) : (
+                              filteredTagOptions.map((tag) => {
+                                const active = selectedTagIds.includes(tag.id);
+                                return (
+                                  <button
+                                    type="button"
+                                    key={tag.id}
+                                    onClick={() => toggleTag(tag.id)}
+                                    className={`px-2 py-1 rounded-full border text-xs transition ${
+                                      active
+                                        ? 'border-rose-400 bg-rose-500/10 text-rose-600'
+                                        : 'border-gray-300 bg-white text-gray-700 hover:border-rose-200'
+                                    }`}
+                                  >
+                                    #{tag.name}{typeof tag.cnt === 'number' ? ` (${tag.cnt})` : ''}
+                                  </button>
+                                );
+                              })
+                            )}
+                          </div>
                         </div>
                         {/* Performers */}
-                        <div className="md:col-span-6">
-                          <label className="block text-xs text-gray-600 mb-1">出演で絞り込み</label>
-                          <select
-                            multiple
-                            className="w-full border border-gray-300 rounded-lg px-2 py-2 h-28 bg-white text-gray-800"
-                            value={selectedPerformerIds}
-                            onChange={(e) => {
-                              const opts = Array.from(e.target.selectedOptions).map(o => o.value);
-                              setSelectedPerformerIds(opts);
-                            }}
-                          >
-                            {performerOptions.map((p) => (
-                              <option key={p.id} value={p.id}>{p.name}{typeof p.cnt === 'number' ? ` (${p.cnt})` : ''}</option>
-                            ))}
-                          </select>
+                        <div className="md:col-span-6 space-y-2">
+                          <label className="block text-xs text-gray-600">出演で絞り込み</label>
+                          <input
+                            type="text"
+                            value={performerSearch}
+                            onChange={(e) => setPerformerSearch(e.target.value)}
+                            placeholder="出演者名で検索"
+                            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-800 focus:ring-2 focus:ring-violet-200"
+                          />
+                          <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto">
+                            {filteredPerformerOptions.length === 0 ? (
+                              <span className="text-xs text-gray-400">該当する出演者がありません</span>
+                            ) : (
+                              filteredPerformerOptions.map((perf) => {
+                                const active = selectedPerformerIds.includes(perf.id);
+                                return (
+                                  <button
+                                    type="button"
+                                    key={perf.id}
+                                    onClick={() => togglePerformer(perf.id)}
+                                    className={`px-2 py-1 rounded-full border text-xs transition ${
+                                      active
+                                        ? 'border-indigo-400 bg-indigo-500/10 text-indigo-600'
+                                        : 'border-gray-300 bg-white text-gray-700 hover:border-indigo-200'
+                                    }`}
+                                  >
+                                    {perf.name}{typeof perf.cnt === 'number' ? ` (${perf.cnt})` : ''}
+                                  </button>
+                                );
+                              })
+                            )}
+                          </div>
                         </div>
                         <div className="md:col-span-12 flex justify-end gap-2">
                           <button
