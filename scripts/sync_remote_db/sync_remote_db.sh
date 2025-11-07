@@ -386,6 +386,7 @@ sync_schema_migrations() {
   echo "Restoring supabase_migrations schema..."
   run_sql "DROP SCHEMA IF EXISTS supabase_migrations CASCADE;"
   run_sql "CREATE SCHEMA IF NOT EXISTS supabase_migrations;"
+  run_sql "CREATE TABLE IF NOT EXISTS supabase_migrations.schema_migrations (version bigint PRIMARY KEY);"
   restore_with_psql "$supa_dump"
 }
 
