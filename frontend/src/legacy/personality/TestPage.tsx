@@ -1,3 +1,6 @@
+// Legacy copy of the personality quiz page (previously served at /personality).
+// Kept for potential future restoration; not exported through the App Router.
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -6,7 +9,7 @@ import { quizQuestions } from '@/data/personalityQuiz';
 import { calculatePersonalityType, Answer } from '@/lib/personalityCalculator';
 import LikertScale from '@/components/LikertScale';
 
-export default function PersonalityTestPage() {
+export default function PersonalityTestLegacy() {
   const router = useRouter();
   const [answers, setAnswers] = useState<Answer[]>([]);
   const [isFinished, setIsFinished] = useState(false);
@@ -23,7 +26,7 @@ export default function PersonalityTestPage() {
   }, [answers, router]);
 
   const handleAnswer = (questionId: number, value: number) => {
-    const newAnswers = answers.filter(a => a.questionId !== questionId);
+    const newAnswers = answers.filter((answer) => answer.questionId !== questionId);
     setAnswers([...newAnswers, { questionId, value }]);
   };
 
@@ -31,7 +34,7 @@ export default function PersonalityTestPage() {
     return (
       <div className="flex flex-col items-center justify-center h-[50vh]">
         <p className="text-gray-800 text-xl">診断結果を計算しています...</p>
-        <div className="w-16 h-16 mt-6 rounded-full border-4 border-gray-400 border-t-gray-800 animate-spin"></div>
+        <div className="w-16 h-16 mt-6 rounded-full border-4 border-gray-400 border-t-gray-800 animate-spin" />
       </div>
     );
   }
@@ -44,9 +47,9 @@ export default function PersonalityTestPage() {
             <span className="text-gray-800/60 mr-2">{index + 1}.</span>
             {question.text}
           </h3>
-          <LikertScale 
-            value={answers.find(a => a.questionId === question.id)?.value}
-            onChange={(value) => handleAnswer(question.id, value)} 
+          <LikertScale
+            value={answers.find((answer) => answer.questionId === question.id)?.value}
+            onChange={(value) => handleAnswer(question.id, value)}
           />
         </div>
       ))}

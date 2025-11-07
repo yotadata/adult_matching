@@ -8,7 +8,7 @@ import useMediaQuery from '@/hooks/useMediaQuery';
 import { supabase } from '@/lib/supabase';
 import { User as SupabaseUser } from '@supabase/supabase-js';
 import { Dialog, Transition } from '@headlessui/react';
-import { UserPlus, Menu as MenuIcon, X, Home as HomeIcon, Sparkles, BarChart2, Brain } from 'lucide-react';
+import { UserPlus, Menu as MenuIcon, X, Home as HomeIcon, Sparkles, BarChart2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import LikedVideosDrawer from './LikedVideosDrawer'; // ドロワーコンポーネントをインポート
 import { toast } from 'react-hot-toast';
@@ -27,7 +27,6 @@ const Header = ({ cardWidth, mobileGauge }: { cardWidth: number | undefined; mob
   const router = useRouter();
   const [decisionCount, setDecisionCount] = useState<number>(0);
   const personalizeTarget = Number(process.env.NEXT_PUBLIC_PERSONALIZE_TARGET || 20);
-  const diagnosisTarget = Number(process.env.NEXT_PUBLIC_DIAGNOSIS_TARGET || 30);
 
   useEffect(() => {
     const getSession = async () => {
@@ -227,16 +226,6 @@ const Header = ({ cardWidth, mobileGauge }: { cardWidth: number | undefined; mob
                               <button className="w-full flex items-center gap-3 text-left px-4 py-3 text-gray-800 hover:bg-gray-100" onClick={() => { setIsMenuDrawerOpen(false); router.push('/analysis-results'); }}>
                                 <BarChart2 size={18} />
                                 <span>性癖分析</span>
-                              </button>
-                              <button className="w-full text-left px-4 py-3 text-gray-800 hover:bg-gray-100" onClick={() => { setIsMenuDrawerOpen(false); router.push('/personality'); }}>
-                                <div className="flex items-center gap-3 text-gray-800 mb-2">
-                                  <Brain size={18} />
-                                  <span>性癖パーソナリティ診断</span>
-                                </div>
-                                <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
-                                  <div className="h-full rounded-full" style={{ width: `${Math.min(decisionCount / diagnosisTarget, 1) * 100}%`, background: 'linear-gradient(90deg, #ADB4E3 0%, #C8BAE3 33.333%, #F7BECE 66.666%, #F9B1C4 100%)' }} />
-                                </div>
-                                <div className="mt-1 text-xs text-gray-600 text-right">診断まであと{Math.max(diagnosisTarget - decisionCount, 0)}枚</div>
                               </button>
                             </div>
                             <div className="border-t px-4 py-3">

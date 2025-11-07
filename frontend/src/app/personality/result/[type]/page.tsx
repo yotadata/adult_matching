@@ -15,8 +15,8 @@ export default function ResultPage() {
       <div className="flex flex-col items-center justify-center min-h-screen text-white">
         <h1 className="text-2xl font-bold mb-4">診断結果が見つかりません</h1>
         <p className="mb-8">URLが正しいか確認してください。</p>
-        <Link href="/personality" className="px-6 py-2 rounded-full bg-white text-gray-900 font-bold">
-          診断をやり直す
+        <Link href="/swipe" className="px-6 py-2 rounded-full bg-white text-gray-900 font-bold">
+          スワイプに戻る
         </Link>
       </div>
     );
@@ -37,10 +37,10 @@ export default function ResultPage() {
 
         <div className="mt-10 flex flex-col sm:flex-row gap-4">
           <Link 
-            href="/personality"
+            href="/swipe"
             className="w-full sm:w-auto px-8 py-3 rounded-full bg-white text-gray-900 font-bold shadow-lg hover:bg-gray-200 transition-all duration-300 transform hover:scale-105"
           >
-            もう一度診断する
+            スワイプに戻る
           </Link>
           <Link 
             href="/swipe"

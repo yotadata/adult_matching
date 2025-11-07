@@ -4,7 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import { Home as HomeIcon, Sparkles, BarChart2, Brain, UserPlus, LogOut } from 'lucide-react';
+import { Home as HomeIcon, Sparkles, BarChart2, UserPlus, LogOut } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { forceClearSupabaseAuth } from '@/lib/authUtils';
 import { useDecisionCount } from '@/hooks/useDecisionCount';
@@ -139,7 +139,6 @@ export default function DesktopSidebar() {
           />
           <NavButton label="性癖分析" icon={BarChart2} href="/analysis-results" disabled={!isLoggedIn} />
           {/* 性癖パーソナリティ診断: 準備中表記・disableを解除 */}
-          <NavButton label="性癖パーソナリティ診断" icon={Brain} href="/personality" />
         </nav>
         {isLoggedIn && (
           <div className="p-3 border-t border-white/30">
