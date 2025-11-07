@@ -15,6 +15,8 @@ type ListEntry = {
   count?: number;
 };
 
+const GRADIENT = 'linear-gradient(90deg, #C4C8E3 0%, #D7D1E3 33.333%, #F7D7E0 66.666%, #F9C9D6 100%)';
+
 export default function ListsPage() {
   const [likedCount, setLikedCount] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
@@ -49,7 +51,7 @@ export default function ListsPage() {
     {
       id: 'liked',
       title: 'いいねした作品',
-      description: 'あなたがLIKEした作品のアーカイブです。後から再チェックできます。',
+      description: 'AIレコメンドやスワイプでLIKEした作品をまとめて見返せます。',
       href: '/lists/liked',
       icon: Heart,
       accent: 'from-rose-500/80 to-pink-400/80',
@@ -58,8 +60,8 @@ export default function ListsPage() {
   ];
 
   return (
-    <main className="min-h-screen px-4 sm:px-8 py-10 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white">
-      <div className="max-w-5xl mx-auto flex flex-col gap-8">
+    <main className="min-h-screen px-4 sm:px-8 py-10 text-white" style={{ background: GRADIENT }}>
+      <section className="w-full max-w-5xl mx-auto rounded-none sm:rounded-2xl bg-white/20 backdrop-blur-xl border border-white/30 shadow-[0_20px_60px_rgba(0,0,0,0.25)] px-4 sm:px-8 py-8 flex flex-col gap-8">
         <header className="space-y-3">
           <p className="text-sm uppercase tracking-[0.2em] text-white/60">Lists</p>
           <h1 className="text-3xl sm:text-4xl font-bold">あなたのリスト</h1>
@@ -80,25 +82,25 @@ export default function ListsPage() {
               <Link
                 key={list.id}
                 href={list.href}
-                className="group rounded-2xl border border-white/10 bg-white/5 backdrop-blur hover:bg-white/10 transition-all duration-200 p-6 flex flex-col gap-4"
+                className="group rounded-2xl border border-white/30 bg-white/90 text-gray-900 hover:bg-white transition-all duration-200 p-6 flex flex-col gap-4 shadow-lg"
               >
-                <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${list.accent} flex items-center justify-center text-white shadow-lg`}>
+                <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${list.accent} flex items-center justify-center text-white shadow-md`}>
                   <Icon size={22} />
                 </div>
                 <div className="space-y-2">
                   <div className="flex items-center justify-between gap-4">
-                    <h2 className="text-xl font-semibold">{list.title}</h2>
+                    <h2 className="text-xl font-semibold text-gray-900">{list.title}</h2>
                     {typeof list.count === 'number' ? (
-                      <span className="text-sm text-white/70">{loading ? '—' : `${list.count} 件`}</span>
+                      <span className="text-sm text-gray-500">{loading ? '—' : `${list.count} 件`}</span>
                     ) : (
-                      <span className="text-sm text-white/70">{loading ? '—' : 'データなし'}</span>
+                      <span className="text-sm text-gray-500">{loading ? '—' : 'データなし'}</span>
                     )}
                   </div>
-                  <p className="text-sm text-white/70 leading-relaxed">
+                  <p className="text-sm text-gray-600 leading-relaxed">
                     {list.description}
                   </p>
                 </div>
-                <div className="mt-auto text-sm font-semibold text-white/90 inline-flex items-center gap-2">
+                <div className="mt-auto text-sm font-semibold text-rose-500 inline-flex items-center gap-2">
                   <span>このリストを開く</span>
                   <span className="transition-transform group-hover:translate-x-1">→</span>
                 </div>
@@ -106,7 +108,7 @@ export default function ListsPage() {
             );
           })}
         </section>
-      </div>
+      </section>
     </main>
   );
 }

@@ -6,6 +6,8 @@ import Link from 'next/link';
 import { Tag, Users, ExternalLink } from 'lucide-react';
 import { useLikedVideos } from '@/hooks/useLikedVideos';
 
+const GRADIENT = 'linear-gradient(90deg, #C4C8E3 0%, #D7D1E3 33.333%, #F7D7E0 66.666%, #F9C9D6 100%)';
+
 const formatPrice = (price?: number | null) => {
   if (!price || price <= 0) return '価格情報なし';
   return `￥${price.toLocaleString()}`;
@@ -30,7 +32,7 @@ const toAffiliateUrl = (raw?: string | null) => {
       return url.toString();
     }
   } catch {
-    /* ignore */
+    /* noop */
   }
   return `https://al.fanza.co.jp/?lurl=${encodeURIComponent(raw)}&af_id=${encodeURIComponent(AF_ID)}&ch=link_tool&ch_id=link`;
 };
@@ -45,10 +47,10 @@ export default function LikedListPage() {
   }, [loading, isAuthenticated, videos.length]);
 
   return (
-    <main className="min-h-screen px-4 sm:px-8 py-10 bg-slate-950 text-white">
-      <div className="max-w-6xl mx-auto flex flex-col gap-6">
-        <header className="flex flex-col gap-2">
-          <p className="text-xs uppercase tracking-[0.4em] text-white/60">List</p>
+    <main className="min-h-screen px-4 sm:px-8 py-10 text-white" style={{ background: GRADIENT }}>
+      <section className="w-full max-w-6xl mx-auto rounded-none sm:rounded-2xl bg-white/20 backdrop-blur-xl border border-white/30 shadow-[0_20px_60px_rgba(0,0,0,0.25)] px-4 sm:px-10 py-8 flex flex-col gap-8">
+        <header className="space-y-3">
+          <p className="text-sm uppercase tracking-[0.2em] text-white/60">List</p>
           <h1 className="text-3xl sm:text-4xl font-bold">いいねした作品</h1>
           <p className="text-white/80 text-sm sm:text-base">{summaryText}</p>
         </header>
@@ -60,11 +62,11 @@ export default function LikedListPage() {
         ) : null}
 
         {!isAuthenticated && !loading ? (
-          <div className="rounded-2xl bg-white/10 border border-white/10 p-8 text-center space-y-4">
+          <div className="rounded-2xl bg-white/10 border border-white/15 p-8 text-center space-y-4">
             <p className="text-sm text-white/80">ログインすると、LIKE した作品を自動的にリストへ保存します。</p>
             <button
               type="button"
-              onClick={async () => {
+              onClick={() => {
                 const event = new CustomEvent('open-auth-modal');
                 window.dispatchEvent(event);
               }}
@@ -78,9 +80,9 @@ export default function LikedListPage() {
             {videos.map((video) => (
               <article
                 key={video.external_id}
-                className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm overflow-hidden flex flex-col sm:flex-row gap-4 p-4"
+                className="rounded-2xl border border-white/30 bg-white/95 text-gray-900 overflow-hidden flex flex-col sm:flex-row gap-4 p-4 shadow-lg"
               >
-                <div className="relative w-full sm:w-48 aspect-video rounded-xl overflow-hidden bg-slate-900/40">
+                <div className="relative w-full sm:w-48 aspect-video rounded-xl overflow-hidden bg-slate-200">
                   {video.thumbnail_url ? (
                     <Image
                       src={video.thumbnail_url}
@@ -89,26 +91,26 @@ export default function LikedListPage() {
                       className="object-cover"
                     />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center text-sm text-white/50">
+                    <div className="w-full h-full flex items-center justify-center text-sm text-gray-500">
                       No Image
                     </div>
                   )}
                 </div>
                 <div className="flex flex-col gap-3 flex-1 min-w-0">
                   <h2 className="text-lg font-semibold line-clamp-2">{video.title}</h2>
-                  <div className="text-sm text-white/70 space-y-1">
+                  <div className="text-sm text-gray-600 space-y-1">
                     <p>{formatPrice(video.price)}</p>
                     <p>リリース日: {formatDate(video.product_released_at)}</p>
                   </div>
-                  <div className="flex flex-wrap gap-2 text-xs text-white/70">
+                  <div className="flex flex-wrap gap-2 text-xs text-gray-600">
                     {video.tags?.slice(0, 3).map((tag) => (
-                      <span key={tag.id} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/10 border border-white/20">
+                      <span key={tag.id} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gray-100 border border-gray-200">
                         <Tag size={12} />
                         {tag.name}
                       </span>
                     ))}
                     {video.performers?.slice(0, 2).map((perf) => (
-                      <span key={perf.id} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/10 border border-white/20">
+                      <span key={perf.id} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gray-100 border border-gray-200">
                         <Users size={12} />
                         {perf.name}
                       </span>
@@ -119,7 +121,7 @@ export default function LikedListPage() {
                       href={toAffiliateUrl(video.product_url)}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-full bg-white text-gray-900 text-sm font-semibold hover:bg-gray-200 transition"
+                      className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-full bg-rose-500 text-white text-sm font-semibold hover:bg-rose-400 transition"
                     >
                       作品ページへ
                       <ExternalLink size={14} />
@@ -129,13 +131,13 @@ export default function LikedListPage() {
               </article>
             ))}
             {videos.length === 0 && !loading ? (
-              <div className="col-span-full rounded-2xl border border-white/10 bg-white/5 p-8 text-center text-white/70">
+              <div className="col-span-full rounded-2xl border border-white/30 bg-white/80 text-gray-600 p-8 text-center">
                 まだ LIKE した作品がありません。
               </div>
             ) : null}
           </section>
         )}
-      </div>
+      </section>
     </main>
   );
 }
