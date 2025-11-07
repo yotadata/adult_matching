@@ -35,30 +35,6 @@ Deno.serve(async (req) => {
     console.log(`embed-user called for user: ${user.id}`);
 
     // Check the last updated time to throttle the update
-    const { data: featureData, error: featureError } = await supabase
-      .from('user_features')
-      .select('updated_at')
-      .eq('user_id', user.id)
-      .single();
-
-    if (featureError && featureError.code !== 'PGRST116') { // PGRST116 means no rows found, which is fine
-      throw new Error(`Failed to fetch user_features: ${featureError.message}`);
-    }
-
-    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
-
-    // If features exist and were updated within the last hour, skip the update
-    if (featureData && featureData.updated_at > oneHourAgo) {
-      return new Response(JSON.stringify({
-        success: true,
-        user_id: user.id,
-        message: "Skipped feature update; last update was too recent.",
-      }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200,
-      });
-    }
-
     const { error } = await supabase.rpc('update_user_features', { p_user_id: user.id });
 
     if (error) {
