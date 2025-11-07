@@ -9,7 +9,7 @@
 # Default挙動:
 # - docker/env/dev.env（NEXT_PUBLIC_SUPABASE_URL）から project ref を推測
 # - `supabase link` / `supabase db dump` を使いリモート DB からダンプ
-# - public スキーマをリモートのスキーマ＋データでまるっと置換（`--include-managed-schemas` 指定時のみ auth/storage/graphql_public も対象）
+# - public と auth スキーマをリモートのスキーマ＋データでまるっと置換し、`--include-managed-schemas` 指定時のみ storage / graphql_public も対象
 #
 # Usage:
 #   scripts/sync-remote-db-to-local.sh [--env-file docker/env/dev.env] [--local-env-file docker/env/dev.env] [--project-ref <ref>] [--db-password <pass>] [--exclude <schema.tbl[,..]>] [--exclude-embeddings] [--public-only] [--yes] [--no-start]
@@ -39,7 +39,7 @@ START_LOCAL="false" # default to post-apply against existing local stack
 DB_PASSWORD=""
 EXCLUDE_LIST=""
 EXCLUDE_EMBEDDINGS="false"
-INCLUDE_MANAGED_SCHEMAS="false" # include auth, storage, graphql_public when explicitly requested
+INCLUDE_MANAGED_SCHEMAS="false" # include storage, graphql_public when explicitly requested
 LOCAL_DB_HOST_VALUE=""
 LOCAL_DB_PORT_VALUE=""
 LOCAL_DB_USER_VALUE=""
@@ -334,9 +334,9 @@ TARGET_SCHEMA_CSV=""
 TARGET_SCHEMA_SQL_LIST=""
 
 build_target_schemas() {
-  TARGET_SCHEMAS=("public")
+  TARGET_SCHEMAS=("public" "auth")
   if [[ "$INCLUDE_MANAGED_SCHEMAS" == "true" ]]; then
-    TARGET_SCHEMAS+=("auth" "storage" "graphql_public")
+    TARGET_SCHEMAS+=("storage" "graphql_public")
   fi
   TARGET_SCHEMA_CSV=$(IFS=,; printf "%s" "${TARGET_SCHEMAS[*]}")
   local sql_list=""
