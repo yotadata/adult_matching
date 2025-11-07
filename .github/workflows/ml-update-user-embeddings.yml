@@ -12,7 +12,7 @@ on:
         required: false
         default: 'false'
   schedule:
-    - cron: '0 * * * *' # 毎時 0 分 (UTC)
+    - cron: '0 */8 * * *' # 8時間毎 (UTC)
 
 jobs:
   run:
@@ -77,10 +77,11 @@ jobs:
           SYNC_USER_ENV_FILE: docker/env/prd.ci.env
           INPUT_RECENT_HOURS: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.recent_hours || '' }}
           INPUT_SKIP_FETCH: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.skip_fetch || '' }}
+          SYNC_USER_RUN_ID: ${{ github.run_id }}-${{ github.run_attempt }}
         run: |
           recent="${INPUT_RECENT_HOURS:-1}"
           args=(--recent-hours "$recent")
           if [[ "${INPUT_SKIP_FETCH}" != "true" ]]; then
             args+=(--fetch-latest)
           fi
-          bash scripts/sync_user_embeddings/run.sh "${args[@]}"
+          bash scripts/sync_user_embeddings/run.sh --run-id "$SYNC_USER_RUN_ID" "${args[@]}"
