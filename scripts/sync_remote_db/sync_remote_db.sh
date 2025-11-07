@@ -474,7 +474,16 @@ SQL
   echo "Applying remote data to local..."
   restore_with_psql "$DATA_FILE"
 
-  sync_schema_migrations
+  # Sync supabase_migrations schema/data separately
+  local history_schema="$TMP_DIR/history_schema.sql"
+  local history_data="$TMP_DIR/history_data.sql"
+  echo "Dumping supabase_migrations schema/data via supabase CLI..."
+  supabase db dump --db-url "$REMOTE_DB_URL" --schema supabase_migrations -f "$history_schema"
+  supabase db dump --db-url "$REMOTE_DB_URL" --use-copy --data-only --schema supabase_migrations -f "$history_data"
+  echo "Restoring supabase_migrations schema/data..."
+  run_sql "DROP SCHEMA IF EXISTS supabase_migrations CASCADE; CREATE SCHEMA supabase_migrations;"
+  restore_with_psql "$history_schema"
+  restore_with_psql "$history_data"
 
   echo "Done. Local DB now mirrors remote schema and data ($PROJECT_REF)."
 }
