@@ -134,7 +134,7 @@ const AccountManagementDrawer: React.FC<AccountManagementDrawerProps> = ({ isOpe
                               className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors text-gray-800 hover:bg-gray-100"
                             >
                               <List size={18} className="shrink-0" />
-                              <span className="truncate">リスト</span>
+                              <span className="truncate">プレイリスト</span>
                             </button>
                           </>
                         )}

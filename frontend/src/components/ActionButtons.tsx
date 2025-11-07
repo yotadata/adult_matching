@@ -9,7 +9,7 @@ interface ActionButtonsProps {
   isMobileLayout?: boolean; // 追加
   cardWidth?: number; // 追加
   variant?: 'full' | 'icons'; // 表示バリエーション
-  includeCenter?: boolean; // 中央の「お気に入りリスト」ボタンを含める（PC用）
+  includeCenter?: boolean; // 中央の「お気に入りプレイリスト」ボタンを含める（PC用）
 }
 
 const ActionButtons = ({ onSkip, onLike, nopeColor, likeColor, isMobileLayout = false, cardWidth, variant = 'full', includeCenter = false }: ActionButtonsProps) => {
@@ -55,8 +55,8 @@ const ActionButtons = ({ onSkip, onLike, nopeColor, likeColor, isMobileLayout = 
           <button
             onClick={() => { try { window.dispatchEvent(new Event('open-liked-drawer')); } catch {} }}
             className={`w-14 h-14 rounded-full bg-[#BEBEBE] border border-gray-200 shadow-lg active:scale-95 transition`}
-            aria-label="お気に入りリスト"
-            title="お気に入りリスト"
+            aria-label="お気に入りプレイリスト"
+            title="お気に入りプレイリスト"
           >
             <svg width="20" height="20" viewBox="0 0 24 24" className="mx-auto fill-white" aria-hidden="true">
               <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 6 3.99 4 6.5 4 8.04 4 9.54 4.81 10.35 6.09 11.16 4.81 12.66 4 14.2 4 16.71 4 18.7 6 18.7 8.5c0 3.78-3.4 6.86-8.05 11.54L12 21.35z" />
@@ -97,8 +97,8 @@ const ActionButtons = ({ onSkip, onLike, nopeColor, likeColor, isMobileLayout = 
           onClick={() => { try { window.dispatchEvent(new Event('open-liked-drawer')); } catch {} }}
           className={`${buttonBaseClasses} w-24 rounded-2xl bg-[#BEBEBE] border-2 border-[#BEBEBE] text-white hover:scale-105 active:scale-95 shadow-lg`}
           style={{ transition: 'transform 0.15s ease-in-out' }}
-          aria-label="お気に入りリスト"
-          title="お気に入りリスト"
+          aria-label="お気に入りプレイリスト"
+          title="お気に入りプレイリスト"
         >
           ❤︎
         </button>

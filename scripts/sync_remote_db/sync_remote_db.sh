@@ -6,29 +6,22 @@
 # - Supabase CLI installed and logged in: https://supabase.com/docs/guides/cli
 # - Your remote project is accessible by the CLI (supabase login; has org/project access)
 #
-# Default behavior (modes):
-# - Reads project info from docker/env/dev.env (NEXT_PUBLIC_SUPABASE_URL) to derive project ref
-# - Links the Supabase project (supabase link) and uses `db dump --linked`
-# - Starts local stack (unless --no-start)
-# - Mode "schema-mirror" (default): Rebuild local DB from the REMOTE schema, then import data.
-#   - Drops local user schemas (public, auth, storage, graphql_public) and applies remote DDL, then data.
-#   - Does NOT apply local migrations.
-# - Mode "data": Keeps local schema (from your local migrations) and imports selected remote data only.
-# - Mode "full": Keeps local schema and imports ALL remote data including supabase_migrations history.
+# Default挙動:
+# - docker/env/dev.env（NEXT_PUBLIC_SUPABASE_URL）から project ref を推測
+# - `supabase link` / `supabase db dump` を使いリモート DB からダンプ
+# - public と auth スキーマをリモートのスキーマ＋データでまるっと置換し、`--include-managed-schemas` 指定時のみ storage / graphql_public も対象
 #
 # Usage:
-#   scripts/sync-remote-db-to-local.sh [--env-file docker/env/dev.env] [--local-env-file docker/env/dev.env] [--project-ref <ref>] [--mode schema-mirror|full|data] [--db-password <pass>] [--exclude <schema.tbl[,..]>] [--exclude-embeddings] [--yes] [--no-start]
+#   scripts/sync-remote-db-to-local.sh [--env-file docker/env/dev.env] [--local-env-file docker/env/dev.env] [--project-ref <ref>] [--db-password <pass>] [--exclude <schema.tbl[,..]>] [--exclude-embeddings] [--public-only] [--yes] [--no-start]
 #
 # Examples:
 #   scripts/sync-remote-db-to-local.sh --yes
-#   scripts/sync-remote-db-to-local.sh --mode data --yes
+#   scripts/sync-remote-db-to-local.sh --yes --exclude-embeddings
 #   scripts/sync-remote-db-to-local.sh --env-file docker/env/dev.env --yes
 #   scripts/sync-remote-db-to-local.sh --project-ref abcd1234 --yes --no-start
 #
 # Notes:
-# - This approach keeps local `supabase_migrations.schema_migrations` untouched, so `migration up` / `db push`
-#   work from your local migration files as usual.
-# - We import data only from common schemas (public, auth, storage, graphql_public) by default.
+# - `public.schema_migrations`（pop が参照）もリモートの値で上書きする。
 # - If you need a full mirror including schema & migration history, consider a separate "full" mode.
 
 set -euo pipefail
@@ -41,11 +34,10 @@ LOCAL_ENV_FILE="docker/env/dev.env"
 PROJECT_REF=""
 CONFIRM="false"
 START_LOCAL="false" # default to post-apply against existing local stack
-MODE="schema-mirror" # schema-mirror | full | data
 DB_PASSWORD=""
 EXCLUDE_LIST=""
 EXCLUDE_EMBEDDINGS="false"
-INCLUDE_MANAGED_SCHEMAS="false" # include auth, storage, graphql_public data in schema-mirror
+INCLUDE_MANAGED_SCHEMAS="false" # include storage, graphql_public when explicitly requested
 LOCAL_DB_HOST_VALUE=""
 LOCAL_DB_PORT_VALUE=""
 LOCAL_DB_USER_VALUE=""
@@ -53,6 +45,7 @@ LOCAL_DB_PASS_VALUE=""
 LOCAL_DB_NAME_VALUE=""
 LOCAL_DB_SSLMODE_VALUE=""
 LOCAL_DB_SSLROOTCERT_VALUE=""
+EXCLUDE_ARGS=()
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -60,8 +53,6 @@ while [[ $# -gt 0 ]]; do
       ENV_FILE="$2"; shift 2;;
     --project-ref)
       PROJECT_REF="$2"; shift 2;;
-    --mode)
-      MODE="$2"; shift 2;;
     --db-password)
       DB_PASSWORD="$2"; shift 2;;
     --local-env-file)
@@ -74,6 +65,8 @@ while [[ $# -gt 0 ]]; do
       START_LOCAL="true"; shift;;
     --include-managed-schemas)
       INCLUDE_MANAGED_SCHEMAS="true"; shift;;
+    --public-only)
+      INCLUDE_MANAGED_SCHEMAS="false"; shift;;
     --yes|-y)
       CONFIRM="true"; shift;;
     --no-start)
@@ -150,6 +143,7 @@ if [[ -z "$PROJECT_REF" ]]; then
   exit 1
 fi
 
+
 echo "Project ref: $PROJECT_REF"
 echo "Env file:    $ENV_FILE"
 
@@ -188,6 +182,34 @@ _detect_db_port() {
     db_port=$(awk 'BEGIN{FS="= *"} /^\[db\]/{f=1;next} /^\[/{f=0} f && $1 ~ /^port/{gsub(/[^0-9]/, "", $2); print $2; exit}' supabase/config.toml)
   fi
   printf "%s" "${db_port:-54322}"
+}
+
+_ensure_ipv4_conninfo() {
+  local conninfo="$1"
+  python - <<'PY'
+import os, socket, urllib.parse, sys
+conn = sys.argv[1]
+try:
+    parsed = urllib.parse.urlsplit(conn)
+except Exception:
+    print(conn)
+    sys.exit()
+if not parsed.hostname:
+    print(conn)
+    sys.exit()
+try:
+    infos = socket.getaddrinfo(parsed.hostname, parsed.port or 5432, socket.AF_INET)
+except socket.gaierror:
+    infos = []
+ipv4 = next((info[4][0] for info in infos if info[0] == socket.AF_INET), None)
+if not ipv4:
+    print(conn)
+    sys.exit()
+query = urllib.parse.parse_qs(parsed.query, keep_blank_values=True)
+query.setdefault('hostaddr', []).append(ipv4)
+new_query = urllib.parse.urlencode(query, doseq=True)
+print(urllib.parse.urlunsplit((parsed.scheme, parsed.netloc, parsed.path, new_query, parsed.fragment)))
+PY
 }
 
 run_sql() {
@@ -230,54 +252,172 @@ restore_with_psql() {
 
   echo "Applying file to local database via psql: $file"
   if [[ "$sslmode" == "disable" || -z "$sslmode" ]]; then
-    if PGSSLMODE=disable PGSSLROOTCERT= PGPASSWORD="$pass" \
-        psql -h "$host" -p "$port" -U "$user" -d "$dbname" -v ON_ERROR_STOP=1 -f "$file"; then
-      return 0
-    fi
-    sslmode="disable"
+    PGSSLMODE=disable PGSSLROOTCERT= PGPASSWORD="$pass" \
+      psql -h "$host" -p "$port" -U "$user" -d "$dbname" -v ON_ERROR_STOP=1 -f "$file"
   else
-    if PGSSLMODE="$sslmode" PGSSLROOTCERT="$sslroot" PGPASSWORD="$pass" \
-        psql -h "$host" -p "$port" -U "$user" -d "$dbname" -v ON_ERROR_STOP=1 -f "$file"; then
-      return 0
-    fi
-  fi
-
-  echo "Direct TCP connection failed. Falling back to docker exec into 'supabase_db'..." >&2
-  if ! docker ps --format '{{.Names}}' | grep -Fxq supabase_db; then
-    echo "Error: Container 'supabase_db' not found. Set LOCAL_DB_HOST/PORT/USER/PASSWORD or ensure the container name matches." >&2
-    exit 1
-  fi
-
-  if [[ "$sslmode" == "disable" || -z "$sslmode" ]]; then
-    docker exec -i \
-      -e PGSSLMODE=disable \
-      -e PGSSLROOTCERT= \
-      -e PGPASSWORD="$pass" \
-      supabase_db psql -U "$user" -d "$dbname" -v ON_ERROR_STOP=1 -f - < "$file"
-  else
-    docker exec -i \
-      -e PGSSLMODE="$sslmode" \
-      -e PGSSLROOTCERT="$sslroot" \
-      -e PGPASSWORD="$pass" \
-      supabase_db psql -U "$user" -d "$dbname" -v ON_ERROR_STOP=1 -f - < "$file"
+    PGSSLMODE="$sslmode" PGSSLROOTCERT="$sslroot" PGPASSWORD="$pass" \
+      psql -h "$host" -p "$port" -U "$user" -d "$dbname" -v ON_ERROR_STOP=1 -f "$file"
   fi
 }
 
+ensure_supabase_roles() {
+  local ensure_roles_sql
+  ensure_roles_sql=$(cat <<'SQL'
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'supabase_auth_admin') THEN
+    CREATE ROLE supabase_auth_admin NOLOGIN;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'supabase_admin') THEN
+    CREATE ROLE supabase_admin NOLOGIN;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'supabase_storage_admin') THEN
+    CREATE ROLE supabase_storage_admin NOLOGIN;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'dashboard_user') THEN
+    CREATE ROLE dashboard_user NOLOGIN;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'pg_database_owner') THEN
+    CREATE ROLE pg_database_owner NOLOGIN;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'authenticator') THEN
+    CREATE ROLE authenticator NOLOGIN;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'authenticated') THEN
+    CREATE ROLE authenticated NOLOGIN;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'service_role') THEN
+    CREATE ROLE service_role NOLOGIN;
+  END IF;
+END$$;
+SQL
+)
+  run_sql "$ensure_roles_sql"
+}
 
-if [[ "$MODE" == "schema-mirror" ]]; then
+drop_conflicting_types() {
+  local drop_sql
+  drop_sql=$(cat <<'SQL'
+DO $$
+BEGIN
+  IF to_regtype('public.aal_level') IS NOT NULL THEN
+    EXECUTE 'DROP TYPE public.aal_level CASCADE';
+  END IF;
+  IF to_regtype('public.session_status') IS NOT NULL THEN
+    EXECUTE 'DROP TYPE public.session_status CASCADE';
+  END IF;
+  IF to_regtype('auth.aal_level') IS NOT NULL THEN
+    EXECUTE 'DROP TYPE auth.aal_level CASCADE';
+  END IF;
+  IF to_regtype('auth.code_challenge_method') IS NOT NULL THEN
+    EXECUTE 'DROP TYPE auth.code_challenge_method CASCADE';
+  END IF;
+  IF to_regtype('auth.factor_status') IS NOT NULL THEN
+    EXECUTE 'DROP TYPE auth.factor_status CASCADE';
+  END IF;
+  IF to_regtype('auth.factor_type') IS NOT NULL THEN
+    EXECUTE 'DROP TYPE auth.factor_type CASCADE';
+  END IF;
+  IF to_regtype('auth.mfa_factor_type') IS NOT NULL THEN
+    EXECUTE 'DROP TYPE auth.mfa_factor_type CASCADE';
+  END IF;
+  IF to_regtype('auth.oauth_authorization_status') IS NOT NULL THEN
+    EXECUTE 'DROP TYPE auth.oauth_authorization_status CASCADE';
+  END IF;
+  IF to_regtype('auth.oauth_client_type') IS NOT NULL THEN
+    EXECUTE 'DROP TYPE auth.oauth_client_type CASCADE';
+  END IF;
+  IF to_regtype('auth.oauth_registration_type') IS NOT NULL THEN
+    EXECUTE 'DROP TYPE auth.oauth_registration_type CASCADE';
+  END IF;
+  IF to_regtype('auth.oauth_response_type') IS NOT NULL THEN
+    EXECUTE 'DROP TYPE auth.oauth_response_type CASCADE';
+  END IF;
+  IF to_regtype('auth.one_time_token_type') IS NOT NULL THEN
+    EXECUTE 'DROP TYPE auth.one_time_token_type CASCADE';
+  END IF;
+  IF to_regtype('auth.session_status') IS NOT NULL THEN
+    EXECUTE 'DROP TYPE auth.session_status CASCADE';
+  END IF;
+  IF to_regtype('storage.buckettype') IS NOT NULL THEN
+    EXECUTE 'DROP TYPE storage.buckettype CASCADE';
+  END IF;
+END$$;
+SQL
+)
+  run_sql "$drop_sql"
+}
+
+ensure_supabase_extensions() {
+  run_sql "CREATE EXTENSION IF NOT EXISTS vector WITH SCHEMA public;"
+  run_sql "CREATE EXTENSION IF NOT EXISTS pg_trgm WITH SCHEMA public;"
+  run_sql "CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\" WITH SCHEMA public;"
+  run_sql "CREATE EXTENSION IF NOT EXISTS citext WITH SCHEMA public;"
+}
+
+TARGET_SCHEMAS=()
+TARGET_SCHEMA_CSV=""
+TARGET_SCHEMA_SQL_LIST=""
+
+build_target_schemas() {
+  TARGET_SCHEMAS=("public" "auth")
+  if [[ "$INCLUDE_MANAGED_SCHEMAS" == "true" ]]; then
+    TARGET_SCHEMAS+=("storage" "graphql_public")
+  fi
+  TARGET_SCHEMA_CSV=$(IFS=,; printf "%s" "${TARGET_SCHEMAS[*]}")
+  local sql_list=""
+  for schema in "${TARGET_SCHEMAS[@]}"; do
+    if [[ -n "$sql_list" ]]; then
+      sql_list+=","
+    fi
+    sql_list+="'${schema}'"
+  done
+  TARGET_SCHEMA_SQL_LIST="$sql_list"
+}
+
+sync_schema_migrations() {
+  if [[ -z "$REMOTE_DB_URL" ]]; then
+    echo "[warn] REMOTE_DB_URL not set; skipping schema_migrations sync"
+    return
+  fi
+  local supa_dump="$TMP_DIR/supabase_migrations.sql"
+  echo "Dumping supabase_migrations schema via supabase CLI..."
+  supabase db dump --db-url "$REMOTE_DB_URL" --data-only --use-copy -s supabase_migrations -f "$supa_dump"
+  echo "Restoring supabase_migrations schema..."
+  run_sql "DROP SCHEMA IF EXISTS supabase_migrations CASCADE;"
+  run_sql "CREATE SCHEMA IF NOT EXISTS supabase_migrations;"
+  run_sql "CREATE TABLE IF NOT EXISTS supabase_migrations.schema_migrations (version bigint PRIMARY KEY);"
+  restore_with_psql "$supa_dump"
+}
+
+run_sync() {
+  build_target_schemas
+
   echo "Dumping remote SCHEMA (no data)..."
-  # No --data-only to get schema DDL
+  SCHEMA_ARGS=(-f "$SCHEMA_FILE")
+  for schema in "${TARGET_SCHEMAS[@]}"; do
+    SCHEMA_ARGS+=(-s "$schema")
+  done
   if [[ -n "$REMOTE_DB_URL" ]]; then
-    supabase db dump --db-url "$REMOTE_DB_URL" -f "$SCHEMA_FILE"
+    supabase db dump --db-url "$REMOTE_DB_URL" "${SCHEMA_ARGS[@]}"
   else
-    supabase db dump --linked -f "$SCHEMA_FILE"
+    supabase db dump --linked "${SCHEMA_ARGS[@]}"
   fi
 
-  echo "Dropping local schema: public ..."
-  # Drop only 'public' to avoid permission issues on managed schemas (auth/storage/graphql_public)
-  run_sql "DROP SCHEMA IF EXISTS public CASCADE;"
-  echo "Recreating schema: public ..."
-  run_sql "CREATE SCHEMA IF NOT EXISTS public; ALTER SCHEMA public OWNER TO postgres;"
+  echo "Dropping target schemas: ${TARGET_SCHEMA_CSV}"
+  for schema in "${TARGET_SCHEMAS[@]}"; do
+    run_sql "DROP SCHEMA IF EXISTS ${schema} CASCADE;"
+    local owner="postgres"
+    case "$schema" in
+      auth|storage)
+        owner="supabase_admin"
+        ;;
+    esac
+    run_sql "CREATE SCHEMA IF NOT EXISTS ${schema}; ALTER SCHEMA ${schema} OWNER TO ${owner};"
+  done
+  ensure_supabase_roles
+  drop_conflicting_types
+  ensure_supabase_extensions
 
   echo "Applying remote schema to local..."
   # Ensure auxiliary schemas referenced by Supabase extensions exist before replay
@@ -297,18 +437,30 @@ SQL
   run_sql "$pub_sql"
   restore_with_psql "$SCHEMA_FILE"
 
-  if [[ "$INCLUDE_MANAGED_SCHEMAS" == "true" ]]; then
-    echo "Preparing local DB for data import (truncate public/auth/storage/graphql_public as permitted)..."
-    run_sql "DO \$\$DECLARE r record; BEGIN FOR r IN SELECT format('%I.%I', n.nspname, c.relname) AS fqtn FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace WHERE c.relkind IN ('r','p') AND n.nspname IN ('public','auth','storage','graphql_public') AND has_table_privilege(c.oid, 'TRUNCATE') LOOP EXECUTE format('TRUNCATE TABLE %s RESTART IDENTITY CASCADE', r.fqtn); END LOOP; END\$\$;"
-    echo "Dumping remote DATA (public + managed schemas)..."
-    # Include all key schemas
-    DATA_ARGS=(--data-only --use-copy -s public,auth,storage,graphql_public -f "$DATA_FILE")
-  else
-    echo "Preparing local DB for data import (truncate public)..."
-    run_sql "DO \$\$DECLARE r record; BEGIN FOR r IN SELECT format('%I.%I', n.nspname, c.relname) AS fqtn FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace WHERE c.relkind IN ('r','p') AND n.nspname IN ('public') LOOP EXECUTE format('TRUNCATE TABLE %s RESTART IDENTITY CASCADE', r.fqtn); END LOOP; END\$\$;"
-    echo "Dumping remote DATA (public only)..."
-    DATA_ARGS=(--data-only --use-copy -s public -f "$DATA_FILE")
-  fi
+  echo "Preparing local DB for data import (truncate target schemas)..."
+  truncate_sql=$(cat <<SQL
+DO \$\$DECLARE r record;
+BEGIN
+  FOR r IN
+    SELECT format('%I.%I', n.nspname, c.relname) AS fqtn
+    FROM pg_class c
+    JOIN pg_namespace n ON n.oid = c.relnamespace
+    WHERE c.relkind IN ('r','p')
+      AND n.nspname IN (${TARGET_SCHEMA_SQL_LIST})
+      AND has_table_privilege(c.oid, 'TRUNCATE')
+  LOOP
+    EXECUTE format('TRUNCATE TABLE %s RESTART IDENTITY CASCADE', r.fqtn);
+  END LOOP;
+END\$\$;
+SQL
+)
+  run_sql "$truncate_sql"
+
+  echo "Dumping remote DATA (${TARGET_SCHEMA_CSV})..."
+  DATA_ARGS=(--data-only --use-copy -f "$DATA_FILE")
+  for schema in "${TARGET_SCHEMAS[@]}"; do
+    DATA_ARGS+=(-s "$schema")
+  done
   if [[ -n "$DB_PASSWORD" ]]; then
     DATA_ARGS+=( -p "$DB_PASSWORD" )
   fi
@@ -322,31 +474,10 @@ SQL
   echo "Applying remote data to local..."
   restore_with_psql "$DATA_FILE"
 
+  sync_schema_migrations
+
   echo "Done. Local DB now mirrors remote schema and data ($PROJECT_REF)."
-  exit 0
-fi
+}
 
-# Non-mirror modes keep local schema created by local migrations
-if [[ "$START_LOCAL" == "true" ]]; then
-  echo "Resetting local database (apply local migrations; skip seeds)..."
-  # Newer Supabase CLI does not support --force; use global --yes to skip prompts
-  supabase db reset --local --no-seed --yes >/dev/null
-else
-  echo "Skipping 'supabase db reset' (per --no-start). Using current local schema."
-fi
-
-dump_data "$MODE"
-
-if [[ "$MODE" == "full" ]]; then
-  echo "Preparing to replace migration history with remote..."
-  COMBINED_FILE="$TMP_DIR/remote_data_with_truncate.sql"
-  echo "TRUNCATE TABLE supabase_migrations.schema_migrations;" > "$COMBINED_FILE"
-  cat "$DATA_FILE" >> "$COMBINED_FILE"
-  echo "Restoring data (including migration history) to local..."
-  restore_with_psql "$COMBINED_FILE"
-else
-  echo "Restoring data to local (keeping local migration history)..."
-  restore_with_psql "$DATA_FILE"
-fi
-
-echo "Done. Local DB now mirrors remote ($PROJECT_REF)."
+run_sync
+exit 0
