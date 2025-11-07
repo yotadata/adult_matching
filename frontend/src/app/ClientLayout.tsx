@@ -6,7 +6,6 @@ import useMediaQuery from '@/hooks/useMediaQuery';
 import GlobalModals from '@/components/GlobalModals';
 import { usePathname } from 'next/navigation';
 import { DecisionCountProvider } from '@/hooks/useDecisionCount';
-import PersonalityHeader from '@/components/PersonalityHeader';
 
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
   console.log('[DEBUG] ClientLayout: Rendering');
@@ -23,16 +22,13 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
     <DecisionCountProvider>
       <div className="min-h-screen w-full" style={{ background }}>
         {isPersonalityPage ? (
-          <>
-            <PersonalityHeader />
-            <main className="pt-24 pb-12">
-              <div className="container mx-auto max-w-4xl px-4">
-                <div className="bg-white/50 backdrop-blur-lg border border-white/50 rounded-2xl shadow-2xl overflow-hidden">
-                  {children}
-                </div>
+          <main className="pt-10 pb-12">
+            <div className="container mx-auto max-w-4xl px-4">
+              <div className="bg-white/50 backdrop-blur-lg border border-white/50 rounded-2xl shadow-2xl overflow-hidden">
+                {children}
               </div>
-            </main>
-          </>
+            </div>
+          </main>
         ) : (
           <>
             {/* Desktop fixed left sidebar */}

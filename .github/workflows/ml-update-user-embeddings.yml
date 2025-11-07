@@ -1,0 +1,86 @@
+name: "[ML] Ops - Update User Embeddings"
+
+on:
+  workflow_dispatch:
+    inputs:
+      recent_hours:
+        description: '直近何時間分のユーザーを対象にするか'
+        required: false
+        default: '1'
+      skip_fetch:
+        description: 'Storage からモデルを取得するステップをスキップ'
+        required: false
+        default: 'false'
+  schedule:
+    - cron: '0 * * * *' # 毎時 0 分 (UTC)
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+      SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      REMOTE_DATABASE_URL: ${{ secrets.REMOTE_DATABASE_URL }}
+      SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
+      SUPABASE_REGION: ${{ secrets.SUPABASE_REGION }}
+      SUPABASE_CA_CERT: ${{ secrets.SUPABASE_CA_CERT }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Supabase CA certificate
+        run: |
+          mkdir -p docker/env
+          if [[ -n "${SUPABASE_CA_CERT}" ]]; then
+            echo "${SUPABASE_CA_CERT}" | base64 -d > docker/env/supabase-ca.crt
+            echo "[info] Supabase CA cert written"
+          else
+            echo "[warn] SUPABASE_CA_CERT not set; falling back to system CA"
+          fi
+
+      - name: Prepare runtime env file
+        run: |
+          mkdir -p docker/env
+          cat <<ENV > docker/env/prd.ci.env
+          NEXT_PUBLIC_SUPABASE_URL=${SUPABASE_URL}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY:-${SUPABASE_ANON_KEY}}
+          SUPABASE_URL=${SUPABASE_URL}
+          SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY:-${NEXT_PUBLIC_SUPABASE_ANON_KEY}}
+          SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+          SUPABASE_SERVICE_ROLE_JWT_AUDIENCE=authenticated
+          REMOTE_DATABASE_URL=${REMOTE_DATABASE_URL}
+          SUPABASE_DB_URL=${REMOTE_DATABASE_URL}
+          SUPABASE_PROJECT_ID=${SUPABASE_PROJECT_ID}
+          SUPABASE_REGION=${SUPABASE_REGION}
+          PGSSLMODE=require
+          ENV
+          if [[ -f docker/env/supabase-ca.crt ]]; then
+            cat <<ENV >> docker/env/prd.ci.env
+          PGSSLROOTCERT=docker/env/supabase-ca.crt
+          sslmode=require
+          sslrootcert=docker/env/supabase-ca.crt
+          ENV
+          else
+            cat <<ENV >> docker/env/prd.ci.env
+          sslmode=require
+          ENV
+          fi
+
+      - name: Debug env snapshot
+        run: |
+          echo "==== docker/env/prd.ci.env ===="
+          cat docker/env/prd.ci.env
+
+      - name: Sync user embeddings
+        env:
+          SYNC_USER_ENV_FILE: docker/env/prd.ci.env
+          INPUT_RECENT_HOURS: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.recent_hours || '' }}
+          INPUT_SKIP_FETCH: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.skip_fetch || '' }}
+        run: |
+          recent="${INPUT_RECENT_HOURS:-1}"
+          args=(--recent-hours "$recent")
+          if [[ "${INPUT_SKIP_FETCH}" != "true" ]]; then
+            args+=(--fetch-latest)
+          fi
+          bash scripts/sync_user_embeddings/run.sh "${args[@]}"

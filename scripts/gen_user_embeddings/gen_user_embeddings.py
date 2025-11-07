@@ -68,6 +68,18 @@ def parse_args() -> argparse.Namespace:
         help="Encode users even if current model_version already exists. By default only missing/outdated entries are processed.",
     )
     parser.add_argument("--dry-run", action="store_true", help="Load data and report counts without writing parquet.")
+    parser.add_argument(
+        "--recent-hours",
+        type=float,
+        default=None,
+        help="Only encode users who have activity within the recent N hours (based on user_video_decisions).",
+    )
+    parser.add_argument(
+        "--user-ids-file",
+        type=Path,
+        default=None,
+        help="Optional file containing newline-separated user IDs to force encode.",
+    )
     return parser.parse_args()
 
 
@@ -156,9 +168,15 @@ def _ensure_ipv4_hostaddr(conninfo: str, allow_pooler: bool = True) -> str:
         return conninfo
 
     query = parse_qs(parsed.query)
-    if "sslmode" not in query:
-        query["sslmode"] = ["require"]
-    if "sslrootcert" not in query and os.environ.get("PGSSLROOTCERT"):
+    disable_ssl = os.environ.get("SUPABASE_DB_DISABLE_SSL") == "1"
+    desired_sslmode = os.environ.get("PGSSLMODE")
+    if disable_ssl:
+        desired_sslmode = desired_sslmode or None
+    else:
+        desired_sslmode = desired_sslmode or "require"
+    if desired_sslmode and "sslmode" not in query:
+        query["sslmode"] = [desired_sslmode]
+    if not disable_ssl and "sslrootcert" not in query and os.environ.get("PGSSLROOTCERT"):
         query["sslrootcert"] = [os.environ["PGSSLROOTCERT"]]
     if query.get("hostaddr"):
         return urlunsplit((parsed.scheme, parsed.netloc, parsed.path, urlencode(query, doseq=True), parsed.fragment))
@@ -215,6 +233,8 @@ def fetch_target_users(
     limit: Optional[int],
     model_version: str,
     include_existing: bool,
+    user_ids: Optional[List[str]] = None,
+    recent_hours: Optional[float] = None,
 ) -> pd.DataFrame:
     sql = """
         SELECT
@@ -230,12 +250,30 @@ def fetch_target_users(
             OR ue.model_version IS NULL
             OR ue.model_version <> %(model_version)s
         )
-        ORDER BY uf.updated_at DESC
     """
     params = {
         "include_existing": include_existing,
         "model_version": model_version,
     }
+    filters: List[str] = []
+    if user_ids:
+        filters.append("uf.user_id = ANY(%(target_ids)s)")
+        params["target_ids"] = user_ids
+    if recent_hours is not None and recent_hours > 0:
+        filters.append(
+            """
+            EXISTS (
+              SELECT 1
+              FROM public.user_video_decisions uvd
+              WHERE uvd.user_id = uf.user_id
+                AND uvd.created_at >= (now() AT TIME ZONE 'UTC') - make_interval(hours => %(recent_hours)s)
+            )
+            """
+        )
+        params["recent_hours"] = recent_hours
+    if filters:
+        sql += " AND " + " AND ".join(filters)
+    sql += " ORDER BY uf.updated_at DESC"
     if limit is not None and limit > 0:
         sql = sql + " LIMIT %(limit)s"
         params["limit"] = limit
@@ -345,6 +383,14 @@ def encode_embeddings(model: TwoTower, user_vectors: Dict[str, np.ndarray], devi
 def main() -> None:
     args = parse_args()
 
+    target_user_ids: Optional[List[str]] = None
+    if args.user_ids_file:
+        if not args.user_ids_file.exists():
+            raise FileNotFoundError(f"user IDs file not found: {args.user_ids_file}")
+        with args.user_ids_file.open("r", encoding="utf-8") as fh:
+            ids = [line.strip() for line in fh if line.strip()]
+        target_user_ids = ids or None
+
     db_url = args.db_url or os.environ.get("SUPABASE_DB_URL") or os.environ.get("REMOTE_DATABASE_URL")
     if not db_url:
         raise ValueError("Database URL not provided. Set --db-url or SUPABASE_DB_URL / REMOTE_DATABASE_URL env.")
@@ -383,6 +429,8 @@ def main() -> None:
         limit=args.limit,
         model_version=model_version,
         include_existing=args.include_existing,
+        user_ids=target_user_ids,
+        recent_hours=args.recent_hours,
     )
 
     if selected_df.empty:
@@ -403,6 +451,8 @@ def main() -> None:
                 "info": "user_candidates",
                 "count": len(selected_df),
                 "include_existing": args.include_existing,
+                "recent_hours": args.recent_hours,
+                "user_ids_filter": bool(target_user_ids),
             },
             ensure_ascii=False,
         )

@@ -2,7 +2,7 @@
 
 import { Dialog, Transition } from '@headlessui/react';
 import { Fragment, useEffect, useState } from 'react';
-import { X, Sparkles, BarChart2, Brain } from 'lucide-react';
+import { X, Sparkles, BarChart2, List } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useDecisionCount } from '@/hooks/useDecisionCount';
 import { useRouter } from 'next/navigation';
@@ -130,11 +130,11 @@ const AccountManagementDrawer: React.FC<AccountManagementDrawerProps> = ({ isOpe
                               <span className="truncate">性癖分析</span>
                             </button>
                             <button
-                              onClick={() => handleNavigate('/personality')}
+                              onClick={() => handleNavigate('/lists')}
                               className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors text-gray-800 hover:bg-gray-100"
                             >
-                              <Brain size={18} className="shrink-0" />
-                              <span className="truncate">性癖パーソナリティ診断</span>
+                              <List size={18} className="shrink-0" />
+                              <span className="truncate">リスト</span>
                             </button>
                           </>
                         )}

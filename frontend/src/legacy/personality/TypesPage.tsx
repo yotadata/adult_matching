@@ -1,15 +1,18 @@
+// Legacy copy of the personality types list page (previously served at /personality/types).
+// Retained for future reference; not currently routed.
+
 'use client';
 
 import Link from 'next/link';
-import { personalityTypes } from '@/data/personalityQuiz';
 import { motion } from 'framer-motion';
+import { personalityTypes } from '@/data/personalityQuiz';
 
-export default function TypesPage() {
+export default function PersonalityTypesLegacy() {
   const types = Object.entries(personalityTypes);
 
   return (
     <div className="p-4 md:p-8">
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}

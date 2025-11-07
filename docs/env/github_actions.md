@@ -85,7 +85,26 @@ Secrets 名はリポジトリ設定（Settings → Secrets and variables → Act
 
 Base64 エンコード例: `base64 -w0 docker/env/supabase-ca.crt`
 
-### 6. その他ワークフロー（例: `cicd-deploy-docs.yml`, `cicd-deploy-db-docs.yml`）
+### 6. `.github/workflows/ml-update-user-embeddings.yml`
+- **Secrets**
+  - 共通のもの
+  - `SUPABASE_URL`
+  - `NEXT_PUBLIC_SUPABASE_ANON_KEY`（未設定時は `SUPABASE_ANON_KEY`）
+  - `SUPABASE_ANON_KEY`
+  - `SUPABASE_SERVICE_ROLE_KEY`
+  - `REMOTE_DATABASE_URL`
+  - `SUPABASE_PROJECT_ID`
+  - `SUPABASE_REGION`
+  - `SUPABASE_CA_CERT`
+- **workflow_dispatch inputs**
+  | 入力名 | 説明 | 既定値 |
+  | --- | --- | --- |
+  | `recent_hours` | 直近何時間のユーザーを対象にするか | `1` |
+  | `skip_fetch` | Storage からのモデル取得をスキップするか | `false` |
+
+> `sync_user_embeddings` は FANZA 連携を行わないため、FANZA 系 Secrets は不要です。
+
+### 7. その他ワークフロー（例: `cicd-deploy-docs.yml`, `cicd-deploy-db-docs.yml`）
 - それぞれ README / ワークフローコメントに記載されている Secrets を参照してください。  
  追加で共通化したい変数が発生した場合は、このドキュメントを更新して一覧化してください。
 

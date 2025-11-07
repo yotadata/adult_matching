@@ -1,13 +1,13 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { Share2, Filter, Info, Smile, Frown, TrendingUp, Tag as TagIcon, Users, Clock } from 'lucide-react';
+import { Share2, Info, Smile, Frown, TrendingUp, Tag as TagIcon, Users, Clock } from 'lucide-react';
 import { useAnalysisResults } from '@/hooks/useAnalysisResults';
 
 const WINDOW_OPTIONS: Array<{ label: string; value: number | null }> = [
+  { label: '3日', value: 3 },
+  { label: '7日', value: 7 },
   { label: '30日', value: 30 },
-  { label: '90日', value: 90 },
-  { label: '180日', value: 180 },
   { label: '全期間', value: null },
 ];
 
@@ -61,11 +61,9 @@ function SummaryCard({
 }
 
 export default function AnalysisResultsPage() {
-  const [windowDays, setWindowDays] = useState<number | null>(90);
-  const [includeNope, setIncludeNope] = useState(false);
-  const { data, loading, error } = useAnalysisResults({
+  const [windowDays, setWindowDays] = useState<number | null>(7);
+    const { data, loading, error } = useAnalysisResults({
     windowDays,
-    includeNope,
     tagLimit: 6,
     performerLimit: 6,
     recentLimit: 12,
@@ -119,21 +117,15 @@ export default function AnalysisResultsPage() {
             <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight">あなたの性癖分析ダッシュボード</h1>
             <p className="text-sm text-white/80">LIKE / NOPE の履歴から嗜好の傾向を可視化します。</p>
           </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={handleShare}
-              aria-label="共有"
-              className="inline-flex items-center gap-1 rounded-md bg-white/20 hover:bg-white/30 backdrop-blur px-3 py-2 text-sm font-semibold text-white transition"
-              title="共有"
-            >
-              <Share2 size={16} />
-              シェア
-            </button>
-            <div className="flex items-center gap-2 bg-white/10 rounded-lg px-3 py-2 text-xs sm:text-sm">
-              <Filter size={14} className="text-white/70" />
-              <span>{windowLabel}</span>
-            </div>
-          </div>
+          <button
+            onClick={handleShare}
+            aria-label="共有"
+            className="inline-flex items-center gap-1 rounded-md bg-white/20 hover:bg-white/30 backdrop-blur px-3 py-2 text-sm font-semibold text-white transition"
+            title="共有"
+          >
+            <Share2 size={16} />
+            シェア
+          </button>
         </header>
 
         <div className="flex flex-col lg:flex-row gap-4 lg:items-center lg:justify-between mb-6">
@@ -153,15 +145,6 @@ export default function AnalysisResultsPage() {
               );
             })}
           </div>
-          <label className="flex items-center gap-2 text-xs sm:text-sm text-white/80 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={includeNope}
-              onChange={(e) => setIncludeNope(e.target.checked)}
-              className="h-4 w-4 rounded border-white/40 bg-white/20 text-rose-400 focus:ring-rose-200"
-            />
-            NOPE を集計に含める
-          </label>
         </div>
 
         {loading ? (
