@@ -458,7 +458,6 @@ SQL
   run_sql "$truncate_sql"
 
   echo "Dumping remote DATA (${TARGET_SCHEMA_CSV})..."
-  build_exclude_args
   DATA_ARGS=(--data-only --use-copy -f "$DATA_FILE")
   for schema in "${TARGET_SCHEMAS[@]}"; do
     DATA_ARGS+=(-s "$schema")
