@@ -5,9 +5,9 @@ import { Share2, Info, Smile, Frown, TrendingUp, Tag as TagIcon, Users, Clock } 
 import { useAnalysisResults } from '@/hooks/useAnalysisResults';
 
 const WINDOW_OPTIONS: Array<{ label: string; value: number | null }> = [
+  { label: '3日', value: 3 },
+  { label: '7日', value: 7 },
   { label: '30日', value: 30 },
-  { label: '90日', value: 90 },
-  { label: '180日', value: 180 },
   { label: '全期間', value: null },
 ];
 
@@ -61,7 +61,7 @@ function SummaryCard({
 }
 
 export default function AnalysisResultsPage() {
-  const [windowDays, setWindowDays] = useState<number | null>(90);
+  const [windowDays, setWindowDays] = useState<number | null>(7);
     const { data, loading, error } = useAnalysisResults({
     windowDays,
     tagLimit: 6,
