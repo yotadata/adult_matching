@@ -486,17 +486,37 @@ SQL
   restore_with_psql "$history_data"
 
   # Sync auth.schema_migrations separately to keep GoTrue migrations in sync
-  local auth_dump="$TMP_DIR/auth_data_full.sql"
-  local auth_filtered="$TMP_DIR/auth_schema_migrations.sql"
-  echo "Dumping auth.schema_migrations via supabase CLI..."
-  supabase db dump --db-url "$REMOTE_DB_URL" --use-copy --data-only --schema auth -f "$auth_dump"
-  awk '/COPY auth.schema_migrations /,/^\\./ {print}' "$auth_dump" > "$auth_filtered"
-  if [[ -s "$auth_filtered" ]]; then
-    echo "Restoring auth.schema_migrations..."
-    run_sql "TRUNCATE TABLE IF EXISTS auth.schema_migrations;"
-    restore_with_psql "$auth_filtered"
-  else
-    echo "[warn] auth.schema_migrations not found in dump; skipping" >&2
+  if [[ -n "$REMOTE_DB_URL" ]]; then
+    local auth_dump_full="$TMP_DIR/auth_schema_full.sql"
+    local auth_filtered="$TMP_DIR/auth_schema_migrations.sql"
+    echo "Dumping auth schema via supabase CLI..."
+    supabase db dump --db-url "$REMOTE_DB_URL" --use-copy --data-only --schema auth -f "$auth_dump_full"
+    python - "$auth_dump_full" "$auth_filtered" <<'PY'
+import sys
+src, dst = sys.argv[1:3]
+with open(src, 'r', encoding='utf-8') as f:
+    lines = f.readlines()
+
+out = []
+capture = False
+for line in lines:
+    if line.startswith('COPY auth.schema_migrations '):
+        capture = True
+    if capture:
+        out.append(line)
+        if line.strip() == r'\\.':
+            break
+
+with open(dst, 'w', encoding='utf-8') as f:
+    f.writelines(out)
+PY
+    if [[ -s "$auth_filtered" ]]; then
+      echo "Restoring auth.schema_migrations..."
+      run_sql "TRUNCATE TABLE IF EXISTS auth.schema_migrations;"
+      restore_with_psql "$auth_filtered"
+    else
+      echo "[warn] auth.schema_migrations block not found; skipping" >&2
+    fi
   fi
 
   echo "Done. Local DB now mirrors remote schema and data ($PROJECT_REF)."
