@@ -29,6 +29,7 @@ set -euo pipefail
 ROOT_DIR=$(cd "$(dirname "$0")/../.." && pwd)
 cd "$ROOT_DIR"
 
+DOCKER_COMPOSE_FILE="$ROOT_DIR/docker/compose.yml"
 ENV_FILE="docker/env/dev.env"
 LOCAL_ENV_FILE="docker/env/dev.env"
 PROJECT_REF=""
@@ -46,6 +47,17 @@ LOCAL_DB_NAME_VALUE=""
 LOCAL_DB_SSLMODE_VALUE=""
 LOCAL_DB_SSLROOTCERT_VALUE=""
 EXCLUDE_ARGS=()
+
+require_ipv6() {
+  if docker run --rm --network host alpine:3.20 sh -c 'ping6 -c1 -w2 ::1 >/dev/null 2>&1'; then
+    return 0
+  fi
+  cat >&2 <<'MSG'
+[error] IPv6 networking is required for scripts/sync_remote_db.
+Please enable IPv6 for Docker (e.g., Docker Desktop → Settings → Docker Engine → add `"ipv6": true`) and restart Docker Desktop.
+MSG
+  exit 1
+}
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -75,8 +87,10 @@ while [[ $# -gt 0 ]]; do
       sed -n '1,80p' "$0" | sed 's/^# \{0,1\}//'; exit 0;;
     *)
       echo "Unknown option: $1" >&2; exit 1;;
-  esac
+esac
 done
+
+require_ipv6
 
 if ! command -v supabase >/dev/null 2>&1; then
   echo "Error: supabase CLI not found. Install: https://supabase.com/docs/guides/cli" >&2
@@ -355,6 +369,108 @@ ensure_supabase_extensions() {
   run_sql "CREATE EXTENSION IF NOT EXISTS citext WITH SCHEMA public;"
 }
 
+append_sslmode_require() {
+  local url="$1"
+  if [[ "$url" == *"sslmode="* || -z "$url" ]]; then
+    printf "%s" "$url"
+    return
+  fi
+  if [[ "$url" == *\?* ]]; then
+    printf "%s&sslmode=require" "$url"
+  else
+    printf "%s?sslmode=require" "$url"
+  fi
+}
+
+pg_dump_table_ipv6() {
+  local table="$1"
+  local dest="$2"
+  local dump_url
+  dump_url=$(append_sslmode_require "$REMOTE_DB_URL")
+  if [[ -z "$dump_url" ]]; then
+    echo "[warn] REMOTE_DB_URL not set; cannot pg_dump $table"
+    return 1
+  fi
+  if ! command -v docker >/dev/null 2>&1; then
+    echo "[warn] docker CLI not found; cannot pg_dump $table"
+    return 1
+  fi
+  if [[ ! -f "$DOCKER_COMPOSE_FILE" ]]; then
+    echo "[warn] docker compose file missing; cannot pg_dump $table"
+    return 1
+  fi
+  mkdir -p "$(dirname "$dest")"
+  local temp_name
+  temp_name=$(basename "$dest")
+  local container_cmd='set -euo pipefail; pg_dump "$DB_URL" --data-only --column-inserts --no-owner --table "$TABLE_NAME" > "$OUTPUT_FILE"'
+  if docker run --rm --network host \
+      -e DB_URL="$dump_url" \
+      -e TABLE_NAME="$table" \
+      -e OUTPUT_FILE="/tmp/out/$temp_name" \
+      -v "$TMP_DIR":/tmp/out \
+      postgres:16-alpine \
+      /bin/sh -c "$container_cmd"; then
+    return 0
+  fi
+  echo "[warn] pg_dump over IPv6 failed for $table"
+  return 1
+}
+
+generate_auth_schema_migrations_from_image() {
+  local dest_file="$1"
+  local tmp_list="$TMP_DIR/auth_migration_files.txt"
+  if [[ ! -f "$DOCKER_COMPOSE_FILE" ]]; then
+    echo "[error] docker compose file not found at $DOCKER_COMPOSE_FILE" >&2
+    return 1
+  fi
+  if ! command -v docker >/dev/null 2>&1; then
+    echo "[error] docker CLI not found; cannot derive auth schema migrations" >&2
+    return 1
+  fi
+  echo "[info] auth.schema_migrations not in dump; deriving versions via supabase_auth image..."
+  if ! docker compose -f "$DOCKER_COMPOSE_FILE" run --rm --no-deps supabase_auth \
+    sh -c 'set -euo pipefail; ls -1 /app/migrations/*_up.sql' >"$tmp_list"; then
+    echo "[error] Failed to list migrations from supabase_auth image" >&2
+    return 1
+  fi
+  local rows
+  if ! rows=$(python - "$tmp_list" "$dest_file" <<'PY'
+import pathlib
+import re
+import sys
+
+src = pathlib.Path(sys.argv[1])
+dest = pathlib.Path(sys.argv[2])
+pattern = re.compile(r'(\d{8,})')
+
+versions = []
+for line in src.read_text().splitlines():
+    line = line.strip()
+    if not line:
+        continue
+    match = pattern.search(line)
+    if match:
+        versions.append(match.group(1))
+
+uniq = sorted(set(versions))
+if not uniq:
+    raise SystemExit("no migrations found in image listing")
+
+with dest.open('w', encoding='utf-8') as fout:
+    fout.write('COPY "auth"."schema_migrations" ("version") FROM stdin;\n')
+    for v in uniq:
+        fout.write(f"{v}\n")
+    fout.write('\\.\n')
+
+print(len(uniq))
+PY
+  ); then
+    echo "[error] Failed to build auth.schema_migrations fixture from image" >&2
+    return 1
+  fi
+  echo "$rows"
+}
+
 TARGET_SCHEMAS=()
 TARGET_SCHEMA_CSV=""
 TARGET_SCHEMA_SQL_LIST=""
@@ -489,29 +605,73 @@ SQL
   if [[ -n "$REMOTE_DB_URL" ]]; then
     local auth_dump_full="$TMP_DIR/auth_schema_full.sql"
     local auth_filtered="$TMP_DIR/auth_schema_migrations.sql"
+    local auth_direct_dump="$TMP_DIR/auth_schema_migrations_direct.sql"
     echo "Dumping auth schema via supabase CLI..."
     supabase db dump --db-url "$REMOTE_DB_URL" --use-copy --data-only --schema auth -f "$auth_dump_full"
-    python - "$auth_dump_full" "$auth_filtered" <<'PY'
+    local auth_rows=""
+    echo "Attempting direct dump of auth.schema_migrations via pg_dump (IPv6)..."
+    if ! pg_dump_table_ipv6 "auth.schema_migrations" "$auth_direct_dump"; then
+      echo "[error] pg_dump for auth.schema_migrations failed. IPv6 connectivity to Supabase is required." >&2
+      echo "Please enable IPv6 for Docker (e.g., Docker Desktop Settings → Docker Engine → set \"ipv6\": true) and retry." >&2
+      exit 1
+    fi
+    if [[ -s "$auth_direct_dump" ]]; then
+      cp "$auth_direct_dump" "$auth_filtered"
+      auth_rows=$(python - "$auth_filtered" <<'PY'
 import sys
-src, dst = sys.argv[1:3]
-with open(src, 'r', encoding='utf-8') as f:
-    lines = f.readlines()
 
-out = []
-capture = False
-for line in lines:
-    if line.startswith('COPY auth.schema_migrations '):
-        capture = True
-    if capture:
-        out.append(line)
-        if line.strip() == r'\\.':
-            break
-
-with open(dst, 'w', encoding='utf-8') as f:
-    f.writelines(out)
+count = 0
+with open(sys.argv[1], encoding='utf-8') as fin:
+    for line in fin:
+        stripped = line.strip()
+        upper = stripped.upper()
+        if not stripped or stripped == r'\.' or stripped.startswith('COPY '):
+            continue
+        if upper.startswith('INSERT INTO'):
+            count += 1
+        elif '\t' in stripped and not upper.startswith('--'):
+            count += 1
+print(count)
 PY
+)
+    else
+      local extract_status=0
+      auth_rows=$(python - "$auth_dump_full" "$auth_filtered" <<'PY'
+import re
+import sys
+
+src, dst = sys.argv[1:3]
+pattern = re.compile(r'^COPY\s+"?auth"?\."schema_migrations"\b', re.IGNORECASE)
+capture = False
+rows = 0
+
+with open(src, 'r', encoding='utf-8') as fin, open(dst, 'w', encoding='utf-8') as fout:
+    for line in fin:
+        if not capture and pattern.match(line):
+            capture = True
+        if capture:
+            fout.write(line)
+            stripped = line.strip()
+            if stripped and not stripped.startswith('COPY ') and stripped != r'\.':
+                rows += 1
+            if stripped == r'\.':
+                break
+
+if not capture:
+    raise SystemExit("COPY block for auth.schema_migrations not found in dump")
+
+print(rows)
+PY
+    ) || extract_status=$?
+    if [[ $extract_status -ne 0 || ! -s "$auth_filtered" ]]; then
+      if ! auth_rows=$(generate_auth_schema_migrations_from_image "$auth_filtered"); then
+        echo "[error] Failed to hydrate auth.schema_migrations from any source" >&2
+        exit 1
+      fi
+    fi
+    fi
     if [[ -s "$auth_filtered" ]]; then
-      echo "Restoring auth.schema_migrations..."
+      echo "Restoring auth.schema_migrations (rows: ${auth_rows})..."
       run_sql "TRUNCATE TABLE IF EXISTS auth.schema_migrations;"
       restore_with_psql "$auth_filtered"
     else

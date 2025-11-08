@@ -54,3 +54,21 @@ The container uses Node 20, mounts the `frontend` directory for live reload, and
 - Example:
   - `bash scripts/run_train_two_tower.sh --embedding-dim 256 --epochs 5`
   - Customize data paths via args `--train ml/data/... --val ml/data/... --out-dir ml/artifacts`
+
+## IPv6 設定（Docker Desktop）
+`scripts/sync_remote_db` からリモート Supabase へ `pg_dump` を実行する際は、Docker が IPv6 を扱えることが前提です。Docker Desktop を利用している場合は、以下の設定を `Settings → Docker Engine` に追加してください。
+
+```jsonc
+{
+  // 既存の設定に追記する
+  "ipv6": true,
+  "fixed-cidr-v6": "fd00:dead:beef::/64"
+}
+```
+
+- `fixed-cidr-v6` は任意の Unique-Local アドレス帯を指定してください（他のネットワークと重複しない範囲を推奨）。
+- 保存後に Docker Desktop の再起動が必要です。
+- 反映確認: `docker info | grep -i IPv6` や `docker network inspect bridge | rg IPv6Gateway` が値を返すこと。
+- `scripts/sync_remote_db` は IPv6 接続での `pg_dump` が必須です。設定不足で `pg_dump` が失敗した場合、スクリプトは即終了しリトライを促す仕様になっています。
+
+Linux ホストの場合は上記に加えて `sysctl net.ipv6.conf.all.disable_ipv6=0` など OS レベルで IPv6 が有効化されているかを確認してください。`docker run --rm --network host ...` が利用できない/IPv6 が未整備な環境では `scripts/sync_remote_db` を実行できません。
