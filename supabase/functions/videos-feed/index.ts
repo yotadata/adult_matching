@@ -262,8 +262,9 @@ Deno.serve(async (req) => {
       }
     }
 
-    const remainder = decisionCount % 20
-    const swipes_until_next_embed = 20 - remainder
+    const EMBED_INTERVAL = 10
+    const remainder = decisionCount % EMBED_INTERVAL
+    const swipes_until_next_embed = EMBED_INTERVAL - remainder || EMBED_INTERVAL
 
     const payload = {
       videos: final.slice(0, adjustedPageLimit).map((item) => ({

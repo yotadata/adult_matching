@@ -28,7 +28,7 @@ fi
 DB_VOLUME="${PROJECT_NAME}_db_data"
 
 echo "Stopping dependent services ..."
-docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" stop rest auth realtime storage kong studio edge-videos-feed edge-ai-recommend edge-analysis-results edge-ai-recommend-playlist || true
+docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" stop rest auth realtime storage kong studio edge-videos-feed edge-ai-recommend edge-analysis-results edge-embed-user || true
 
 echo "Removing DB containers ..."
 docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" rm -f db db-init db-migrate || true
@@ -46,6 +46,6 @@ echo "Applying pending migrations ..."
 docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" up db-migrate
 
 echo "Restarting dependent services ..."
-docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" restart rest auth realtime storage edge-videos-feed edge-ai-recommend edge-analysis-results edge-ai-recommend-playlist kong
+docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" restart rest auth realtime storage edge-videos-feed edge-ai-recommend edge-analysis-results edge-embed-user kong
 
 echo "DB reset completed."

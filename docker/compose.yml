@@ -266,10 +266,11 @@ services:
       - ../supabase/functions:/home/deno/functions:ro
     command: ["start", "--main-service", "/home/deno/functions/analysis-results", "--port", "9002"]
 
-  edge-ai-recommend-playlist:
+
+  edge-embed-user:
     image: supabase/edge-runtime:v1.69.11
     platform: linux/amd64
-    container_name: supabase_edge_ai_recommend_playlist
+    container_name: supabase_edge_embed_user
     restart: unless-stopped
     depends_on:
       - rest
@@ -277,10 +278,11 @@ services:
     environment:
       - SUPABASE_URL=http://kong:8000
       - SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
       - VERIFY_JWT=false
     volumes:
       - ../supabase/functions:/home/deno/functions:ro
-    command: ["start", "--main-service", "/home/deno/functions/ai-recommend-playlist", "--port", "9003"]
+    command: ["start", "--main-service", "/home/deno/functions/embed-user", "--port", "9004"]
 
   meta:
     image: supabase/postgres-meta:v0.80.0
