@@ -399,6 +399,21 @@ docker exec "$DB_CONTAINER" \
   psql --host=127.0.0.1 --port=5432 --username "$LOCAL_DB_USER" --dbname "$LOCAL_DB_NAME" \
        -v ON_ERROR_STOP=1 -c 'CREATE EXTENSION IF NOT EXISTS pg_trgm' >/dev/null
 
+# Ensure auxiliary functions required by downstream schema exist (some dumps may reference them even if not present)
+docker exec "$DB_CONTAINER" \
+  env PGPASSWORD="$LOCAL_DB_PASS" \
+  psql --host=127.0.0.1 --port=5432 --username "$LOCAL_DB_USER" --dbname "$LOCAL_DB_NAME" <<'SQL'
+CREATE OR REPLACE FUNCTION public.set_ai_recommend_playlists_updated_at()
+RETURNS trigger
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  NEW.updated_at = now();
+  RETURN NEW;
+END;
+$$;
+SQL
+
 vector_half_support=$(docker exec "$DB_CONTAINER" \
   env PGPASSWORD="$LOCAL_DB_PASS" \
   psql --host=127.0.0.1 --port=5432 --username "$LOCAL_DB_USER" --dbname "$LOCAL_DB_NAME" \

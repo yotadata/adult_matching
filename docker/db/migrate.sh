@@ -111,7 +111,7 @@ for f in "$MIG_DIR"/*.sql; do
     fi
 
     if [ -n "$ver" ]; then
-      applied=$(psql -At -c "select 1 from supabase_migrations.schema_migrations where version = $ver limit 1;" || true)
+      applied=$(psql -At -c "select 1 from supabase_migrations.schema_migrations where version::text = '$ver' limit 1;" || true)
       if [ -n "$applied" ]; then
         echo "Skipping $base (version $ver already recorded in supabase_migrations.schema_migrations)"
         continue
@@ -124,9 +124,9 @@ for f in "$MIG_DIR"/*.sql; do
         # Detect optional name column
         has_name=$(psql -At -c "select 1 from information_schema.columns where table_schema='supabase_migrations' and table_name='schema_migrations' and column_name='name' limit 1;" || true)
         if [ -n "$has_name" ]; then
-          psql -c "insert into supabase_migrations.schema_migrations(version, name) values ($ver, '$base');"
+          psql -c "insert into supabase_migrations.schema_migrations(version, name) values ('$ver', '$base');"
         else
-          psql -c "insert into supabase_migrations.schema_migrations(version) values ($ver);"
+          psql -c "insert into supabase_migrations.schema_migrations(version) values ('$ver');"
         fi
         echo "Applied $base"
         rm -f "$tmpf"

@@ -1,11 +1,11 @@
-# Two‑Tower 学習ガイド（256 次元・PyTorch・ローカル優先）
+# Two‑Tower 学習ガイド（128 次元・PyTorch・ローカル優先）
 
 本ドキュメントは、LIKE/DISLIKE を主とした明示フィードバックを用いて Two‑Tower（ユーザー塔×アイテム塔）モデルを学習し、生成物をオブジェクトストレージ（Supabase Storage）へ配置するまでをまとめたものです。まずはローカルで学習し、のちに GitHub Actions へ移行できる構成とします。
 
 ## 目的とアウトプット
 
 - 目的: ユーザー×動画の嗜好を Two‑Tower で学習し、初期の個人化推薦を可能にする。
-- 埋め込み次元: 256 に固定。
+- 埋め込み次元: 128 に固定。
 - 学習アウトプット（本仕様）
   - モデル（PyTorch state_dict と ONNX）を Storage へ配置（Python/TypeScript から読み込み可能）。成果物は `ml/artifacts/runs/<run-id>/` に保存し、直近の出力を `ml/artifacts/latest/` にミラーする。
 
@@ -25,7 +25,7 @@
    - 結果を JSON などに保存し、NG の場合はアップサート処理へ進ませない。
 
 4. **埋め込み反映（upsert / オンライン更新）**  
-   - 評価 OK の成果物だけを Supabase Postgres の `public.user_embeddings` / `public.video_embeddings`（vector(256)）へアップサート。  
+   - 評価 OK の成果物だけを Supabase Postgres の `public.user_embeddings` / `public.video_embeddings`（halfvec(128)）へアップサート。  
    - Storage には `models/two_tower_latest.onnx` 等をアップロードし、バージョン管理 (`two_tower_YYYYMMDD_HHMMSS.*`) を行う。
 
 > 各ステップは `scripts/<name>/run.sh` 経由で Docker 上から実行する。  
@@ -58,7 +58,7 @@
      --user-features ml/data/processed/two_tower/latest/user_features.parquet \
      --item-features ml/data/processed/two_tower/latest/item_features.parquet \
      --item-key video_id \
-     --embedding-dim 256 --hidden-dim 512 \
+     --embedding-dim 128 --hidden-dim 512 \
      --epochs 8 --batch-size 1024 \
      --max-tag-features 4096 --max-performer-features 1024 \
      --out-dir ml/artifacts
@@ -110,7 +110,7 @@
 
 1) 入力CSVの準備（優先: LIKE/DISLIKE の明示データ）  
 2) 前処理: `interactions(user_id, item_id, label)` を作成（ユーザー層化で train/val 分割）  
-3) Two‑Tower を PyTorch で学習（埋め込み256次元）  
+3) Two‑Tower を PyTorch で学習（埋め込み128次元）  
 4) 生成物: モデル（state_dict, ONNX）、埋め込み Parquet、メタ情報  
 5) （任意）評価メトリクス: Recall@K / MAP@K
 
@@ -170,7 +170,7 @@ bash scripts/train_two_tower/run.sh \
   --user-features ml/data/processed/two_tower/latest/user_features.parquet \
   --item-features ml/data/processed/two_tower/latest/item_features.parquet \
   --item-key video_id \
-  --embedding-dim 256 \
+  --embedding-dim 128 \
   --hidden-dim 512 \
   --epochs 5 \
   --batch-size 1024 \
@@ -264,7 +264,7 @@ bash scripts/upsert_two_tower/run.sh \
 - `gen_user_embeddings/run.sh` を実行した場合は、既定で本スクリプトが自動的に呼ばれる（`--skip-upsert` を指定した場合を除く）。
 - `--dry-run` を付けると件数だけ確認し、テーブルへは書き込まない。
 - `--include-users` を指定すると `user_embeddings.parquet` も upsert する（事前に `gen_user_embeddings` で実ユーザーの埋め込みを生成しておく）。
-- スクリプト側で IPv4 へのフォールバックや特徴量次元の差異を自動調整するため、既存テーブルに `vector(768)` 列が残っていても `vector(256)` に再構築された上で upsert が進行する。
+- 埋め込み列は `halfvec(128)` であることを前提とする。スクリプト実行時に型/次元が異なると検知され、最新マイグレーションを適用するようエラーで知らせる。
 
 - 期待動作: `user_embeddings.parquet` / `video_embeddings.parquet` を pgvector テーブルへ upsert し、`two_tower_latest.onnx` などを Storage `models/` バケットへアップロード。
 - 実行ログには処理件数・対象 DB URL（IPv4/プールホストに分解済み）・必要に応じてテーブル再構成の情報が出力される。
@@ -393,7 +393,7 @@ jobs:
       - name: Train TwoTower
         run: |
           python scripts/train_two_tower.py \
-            --embedding-dim 256 --epochs 5 --batch-size 2048 --lr 1e-3
+            --embedding-dim 128 --epochs 5 --batch-size 2048 --lr 1e-3
 
       - name: Upload model to Supabase Storage
         env:
@@ -430,7 +430,7 @@ jobs:
 
 ## 推薦API側の切替
 
-- 短期: Edge Function で `video_embeddings` × `user_embeddings` の類似検索を実装（`vector_cosine_ops`）。
+- 短期: Edge Function で `video_embeddings` × `user_embeddings` の類似検索を実装（`halfvec_cosine_ops`）。
 - 長期: モデルファイル（Storage）を学習・運用のバージョニングに使用（オンライン学習/AB テスト基盤へ拡張）。
 
 ## ローカル検証の最小チェックリスト
@@ -443,7 +443,7 @@ jobs:
 ## よくある論点
 
 - 未登録 `product_url` の扱い: 前処理時に最小挿入→後続クロールで enrich（任意）。
-- 埋め込み次元: 本仕様は 256 に固定。将来変更時はDBスキーマ・下流も一括更新。
+- 埋め込み次元: 本仕様は 128 に固定。将来変更時はDBスキーマ・下流も一括更新。
 - 評価: ユーザー履歴が薄い場合、popularity 混合や正則化で安定化。
 
 ---

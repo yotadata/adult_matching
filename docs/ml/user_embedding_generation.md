@@ -111,7 +111,7 @@ CREATE TABLE public.user_features (
 ```sql
 CREATE TABLE public.user_embeddings (
     user_id uuid NOT NULL PRIMARY KEY REFERENCES auth.users (id) ON DELETE CASCADE,
-    embedding vector(256) NOT NULL,
+    embedding halfvec(128) NOT NULL,
     model_version text,
     updated_at timestamptz NOT NULL DEFAULT now()
 );
