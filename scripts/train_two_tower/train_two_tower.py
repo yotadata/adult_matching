@@ -24,6 +24,7 @@ class TrainConfig:
     val_path: Path
     user_features_path: Path
     item_features_path: Path
+    disable_user_features: bool
     embedding_dim: int
     hidden_dim: int
     epochs: int
@@ -337,6 +338,29 @@ def compute_embeddings(model: TwoTower, vectors: Dict[str, np.ndarray], encode_f
     return pd.DataFrame(rows)
 
 
+def build_dummy_user_features(*interaction_frames: pd.DataFrame) -> pd.DataFrame:
+    reviewer_series = [
+        df["reviewer_id"].astype(str)
+        for df in interaction_frames
+        if df is not None and not df.empty and "reviewer_id" in df.columns
+    ]
+    if reviewer_series:
+        user_ids = pd.concat(reviewer_series, ignore_index=True).dropna().unique()
+    else:
+        user_ids = np.array([], dtype=str)
+    n = len(user_ids)
+    return pd.DataFrame(
+        {
+            "reviewer_id": user_ids,
+            "recent_positive_video_ids": [[] for _ in range(n)],
+            "like_count_30d": np.zeros(n, dtype="int64"),
+            "positive_ratio_30d": np.zeros(n, dtype="float64"),
+            "signup_days": np.zeros(n, dtype="int64"),
+            "preferred_tag_ids": [[] for _ in range(n)],
+        }
+    )
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description="Train a feature-based Two-Tower model (PyTorch)")
     ap.add_argument("--train", type=Path, default=Path("ml/data/processed/two_tower/latest/interactions_train.parquet"))
@@ -353,6 +377,7 @@ def main() -> None:
     ap.add_argument("--max-tag-features", type=int, default=2048, help="Maximum number of tag IDs to encode (by frequency). Use <=0 to keep all.")
     ap.add_argument("--max-performer-features", type=int, default=512, help="Maximum number of performer IDs to encode (by frequency). Use <=0 to keep all.")
     ap.add_argument("--use-price-feature", action="store_true", help="Include the price column as a numeric feature.")
+    ap.add_argument("--disable-user-features", action="store_true", help="Skip loading user_features.parquet and use zero vectors per reviewer instead.")
     ap.add_argument("--run-id", default="auto", help="Identifier for this training run. Use 'auto' to generate a JST timestamp (YYYY-MM-DD_HH-MM-SS).")
     args = ap.parse_args()
 
@@ -375,6 +400,7 @@ def main() -> None:
         val_path=args.val,
         user_features_path=args.user_features,
         item_features_path=args.item_features,
+        disable_user_features=args.disable_user_features,
         embedding_dim=args.embedding_dim,
         hidden_dim=args.hidden_dim,
         epochs=args.epochs,
@@ -396,6 +422,7 @@ def main() -> None:
                     "train": str(cfg.train_path),
                     "val": str(cfg.val_path),
                     "user_features": str(cfg.user_features_path),
+                    "disable_user_features": cfg.disable_user_features,
                     "item_features": str(cfg.item_features_path),
                     "embedding_dim": cfg.embedding_dim,
                     "hidden_dim": cfg.hidden_dim,
@@ -414,14 +441,18 @@ def main() -> None:
     )
 
     try:
-        if not cfg.user_features_path.exists():
-            raise FileNotFoundError(f"user features not found: {cfg.user_features_path}")
         if not cfg.item_features_path.exists():
             raise FileNotFoundError(f"item features not found: {cfg.item_features_path}")
 
         train_df = pd.read_parquet(cfg.train_path)
         val_df = pd.read_parquet(cfg.val_path)
-        user_df = pd.read_parquet(cfg.user_features_path)
+        if cfg.disable_user_features:
+            user_df = build_dummy_user_features(train_df, val_df)
+            print(json.dumps({"info": "using_dummy_user_features", "users": len(user_df)}))
+        else:
+            if not cfg.user_features_path.exists():
+                raise FileNotFoundError(f"user features not found: {cfg.user_features_path}")
+            user_df = pd.read_parquet(cfg.user_features_path)
         item_df = pd.read_parquet(cfg.item_features_path)
 
         item_key = args.item_key if args.item_key in item_df.columns else "video_id"

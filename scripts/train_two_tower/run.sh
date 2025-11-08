@@ -5,7 +5,8 @@ IMAGE=adult-matching-train:latest
 
 docker build -f scripts/train_two_tower/Dockerfile -t "$IMAGE" .
 
-DOCKER_FLAGS=(--rm)
+CONTAINER_NAME=${CONTAINER_NAME:-adult-matching-train-run}
+DOCKER_FLAGS=(--name "$CONTAINER_NAME" --rm=false)
 if [ -t 1 ]; then
   DOCKER_FLAGS+=(-it)
 else
@@ -13,6 +14,7 @@ else
 fi
 
 exec docker run "${DOCKER_FLAGS[@]}" \
+  -e PYTHONUNBUFFERED=1 \
   -v "$(pwd)":/workspace \
   -w /workspace \
   "$IMAGE" \

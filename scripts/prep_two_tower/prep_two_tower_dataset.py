@@ -3,6 +3,7 @@ import argparse
 import json
 import shutil
 import sys
+from collections import Counter
 from dataclasses import dataclass
 from datetime import datetime, timezone, timedelta
 from os import path as _path
@@ -322,6 +323,51 @@ def _normalize_to_str_list(value, *, sort: bool = False) -> list[str]:
     return sorted(items) if sort else items
 
 
+def _build_user_features_from_interactions(interactions: pd.DataFrame, items_df: pd.DataFrame | None) -> pd.DataFrame | None:
+    if interactions is None or interactions.empty:
+        return None
+    df = interactions.copy()
+    video_col = "video_id" if "video_id" in df.columns else "product_url"
+    df["reviewer_id"] = df["reviewer_id"].astype(str)
+    df[video_col] = df[video_col].astype(str)
+    if "label" in df.columns:
+        df["label"] = df["label"].astype(int)
+    positives = df[df.get("label", 0) == 1]
+    total_counts = df.groupby("reviewer_id").size()
+    like_counts = positives.groupby("reviewer_id").size()
+    recent_map = positives.groupby("reviewer_id")[video_col].apply(lambda s: s.tolist()[-20:])
+
+    tag_lookup: dict[str, list[str]] = {}
+    if items_df is not None and "video_id" in items_df.columns and "tag_ids" in items_df.columns:
+        tag_lookup = {
+            str(row.video_id): _normalize_to_str_list(row.tag_ids, sort=False)
+            for row in items_df.itertuples(index=False)
+        }
+
+    rows = []
+    for reviewer, total in total_counts.items():
+        like_count = int(like_counts.get(reviewer, 0))
+        ratio = (like_count / total) if total > 0 else None
+        recent = recent_map.get(reviewer, [])
+        preferred_tags: list[str] = []
+        if tag_lookup and recent:
+            tag_counter = Counter()
+            for vid in recent:
+                tag_counter.update(tag_lookup.get(vid, []))
+            preferred_tags = [tag for tag, _ in tag_counter.most_common(10)]
+        rows.append(
+            {
+                "reviewer_id": reviewer,
+                "recent_positive_video_ids": recent,
+                "like_count_30d": like_count,
+                "positive_ratio_30d": float(ratio) if ratio is not None else None,
+                "signup_days": 0,
+                "preferred_tag_ids": preferred_tags,
+            }
+        )
+    return pd.DataFrame(rows)
+
+
 def _load_user_features(db_url: str | None) -> pd.DataFrame | None:
     if not db_url:
         return None
@@ -329,8 +375,8 @@ def _load_user_features(db_url: str | None) -> pd.DataFrame | None:
         "with base as ("
         "  select"
         "    uvd.user_id,"
-        "    array_agg(uvd.video_id order by uvd.created_at desc)"
-        "      filter (where uvd.decision_type = 'like')[:20] as recent_positive_video_ids,"
+        "    (array_agg(uvd.video_id order by uvd.created_at desc)"
+        "      filter (where uvd.decision_type = 'like'))[:20] as recent_positive_video_ids,"
         "    count(*) filter (where uvd.decision_type = 'like' and uvd.created_at >= now() - interval '30 days') as like_count_30d,"
         "    count(*) filter (where uvd.created_at >= now() - interval '30 days') as total_count_30d"
         "  from public.user_video_decisions uvd"
@@ -338,7 +384,7 @@ def _load_user_features(db_url: str | None) -> pd.DataFrame | None:
         "), tag_pref as ("
         "  select"
         "    ranked.user_id,"
-        "    array_agg(ranked.tag_id order by ranked.like_count desc nulls last)[:10] as preferred_tag_ids"
+        "    (array_agg(ranked.tag_id order by ranked.like_count desc nulls last))[:10] as preferred_tag_ids"
         "  from ("
         "    select"
         "      uvd.user_id,"
@@ -540,9 +586,15 @@ def main():
         if "performer_ids" in items_to_write.columns:
             items_to_write["performer_ids"] = items_to_write["performer_ids"].apply(lambda v: _normalize_to_str_list(v, sort=True))
 
-    user_features_df = _load_user_features(cfg.db_url)
-    if cfg.db_url is None and user_features_df is None:
-        sys.stderr.write("Note: --db-url not provided; skipping user_features export.\n")
+    user_features_df: pd.DataFrame | None = None
+    if cfg.mode != "reviews" and cfg.db_url:
+        user_features_df = _load_user_features(cfg.db_url)
+    if user_features_df is None:
+        user_features_df = _build_user_features_from_interactions(interactions, items_to_write)
+        if user_features_df is not None:
+            sys.stderr.write("Info: generated synthetic user_features from interactions (reviews-mode fallback).\n")
+    if user_features_df is None:
+        sys.stderr.write("Note: user_features could not be generated (insufficient interactions).\n")
 
     summary_paths: list[Path] = []
     if cfg.summary_path is not None:
