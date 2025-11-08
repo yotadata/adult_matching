@@ -120,7 +120,7 @@ bash scripts/prep_two_tower/run_with_remote_db.sh \
 - 学習
 
 ```bash
-bash scripts/train_two_tower/run.sh --embedding-dim 256 --epochs 5
+bash scripts/train_two_tower/run.sh --embedding-dim 128 --epochs 5
 ```
 
 - スクレイピング（DMM レビュー）

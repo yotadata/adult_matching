@@ -309,35 +309,27 @@ def upsert_embeddings(
 
 
 def _ensure_embedding_schema(conn: psycopg.Connection, target_dim: int | None) -> None:
-    if target_dim is None:
-        target_dim = 256
-    dim_sql = sql.SQL(str(target_dim))
-    changed = False
+    expected_dim = target_dim or 128
+    expected_type = f"halfvec({expected_dim})"
     with conn.cursor() as cur:
-        current_video_dim = _get_vector_dim(cur, "public.video_embeddings", "embedding")
-        current_user_dim = _get_vector_dim(cur, "public.user_embeddings", "embedding")
-        if current_video_dim != target_dim:
-            print(json.dumps({"info": "adjust_video_dim", "from": current_video_dim, "to": target_dim}, ensure_ascii=False))
-            cur.execute("DROP INDEX IF EXISTS idx_video_embeddings_cosine")
-            cur.execute("TRUNCATE TABLE public.video_embeddings RESTART IDENTITY")
-            cur.execute(sql.SQL("ALTER TABLE public.video_embeddings ALTER COLUMN embedding TYPE vector({dim})").format(dim=dim_sql))
-            cur.execute("CREATE INDEX IF NOT EXISTS idx_video_embeddings_cosine ON public.video_embeddings USING ivfflat (embedding vector_cosine_ops)")
-            changed = True
-        if current_user_dim and current_user_dim != target_dim:
-            print(json.dumps({"info": "adjust_user_dim", "from": current_user_dim, "to": target_dim}, ensure_ascii=False))
-            cur.execute("DROP INDEX IF EXISTS idx_user_embeddings_cosine")
-            cur.execute("TRUNCATE TABLE public.user_embeddings RESTART IDENTITY")
-            cur.execute(sql.SQL("ALTER TABLE public.user_embeddings ALTER COLUMN embedding TYPE vector({dim})").format(dim=dim_sql))
-            cur.execute("CREATE INDEX IF NOT EXISTS idx_user_embeddings_cosine ON public.user_embeddings USING ivfflat (embedding vector_cosine_ops)")
-            changed = True
-    if changed:
-        conn.commit()
+        video_type = _get_column_type(cur, "public.video_embeddings", "embedding")
+        user_type = _get_column_type(cur, "public.user_embeddings", "embedding")
+    mismatches: list[dict[str, Any]] = []
+    if video_type != expected_type:
+        mismatches.append({"table": "public.video_embeddings", "found": video_type, "expected": expected_type})
+    if user_type != expected_type:
+        mismatches.append({"table": "public.user_embeddings", "found": user_type, "expected": expected_type})
+    if mismatches:
+        raise RuntimeError(
+            "Embedding schema mismatch detected. Apply the latest migrations to convert embeddings to halfvec(128): "
+            + json.dumps(mismatches, ensure_ascii=False)
+        )
 
 
-def _get_vector_dim(cur: psycopg.Cursor, table: str, column: str) -> int | None:
+def _get_column_type(cur: psycopg.Cursor, table: str, column: str) -> str | None:
     cur.execute(
         """
-        SELECT NULLIF(atttypmod, -1) AS dims
+        SELECT format_type(atttypid, atttypmod)
         FROM pg_attribute
         WHERE attrelid = %s::regclass
           AND attname = %s
@@ -349,7 +341,7 @@ def _get_vector_dim(cur: psycopg.Cursor, table: str, column: str) -> int | None:
     if not row:
         return None
     if isinstance(row, dict):
-        return row.get("dims")
+        return row.get("format_type")
     return row[0]
 
 
@@ -540,7 +532,8 @@ def main() -> None:
     conn = psycopg.connect(db_url, autocommit=False, row_factory=dict_row)
     try:
         register_vector(conn)
-        _ensure_embedding_schema(conn, target_dim=len(video_rows[0][1]) if video_rows else None)
+        inferred_dim = len(video_rows[0][1]) if video_rows else 128
+        _ensure_embedding_schema(conn, target_dim=inferred_dim)
         with conn:
             dropped_fk = 0
             if args.include_users and user_rows:

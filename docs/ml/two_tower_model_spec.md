@@ -8,7 +8,7 @@
 - 方式: Two‑Tower（ユーザー塔・アイテム塔）でそれぞれ埋め込みベクトルを学習し、`score = sim(E_u, E_i)` でランキング。
 - 成果物:
 - 学習済みモデル（Storage）: `models/two_tower_latest.pkl`（任意でバージョニングファイル `two_tower_YYYYMMDD_HHMMSS.pkl.gz`）
-  - 埋め込み（DB/pgvector）: `public.user_embeddings`, `public.video_embeddings`（vector(256) を想定）
+  - 埋め込み（DB/pgvector）: `public.user_embeddings`, `public.video_embeddings`（halfvec(128) を想定）
 
 ## データ仕様（学習用）
 
@@ -28,8 +28,8 @@
 - エンコーダ
   - UserEncoder: ユーザーの行動・属性特徴量を入力し埋め込みベクトルを生成するネットワーク（例: 直近 LIKE のアイテム一覧の埋め込み平均、プロフィールカテゴリの one-hot など）
   - ItemEncoder: アイテムのコンテンツ特徴量を入力し埋め込みベクトルを生成するネットワーク（例: タイトル/タグのテキスト埋め込み、カテゴリ ID、多値属性など）
-- 出力次元 D: 256 を基本（計算都合により 128 などで学習→必要なら線形で 256 へ射影も可）
-- 類似度: コサイン（DB は `vector_cosine_ops` を推奨）
+- 出力次元 D: 128（half precision）を基本。必要に応じて別次元へ射影可能だが、DB には 128 次元で格納する。
+- 類似度: コサイン（DB は `halfvec_cosine_ops` を推奨）
 - 損失: 対数双曲線/InfoNCE などの二値ロス or サンプリングベースのソフトマックス。初期は BCE + 負例サンプルで可。
 - 最適化: Adam、`lr=1e-3` 目安、早期終了/学習率減衰オプション
 
@@ -55,15 +55,15 @@
   - `models/two_tower_latest.json`（メタデータ: `version, trained_at, dim, loss, metrics, input_schema_version`）
   - 版管理: `two_tower_YYYYMMDD_HHMMSS.onnx` や `two_tower_YYYYMMDD_HHMMSS.pt.gz` などバージョン付きファイルを保存し、`latest` を上書き
 - DB（pgvector）
-  - `public.video_embeddings(video_id uuid, embedding vector(256))`
-  - `public.user_embeddings(user_id text, embedding vector(256))`
+  - `public.video_embeddings(video_id uuid, embedding halfvec(128))`
+  - `public.user_embeddings(user_id text, embedding halfvec(128))`
   - 初回のみ IVFFLAT インデックス作成（cosine）
 
 ```sql
 create index if not exists idx_video_embeddings_cosine
-  on public.video_embeddings using ivfflat (embedding vector_cosine_ops);
+  on public.video_embeddings using ivfflat (embedding halfvec_cosine_ops);
 create index if not exists idx_user_embeddings_cosine
-  on public.user_embeddings using ivfflat (embedding vector_cosine_ops);
+  on public.user_embeddings using ivfflat (embedding halfvec_cosine_ops);
 ```
 
 ## 推論 I/O 仕様

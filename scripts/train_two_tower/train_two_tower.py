@@ -343,7 +343,7 @@ def main() -> None:
     ap.add_argument("--val", type=Path, default=Path("ml/data/processed/two_tower/latest/interactions_val.parquet"))
     ap.add_argument("--user-features", type=Path, default=Path("ml/data/processed/two_tower/latest/user_features.parquet"))
     ap.add_argument("--item-features", type=Path, default=Path("ml/data/processed/two_tower/latest/item_features.parquet"))
-    ap.add_argument("--embedding-dim", type=int, default=256)
+    ap.add_argument("--embedding-dim", type=int, default=128)
     ap.add_argument("--hidden-dim", type=int, default=512)
     ap.add_argument("--epochs", type=int, default=5)
     ap.add_argument("--batch-size", type=int, default=1024)
