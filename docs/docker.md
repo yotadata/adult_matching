@@ -56,7 +56,7 @@ The container uses Node 20, mounts the `frontend` directory for live reload, and
   - Customize data paths via args `--train ml/data/... --val ml/data/... --out-dir ml/artifacts`
 
 ## IPv6 設定（Docker Desktop）
-`scripts/sync_remote_db` からリモート Supabase へ `pg_dump` を実行する際は、Docker が IPv6 を扱えることが前提です。Docker Desktop を利用している場合は、以下の設定を `Settings → Docker Engine` に追加してください。
+`scripts/sync_remote_db` ではホスト上の `pg_dump` で直接リモート Supabase に接続します。IPv6 が利用可能であることが前提なので、Docker Desktop を利用している場合は `Settings → Docker Engine` に以下を追加してください。
 
 ```jsonc
 {
@@ -68,7 +68,7 @@ The container uses Node 20, mounts the `frontend` directory for live reload, and
 
 - `fixed-cidr-v6` は任意の Unique-Local アドレス帯を指定してください（他のネットワークと重複しない範囲を推奨）。
 - 保存後に Docker Desktop の再起動が必要です。
-- 反映確認: `docker info | grep -i IPv6` や `docker network inspect bridge | rg IPv6Gateway` が値を返すこと。
-- `scripts/sync_remote_db` は IPv6 接続での `pg_dump` が必須です。設定不足で `pg_dump` が失敗した場合、スクリプトは即終了しリトライを促す仕様になっています。
+- 反映確認: `docker info | grep -i IPv6` や `python - <<'PY' ... socket.getaddrinfo('db.<project>.supabase.co', None, socket.AF_INET6)` などで AAAA が取れることを確認。
+- `scripts/sync_remote_db` は IPv6 経由の `pg_dump` が必須で、ホスト側の `pg_dump` から `db.<project>.supabase.co:6543` に直接接続します。到達できない場合はスクリプトが即終了します。
 
-Linux ホストの場合は上記に加えて `sysctl net.ipv6.conf.all.disable_ipv6=0` など OS レベルで IPv6 が有効化されているかを確認してください。`docker run --rm --network host ...` が利用できない/IPv6 が未整備な環境では `scripts/sync_remote_db` を実行できません。
+Linux ホストの場合は `sysctl net.ipv6.conf.all.disable_ipv6=0` などで IPv6 が有効か確認してください。`db.<project>.supabase.co` の AAAA レコードに到達できない環境では `scripts/sync_remote_db` を実行できません。

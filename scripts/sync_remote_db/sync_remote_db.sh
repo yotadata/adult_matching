@@ -49,12 +49,22 @@ LOCAL_DB_SSLROOTCERT_VALUE=""
 EXCLUDE_ARGS=()
 
 require_ipv6() {
-  if docker run --rm --network host alpine:3.20 sh -c 'ping6 -c1 -w2 ::1 >/dev/null 2>&1'; then
+  local test_host="db.${PROJECT_REF}.supabase.co"
+  if python - "$test_host" <<'PY'
+import socket, sys
+host = sys.argv[1]
+try:
+    infos = socket.getaddrinfo(host, None, socket.AF_INET6, socket.SOCK_STREAM)
+except socket.gaierror:
+    sys.exit(1)
+sys.exit(0 if infos else 1)
+PY
+  then
     return 0
   fi
   cat >&2 <<'MSG'
-[error] IPv6 networking is required for scripts/sync_remote_db.
-Please enable IPv6 for Docker (e.g., Docker Desktop → Settings → Docker Engine → add `"ipv6": true`) and restart Docker Desktop.
+[error] IPv6 connectivity to Supabase is required (db.<project>.supabase.co has no reachable AAAA record).
+Enable IPv6 on the host OS / Docker Desktop and ensure it can resolve + reach db.<project>.supabase.co via IPv6.
 MSG
   exit 1
 }
@@ -89,8 +99,6 @@ while [[ $# -gt 0 ]]; do
       echo "Unknown option: $1" >&2; exit 1;;
 esac
 done
-
-require_ipv6
 
 if ! command -v supabase >/dev/null 2>&1; then
   echo "Error: supabase CLI not found. Install: https://supabase.com/docs/guides/cli" >&2
@@ -158,6 +166,7 @@ if [[ -z "$PROJECT_REF" ]]; then
 fi
 
 
+require_ipv6
 echo "Project ref: $PROJECT_REF"
 echo "Env file:    $ENV_FILE"
 
@@ -369,50 +378,90 @@ ensure_supabase_extensions() {
   run_sql "CREATE EXTENSION IF NOT EXISTS citext WITH SCHEMA public;"
 }
 
-append_sslmode_require() {
+build_pg_dump_url() {
   local url="$1"
-  if [[ "$url" == *"sslmode="* || -z "$url" ]]; then
-    printf "%s" "$url"
-    return
-  fi
-  if [[ "$url" == *\?* ]]; then
-    printf "%s&sslmode=require" "$url"
-  else
-    printf "%s?sslmode=require" "$url"
-  fi
+  python - "$url" <<'PY'
+import sys
+import urllib.parse
+
+url = sys.argv[1]
+if not url:
+    print("")
+    sys.exit(0)
+
+split = urllib.parse.urlsplit(url)
+if not split.hostname:
+    print(url)
+    sys.exit(0)
+
+host = split.hostname
+port = split.port
+if host.endswith('.supabase.co') or host.endswith('.supabase.net'):
+    port = 6543
+
+query = urllib.parse.parse_qs(split.query, keep_blank_values=True)
+if not any(key.lower() == 'sslmode' for key in query):
+    query.setdefault('sslmode', []).append('require')
+new_query = urllib.parse.urlencode(query, doseq=True)
+
+user = split.username or ''
+password = split.password or ''
+userinfo = ''
+if user:
+    userinfo = urllib.parse.quote(user, safe='')
+    if password:
+        userinfo += ':' + urllib.parse.quote(password, safe='')
+    userinfo += '@'
+
+netloc = f"{userinfo}{host}"
+if port:
+    netloc += f":{port}"
+
+rebuilt = urllib.parse.urlunsplit((
+    split.scheme,
+    netloc,
+    split.path or '',
+    new_query,
+    split.fragment or ''
+))
+print(rebuilt)
+PY
 }
 
-pg_dump_table_ipv6() {
+pg_dump_table_remote() {
   local table="$1"
   local dest="$2"
   local dump_url
-  dump_url=$(append_sslmode_require "$REMOTE_DB_URL")
+  dump_url=$(build_pg_dump_url "$REMOTE_DB_URL")
   if [[ -z "$dump_url" ]]; then
-    echo "[warn] REMOTE_DB_URL not set; cannot pg_dump $table"
+    echo "[error] REMOTE_DB_URL not set; cannot pg_dump $table" >&2
     return 1
   fi
-  if ! command -v docker >/dev/null 2>&1; then
-    echo "[warn] docker CLI not found; cannot pg_dump $table"
-    return 1
-  fi
-  if [[ ! -f "$DOCKER_COMPOSE_FILE" ]]; then
-    echo "[warn] docker compose file missing; cannot pg_dump $table"
+  if ! command -v pg_dump >/dev/null 2>&1; then
+    echo "[error] pg_dump command not found on host. Install PostgreSQL client tools." >&2
     return 1
   fi
   mkdir -p "$(dirname "$dest")"
-  local temp_name
-  temp_name=$(basename "$dest")
-  local container_cmd='set -euo pipefail; pg_dump "$DB_URL" --data-only --column-inserts --no-owner --table "$TABLE_NAME" > "$OUTPUT_FILE"'
-  if docker run --rm --network host \
-      -e DB_URL="$dump_url" \
-      -e TABLE_NAME="$table" \
-      -e OUTPUT_FILE="/tmp/out/$temp_name" \
-      -v "$TMP_DIR":/tmp/out \
-      postgres:16-alpine \
-      /bin/sh -c "$container_cmd"; then
+  local sslroot_override="${SYNC_REMOTE_DB_SSLROOTCERT:-}"
+  local allow_env_sslroot="${SYNC_REMOTE_DB_ALLOW_ENV_SSLROOT:-0}"
+  local cmd_status=1
+  if [[ -n "$sslroot_override" && -f "$sslroot_override" ]]; then
+    if PGSSLROOTCERT="$sslroot_override" pg_dump "$dump_url" --data-only --column-inserts --no-owner --table "$table" > "$dest"; then
+      cmd_status=0
+    fi
+  elif [[ "$allow_env_sslroot" == "1" && -n "${PGSSLROOTCERT:-}" && -f "${PGSSLROOTCERT}" ]]; then
+    if PGSSLROOTCERT="$PGSSLROOTCERT" pg_dump "$dump_url" --data-only --column-inserts --no-owner --table "$table" > "$dest"; then
+      cmd_status=0
+    fi
+  else
+    if env -u PGSSLROOTCERT pg_dump "$dump_url" --data-only --column-inserts --no-owner --table "$table" > "$dest"; then
+      cmd_status=0
+    fi
+  fi
+  if [[ $cmd_status -eq 0 ]]; then
     return 0
   fi
-  echo "[warn] pg_dump over IPv6 failed for $table"
+  echo "[error] pg_dump failed for $table (URL: $dump_url)" >&2
   return 1
 }
 
@@ -609,10 +658,9 @@ SQL
     echo "Dumping auth schema via supabase CLI..."
     supabase db dump --db-url "$REMOTE_DB_URL" --use-copy --data-only --schema auth -f "$auth_dump_full"
     local auth_rows=""
-    echo "Attempting direct dump of auth.schema_migrations via pg_dump (IPv6)..."
-    if ! pg_dump_table_ipv6 "auth.schema_migrations" "$auth_direct_dump"; then
-      echo "[error] pg_dump for auth.schema_migrations failed. IPv6 connectivity to Supabase is required." >&2
-      echo "Please enable IPv6 for Docker (e.g., Docker Desktop Settings → Docker Engine → set \"ipv6\": true) and retry." >&2
+    echo "Attempting direct dump of auth.schema_migrations via pg_dump..."
+    if ! pg_dump_table_remote "auth.schema_migrations" "$auth_direct_dump"; then
+      echo "[error] pg_dump for auth.schema_migrations failed. Ensure host IPv6 connectivity to Supabase and retry." >&2
       exit 1
     fi
     if [[ -s "$auth_direct_dump" ]]; then
@@ -672,7 +720,21 @@ PY
     fi
     if [[ -s "$auth_filtered" ]]; then
       echo "Restoring auth.schema_migrations (rows: ${auth_rows})..."
-      run_sql "TRUNCATE TABLE IF EXISTS auth.schema_migrations;"
+      local truncate_auth_schema=$(cat <<'SQL'
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1
+    FROM information_schema.tables
+    WHERE table_schema = 'auth'
+      AND table_name = 'schema_migrations'
+  ) THEN
+    EXECUTE 'TRUNCATE TABLE auth.schema_migrations';
+  END IF;
+END$$;
+SQL
+)
+      run_sql "$truncate_auth_schema"
       restore_with_psql "$auth_filtered"
     else
       echo "[warn] auth.schema_migrations block not found; skipping" >&2
