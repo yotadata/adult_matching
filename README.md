@@ -113,7 +113,8 @@ bash scripts/prep_two_tower/run_with_remote_db.sh \
   --remote-db-url "$REMOTE_DATABASE_URL" \
   --mode reviews \
   --input ml/data/raw/reviews/dmm_reviews_videoa_YYYY-MM-DD.csv \
-  --min-stars 4 --neg-per-pos 3 --val-ratio 0.2 \
+  --min-stars 4 --max-negative-stars 3 \
+  --neg-per-pos 3 --val-ratio 0.2 \
   --run-id auto
 # reviews モードでは reviews 由来の interactions から擬似 user_features を自動合成します（DB 接続なしでも可）
 ```

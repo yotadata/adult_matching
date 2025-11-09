@@ -151,14 +151,15 @@ bash scripts/prep_two_tower/run_with_remote_db.sh \
   --remote-db-url "$REMOTE_DATABASE_URL" \
   --mode reviews \
   --input ml/data/raw/reviews/dmm_reviews_videoa_YYYY-MM-DD.csv \
-  --min-stars 4 --neg-per-pos 3 --val-ratio 0.2 \
+  --min-stars 4 --max-negative-stars 3 \
+  --neg-per-pos 3 --val-ratio 0.2 \
   --run-id auto \
   --snapshot-inputs
 ```
 
 - オプション: `--decisions-csv` で LIKE/決定ログをマージ、ローカルにダンプ済みの場合は `--videos-csv` を直接指定しても良い。
 - このヘルパーはリモート DB から必要テーブルをダンプし、Docker 内に立てた Postgres にロードした上で `prep_two_tower_dataset.py` を実行する。
-- 出力: 既定では `ml/data/processed/two_tower/latest/` に `interactions_train.parquet`, `interactions_val.parquet`, `item_features.parquet`, `user_features.parquet` を上書き。`user_features.parquet` は `user_video_decisions` / `profiles` / `video_tags` を集約し、`recent_positive_video_ids`, `like_count_30d`, `positive_ratio_30d`, `signup_days`, `preferred_tag_ids` などを保持する。`--mode reviews` の場合は CSV 内のレビュー情報から同等の統計量を擬似生成し、DB なしでもユーザー特徴を確保する。結合失敗件数や CID 欠損はサマリ JSON/標準出力で確認。
+- 出力: 既定では `ml/data/processed/two_tower/latest/` に `interactions_train.parquet`, `interactions_val.parquet`, `item_features.parquet`, `user_features.parquet` を上書き。`user_features.parquet` は `user_video_decisions` / `profiles` / `video_tags` を集約し、`recent_positive_video_ids`, `like_count_30d`, `positive_ratio_30d`, `signup_days`, `preferred_tag_ids` などを保持する。`--mode reviews` の場合は CSV 内のレビュー情報から同等の統計量を擬似生成し、DB なしでもユーザー特徴を確保する。また、`--max-negative-stars` を指定すると指定以下の星評価を明示的な負例 (`label=0`) として取り込み、SOD 等への偏りを抑制できる。結合失敗件数や CID 欠損はサマリ JSON/標準出力で確認。
 - `--run-id auto` を指定すると `ml/data/processed/two_tower/runs/<timestamp>/` に入力/出力/summary をスナップショット保存（`--snapshot-inputs` で入力CSVもコピー）。
 
 ### 2. 学習（train）

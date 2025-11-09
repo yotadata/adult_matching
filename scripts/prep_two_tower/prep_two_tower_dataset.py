@@ -37,6 +37,7 @@ class PrepConfig:
     join_on: str  # 'auto' | 'product_url' | 'external_id'
     min_positive_stars: int
     negatives_per_positive: int
+    max_negative_stars: int | None
     val_ratio: float
     out_train: Path
     out_val: Path
@@ -49,28 +50,54 @@ class PrepConfig:
     keep_legacy_outputs: bool
 
 
-def build_interactions_from_reviews(df: pd.DataFrame, min_positive_stars: int, k_neg: int) -> pd.DataFrame:
+def build_interactions_from_reviews(
+    df: pd.DataFrame,
+    min_positive_stars: int,
+    k_neg: int,
+    max_negative_stars: int | None,
+) -> pd.DataFrame:
     # Normalize columns
     for c in ("product_url", "reviewer_id", "stars"):
         if c not in df.columns:
             raise ValueError(f"Column '{c}' not found in reviews CSV")
 
+    if max_negative_stars is None:
+        max_negative_stars = min_positive_stars - 1
+
     df = df[["product_url", "reviewer_id", "stars"]].copy()
+    df["stars"] = pd.to_numeric(df["stars"], errors="coerce")
+    df = df.dropna(subset=["stars"])
+    df["stars"] = df["stars"].astype(int)
+
+    # Aggregate by reviewer/video to avoid conflicting labels
+    grouped = df.groupby(["reviewer_id", "product_url"], as_index=False)["stars"].max()
+
     # Positive interactions
-    pos = df[df["stars"] >= min_positive_stars][["reviewer_id", "product_url"]].drop_duplicates()
+    pos = grouped[grouped["stars"] >= min_positive_stars][["reviewer_id", "product_url"]].copy()
     pos["label"] = 1
 
-    # Build candidate item universe
-    items = pos["product_url"].unique()
+    # Explicit negative interactions (e.g., stars <= 3)
+    neg_explicit = pd.DataFrame(columns=["reviewer_id", "product_url"])
+    if max_negative_stars is not None:
+        neg_explicit = grouped[grouped["stars"] <= max_negative_stars][["reviewer_id", "product_url"]].copy()
+        neg_explicit["label"] = 0
+
+    # Build candidate item universe (all reviewed items)
+    items = grouped["product_url"].unique()
     items_set = set(items)
 
-    # For each user, sample negatives from items they have not positively interacted with
+    # For each user, sample negatives from items they have not positively interacted with nor explicitly rated negative
+    neg_explicit_map = (
+        neg_explicit.groupby("reviewer_id")["product_url"].apply(set).to_dict() if not neg_explicit.empty else {}
+    )
+
     user_pos = pos.groupby("reviewer_id")["product_url"].apply(set)
 
     rng = np.random.default_rng(42)
     neg_rows = []
     for user, liked in user_pos.items():
-        disliked_pool = list(items_set - liked)
+        already_disliked = neg_explicit_map.get(user, set())
+        disliked_pool = list(items_set - liked - already_disliked)
         if not disliked_pool:
             continue
         n_pos = len(liked)
@@ -81,9 +108,18 @@ def build_interactions_from_reviews(df: pd.DataFrame, min_positive_stars: int, k
         for it in sampled:
             neg_rows.append((user, it, 0))
 
-    neg = pd.DataFrame(neg_rows, columns=["reviewer_id", "product_url", "label"]) if neg_rows else pd.DataFrame(columns=["reviewer_id","product_url","label"])
+    neg = (
+        pd.DataFrame(neg_rows, columns=["reviewer_id", "product_url", "label"])
+        if neg_rows
+        else pd.DataFrame(columns=["reviewer_id", "product_url", "label"])
+    )
 
-    interactions = pd.concat([pos, neg], ignore_index=True)
+    interactions = pd.concat([pos, neg_explicit, neg], ignore_index=True)
+    interactions = (
+        interactions.sort_values("label", ascending=False)
+        .drop_duplicates(subset=["reviewer_id", "product_url"], keep="first")
+        .reset_index(drop=True)
+    )
     return interactions
 
 
@@ -457,6 +493,12 @@ def main():
     ap.add_argument("--join-on", choices=["auto", "product_url", "external_id"], default="auto", help="Join key to match interactions to videos (default: auto)")
     ap.add_argument("--min-stars", type=int, default=4, help="Minimum stars to treat as positive (default: 4)")
     ap.add_argument("--neg-per-pos", type=int, default=3, help="Number of negatives per positive (default: 3)")
+    ap.add_argument(
+        "--max-negative-stars",
+        type=int,
+        default=None,
+        help="Maximum stars to treat as explicit negative (default: min-stars-1). Use a negative value to disable.",
+    )
     ap.add_argument("--val-ratio", type=float, default=0.2, help="Validation user ratio (default: 0.2)")
     ap.add_argument("--out-train", type=Path, default=DEFAULT_LATEST_DIR / "interactions_train.parquet")
     ap.add_argument("--out-val", type=Path, default=DEFAULT_LATEST_DIR / "interactions_val.parquet")
@@ -495,6 +537,7 @@ def main():
         join_on=args.join_on,
         min_positive_stars=args.min_stars,
         negatives_per_positive=args.neg_per_pos,
+        max_negative_stars=args.max_negative_stars,
         val_ratio=args.val_ratio,
         out_train=args.out_train,
         out_val=args.out_val,
@@ -514,7 +557,12 @@ def main():
     if cfg.mode == "explicit":
         interactions = build_interactions_from_explicit(df)
     else:
-        interactions = build_interactions_from_reviews(df, cfg.min_positive_stars, cfg.negatives_per_positive)
+        interactions = build_interactions_from_reviews(
+            df,
+            cfg.min_positive_stars,
+            cfg.negatives_per_positive,
+            (cfg.max_negative_stars if cfg.max_negative_stars is not None and cfg.max_negative_stars >= 0 else None),
+        )
 
     # Optional extra source: decisions CSV (e.g., user_video_decisions export)
     if cfg.decisions_csv is not None:
