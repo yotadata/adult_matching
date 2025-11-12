@@ -1,6 +1,6 @@
 'use client';
 
-import { Dialog, Transition, Combobox } from '@headlessui/react';
+import { Dialog, Transition, Combobox, DialogBackdrop } from '@headlessui/react';
 import { Fragment, useState, useEffect, useMemo, useRef } from 'react';
 import type { SyntheticEvent, MouseEvent, PointerEvent } from 'react';
 import { X, Filter } from 'lucide-react';
@@ -211,7 +211,7 @@ const LikedVideosDrawer: React.FC<LikedVideosDrawerProps> = ({ isOpen, onClose }
           leaveFrom="opacity-100"
           leaveTo="opacity-0"
         >
-          <Dialog.Overlay className="fixed inset-0 bg-black/40" />
+          <DialogBackdrop className="fixed inset-0 bg-black/40" />
         </Transition.Child>
 
         <div className="fixed inset-0 overflow-hidden z-[60] isolate">
