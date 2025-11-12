@@ -137,7 +137,7 @@ bash scripts/train_two_tower/run.sh \
 - `processed/two_tower/latest/` … 直近の学習で使用する Parquet（`interactions_train.parquet` など）
 - `processed/two_tower/runs/<run-id>/` … 各前処理実行のスナップショット（入力コピー、出力、`summary.json`）
 
-> `scripts/prep_two_tower/run_with_remote_db.sh` はデフォルトで `processed/two_tower/latest/` を上書きしつつ、`--run-id` を付けると `processed/two_tower/runs/<run-id>/` に成果物を保存します。既存のダンプを使う場合は従来の `run.sh` に `--videos-csv` を渡すことも可能です。
+> `scripts/prep_two_tower/run_with_remote_db.sh` はデフォルトで `processed/two_tower/latest/` を上書きしつつ、`--run-id` を付けると `processed/two_tower/runs/<run-id>/` に成果物を保存します。ローカルにダンプした場合でも `run.sh` は常に `--db-url` で Postgres 接続を指定するようになり、`--videos-csv` オプションは廃止されました。
 
 ## ローカル検証の流れ（Docker 前提）
 
@@ -157,7 +157,7 @@ bash scripts/prep_two_tower/run_with_remote_db.sh \
   --snapshot-inputs
 ```
 
-- オプション: `--decisions-csv` で LIKE/決定ログをマージ、ローカルにダンプ済みの場合は `--videos-csv` を直接指定しても良い。
+- オプション: `--decisions-csv` で LIKE/決定ログをマージ。ローカル DB にダンプ済みの動画マスタを使う場合も `--db-url` で接続先を指定する（`--videos-csv` は不要）。
 - このヘルパーはリモート DB から必要テーブルをダンプし、Docker 内に立てた Postgres にロードした上で `prep_two_tower_dataset.py` を実行する。
 - 出力: 既定では `ml/data/processed/two_tower/latest/` に `interactions_train.parquet`, `interactions_val.parquet`, `item_features.parquet`, `user_features.parquet` を上書き。`user_features.parquet` は `user_video_decisions` / `profiles` / `video_tags` を集約し、`recent_positive_video_ids`, `like_count_30d`, `positive_ratio_30d`, `signup_days`, `preferred_tag_ids` などを保持する。`--mode reviews` の場合は CSV 内のレビュー情報から同等の統計量を擬似生成し、DB なしでもユーザー特徴を確保する。また、`--max-negative-stars` を指定すると指定以下の星評価を明示的な負例 (`label=0`) として取り込み、SOD 等への偏りを抑制できる。結合失敗件数や CID 欠損はサマリ JSON/標準出力で確認。
 - `--run-id auto` を指定すると `ml/data/processed/two_tower/runs/<timestamp>/` に入力/出力/summary をスナップショット保存（`--snapshot-inputs` で入力CSVもコピー）。

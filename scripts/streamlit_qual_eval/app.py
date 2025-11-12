@@ -9,12 +9,13 @@ import pandas as pd
 import streamlit as st
 
 from dataclasses import dataclass
+from datetime import datetime
 from pathlib import Path
 from typing import Dict, Iterable, List, Optional, Sequence, Tuple
 
 st.set_page_config(page_title="Two-Tower Qualitative Review", layout="wide")
 
-DEFAULT_MODEL_DIR = Path("ml/artifacts")
+DEFAULT_MODEL_DIR = Path("ml/artifacts/latest")
 DEFAULT_ITEM_FEATURES = Path("ml/data/processed/two_tower/latest/item_features.parquet")
 DEFAULT_TRAIN = Path("ml/data/processed/two_tower/latest/interactions_train.parquet")
 DEFAULT_VAL = Path("ml/data/processed/two_tower/latest/interactions_val.parquet")
@@ -86,6 +87,29 @@ def load_model_data(base_path_str: str) -> Optional[ModelData]:
         item_ids=item_ids,
         item_index=item_index,
     )
+
+
+@st.cache_data(show_spinner=False)
+def load_model_meta(base_path_str: str) -> Dict[str, object]:
+    path = Path(base_path_str) / "model_meta.json"
+    if not path.exists():
+        return {}
+    import json
+
+    try:
+        return json.loads(path.read_text())
+    except json.JSONDecodeError:
+        return {}
+
+
+def format_trained_at(value: Optional[str]) -> str:
+    if not value:
+        return "unknown"
+    try:
+        dt = datetime.fromisoformat(value)
+        return dt.strftime("%Y-%m-%d %H:%M:%S %z")
+    except ValueError:
+        return value
 
 
 @st.cache_data(show_spinner=False)
@@ -304,6 +328,60 @@ def compute_recommendation_distribution(
     return pd.DataFrame(records)
 
 
+def compute_attribute_label_breakdown(
+    item_features: pd.DataFrame,
+    interactions: pd.DataFrame,
+    attribute: str,
+    top_n: int,
+) -> pd.DataFrame:
+    if attribute not in item_features.columns:
+        return pd.DataFrame(columns=[attribute, "positive_count", "negative_count", "positive_ratio", "negative_ratio", "total_count"])
+
+    base = item_features.reset_index()[["video_id", attribute]]
+    merged = interactions[["video_id", "label"]].merge(base, on="video_id", how="left")
+    counter: Dict[str, Dict[str, int]] = {}
+
+    for row in merged.itertuples(index=False):
+        value_series = pd.Series({attribute: getattr(row, attribute, None)})
+        values = get_attribute_values(value_series, attribute)
+        if not values:
+            continue
+        label = float(getattr(row, "label", 0))
+        for val in values:
+            bucket = counter.setdefault(val, {"positive": 0, "negative": 0, "total": 0})
+            bucket["total"] += 1
+            if label > 0:
+                bucket["positive"] += 1
+            else:
+                bucket["negative"] += 1
+
+    if not counter:
+        return pd.DataFrame(columns=[attribute, "positive_count", "negative_count", "positive_ratio", "negative_ratio", "total_count"])
+
+    rows = []
+    for val, counts in counter.items():
+        total = counts["total"]
+        pos = counts["positive"]
+        neg = counts["negative"]
+        rows.append(
+            {
+                attribute: val,
+                "positive_count": pos,
+                "negative_count": neg,
+                "total_count": total,
+                "positive_ratio": pos / total if total else 0.0,
+                "negative_ratio": neg / total if total else 0.0,
+            }
+        )
+    df = (
+        pd.DataFrame(rows)
+        .sort_values("total_count", ascending=False)
+        .head(top_n)
+        .reset_index(drop=True)
+    )
+    return df
+
+
 def render_metrics_card(title: str, metrics: Dict[str, object]) -> None:
     col1, col2, col3 = st.columns(3)
     roc = metrics.get("metrics", {}).get("roc_auc") if metrics else None
@@ -331,8 +409,22 @@ def main() -> None:
     if compare_models:
         model_b_dir = Path(st.sidebar.text_input("Model B artifacts directory", str(DEFAULT_MODEL_DIR)))
 
+    model_a_meta = load_model_meta(str(model_a_dir))
+    model_b_meta = load_model_meta(str(model_b_dir)) if compare_models and model_b_dir else {}
+
     top_k = st.sidebar.slider("Top K", min_value=5, max_value=100, value=20, step=5)
     exclude_seen = st.sidebar.checkbox("Exclude known items", value=True)
+
+    st.sidebar.markdown("**Model timestamps**")
+    if model_a_meta:
+        st.sidebar.caption(f"Model A trained at: {format_trained_at(model_a_meta.get('trained_at'))}")
+    else:
+        st.sidebar.caption("Model A trained at: unknown")
+    if compare_models:
+        if model_b_meta:
+            st.sidebar.caption(f"Model B trained at: {format_trained_at(model_b_meta.get('trained_at'))}")
+        else:
+            st.sidebar.caption("Model B trained at: unknown")
 
     item_features_df = load_item_features(str(item_features_path))
     interactions_df = load_interactions(str(train_path), str(val_path))
@@ -485,8 +577,25 @@ def main() -> None:
                         tooltip=[attribute, "positive_count"],
                     )
                     .properties(height=300, title=f"Positive interactions: {attribute} count (top {bias_top_n})")
-                )
+                    )
                 st.altair_chart(chart_pos, use_container_width=True)
+
+        breakdown_df = compute_attribute_label_breakdown(
+            item_features_df.reset_index(), interactions_df, attribute, bias_top_n
+        )
+        st.markdown("#### Attribute label breakdown (positive vs negative)")
+        st.dataframe(
+            breakdown_df.rename(
+                columns={
+                    "positive_count": "Positive count",
+                    "negative_count": "Negative count",
+                    "total_count": "Total count",
+                    "positive_ratio": "Positive ratio",
+                    "negative_ratio": "Negative ratio",
+                }
+            ),
+            use_container_width=True,
+        )
 
     with tab_distribution:
         st.subheader("Recommendation distribution")

@@ -6,7 +6,7 @@ IMAGE=adult-matching-train:latest
 docker build -f scripts/train_two_tower/Dockerfile -t "$IMAGE" .
 
 CONTAINER_NAME=${CONTAINER_NAME:-adult-matching-train-run}
-DOCKER_FLAGS=(--name "$CONTAINER_NAME" --rm=false)
+DOCKER_FLAGS=(--name "$CONTAINER_NAME" --rm)
 if [ -t 1 ]; then
   DOCKER_FLAGS+=(-it)
 else

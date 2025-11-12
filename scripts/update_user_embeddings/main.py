@@ -161,8 +161,13 @@ def load_embeddings(parquet_path: Path) -> pd.DataFrame:
     if not parquet_path.exists():
         raise FileNotFoundError(f"Parquet not found: {parquet_path}")
     df = pd.read_parquet(parquet_path)
-    if "user_id" not in df.columns or "embedding" not in df.columns:
-        raise ValueError(f"{parquet_path} must contain 'user_id' and 'embedding' columns")
+    if "embedding" not in df.columns:
+        raise ValueError(f"{parquet_path} must contain 'embedding' column")
+    if "user_id" not in df.columns:
+        if "reviewer_id" in df.columns:
+            df = df.rename(columns={"reviewer_id": "user_id"})
+        else:
+            raise ValueError(f"{parquet_path} must contain 'user_id' (or 'reviewer_id') column")
     return df
 
 

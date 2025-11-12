@@ -136,7 +136,7 @@ Two-Tower 推薦モデル向けの学習データを生成するための標準�
 > 上記テーブルは将来的な追加を見越したもので、実装済みではない。スキーマ導入時は `prep_two_tower_dataset.py` の CLI に該当 CSV/テーブルを指定できるようパラメータを追加し、`summary.json` へ収集元と抽出日時を記録する。複数行動ログを統合する際は、ユーザー ID / タイムスタンプをキーに「最新 N 件」「期間集計」の 2 パターンを準備し、ONNX 入力で扱いやすい形（固定長ベクトル＋マスク）へ整形する。
 
 ### 動画マスタとの突合
-- `--videos-csv` または `--db-url`（優先）で動画マスタを読み込む。未指定の場合はエラーで終了。
+- `--db-url` で Postgres から動画マスタを直接読み込む。CSV ダンプによる指定は廃止されたため、`videos.csv` 等のファイルを渡すオプションは存在しない。
 - `--join-on` で照合キーを制御（`auto`/`product_url`/`external_id`）。`external_id` を選ぶときは入力 `product_url` から `cid` を抽出し突合。
 - 突合結果に video_id 欠損が発生した行は削除し、件数をサマリーに記録。
 - 付随情報（`title`, `maker`, `label`, `tags` など）は `item_features.parquet` として保存。
@@ -164,7 +164,7 @@ Two-Tower 推薦モデル向けの学習データを生成するための標準�
 bash scripts/prep_two_tower/run.sh \
   --mode reviews \
   --input ml/data/raw/reviews/dmm_reviews_videoa_2024-06-01.csv \
-  --videos-csv ml/data/raw/videos_dump.csv \
+  --db-url postgresql://postgres:secret@127.0.0.1:5432/postgres \
   --min-stars 4 \
   --neg-per-pos 3 \
   --val-ratio 0.2 \

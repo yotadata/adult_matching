@@ -1,0 +1,108 @@
+{
+  "train_rows": 87478,
+  "val_rows": 21835,
+  "users_train": 86,
+  "users_val": 85,
+  "items": 21773,
+  "merged_decisions": false,
+  "joined_videos": true,
+  "mode": "reviews",
+  "missing_video_id_before_drop": 126163,
+  "interactions_before_join": 235476,
+  "dropped_no_video_id": 126163,
+  "items_matched": 21772,
+  "join_used": "external_id",
+  "cid_missing_in_input": 0,
+  "run_id": "20251112_001937",
+  "snapshot_dir": "ml/data/processed/two_tower/runs/20251112_001937",
+  "user_features_rows": 86,
+  "user_features_generated": true,
+  "maker_distribution_top": [
+    {
+      "maker": "エスワン ナンバーワンスタイル",
+      "recommendations": 4398,
+      "unique_items": 1858,
+      "user_coverage": 74,
+      "share": 0.14578361177406524
+    },
+    {
+      "maker": "ムーディーズ",
+      "recommendations": 3991,
+      "unique_items": 1928,
+      "user_coverage": 63,
+      "share": 0.13229249535932114
+    },
+    {
+      "maker": "SODクリエイト",
+      "recommendations": 2849,
+      "unique_items": 1625,
+      "user_coverage": 65,
+      "share": 0.0944378149032087
+    },
+    {
+      "maker": "アイデアポケット",
+      "recommendations": 1619,
+      "unique_items": 801,
+      "user_coverage": 55,
+      "share": 0.053666136303367806
+    },
+    {
+      "maker": "マドンナ",
+      "recommendations": 1466,
+      "unique_items": 931,
+      "user_coverage": 48,
+      "share": 0.04859453725802174
+    },
+    {
+      "maker": "kawaii",
+      "recommendations": 729,
+      "unique_items": 405,
+      "user_coverage": 48,
+      "share": 0.02416467780429594
+    },
+    {
+      "maker": "Fitch",
+      "recommendations": 544,
+      "unique_items": 345,
+      "user_coverage": 35,
+      "share": 0.018032352161230444
+    },
+    {
+      "maker": "プレミアム",
+      "recommendations": 509,
+      "unique_items": 251,
+      "user_coverage": 42,
+      "share": 0.016872182444974806
+    },
+    {
+      "maker": "unfinished",
+      "recommendations": 497,
+      "unique_items": 327,
+      "user_coverage": 33,
+      "share": 0.01647440997083002
+    },
+    {
+      "maker": "本中",
+      "recommendations": 480,
+      "unique_items": 310,
+      "user_coverage": 46,
+      "share": 0.015910898965791568
+    }
+  ],
+  "paths": {
+    "summary_path": "docs/ml/maker_bias_summary.json",
+    "train_path": "ml/data/processed/two_tower/latest/interactions_train.parquet",
+    "val_path": "ml/data/processed/two_tower/latest/interactions_val.parquet",
+    "items_path": "ml/data/processed/two_tower/latest/item_features.parquet",
+    "user_features_path": "ml/data/processed/two_tower/latest/user_features.parquet",
+    "snapshot_dir": "ml/data/processed/two_tower/runs/20251112_001937",
+    "snapshot_train": "ml/data/processed/two_tower/runs/20251112_001937/interactions_train.parquet",
+    "snapshot_val": "ml/data/processed/two_tower/runs/20251112_001937/interactions_val.parquet",
+    "snapshot_items": "ml/data/processed/two_tower/runs/20251112_001937/item_features.parquet",
+    "snapshot_user_features": "ml/data/processed/two_tower/runs/20251112_001937/user_features.parquet",
+    "snapshot_summary": "ml/data/processed/two_tower/runs/20251112_001937/summary.json",
+    "maker_distribution_path": "ml/data/processed/two_tower/latest/maker_distribution.csv",
+    "snapshot_maker_distribution": "ml/data/processed/two_tower/runs/20251112_001937/maker_distribution.csv"
+  },
+  "generated_at": "2025-11-11T15:19:46.265480+00:00"
+}
