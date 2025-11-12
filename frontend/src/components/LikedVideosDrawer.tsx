@@ -194,41 +194,6 @@ const LikedVideosDrawer: React.FC<LikedVideosDrawerProps> = ({ isOpen, onClose }
   }, [isOpen, sort, order, selectedTagIds, selectedPerformerIds]);
 
   const isDev = process.env.NODE_ENV === 'development';
-  const pointerStartedInsidePanelRef = useRef(false);
-  const pointerStartedCleanupRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const logInteraction = (label: string, event: SyntheticEvent) => {
-    if (!isDev) return;
-    console.log('[LikedVideosDrawer]', label, event.type, {
-      target: event.target,
-      currentTarget: event.currentTarget,
-    });
-  };
-
-  const handlePanelClick = (event: MouseEvent<HTMLDivElement>) => {
-    logInteraction('panel click', event);
-  };
-
-  const startPointerInsideGuard = () => {
-    pointerStartedInsidePanelRef.current = true;
-    if (pointerStartedCleanupRef.current) {
-      clearTimeout(pointerStartedCleanupRef.current);
-    }
-    pointerStartedCleanupRef.current = setTimeout(() => {
-      pointerStartedInsidePanelRef.current = false;
-      pointerStartedCleanupRef.current = null;
-    }, 250);
-  };
-
-  const handlePanelPointerDown = (event: PointerEvent<HTMLDivElement>) => {
-    startPointerInsideGuard();
-    logInteraction('panel pointerdown', event);
-  };
-
-  const handlePanelPointerUp = (event: PointerEvent<HTMLDivElement>) => {
-    startPointerInsideGuard();
-    logInteraction('panel pointerup', event);
-  };
 
   // ここではオーバーレイは常時クリック可能とし、パネル側で stopPropagation して外側判定を防ぐ。
   const handleDialogClose = () => {
@@ -246,21 +211,7 @@ const LikedVideosDrawer: React.FC<LikedVideosDrawerProps> = ({ isOpen, onClose }
           leaveFrom="opacity-100"
           leaveTo="opacity-0"
         >
-            <div
-              className="fixed inset-0 bg-black/40 z-40 pointer-events-auto"
-              onClick={(event) => {
-                logInteraction('overlay click', event);
-                if (pointerStartedInsidePanelRef.current) {
-                  pointerStartedInsidePanelRef.current = false;
-                  if (pointerStartedCleanupRef.current) {
-                    clearTimeout(pointerStartedCleanupRef.current);
-                    pointerStartedCleanupRef.current = null;
-                  }
-                  return;
-                }
-                onClose();
-              }}
-            />
+          <Dialog.Overlay className="fixed inset-0 bg-black/40" />
         </Transition.Child>
 
         <div className="fixed inset-0 overflow-hidden z-[60] isolate">
@@ -278,9 +229,6 @@ const LikedVideosDrawer: React.FC<LikedVideosDrawerProps> = ({ isOpen, onClose }
               >
                 <Dialog.Panel
                   className="pointer-events-auto w-screen relative z-[70]"
-                  onClick={handlePanelClick}
-                  onPointerDown={handlePanelPointerDown}
-                  onPointerUp={handlePanelPointerUp}
                 >
                   <div className="w-full rounded-t-2xl bg-white shadow-2xl">
                     <div className="mx-auto mt-2 mb-1 h-1.5 w-12 rounded-full bg-gray-300" />
@@ -479,9 +427,6 @@ const LikedVideosDrawer: React.FC<LikedVideosDrawerProps> = ({ isOpen, onClose }
               >
                 <Dialog.Panel
                   className="pointer-events-auto w-screen max-w-4xl relative z-[70]"
-                  onClick={handlePanelClick}
-                  onPointerDown={handlePanelPointerDown}
-                  onPointerUp={handlePanelPointerUp}
                 >
                   <div className="h-full bg-white/70 backdrop-blur-xl shadow-2xl border border-white/60 rounded-tl-3xl rounded-bl-3xl overflow-hidden">
                     <div className="px-6 py-5 border-b bg-white/90 sticky top-0 z-10 flex items-center justify-between">
