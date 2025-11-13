@@ -236,7 +236,7 @@ const LikedVideosDrawer: React.FC<LikedVideosDrawerProps> = ({ isOpen, onClose }
                 </div>
                 <div className="text-center sm:text-left">
                   <Dialog.Title className="text-base sm:text-xl font-bold text-gray-900 whitespace-nowrap">
-                    いいねした動画
+                    いいねした作品
                   </Dialog.Title>
                 </div>
                 <div className="flex justify-end sm:hidden">
@@ -492,7 +492,7 @@ const LikedVideosDrawer: React.FC<LikedVideosDrawerProps> = ({ isOpen, onClose }
                       ))}
                     </div>
                   ) : (
-                    <p className="text-center text-gray-500">いいねした動画はありません。</p>
+                    <p className="text-center text-gray-500">いいねした作品はありません。</p>
                   )}
                 </section>
               </div>
