@@ -25,6 +25,7 @@
 - [ ] Supabase Storage へのモデル配置手順・命名規則・付随メタデータの保持方式を仕様化し、リリース時に参照可能なドキュメントを整備する。
 - [ ] Edge Function `supabase/functions/ai-recommend` で Two-Tower 類似検索を行い、現在のスタブ（最新/トレンド一覧返却）を置き換える。
 - [ ] いいね動画ドロワーのフィルター UI（`frontend/src/components/LikedVideosDrawer.tsx`）では、「検索 / 絞り込み」セクション見出しの直上に検索結果件数をまとめて表示し、フィルター変更時の件数変化が即座に把握できるようにする。
+- [ ] 嗜好分析ページ（`frontend/src/app/analysis-results/page.tsx`）では、シェアボタンから結果カードをプレビュー表示し、Twitter(X) 等で共有できる画像 1 枚に主要メトリクス（LIKE/NOPE 件数、LIKE 比率、Top タグ/出演者など）を収めて案内する。
 - [ ] PyTorch と ONNX の出力ベクトル差分・ランキング指標を自動で計測する評価スクリプト（Recall@K, AUC など）を整備する。
 - [ ] `maker`（ブランド）ごとの推薦分布を自動集計し、偏りが一定以上の時にリサンプリング・reranking・重みづけで補正する対策パイプライン（ドキュメント/CSVログ含む）を整備する。初期データは `2025-11-10T09-02_export.csv` を参照して、`recommendations`/`unique_items`/`user_coverage` などを継続的に記録する。
 
