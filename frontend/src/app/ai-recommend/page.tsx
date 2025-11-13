@@ -290,8 +290,8 @@ export default function AiRecommendPage() {
         <section className="w-full rounded-2xl bg-white/20 backdrop-blur-xl border border-white/30 shadow-[0_20px_60px_rgba(0,0,0,0.25)] p-4 sm:p-8 flex flex-col gap-8">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 text-white">
             <div>
-              <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">AIで探す</h1>
-              <p className="text-sm sm:text-base text-white/80 mt-2">
+              <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight">AIで探す</h1>
+              <p className="text-sm text-white/80 mt-2">
                 嗜好と気分に合わせてAIがまとめた候補セットを提示します。スワイプで評価に入る前に、どのラインを深掘りするかをここで決めましょう。
               </p>
             </div>
