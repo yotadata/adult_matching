@@ -88,9 +88,26 @@ export default function AnalysisResultsPage() {
   }, [summary]);
 
   const shareUrl = typeof window !== 'undefined' ? window.location.href : 'https://seiheki.me/analysis-results';
-  const shareText = summary
-    ? `${windowLabel}のLIKE比率は${formatPercent(summary.like_ratio)}（LIKE ${formatCount(summary.total_likes)} / NOPE ${formatCount(summary.total_nope)}）。あなたも #あなたの性癖 を可視化しよう。`
-    : 'あなたの性癖の結果をシェアしました。';
+  const primaryTag = topTags[0];
+  const secondaryTag = topTags[1];
+  const primaryPerformer = topPerformers[0];
+  const shareTagNames = [primaryTag, secondaryTag].flatMap((tag) => (tag ? [`#${tag.tag_name}`] : []));
+  const sharePerformerNames = primaryPerformer ? [primaryPerformer.performer_name] : [];
+  const shareText = (() => {
+    if (primaryTag && primaryPerformer) {
+      return `最近は ${primaryPerformer.performer_name} が出る #${primaryTag.tag_name} 系で毎回ときめいてる。あなたも #あなたの性癖 を診断して推しポイントをシェアしよう。`;
+    }
+    if (shareTagNames.length > 0) {
+      return `今の推しタグは ${shareTagNames.join(' / ')}。あなたも #あなたの性癖 を診断して嗜好カードを作ろう。`;
+    }
+    if (sharePerformerNames.length > 0) {
+      return `${sharePerformerNames.join(' / ')} が出ていたら即 LIKE。あなたも #あなたの性癖 を診断して推しを布教しよう。`;
+    }
+    if (summary) {
+      return `${windowLabel}の嗜好分析結果をシェアしました。あなたも #あなたの性癖 を診断してみて。`;
+    }
+    return 'あなたの性癖の結果をシェアしました。';
+  })();
 
   const handleShare = async () => {
     if (!cardRef.current || !summary) {
