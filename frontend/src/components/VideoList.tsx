@@ -82,7 +82,7 @@ export default function VideoList({ title, description, videos, loading, error, 
                 key={video.external_id}
                 className="rounded-2xl border border-white/30 bg-white/95 text-gray-900 overflow-hidden flex flex-row gap-4 p-4 shadow-lg"
               >
-                <div className="relative w-full sm:w-48 aspect-video rounded-xl overflow-hidden bg-slate-200">
+                <div className="relative w-48 aspect-video rounded-xl overflow-hidden bg-slate-200">
                   {video.thumbnail_url ? (
                     <Image
                       src={video.thumbnail_url}
