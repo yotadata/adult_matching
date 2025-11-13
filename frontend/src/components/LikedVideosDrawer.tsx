@@ -2,7 +2,7 @@
 
 import { Dialog, Transition, Combobox, DialogBackdrop } from '@headlessui/react';
 import { Fragment, useState, useEffect, useMemo, useRef } from 'react';
-import type { SyntheticEvent, MouseEvent, PointerEvent } from 'react';
+import type { } from 'react';
 import { X, Filter } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -193,19 +193,7 @@ const LikedVideosDrawer: React.FC<LikedVideosDrawerProps> = ({ isOpen, onClose }
     fetchLikedVideos();
   }, [isOpen, sort, order, selectedTagIds, selectedPerformerIds]);
 
-  const isDev = process.env.NODE_ENV === 'development';
-
-  const logInteraction = (label: string, event: React.SyntheticEvent) => {
-    if (!isDev) return;
-    console.log('[LikedVideosDrawer]', label, event.type, {
-      target: event.target,
-      currentTarget: event.currentTarget,
-    });
-  };
-
-  // ここではオーバーレイは常時クリック可能とし、パネル側で stopPropagation して外側判定を防ぐ。
   const handleDialogClose = () => {
-    logInteraction('Dialog onClose', { type: 'close' } as any);
     onClose();
   };
   return (
