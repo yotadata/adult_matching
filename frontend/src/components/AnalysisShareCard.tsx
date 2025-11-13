@@ -1,3 +1,4 @@
+import { forwardRef } from 'react';
 import type { AnalysisPerformer, AnalysisSummary, AnalysisTag } from '@/hooks/useAnalysisResults';
 
 interface AnalysisShareCardProps {
@@ -24,15 +25,24 @@ const formatDate = (value: string | null | undefined) => {
   return parsed.toLocaleDateString('ja-JP');
 };
 
-export default function AnalysisShareCard({ summary, topTags, topPerformers, windowLabel }: AnalysisShareCardProps) {
+const AnalysisShareCard = forwardRef<HTMLDivElement, AnalysisShareCardProps>(function AnalysisShareCard(
+  { summary, topTags, topPerformers, windowLabel },
+  ref,
+) {
   const tags = topTags.slice(0, 3);
   const performers = topPerformers.slice(0, 3);
   const periodLabel = windowLabel || '全期間';
 
   return (
     <div
+      ref={ref}
       id="analysis-share-card"
-      className="w-[960px] h-[540px] rounded-[32px] bg-gradient-to-br from-rose-900 via-gray-900 to-black text-white p-10 flex flex-col gap-6 shadow-2xl"
+      className="w-[960px] h-[540px] rounded-[32px] text-white p-10 flex flex-col gap-6 shadow-2xl border border-white/10"
+      style={{
+        backgroundColor: '#050113',
+        backgroundImage: 'linear-gradient(135deg, #7f1d1d 0%, #111827 55%, #020617 100%)',
+        fontFamily: '"Noto Sans JP", "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic", system-ui, -apple-system, BlinkMacSystemFont, sans-serif',
+      }}
     >
       <header className="flex items-start justify-between gap-6">
         <div>
@@ -46,12 +56,12 @@ export default function AnalysisShareCard({ summary, topTags, topPerformers, win
       </header>
 
       <section className="grid grid-cols-3 gap-4">
-        <div className="rounded-2xl bg-white/10 backdrop-blur-lg border border-white/20 p-4">
+        <div className="rounded-2xl bg-white/10 border border-white/20 p-4">
           <p className="text-xs uppercase tracking-wider text-white/60">LIKE 総数</p>
           <p className="text-3xl font-extrabold mt-2">{formatCount(summary?.total_likes)}</p>
           <p className="text-xs text-white/60 mt-1">サンプル {formatCount(summary?.sample_size)} 件</p>
         </div>
-        <div className="rounded-2xl bg-white/10 backdrop-blur-lg border border-white/20 p-4">
+        <div className="rounded-2xl bg-white/10 border border-white/20 p-4">
           <p className="text-xs uppercase tracking-wider text-white/60">NOPE 総数</p>
           <p className="text-3xl font-extrabold mt-2">{formatCount(summary?.total_nope)}</p>
           <p className="text-xs text-white/60 mt-1">最新 {formatDate(summary?.latest_decision_at)}</p>
@@ -115,4 +125,6 @@ export default function AnalysisShareCard({ summary, topTags, topPerformers, win
       </footer>
     </div>
   );
-}
+});
+
+export default AnalysisShareCard;

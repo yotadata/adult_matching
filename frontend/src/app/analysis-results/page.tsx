@@ -100,7 +100,11 @@ export default function AnalysisResultsPage() {
       return;
     }
     try {
-      const dataUrl = await toPng(cardRef.current, { cacheBust: true, pixelRatio: 2 });
+      const dataUrl = await toPng(cardRef.current, {
+        cacheBust: true,
+        pixelRatio: 2,
+        backgroundColor: '#050113',
+      });
       setShareImageUrl(dataUrl);
       setIsShareModalOpen(true);
     } catch (err) {
@@ -443,8 +447,14 @@ export default function AnalysisResultsPage() {
         shareUrl={shareUrl}
         shareText={shareText}
       />
-      <div ref={cardRef} className="absolute -left-[9999px] top-0 pointer-events-none select-none">
-        <AnalysisShareCard summary={summary ?? null} topTags={topTags} topPerformers={topPerformers} windowLabel={windowLabel} />
+      <div className="absolute -left-[9999px] top-0 pointer-events-none select-none" aria-hidden>
+        <AnalysisShareCard
+          ref={cardRef}
+          summary={summary ?? null}
+          topTags={topTags}
+          topPerformers={topPerformers}
+          windowLabel={windowLabel}
+        />
       </div>
     </>
   );
