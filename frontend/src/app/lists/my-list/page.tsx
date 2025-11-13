@@ -5,6 +5,11 @@ import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Video } from '@/types/video';
 
+interface PlaylistItem {
+  video_external_id: string;
+  // Add other properties if they exist in playlist.items
+}
+
 const useMyListVideos = (limit: number) => {
   const [videos, setVideos] = useState<Video[]>([]);
   const [loading, setLoading] = useState(true);
@@ -45,7 +50,7 @@ const useMyListVideos = (limit: number) => {
 
         if (playlist && Array.isArray(playlist.items)) {
           // 2. Extract video external_ids from the playlist items
-          const videoIds = playlist.items.map((item: any) => item.video_external_id).filter(Boolean);
+          const videoIds = playlist.items.map((item: PlaylistItem) => item.video_external_id).filter(Boolean);
 
           if (videoIds.length > 0) {
             // 3. Fetch video details for the extracted IDs
@@ -74,8 +79,8 @@ const useMyListVideos = (limit: number) => {
         } else {
           setVideos([]);
         }
-      } catch (e: any) {
-        setError(`エラーが発生しました: ${e.message}`);
+      } catch (e: unknown) {
+        setError(`エラーが発生しました: ${e instanceof Error ? e.message : '不明なエラー'}`);
         console.error(e);
       } finally {
         setLoading(false);
