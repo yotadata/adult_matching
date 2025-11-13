@@ -114,7 +114,7 @@ export default function AnalysisResultsPage() {
       <section className="w-full mx-auto rounded-none sm:rounded-2xl bg-white/20 backdrop-blur-xl border border-white/30 shadow-[0_20px_60px_rgba(0,0,0,0.25)] px-4 sm:px-8 py-6 sm:py-8 text-white">
         <header className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="space-y-2">
-            <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight">あなたの性癖分析ダッシュボード</h1>
+            <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight">あなたの性癖</h1>
             <p className="text-sm text-white/80">LIKE / NOPE の履歴から嗜好の傾向を可視化します。</p>
           </div>
           <button
