@@ -24,6 +24,7 @@ class TrainConfig:
     val_path: Path
     user_features_path: Path
     item_features_path: Path
+    disable_user_features: bool
     embedding_dim: int
     hidden_dim: int
     epochs: int
@@ -36,6 +37,9 @@ class TrainConfig:
     run_id: str
     run_dir: Path
     latest_dir: Path
+    maker_bias_threshold: float
+    maker_bias_min_weight: float
+    maker_bias_max_weight: float
 
 
 JST = timezone(timedelta(hours=9))
@@ -114,12 +118,14 @@ class InteractionsDataset(Dataset):
         item_vectors: Dict[str, np.ndarray],
         *,
         item_key: str,
+        item_weights: Dict[str, float] | None = None,
     ):
         self.user_vectors = user_vectors
         self.item_vectors = item_vectors
         self.user_ids: List[str] = []
         self.item_ids: List[str] = []
         self.labels: List[float] = []
+        self.sample_weights: List[float] = []
         dropped = 0
         for record in df.itertuples(index=False):
             reviewer_id = str(record.reviewer_id)
@@ -132,6 +138,8 @@ class InteractionsDataset(Dataset):
             self.user_ids.append(reviewer_id)
             self.item_ids.append(item_id)
             self.labels.append(float(record.label))
+            weight = 1.0 if item_weights is None else float(item_weights.get(item_id, 1.0))
+            self.sample_weights.append(weight)
         if not self.labels:
             raise ValueError("No interactions remain after aligning features. Check user/item feature coverage.")
         self.dropped = dropped
@@ -143,7 +151,52 @@ class InteractionsDataset(Dataset):
         user_tensor = torch.from_numpy(self.user_vectors[self.user_ids[idx]])
         item_tensor = torch.from_numpy(self.item_vectors[self.item_ids[idx]])
         label_tensor = torch.tensor(self.labels[idx], dtype=torch.float32)
-        return user_tensor, item_tensor, label_tensor
+        weight_tensor = torch.tensor(self.sample_weights[idx], dtype=torch.float32)
+        return user_tensor, item_tensor, label_tensor, weight_tensor
+
+
+def compute_maker_bias_weights(
+    train_df: pd.DataFrame,
+    item_df: pd.DataFrame,
+    item_key: str,
+    threshold: float,
+    min_weight: float,
+    max_weight: float,
+) -> tuple[Dict[str, float], List[Dict[str, object]]]:
+    if threshold <= 0 or train_df.empty or "label" not in train_df.columns:
+        return {}, []
+    if item_key not in item_df.columns or "maker" not in item_df.columns:
+        return {}, []
+    merged = train_df[[item_key, "label"]].merge(
+        item_df[[item_key, "maker"]], on=item_key, how="left"
+    )
+    merged["maker"] = merged["maker"].fillna("unknown")
+    positives = merged[merged["label"] == 1]
+    total = len(positives)
+    if total == 0:
+        return {}, []
+
+    counts = positives["maker"].value_counts()
+    weights: Dict[str, float] = {}
+    report: List[Dict[str, object]] = []
+    min_weight = min(min_weight, max_weight)
+    max_weight = max(min_weight, max_weight)
+    for maker, count in counts.items():
+        share = float(count) / total
+        if share > threshold:
+            weight = threshold / share if share > 0 else 1.0
+            weight = max(min_weight, min(max_weight, weight))
+            weights[maker] = weight
+            report.append(
+                {
+                    "maker": maker,
+                    "share": share,
+                    "weight": weight,
+                    "recommendations": int(count),
+                }
+            )
+    report.sort(key=lambda entry: entry["share"], reverse=True)
+    return weights, report
 
 
 class MLPEncoder(nn.Module):
@@ -180,14 +233,14 @@ class TwoTower(nn.Module):
 
 def evaluate(model: TwoTower, loader: DataLoader, device: torch.device) -> float:
     model.eval()
-    loss_fn = nn.BCEWithLogitsLoss()
+    loss_fn = nn.BCEWithLogitsLoss(reduction="none")
     total, n = 0.0, 0
     with torch.no_grad():
-        for user_vec, item_vec, y in loader:
+        for user_vec, item_vec, y, _ in loader:
             user_vec, item_vec, y = user_vec.to(device), item_vec.to(device), y.to(device)
             logits = model(user_vec, item_vec)
-            loss = loss_fn(logits, y)
-            total += loss.item() * y.size(0)
+            losses = loss_fn(logits, y)
+            total += losses.sum().item()
             n += y.size(0)
     return total / max(1, n)
 
@@ -337,6 +390,29 @@ def compute_embeddings(model: TwoTower, vectors: Dict[str, np.ndarray], encode_f
     return pd.DataFrame(rows)
 
 
+def build_dummy_user_features(*interaction_frames: pd.DataFrame) -> pd.DataFrame:
+    reviewer_series = [
+        df["reviewer_id"].astype(str)
+        for df in interaction_frames
+        if df is not None and not df.empty and "reviewer_id" in df.columns
+    ]
+    if reviewer_series:
+        user_ids = pd.concat(reviewer_series, ignore_index=True).dropna().unique()
+    else:
+        user_ids = np.array([], dtype=str)
+    n = len(user_ids)
+    return pd.DataFrame(
+        {
+            "reviewer_id": user_ids,
+            "recent_positive_video_ids": [[] for _ in range(n)],
+            "like_count_30d": np.zeros(n, dtype="int64"),
+            "positive_ratio_30d": np.zeros(n, dtype="float64"),
+            "signup_days": np.zeros(n, dtype="int64"),
+            "preferred_tag_ids": [[] for _ in range(n)],
+        }
+    )
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description="Train a feature-based Two-Tower model (PyTorch)")
     ap.add_argument("--train", type=Path, default=Path("ml/data/processed/two_tower/latest/interactions_train.parquet"))
@@ -353,7 +429,11 @@ def main() -> None:
     ap.add_argument("--max-tag-features", type=int, default=2048, help="Maximum number of tag IDs to encode (by frequency). Use <=0 to keep all.")
     ap.add_argument("--max-performer-features", type=int, default=512, help="Maximum number of performer IDs to encode (by frequency). Use <=0 to keep all.")
     ap.add_argument("--use-price-feature", action="store_true", help="Include the price column as a numeric feature.")
+    ap.add_argument("--disable-user-features", action="store_true", help="Skip loading user_features.parquet and use zero vectors per reviewer instead.")
     ap.add_argument("--run-id", default="auto", help="Identifier for this training run. Use 'auto' to generate a JST timestamp (YYYY-MM-DD_HH-MM-SS).")
+    ap.add_argument("--maker-bias-threshold", type=float, default=0.2, help="Share threshold above which a maker is considered over-represented.")
+    ap.add_argument("--maker-bias-min-weight", type=float, default=0.25, help="Minimum weight applied to interactions of over-represented makers.")
+    ap.add_argument("--maker-bias-max-weight", type=float, default=1.0, help="Maximum allowed weight when correcting per-maker bias.")
     args = ap.parse_args()
 
     run_id = args.run_id
@@ -375,6 +455,7 @@ def main() -> None:
         val_path=args.val,
         user_features_path=args.user_features,
         item_features_path=args.item_features,
+        disable_user_features=args.disable_user_features,
         embedding_dim=args.embedding_dim,
         hidden_dim=args.hidden_dim,
         epochs=args.epochs,
@@ -387,6 +468,9 @@ def main() -> None:
         run_id=run_id,
         run_dir=run_dir,
         latest_dir=latest_dir,
+        maker_bias_threshold=args.maker_bias_threshold,
+        maker_bias_min_weight=args.maker_bias_min_weight,
+        maker_bias_max_weight=args.maker_bias_max_weight,
     )
 
     print(
@@ -396,6 +480,7 @@ def main() -> None:
                     "train": str(cfg.train_path),
                     "val": str(cfg.val_path),
                     "user_features": str(cfg.user_features_path),
+                    "disable_user_features": cfg.disable_user_features,
                     "item_features": str(cfg.item_features_path),
                     "embedding_dim": cfg.embedding_dim,
                     "hidden_dim": cfg.hidden_dim,
@@ -414,14 +499,18 @@ def main() -> None:
     )
 
     try:
-        if not cfg.user_features_path.exists():
-            raise FileNotFoundError(f"user features not found: {cfg.user_features_path}")
         if not cfg.item_features_path.exists():
             raise FileNotFoundError(f"item features not found: {cfg.item_features_path}")
 
         train_df = pd.read_parquet(cfg.train_path)
         val_df = pd.read_parquet(cfg.val_path)
-        user_df = pd.read_parquet(cfg.user_features_path)
+        if cfg.disable_user_features:
+            user_df = build_dummy_user_features(train_df, val_df)
+            print(json.dumps({"info": "using_dummy_user_features", "users": len(user_df)}))
+        else:
+            if not cfg.user_features_path.exists():
+                raise FileNotFoundError(f"user features not found: {cfg.user_features_path}")
+            user_df = pd.read_parquet(cfg.user_features_path)
         item_df = pd.read_parquet(cfg.item_features_path)
 
         item_key = args.item_key if args.item_key in item_df.columns else "video_id"
@@ -435,7 +524,38 @@ def main() -> None:
             use_price_feature=cfg.use_price_feature,
         )
 
-        train_ds = InteractionsDataset(train_df, user_vectors, item_vectors, item_key=item_key)
+        maker_bias_weights, maker_bias_report = compute_maker_bias_weights(
+            train_df,
+            item_df,
+            item_key,
+            cfg.maker_bias_threshold,
+            cfg.maker_bias_min_weight,
+            cfg.maker_bias_max_weight,
+        )
+        item_weight_map: Dict[str, float] = {}
+        if maker_bias_weights:
+            for row in item_df.itertuples(index=False):
+                maker = str(getattr(row, "maker", "") or "unknown")
+                weight = maker_bias_weights.get(maker)
+                if weight is None:
+                    continue
+                key_value = getattr(row, item_key, None)
+                if key_value is None:
+                    continue
+                item_weight_map[str(key_value)] = weight
+            if maker_bias_report:
+                print(
+                    json.dumps(
+                        {
+                            "event": "maker_bias_report",
+                            "threshold": cfg.maker_bias_threshold,
+                            "entries": maker_bias_report,
+                        }
+                    )
+                )
+        train_ds = InteractionsDataset(
+            train_df, user_vectors, item_vectors, item_key=item_key, item_weights=item_weight_map or None
+        )
         val_ds = InteractionsDataset(val_df, user_vectors, item_vectors, item_key=item_key)
         if train_ds.dropped:
             print(json.dumps({"info": "dropped_train_rows_missing_features", "count": train_ds.dropped}))
@@ -448,7 +568,7 @@ def main() -> None:
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         model = TwoTower(user_dim=user_dim, item_dim=item_dim, hidden_dim=cfg.hidden_dim, embedding_dim=cfg.embedding_dim).to(device)
         optimizer = torch.optim.AdamW(model.parameters(), lr=cfg.lr)
-        loss_fn = nn.BCEWithLogitsLoss()
+        loss_fn = nn.BCEWithLogitsLoss(reduction="none")
 
         best_val = float("inf")
         best_model_path = cfg.run_dir / "two_tower_latest.pt"
@@ -457,11 +577,13 @@ def main() -> None:
             print(json.dumps({"event": "epoch_start", "epoch": epoch, "total_epochs": cfg.epochs}))
             model.train()
             pbar = tqdm(train_loader, desc=f"Epoch {epoch}/{cfg.epochs}")
-            for user_vec, item_vec, y in pbar:
+            for user_vec, item_vec, y, weight in pbar:
                 user_vec, item_vec, y = user_vec.to(device), item_vec.to(device), y.to(device)
+                weight = weight.to(device)
                 optimizer.zero_grad(set_to_none=True)
                 logits = model(user_vec, item_vec)
-                loss = loss_fn(logits, y)
+                losses = loss_fn(logits, y)
+                loss = (losses * weight).mean()
                 loss.backward()
                 optimizer.step()
                 pbar.set_postfix({"loss": loss.item()})
@@ -487,6 +609,7 @@ def main() -> None:
         user_embeddings_df.to_parquet(user_embeddings_path, index=False)
         item_embeddings_df.to_parquet(item_embeddings_path, index=False)
 
+        trained_at = datetime.now(timezone.utc).isoformat()
         meta = {
             "embedding_dim": cfg.embedding_dim,
             "hidden_dim": cfg.hidden_dim,
@@ -514,6 +637,10 @@ def main() -> None:
         metrics = {
             "final_val_loss": best_val,
             "epochs_trained": cfg.epochs,
+            "maker_bias": {
+                "threshold": cfg.maker_bias_threshold,
+                "entries": maker_bias_report,
+            },
         }
         metrics_path = cfg.run_dir / "metrics.json"
         with metrics_path.open("w") as f:

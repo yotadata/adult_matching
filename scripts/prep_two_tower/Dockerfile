@@ -12,4 +12,5 @@ COPY scripts/prep_two_tower/requirements.txt /tmp/requirements.txt
 RUN pip install --upgrade pip && \
     pip install -r /tmp/requirements.txt
 
-CMD ["python", "scripts/prep_two_tower/prep_two_tower_dataset.py"]
+ENTRYPOINT ["python", "scripts/prep_two_tower/prep_two_tower_dataset.py"]
+CMD []

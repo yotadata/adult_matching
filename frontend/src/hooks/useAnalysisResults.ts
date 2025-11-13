@@ -108,7 +108,7 @@ export function useAnalysisResults({
         if (!cancelled) setData(payload);
       } catch (e: unknown) {
         if (cancelled) return;
-        const message = e instanceof Error ? e.message : '性癖分析の取得に失敗しました';
+        const message = e instanceof Error ? e.message : 'あなたの性癖の取得に失敗しました';
         setError(message);
         setData(null);
       } finally {

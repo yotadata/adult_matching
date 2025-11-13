@@ -3,6 +3,7 @@ import argparse
 import json
 import shutil
 import sys
+from collections import Counter
 from dataclasses import dataclass
 from datetime import datetime, timezone, timedelta
 from os import path as _path
@@ -17,6 +18,7 @@ import psycopg
 DEFAULT_PROCESSED_ROOT = Path("ml/data/processed/two_tower")
 DEFAULT_LATEST_DIR = DEFAULT_PROCESSED_ROOT / "latest"
 DEFAULT_SNAPSHOT_ROOT = DEFAULT_PROCESSED_ROOT / "runs"
+DEFAULT_MAKER_DISTRIBUTION_LATEST = DEFAULT_LATEST_DIR / "maker_distribution.csv"
 
 
 JST = timezone(timedelta(hours=9))
@@ -31,11 +33,11 @@ class PrepConfig:
     mode: str  # 'explicit' or 'reviews'
     input_csv: Path
     decisions_csv: Path | None
-    videos_csv: Path | None
     db_url: str | None
     join_on: str  # 'auto' | 'product_url' | 'external_id'
     min_positive_stars: int
     negatives_per_positive: int
+    max_negative_stars: int | None
     val_ratio: float
     out_train: Path
     out_val: Path
@@ -48,28 +50,54 @@ class PrepConfig:
     keep_legacy_outputs: bool
 
 
-def build_interactions_from_reviews(df: pd.DataFrame, min_positive_stars: int, k_neg: int) -> pd.DataFrame:
+def build_interactions_from_reviews(
+    df: pd.DataFrame,
+    min_positive_stars: int,
+    k_neg: int,
+    max_negative_stars: int | None,
+) -> pd.DataFrame:
     # Normalize columns
     for c in ("product_url", "reviewer_id", "stars"):
         if c not in df.columns:
             raise ValueError(f"Column '{c}' not found in reviews CSV")
 
+    if max_negative_stars is None:
+        max_negative_stars = min_positive_stars - 1
+
     df = df[["product_url", "reviewer_id", "stars"]].copy()
+    df["stars"] = pd.to_numeric(df["stars"], errors="coerce")
+    df = df.dropna(subset=["stars"])
+    df["stars"] = df["stars"].astype(int)
+
+    # Aggregate by reviewer/video to avoid conflicting labels
+    grouped = df.groupby(["reviewer_id", "product_url"], as_index=False)["stars"].max()
+
     # Positive interactions
-    pos = df[df["stars"] >= min_positive_stars][["reviewer_id", "product_url"]].drop_duplicates()
+    pos = grouped[grouped["stars"] >= min_positive_stars][["reviewer_id", "product_url"]].copy()
     pos["label"] = 1
 
-    # Build candidate item universe
-    items = pos["product_url"].unique()
+    # Explicit negative interactions (e.g., stars <= 3)
+    neg_explicit = pd.DataFrame(columns=["reviewer_id", "product_url"])
+    if max_negative_stars is not None:
+        neg_explicit = grouped[grouped["stars"] <= max_negative_stars][["reviewer_id", "product_url"]].copy()
+        neg_explicit["label"] = 0
+
+    # Build candidate item universe (all reviewed items)
+    items = grouped["product_url"].unique()
     items_set = set(items)
 
-    # For each user, sample negatives from items they have not positively interacted with
+    # For each user, sample negatives from items they have not positively interacted with nor explicitly rated negative
+    neg_explicit_map = (
+        neg_explicit.groupby("reviewer_id")["product_url"].apply(set).to_dict() if not neg_explicit.empty else {}
+    )
+
     user_pos = pos.groupby("reviewer_id")["product_url"].apply(set)
 
     rng = np.random.default_rng(42)
     neg_rows = []
     for user, liked in user_pos.items():
-        disliked_pool = list(items_set - liked)
+        already_disliked = neg_explicit_map.get(user, set())
+        disliked_pool = list(items_set - liked - already_disliked)
         if not disliked_pool:
             continue
         n_pos = len(liked)
@@ -80,9 +108,18 @@ def build_interactions_from_reviews(df: pd.DataFrame, min_positive_stars: int, k
         for it in sampled:
             neg_rows.append((user, it, 0))
 
-    neg = pd.DataFrame(neg_rows, columns=["reviewer_id", "product_url", "label"]) if neg_rows else pd.DataFrame(columns=["reviewer_id","product_url","label"])
+    neg = (
+        pd.DataFrame(neg_rows, columns=["reviewer_id", "product_url", "label"])
+        if neg_rows
+        else pd.DataFrame(columns=["reviewer_id", "product_url", "label"])
+    )
 
-    interactions = pd.concat([pos, neg], ignore_index=True)
+    interactions = pd.concat([pos, neg_explicit, neg], ignore_index=True)
+    interactions = (
+        interactions.sort_values("label", ascending=False)
+        .drop_duplicates(subset=["reviewer_id", "product_url"], keep="first")
+        .reset_index(drop=True)
+    )
     return interactions
 
 
@@ -171,60 +208,50 @@ def _ensure_cid_column(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def _load_videos_df(videos_csv: Path | None, db_url: str | None) -> tuple[pd.DataFrame | None, str]:
-    if db_url:
-        # Load from database using psycopg
-        try:
-            with psycopg.connect(db_url) as conn:
-                sql = (
-                    "select v.id, v.product_url, v.external_id, v.title, v.series, v.maker, v.label, "
-                    "v.source, v.price, "
-                    "coalesce(array_agg(distinct vt.tag_id) filter (where vt.tag_id is not null), array[]::uuid[]) as tag_ids, "
-                    "coalesce(array_agg(distinct t.name) filter (where t.name is not null), array[]::text[]) as tag_names, "
-                    "coalesce(array_agg(distinct vp.performer_id) filter (where vp.performer_id is not null), array[]::uuid[]) as performer_ids "
-                    "from public.videos v "
-                    "left join public.video_tags vt on vt.video_id = v.id "
-                    "left join public.tags t on t.id = vt.tag_id "
-                    "left join public.video_performers vp on vp.video_id = v.id "
-                    "group by v.id, v.product_url, v.external_id, v.title, v.series, v.maker, v.label, v.source, v.price"
-                )
-                with conn.cursor() as cur:
-                    cur.execute(sql)
-                    rows = cur.fetchall()
-                    cols = [
-                        "id", "product_url", "external_id", "title", "series", "maker", "label",
-                        "source", "price", "tag_ids", "tag_names", "performer_ids"
-                    ]
-                    vids = pd.DataFrame(rows, columns=cols)
-                    if "tag_names" in vids.columns:
-                        vids["tags"] = vids["tag_names"].apply(
-                            lambda names: ",".join(sorted({str(n) for n in names if n is not None})) if isinstance(names, (list, tuple)) else ("" if pd.isna(names) else str(names))
-                        )
-                    return vids, 'db'
-        except Exception as e:
-            sys.stderr.write(f"Warning: failed to load videos from DB: {e}\n")
-            # fall back to CSV if provided
-    if videos_csv is not None and _path.exists(videos_csv):
-        try:
-            return pd.read_csv(videos_csv), 'csv'
-        except Exception as e:
-            sys.stderr.write(f"Warning: failed to read videos CSV: {e}\n")
-    return None, 'none'
+def _load_videos_df(db_url: str | None) -> pd.DataFrame:
+    if not db_url:
+        raise ValueError("db_url is required to load videos metadata")
+    try:
+        with psycopg.connect(db_url) as conn:
+            sql = (
+                "select v.id, v.product_url, v.external_id, v.title, v.series, v.maker, v.label, "
+                "v.source, v.price, "
+                "coalesce(array_agg(distinct vt.tag_id) filter (where vt.tag_id is not null), array[]::uuid[]) as tag_ids, "
+                "coalesce(array_agg(distinct t.name) filter (where t.name is not null), array[]::text[]) as tag_names, "
+                "coalesce(array_agg(distinct vp.performer_id) filter (where vp.performer_id is not null), array[]::uuid[]) as performer_ids "
+                "from public.videos v "
+                "left join public.video_tags vt on vt.video_id = v.id "
+                "left join public.tags t on t.id = vt.tag_id "
+                "left join public.video_performers vp on vp.video_id = v.id "
+                "group by v.id, v.product_url, v.external_id, v.title, v.series, v.maker, v.label, v.source, v.price"
+            )
+            with conn.cursor() as cur:
+                cur.execute(sql)
+                rows = cur.fetchall()
+                cols = [
+                    "id", "product_url", "external_id", "title", "series", "maker", "label",
+                    "source", "price", "tag_ids", "tag_names", "performer_ids"
+                ]
+                vids = pd.DataFrame(rows, columns=cols)
+                if "tag_names" in vids.columns:
+                    vids["tags"] = vids["tag_names"].apply(
+                        lambda names: ",".join(sorted({str(n) for n in names if n is not None})) if isinstance(names, (list, tuple)) else ("" if pd.isna(names) else str(names))
+                    )
+                return vids
+    except Exception as e:
+        raise RuntimeError(f"Failed to load videos from DB: {e}") from e
 
 
-def maybe_join_videos(interactions: pd.DataFrame, videos_csv: Path | None, join_on: str, db_url: str | None) -> tuple[pd.DataFrame, pd.DataFrame | None, int, bool, str]:
+def maybe_join_videos(interactions: pd.DataFrame, join_on: str, db_url: str | None) -> tuple[pd.DataFrame, pd.DataFrame | None, int, bool, str]:
     """
-    If videos_csv is provided, join to fetch canonical video_id and basic item attributes
-    for later feature use. Returns (interactions_with_video_id, items_df_or_none).
+    Join interactions with the videos table fetched from Postgres to attach canonical video_id
+    and item attributes. Returns (interactions_with_video_id, items_df_or_none).
     """
-    vids, src = _load_videos_df(videos_csv, db_url)
-    if vids is None:
-        if videos_csv is not None and not _path.exists(videos_csv):
-            sys.stderr.write(f"Warning: videos source not found (db/csv). Proceeding without join.\n")
-        return interactions, None, 0, False, 'missing'
+    vids = _load_videos_df(db_url)
+    src = 'db'
     # Expect at least id plus one of (product_url, external_id)
     if "id" not in vids.columns:
-        raise ValueError("videos CSV must contain column: id")
+        raise ValueError("videos table must contain column: id")
     # Normalize candidate join keys on videos side
     vids = vids.copy()
     if 'external_id' in vids.columns:
@@ -243,7 +270,7 @@ def maybe_join_videos(interactions: pd.DataFrame, videos_csv: Path | None, join_
     else:
         # Fallback to product_url join
         if 'product_url' not in vids.columns:
-            raise ValueError("videos CSV must contain product_url when join_on != external_id")
+            raise ValueError("videos table must contain product_url when join_on != external_id")
         joined = interactions.merge(vids[["product_url", "id"]], on="product_url", how="left")
     missing = int(joined["id"].isna().sum())
     item_cols = [c for c in [
@@ -268,6 +295,7 @@ def _resolve_snapshot_paths(cfg: PrepConfig) -> tuple[Path | None, Dict[str, Pat
         "items": run_dir / "item_features.parquet",
         "user_features": run_dir / "user_features.parquet",
         "summary": run_dir / "summary.json",
+        "maker_distribution": run_dir / "maker_distribution.csv",
     }
     return run_dir, files
 
@@ -297,12 +325,6 @@ def _snapshot_inputs(cfg: PrepConfig, run_dir: Path, copied_files: Dict[str, str
         shutil.copy2(cfg.decisions_csv, dest)
         copied_files["decisions_csv_copy"] = str(dest)
         copied_any = True
-    if cfg.videos_csv is not None and cfg.videos_csv.exists():
-        dest = inputs_dir / cfg.videos_csv.name
-        shutil.copy2(cfg.videos_csv, dest)
-        copied_files["videos_csv_copy"] = str(dest)
-        copied_any = True
-
     if not copied_any:
         copied_files["inputs_copied"] = "none"
 
@@ -310,6 +332,46 @@ def _snapshot_inputs(cfg: PrepConfig, run_dir: Path, copied_files: Dict[str, str
 def _write_summary(summary: Dict[str, object], path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(summary, ensure_ascii=False, indent=2))
+
+
+def _build_maker_distribution(interactions: pd.DataFrame, items_df: pd.DataFrame | None) -> pd.DataFrame | None:
+    if items_df is None or "maker" not in items_df.columns or interactions.empty:
+        return None
+    if "video_id" not in interactions.columns:
+        return None
+    interactions = interactions.copy()
+    items_df = items_df.copy()
+    interactions["video_id"] = interactions["video_id"].astype(str)
+    if "video_id" in items_df.columns:
+        items_df["video_id"] = items_df["video_id"].astype(str)
+    merged = interactions[["reviewer_id", "video_id", "label"]].merge(
+        items_df[["video_id", "maker"]], on="video_id", how="left"
+    )
+    merged["maker"] = merged["maker"].fillna("unknown")
+    positives = merged[merged["label"] == 1]
+    if positives.empty:
+        return None
+
+    stats = (
+        positives.groupby("maker")
+        .agg(
+            recommendations=("label", "size"),
+            unique_items=("video_id", "nunique"),
+            user_coverage=("reviewer_id", "nunique"),
+        )
+        .reset_index()
+    )
+    total_recs = int(stats["recommendations"].sum())
+    if total_recs > 0:
+        stats["share"] = stats["recommendations"] / total_recs
+    else:
+        stats["share"] = 0.0
+    return stats.sort_values("recommendations", ascending=False)
+
+
+def _write_maker_distribution(df: pd.DataFrame, path: Path) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    df.to_csv(path, index=False)
 
 
 def _normalize_to_str_list(value, *, sort: bool = False) -> list[str]:
@@ -322,6 +384,51 @@ def _normalize_to_str_list(value, *, sort: bool = False) -> list[str]:
     return sorted(items) if sort else items
 
 
+def _build_user_features_from_interactions(interactions: pd.DataFrame, items_df: pd.DataFrame | None) -> pd.DataFrame | None:
+    if interactions is None or interactions.empty:
+        return None
+    df = interactions.copy()
+    video_col = "video_id" if "video_id" in df.columns else "product_url"
+    df["reviewer_id"] = df["reviewer_id"].astype(str)
+    df[video_col] = df[video_col].astype(str)
+    if "label" in df.columns:
+        df["label"] = df["label"].astype(int)
+    positives = df[df.get("label", 0) == 1]
+    total_counts = df.groupby("reviewer_id").size()
+    like_counts = positives.groupby("reviewer_id").size()
+    recent_map = positives.groupby("reviewer_id")[video_col].apply(lambda s: s.tolist()[-20:])
+
+    tag_lookup: dict[str, list[str]] = {}
+    if items_df is not None and "video_id" in items_df.columns and "tag_ids" in items_df.columns:
+        tag_lookup = {
+            str(row.video_id): _normalize_to_str_list(row.tag_ids, sort=False)
+            for row in items_df.itertuples(index=False)
+        }
+
+    rows = []
+    for reviewer, total in total_counts.items():
+        like_count = int(like_counts.get(reviewer, 0))
+        ratio = (like_count / total) if total > 0 else None
+        recent = recent_map.get(reviewer, [])
+        preferred_tags: list[str] = []
+        if tag_lookup and recent:
+            tag_counter = Counter()
+            for vid in recent:
+                tag_counter.update(tag_lookup.get(vid, []))
+            preferred_tags = [tag for tag, _ in tag_counter.most_common(10)]
+        rows.append(
+            {
+                "reviewer_id": reviewer,
+                "recent_positive_video_ids": recent,
+                "like_count_30d": like_count,
+                "positive_ratio_30d": float(ratio) if ratio is not None else None,
+                "signup_days": 0,
+                "preferred_tag_ids": preferred_tags,
+            }
+        )
+    return pd.DataFrame(rows)
+
+
 def _load_user_features(db_url: str | None) -> pd.DataFrame | None:
     if not db_url:
         return None
@@ -329,8 +436,8 @@ def _load_user_features(db_url: str | None) -> pd.DataFrame | None:
         "with base as ("
         "  select"
         "    uvd.user_id,"
-        "    array_agg(uvd.video_id order by uvd.created_at desc)"
-        "      filter (where uvd.decision_type = 'like')[:20] as recent_positive_video_ids,"
+        "    (array_agg(uvd.video_id order by uvd.created_at desc)"
+        "      filter (where uvd.decision_type = 'like'))[:20] as recent_positive_video_ids,"
         "    count(*) filter (where uvd.decision_type = 'like' and uvd.created_at >= now() - interval '30 days') as like_count_30d,"
         "    count(*) filter (where uvd.created_at >= now() - interval '30 days') as total_count_30d"
         "  from public.user_video_decisions uvd"
@@ -338,7 +445,7 @@ def _load_user_features(db_url: str | None) -> pd.DataFrame | None:
         "), tag_pref as ("
         "  select"
         "    ranked.user_id,"
-        "    array_agg(ranked.tag_id order by ranked.like_count desc nulls last)[:10] as preferred_tag_ids"
+        "    (array_agg(ranked.tag_id order by ranked.like_count desc nulls last))[:10] as preferred_tag_ids"
         "  from ("
         "    select"
         "      uvd.user_id,"
@@ -406,15 +513,20 @@ def main():
     ap.add_argument("--mode", choices=["explicit", "reviews"], default="explicit", help="Input format: explicit (LIKE/DISLIKE) or reviews (stars). Default: explicit")
     ap.add_argument("--input", required=True, type=Path, help="Path to primary input CSV. explicit: (reviewer_id|user_id,product_url|item_id,label|decision). reviews: (product_url,reviewer_id,stars)")
     ap.add_argument("--decisions-csv", type=Path, default=None, help="Optional: user_video_decisions CSV to merge (same columns as explicit mode). Default: not used")
-    ap.add_argument("--videos-csv", type=Path, default=None, help="Optional: videos export CSV (expects id and either product_url or external_id) to attach video_id and item attributes")
-    ap.add_argument("--db-url", type=str, default=None, help="Optional: Postgres connection string to fetch videos directly (overrides --videos-csv if provided)")
+    ap.add_argument("--db-url", type=str, required=True, help="Postgres connection string to fetch videos and user metadata.")
     ap.add_argument("--join-on", choices=["auto", "product_url", "external_id"], default="auto", help="Join key to match interactions to videos (default: auto)")
     ap.add_argument("--min-stars", type=int, default=4, help="Minimum stars to treat as positive (default: 4)")
     ap.add_argument("--neg-per-pos", type=int, default=3, help="Number of negatives per positive (default: 3)")
+    ap.add_argument(
+        "--max-negative-stars",
+        type=int,
+        default=None,
+        help="Maximum stars to treat as explicit negative (default: min-stars-1). Use a negative value to disable.",
+    )
     ap.add_argument("--val-ratio", type=float, default=0.2, help="Validation user ratio (default: 0.2)")
     ap.add_argument("--out-train", type=Path, default=DEFAULT_LATEST_DIR / "interactions_train.parquet")
     ap.add_argument("--out-val", type=Path, default=DEFAULT_LATEST_DIR / "interactions_val.parquet")
-    ap.add_argument("--out-items", type=Path, default=DEFAULT_LATEST_DIR / "item_features.parquet", help="Output path for per-item attributes (if videos CSV is supplied)")
+    ap.add_argument("--out-items", type=Path, default=DEFAULT_LATEST_DIR / "item_features.parquet", help="Output path for per-item attributes derived from the videos table")
     ap.add_argument("--out-user-features", type=Path, default=DEFAULT_LATEST_DIR / "user_features.parquet", help="Output path for aggregated user features (requires --db-url)")
     ap.add_argument("--run-id", type=str, default=None, help="Optional identifier to snapshot this run under --snapshot-root/<run-id>. Use 'auto' to generate a JST timestamp (YYYY-MM-DD_HH-MM-SS).")
     ap.add_argument("--snapshot-root", type=Path, default=DEFAULT_SNAPSHOT_ROOT, help="Base directory for prep run snapshots when --run-id is provided.")
@@ -444,11 +556,11 @@ def main():
         mode=args.mode,
         input_csv=args.input,
         decisions_csv=args.decisions_csv,
-        videos_csv=args.videos_csv,
         db_url=args.db_url,
         join_on=args.join_on,
         min_positive_stars=args.min_stars,
         negatives_per_positive=args.neg_per_pos,
+        max_negative_stars=args.max_negative_stars,
         val_ratio=args.val_ratio,
         out_train=args.out_train,
         out_val=args.out_val,
@@ -461,14 +573,19 @@ def main():
         keep_legacy_outputs=not args.skip_legacy_output,
     )
 
-    if cfg.videos_csv is None and cfg.db_url is None:
-        raise ValueError("A videos source is required. Provide either --videos-csv or --db-url.")
+    if cfg.db_url is None:
+        raise ValueError("A Postgres source is required. Provide --db-url.")
 
     df = pd.read_csv(cfg.input_csv)
     if cfg.mode == "explicit":
         interactions = build_interactions_from_explicit(df)
     else:
-        interactions = build_interactions_from_reviews(df, cfg.min_positive_stars, cfg.negatives_per_positive)
+        interactions = build_interactions_from_reviews(
+            df,
+            cfg.min_positive_stars,
+            cfg.negatives_per_positive,
+            (cfg.max_negative_stars if cfg.max_negative_stars is not None and cfg.max_negative_stars >= 0 else None),
+        )
 
     # Optional extra source: decisions CSV (e.g., user_video_decisions export)
     if cfg.decisions_csv is not None:
@@ -481,9 +598,9 @@ def main():
         )
 
     # Optional: join videos to attach video_id and output item attributes parquet
-    interactions, items_df, missing_count, joined_ok, join_used = maybe_join_videos(interactions, cfg.videos_csv, cfg.join_on, cfg.db_url)
+    interactions, items_df, missing_count, joined_ok, join_used = maybe_join_videos(interactions, cfg.join_on, cfg.db_url)
     if not joined_ok or items_df is None:
-        raise ValueError("Failed to join videos metadata. Ensure --videos-csv or --db-url provides the required tables.")
+        raise ValueError("Failed to join videos metadata. Ensure --db-url provides the required tables.")
     dropped_no_video_id = 0
     before = int(len(interactions))
     # Drop rows that failed to map to a video_id
@@ -540,9 +657,15 @@ def main():
         if "performer_ids" in items_to_write.columns:
             items_to_write["performer_ids"] = items_to_write["performer_ids"].apply(lambda v: _normalize_to_str_list(v, sort=True))
 
-    user_features_df = _load_user_features(cfg.db_url)
-    if cfg.db_url is None and user_features_df is None:
-        sys.stderr.write("Note: --db-url not provided; skipping user_features export.\n")
+    user_features_df: pd.DataFrame | None = None
+    if cfg.mode != "reviews" and cfg.db_url:
+        user_features_df = _load_user_features(cfg.db_url)
+    if user_features_df is None:
+        user_features_df = _build_user_features_from_interactions(interactions, items_to_write)
+        if user_features_df is not None:
+            sys.stderr.write("Info: generated synthetic user_features from interactions (reviews-mode fallback).\n")
+    if user_features_df is None:
+        sys.stderr.write("Note: user_features could not be generated (insufficient interactions).\n")
 
     summary_paths: list[Path] = []
     if cfg.summary_path is not None:
@@ -601,6 +724,16 @@ def main():
         summary_paths.append(snapshot_summary_path)
         paths_info["snapshot_summary"] = str(snapshot_summary_path)
 
+    maker_distribution_df = _build_maker_distribution(interactions, items_df)
+
+    if maker_distribution_df is not None and not maker_distribution_df.empty:
+        _write_maker_distribution(maker_distribution_df, DEFAULT_MAKER_DISTRIBUTION_LATEST)
+        paths_info["maker_distribution_path"] = str(DEFAULT_MAKER_DISTRIBUTION_LATEST)
+        if snapshot_dir is not None:
+            snapshot_maker_path = snapshot_files["maker_distribution"]
+            _write_maker_distribution(maker_distribution_df, snapshot_maker_path)
+            paths_info["snapshot_maker_distribution"] = str(snapshot_maker_path)
+
     unique_summary_paths: list[Path] = []
     seen = set()
     for p in summary_paths:
@@ -621,10 +754,26 @@ def main():
     elif user_features_df is None and "user_features_path" not in paths_info:
         paths_info["user_features_path"] = "not_generated"
 
-    summary.update({
-        "user_features_rows": int(len(user_features_df)) if user_features_df is not None else 0,
-        "user_features_generated": bool(user_features_df is not None),
-    })
+    summary.update(
+        {
+            "user_features_rows": int(len(user_features_df)) if user_features_df is not None else 0,
+            "user_features_generated": bool(user_features_df is not None),
+        }
+    )
+
+    if maker_distribution_df is not None and not maker_distribution_df.empty:
+        summary["maker_distribution_top"] = [
+            {
+                "maker": row["maker"],
+                "recommendations": int(row["recommendations"]),
+                "unique_items": int(row["unique_items"]),
+                "user_coverage": int(row["user_coverage"]),
+                "share": float(row["share"]),
+            }
+            for _, row in maker_distribution_df.head(10).iterrows()
+        ]
+    else:
+        summary["maker_distribution_top"] = []
 
     summary_payload = {**summary, "paths": paths_info, "generated_at": datetime.now(timezone.utc).isoformat()}
     for path in unique_summary_paths:

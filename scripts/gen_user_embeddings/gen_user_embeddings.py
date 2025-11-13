@@ -307,18 +307,9 @@ def build_user_feature_space(
     else:
         tag_vocab = sorted(tag_counter)
 
-    performer_counter: Counter[str] = Counter()
-    for values in reference_df.get("performer_ids", []):
-        performer_counter.update(_ensure_list(values))
-    if max_performer_features is not None and max_performer_features > 0:
-        performer_vocab = [p for p, _ in performer_counter.most_common(max_performer_features)]
-    else:
-        performer_vocab = sorted(performer_counter)
-
     user_space = FeatureSpace(
         multi_fields={
             "liked_tags": tag_vocab,
-            "liked_performers": performer_vocab,
         },
     )
     return UserFeatureBundle(user_space=user_space)
@@ -330,36 +321,37 @@ def build_user_vectors(
     bundle: UserFeatureBundle,
     expected_dim: int,
 ) -> Dict[str, np.ndarray]:
+    numeric_fields = ["like_count_30d", "positive_ratio_30d", "signup_days"]
     vectors: Dict[str, np.ndarray] = {}
     for _, row in df.iterrows():
-        vec = np.zeros(bundle.user_space.base_dim, dtype=np.float32)
-        
-        liked_tags = row.get('liked_tags', {})
+        vec = np.zeros(bundle.user_space.base_dim + len(numeric_fields), dtype=np.float32)
+
+        liked_tags = row.get("liked_tags", {})
         if isinstance(liked_tags, str):
             try:
                 liked_tags = json.loads(liked_tags)
             except json.JSONDecodeError:
                 liked_tags = {}
 
-        liked_performers = row.get('liked_performers', {})
-        if isinstance(liked_performers, str):
-            try:
-                liked_performers = json.loads(liked_performers)
-            except json.JSONDecodeError:
-                liked_performers = {}
-
         bundle.user_space.encode_multi(vec, "liked_tags", liked_tags.keys())
-        bundle.user_space.encode_multi(vec, "liked_performers", liked_performers.keys())
-        
+
+        for idx, field in enumerate(numeric_fields):
+            value = row.get(field, 0)
+            try:
+                vec[bundle.user_space.base_dim + idx] = float(value)
+            except Exception:
+                vec[bundle.user_space.base_dim + idx] = 0.0
+
         vectors[str(row["user_id"])] = vec
 
-    if bundle.user_space.base_dim != expected_dim:
+    computed_dim = bundle.user_space.base_dim + len(numeric_fields)
+    if computed_dim != expected_dim:
         print(
             json.dumps(
                 {
                     "warn": "user_feature_dim_mismatch",
                     "expected": expected_dim,
-                    "computed": bundle.user_space.base_dim,
+                    "computed": computed_dim,
                 },
                 ensure_ascii=False,
             ),

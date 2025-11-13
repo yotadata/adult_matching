@@ -18,6 +18,7 @@ Description:
 Options:
   --env-file <path>     Env file to load before running (default: docker/env/prd.env).
   --project-ref <ref>   Supabase project ref (informational / future use).
+  --remote-db-url <url> Override REMOTE_DATABASE_URL instead of relying on env files.
   -h, --help            Show this help.
 
 Environment variables (via env file or shell):
@@ -40,6 +41,7 @@ EOF
 ENV_FILE="${SUPABASE_ENV_FILE:-docker/env/prd.env}"
 PROJECT_REF="${PROJECT_REF:-}"
 FORWARD_ARGS=()
+REMOTE_DB_URL_ARG="${REMOTE_DB_URL_OVERRIDE:-}"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -49,6 +51,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --project-ref)
       PROJECT_REF="$2"
+      shift 2
+      ;;
+    --remote-db-url)
+      REMOTE_DB_URL_ARG="$2"
       shift 2
       ;;
     -h|--help)
@@ -72,6 +78,10 @@ if [[ -f "$ENV_FILE" ]]; then
   # shellcheck disable=SC1090
   . "$ENV_FILE"
   set +a
+fi
+
+if [[ -n "${REMOTE_DB_URL_ARG:-}" ]]; then
+  REMOTE_DATABASE_URL="$REMOTE_DB_URL_ARG"
 fi
 
 if [[ -z "$PROJECT_REF" && -n "${SUPABASE_PROJECT_ID:-}" ]]; then

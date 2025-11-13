@@ -110,7 +110,7 @@ export default function DesktopSidebar() {
       <div className="h-full flex flex-col">
         <div className="px-4 py-4 border-b border-white/30">
           <div className="flex items-center gap-2">
-            <Link href="/swipe" aria-label="ホームへ移動" className="inline-flex">
+            <Link href="/swipe" aria-label="スワイプへ移動" className="inline-flex">
               <Image src="/seiheki_lab.png" alt="Seiheki Lab Logo" width={120} height={40} priority draggable="false" className="cursor-pointer" />
             </Link>
           </div>
@@ -128,17 +128,17 @@ export default function DesktopSidebar() {
           )}
         </div>
         <nav className="flex-1 p-3 space-y-1">
-          <NavButton label="ホーム" icon={HomeIcon} href="/swipe" disabled={!isLoggedIn} />
+          <NavButton label="スワイプ" icon={HomeIcon} href="/swipe" disabled={!isLoggedIn} />
           <NavButtonWithGauge
-            label="AIレコメンド"
+            label="AIで探す"
             icon={Sparkles}
             href="/ai-recommend"
             disabled={!isLoggedIn}
             progress={decisionCount / personalizeTarget}
             caption={caption}
           />
-          <NavButton label="性癖分析" icon={BarChart2} href="/analysis-results" disabled={!isLoggedIn} />
-          <NavButton label="プレイリスト" icon={List} href="/lists" disabled={!isLoggedIn} />
+          <NavButton label="あなたの性癖" icon={BarChart2} href="/analysis-results" disabled={!isLoggedIn} />
+          <NavButton label="気になるリスト" icon={List} href="/lists" disabled={!isLoggedIn} />
           {/* 性癖パーソナリティ診断: 準備中表記・disableを解除 */}
         </nav>
         {isLoggedIn && (

@@ -17,13 +17,16 @@
 
 ## 機能要件
 - [ ] レビュー/LIKE データから `interactions_train/val.parquet` を生成する Docker スクリプトを整備する（現状: `scripts/prep_two_tower/run.sh` でベース実装あり。動画 ID 取得やデータ品質検証を自動化する TODO）。
+- [ ] `prep_two_tower` は `--db-url` で Postgres/Supabase を直接参照して動画マスタを取得する仕様とし、CSV ダンプを介さずローカル DB を準備する前提とする。詳細手順は `docs/ml/data_generation_spec.md` に記録する。
 - [ ] Two-Tower 学習コンテナを実行し、ONNX / state_dict / 埋め込み Parquet / メタ情報を出力する。ONNX は特徴量→ユーザー/アイテム埋め込みを生成できるよう設計する（評価・ログ整備は要追加）。
 - [ ] 学習済み埋め込みを `public.video_embeddings` / `public.user_embeddings`（halfvec(128)）へアップサートするユーティリティを実装する。
 - [ ] `user_video_decisions` の最新アクティビティをもとに、直近のユーザーのみを対象にした `user_embeddings` の増分更新ジョブ（1時間毎）を提供する。`scripts/sync_user_embeddings` で Docker 実行し、`[ML] Ops - Update User Embeddings` ワークフローから自動起動できること。
 - [ ] モデル成果物（`two_tower_latest.onnx` + メタデータ）を Supabase Storage `models/` バケットへアップロードし、バージョニング/`latest` 更新を管理する。日次のアイテム更新・適時のユーザー更新で ONNX を利用するパイプラインを整備する。
 - [ ] Supabase Storage へのモデル配置手順・命名規則・付随メタデータの保持方式を仕様化し、リリース時に参照可能なドキュメントを整備する。
 - [ ] Edge Function `supabase/functions/ai-recommend` で Two-Tower 類似検索を行い、現在のスタブ（最新/トレンド一覧返却）を置き換える。
+- [ ] いいね動画ドロワーのフィルター UI（`frontend/src/components/LikedVideosDrawer.tsx`）では、「検索 / 絞り込み」セクション見出しの直上に検索結果件数をまとめて表示し、フィルター変更時の件数変化が即座に把握できるようにする。
 - [ ] PyTorch と ONNX の出力ベクトル差分・ランキング指標を自動で計測する評価スクリプト（Recall@K, AUC など）を整備する。
+- [ ] `maker`（ブランド）ごとの推薦分布を自動集計し、偏りが一定以上の時にリサンプリング・reranking・重みづけで補正する対策パイプライン（ドキュメント/CSVログ含む）を整備する。初期データは `2025-11-10T09-02_export.csv` を参照して、`recommendations`/`unique_items`/`user_coverage` などを継続的に記録する。
 
 ## 非機能要件
 - [ ] すべての前処理・学習は専用 Docker コンテナ経由で再現可能にする（ホスト Python 依存を排除）。
