@@ -39,40 +39,32 @@ export type AiRecommendSection = {
 
 export type AiRecommendResponse = {
   generated_at: string;
-  mode: {
-    id: string;
-    label: string;
-    description: string;
-    rationale: string;
-    custom_intent: CustomIntent;
-  };
   sections: AiRecommendSection[];
   metadata: {
     personalized_candidates: number;
     trending_candidates: number;
     fresh_candidates: number;
     has_user_context: boolean;
+    prompt_keywords: string[];
     limit_per_section: number;
   };
 };
 
 type UseAiRecommendOptions = {
-  modeId: string;
-  customIntent?: CustomIntent;
+  prompt?: string;
   limitPerSection?: number;
 };
 
 export function useAiRecommend(options: UseAiRecommendOptions) {
-  const { modeId, customIntent, limitPerSection } = options;
+  const { prompt, limitPerSection } = options;
   const [data, setData] = useState<AiRecommendResponse | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
   const payload = useMemo(() => ({
-    mode_id: modeId,
-    custom_intent: customIntent ?? undefined,
+    prompt: prompt && prompt.length > 0 ? prompt : undefined,
     limit_per_section: limitPerSection,
-  }), [modeId, customIntent, limitPerSection]);
+  }), [prompt, limitPerSection]);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
