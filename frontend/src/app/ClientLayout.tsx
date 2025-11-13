@@ -8,7 +8,6 @@ import { usePathname } from 'next/navigation';
 import { DecisionCountProvider } from '@/hooks/useDecisionCount';
 
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
-  console.log('[DEBUG] ClientLayout: Rendering');
   const pathname = usePathname();
   const isPersonalityPage = pathname.startsWith('/personality');
   const isHome = pathname === '/';

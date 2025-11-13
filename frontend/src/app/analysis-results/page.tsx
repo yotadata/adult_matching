@@ -64,7 +64,7 @@ function SummaryCard({
 }
 
 export default function AnalysisResultsPage() {
-  const [windowDays, setWindowDays] = useState<number | null>(7);
+  const [windowDays, setWindowDays] = useState<number | null>(null);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [shareImageUrl, setShareImageUrl] = useState<string | null>(null);
   const cardRef = useRef<HTMLDivElement>(null);
@@ -152,7 +152,7 @@ export default function AnalysisResultsPage() {
   return (
     <>
       <main className="w-full min-h-screen px-0 sm:px-4 py-8">
-      <section className="w-full mx-auto rounded-none sm:rounded-2xl bg-white/20 backdrop-blur-xl border border-white/30 shadow-[0_20px_60px_rgba(0,0,0,0.25)] px-4 sm:px-8 py-6 sm:py-8 text-white">
+      <section className="w-full mx-auto rounded-2xl bg-white/20 backdrop-blur-xl border border-white/30 shadow-[0_20px_60px_rgba(0,0,0,0.25)] p-4 sm:p-8 text-white">
         <header className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="space-y-2">
             <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight">あなたの性癖</h1>

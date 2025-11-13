@@ -1,7 +1,7 @@
 'use client';
 
 import { Dialog, Transition } from '@headlessui/react';
-import { Fragment, useEffect, useState } from 'react';
+import { Fragment } from 'react';
 import { X } from 'lucide-react';
 
 interface ShareModalProps {
@@ -14,29 +14,6 @@ interface ShareModalProps {
 
 export default function ShareModal({ isOpen, onClose, imageUrl, shareUrl, shareText }: ShareModalProps) {
   const twitterShareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`;
-  const [copyStatus, setCopyStatus] = useState<'idle' | 'success' | 'error'>('idle');
-  const copyLabel = copyStatus === 'success' ? 'リンクをコピーしました' : copyStatus === 'error' ? 'コピーできませんでした' : 'リンクをコピー';
-
-  useEffect(() => {
-    if (!isOpen) {
-      setCopyStatus('idle');
-    }
-  }, [isOpen]);
-
-  const handleCopyLink = async () => {
-    if (typeof navigator === 'undefined' || !navigator.clipboard) {
-      setCopyStatus('error');
-      return;
-    }
-    try {
-      await navigator.clipboard.writeText(shareUrl);
-      setCopyStatus('success');
-      setTimeout(() => setCopyStatus('idle'), 2000);
-    } catch (error) {
-      console.error('Failed to copy share link', error);
-      setCopyStatus('error');
-    }
-  };
 
   return (
     <Transition appear show={isOpen} as={Fragment}>
@@ -88,13 +65,6 @@ export default function ShareModal({ isOpen, onClose, imageUrl, shareUrl, shareT
                   >
                     Xでシェア
                   </a>
-                  <button
-                    type="button"
-                    onClick={handleCopyLink}
-                    className="w-full inline-flex justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-300 focus-visible:ring-offset-2"
-                  >
-                    {copyLabel}
-                  </button>
                   {imageUrl ? (
                     <a
                       href={imageUrl}
