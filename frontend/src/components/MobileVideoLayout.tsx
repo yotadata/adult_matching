@@ -195,8 +195,8 @@ const MobileVideoLayout: React.FC<MobileVideoLayoutProps> = ({ cardData, onSkip,
           <button
             onClick={() => { try { window.dispatchEvent(new Event('open-liked-drawer')); } catch {} }}
             className="w-[60px] h-[60px] rounded-full bg-[#BEBEBE] shadow-2xl drop-shadow-xl active:scale-95 transition flex items-center justify-center"
-            aria-label="お気に入りプレイリスト"
-            title="お気に入りプレイリスト"
+            aria-label="気になるリスト"
+            title="気になるリスト"
           >
             <List size={28} className="text-white" />
           </button>

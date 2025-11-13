@@ -113,7 +113,7 @@ const AccountManagementDrawer: React.FC<AccountManagementDrawerProps> = ({ isOpe
                             >
                               <div className="flex items-center gap-3">
                                 <Sparkles size={18} className="shrink-0" />
-                                <span className="truncate">AIレコメンド</span>
+                                <span className="truncate">AIで探す</span>
                               </div>
                               <div className="mt-2 pr-1">
                                 <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
@@ -127,14 +127,14 @@ const AccountManagementDrawer: React.FC<AccountManagementDrawerProps> = ({ isOpe
                               className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors text-gray-800 hover:bg-gray-100"
                             >
                               <BarChart2 size={18} className="shrink-0" />
-                              <span className="truncate">性癖分析</span>
+                              <span className="truncate">あなたの性癖</span>
                             </button>
                             <button
                               onClick={() => handleNavigate('/lists')}
                               className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors text-gray-800 hover:bg-gray-100"
                             >
                               <List size={18} className="shrink-0" />
-                              <span className="truncate">プレイリスト</span>
+                              <span className="truncate">気になるリスト</span>
                             </button>
                           </>
                         )}

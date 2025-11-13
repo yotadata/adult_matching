@@ -84,7 +84,7 @@ export default function AnalysisResultsPage() {
     try {
       const shareData = {
         title: 'あなたの性癖分析結果',
-        text: '性癖分析の結果をシェアしました。',
+        text: 'あなたの性癖の結果をシェアしました。',
         url: typeof window !== 'undefined' ? window.location.href : undefined,
       } as ShareData;
       if (navigator.share) {

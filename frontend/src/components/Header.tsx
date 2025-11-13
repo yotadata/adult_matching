@@ -133,7 +133,7 @@ const Header = ({ cardWidth, mobileGauge }: { cardWidth: number | undefined; mob
               <div className="grid grid-cols-3 items-center text-white">
                 <div />
                 <div className="flex justify-center">
-                  <Link href="/swipe" aria-label="ホームへ移動" className="inline-flex">
+                  <Link href="/swipe" aria-label="スワイプへ移動" className="inline-flex">
                     <Image
                       src="/seiheki_lab.png"
                       alt="Seiheki Lab Logo"
@@ -161,7 +161,7 @@ const Header = ({ cardWidth, mobileGauge }: { cardWidth: number | undefined; mob
               // 未ログイン時: 左寄せロゴ＋右端ログインボタン
               <div className="grid grid-cols-3 items-center text-white">
                 <div className="flex justify-start">
-                  <Link href="/swipe" aria-label="ホームへ移動" className="inline-flex">
+                  <Link href="/swipe" aria-label="スワイプへ移動" className="inline-flex">
                     <Image
                       src="/seiheki_lab.png"
                       alt="Seiheki Lab Logo"
@@ -211,12 +211,12 @@ const Header = ({ cardWidth, mobileGauge }: { cardWidth: number | undefined; mob
                             <div className="flex-1 flex flex-col divide-y divide-gray-200 overflow-y-auto">
                               <button className="w-full flex items-center gap-3 text-left px-4 py-3 text-gray-800 hover:bg-gray-100" onClick={() => { setIsMenuDrawerOpen(false); router.push('/swipe'); }}>
                                 <HomeIcon size={18} />
-                                <span>ホーム画面</span>
+                                <span>スワイプ画面</span>
                               </button>
                               <button className="w-full text-left px-4 py-3 text-gray-800 hover:bg-gray-100" onClick={() => { setIsMenuDrawerOpen(false); router.push('/ai-recommend'); }}>
                                 <div className="flex items-center gap-3 text-gray-800 mb-2">
                                   <Sparkles size={18} />
-                                  <span>AIレコメンド</span>
+                                  <span>AIで探す</span>
                                 </div>
                                 <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
                                   <div className="h-full rounded-full" style={{ width: `${Math.min(decisionCount / personalizeTarget, 1) * 100}%`, background: 'linear-gradient(90deg, #ADB4E3 0%, #C8BAE3 33.333%, #F7BECE 66.666%, #F9B1C4 100%)' }} />
@@ -225,11 +225,11 @@ const Header = ({ cardWidth, mobileGauge }: { cardWidth: number | undefined; mob
                               </button>
                               <button className="w-full flex items-center gap-3 text-left px-4 py-3 text-gray-800 hover:bg-gray-100" onClick={() => { setIsMenuDrawerOpen(false); router.push('/analysis-results'); }}>
                                 <BarChart2 size={18} />
-                                <span>性癖分析</span>
+                                <span>あなたの性癖</span>
                               </button>
                               <button className="w-full flex items-center gap-3 text-left px-4 py-3 text-gray-800 hover:bg-gray-100" onClick={() => { setIsMenuDrawerOpen(false); router.push('/lists'); }}>
                                 <List size={18} />
-                                <span>プレイリスト</span>
+                                <span>気になるリスト</span>
                               </button>
                             </div>
                             <div className="border-t px-4 py-3">

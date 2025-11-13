@@ -51,7 +51,7 @@ export default function ListsPage() {
     {
       id: 'liked',
       title: 'いいねした作品',
-      description: 'AIレコメンドやスワイプでLIKEした作品をまとめて見返せます。',
+      description: 'AIで探すやスワイプでLIKEした作品をまとめて見返せます。',
       href: '/lists/liked',
       icon: Heart,
       accent: 'from-rose-500/80 to-pink-400/80',
@@ -64,13 +64,13 @@ export default function ListsPage() {
       <section className="w-full max-w-5xl mx-auto rounded-none sm:rounded-2xl bg-white/20 backdrop-blur-xl border border-white/30 shadow-[0_20px_60px_rgba(0,0,0,0.25)] px-4 sm:px-8 py-8 flex flex-col gap-8">
         <header className="space-y-3">
           <p className="text-sm uppercase tracking-[0.2em] text-white/60">Playlists</p>
-          <h1 className="text-3xl sm:text-4xl font-bold">あなたのプレイリスト</h1>
+          <h1 className="text-3xl sm:text-4xl font-bold">あなたの気になるリスト</h1>
           <p className="text-white/80 text-sm sm:text-base">
-            いいね済みの作品や今後追加予定のオリジナルプレイリストをここから管理できます。
+            いいね済みの作品や今後追加予定のオリジナル気になるリストをここから管理できます。
           </p>
           {isAuthenticated === false ? (
             <div className="rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-xs text-white/70">
-              ログインしてプレイリストを作成すると、ここに一覧が表示されます。
+              ログインして気になるリストを作成すると、ここに一覧が表示されます。
             </div>
           ) : null}
         </header>
@@ -101,7 +101,7 @@ export default function ListsPage() {
                   </p>
                 </div>
                 <div className="mt-auto text-sm font-semibold text-rose-500 inline-flex items-center gap-2">
-                  <span>このプレイリストを開く</span>
+                  <span>この気になるリストを開く</span>
                   <span className="transition-transform group-hover:translate-x-1">→</span>
                 </div>
               </Link>

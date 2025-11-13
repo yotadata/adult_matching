@@ -46,7 +46,7 @@ export default function ResultPage() {
             href="/swipe"
             className="w-full sm:w-auto px-8 py-3 rounded-full bg-white/20 backdrop-blur border border-white/40 text-white font-bold hover:bg-white/30 transition-colors duration-300"
           >
-            ホームに戻る
+            スワイプに戻る
           </Link>
         </div>
       </div>

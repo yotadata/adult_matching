@@ -42,7 +42,7 @@ export default function LikedListPage() {
 
   const summaryText = useMemo(() => {
     if (loading) return '読み込み中...';
-    if (!isAuthenticated) return 'ログインして、ここにプレイリストを作りましょう';
+    if (!isAuthenticated) return 'ログインして、ここに気になるリストを作りましょう';
     return `${videos.length} 件の作品`;
   }, [loading, isAuthenticated, videos.length]);
 
@@ -63,7 +63,7 @@ export default function LikedListPage() {
 
         {!isAuthenticated && !loading ? (
           <div className="rounded-2xl bg-white/10 border border-white/15 p-8 text-center space-y-4">
-            <p className="text-sm text-white/80">ログインすると、LIKE した作品を自動的にプレイリストへ保存します。</p>
+            <p className="text-sm text-white/80">ログインすると、LIKE した作品を自動的に気になるリストへ保存します。</p>
             <button
               type="button"
               onClick={() => {
