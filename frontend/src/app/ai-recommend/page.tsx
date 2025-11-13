@@ -287,8 +287,8 @@ export default function AiRecommendPage() {
   return (
     <main className="w-full min-h-screen px-0 sm:px-4 py-8">
       <div className="max-w-7xl mx-auto flex flex-col gap-6">
-        <header className="rounded-3xl bg-white/20 backdrop-blur-xl border border-white/40 shadow-[0_20px_60px_rgba(0,0,0,0.25)] px-6 sm:px-10 py-8 text-white flex flex-col gap-4">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+        <section className="w-full rounded-2xl bg-white/20 backdrop-blur-xl border border-white/30 shadow-[0_20px_60px_rgba(0,0,0,0.25)] p-4 sm:p-8 flex flex-col gap-8">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 text-white">
             <div>
               <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">AIで探す</h1>
               <p className="text-sm sm:text-base text-white/80 mt-2">
@@ -307,9 +307,7 @@ export default function AiRecommendPage() {
               再生成
             </button>
           </div>
-        </header>
 
-        <section className="w-full rounded-2xl bg-white/20 backdrop-blur-xl border border-white/30 shadow-[0_20px_60px_rgba(0,0,0,0.25)] p-4 sm:p-8">
           <div className="grid grid-cols-1 lg:grid-cols-[320px_minmax(0,1fr)] gap-4">
             <aside className="flex flex-col gap-4">
               <section className="rounded-2xl bg-white/85 backdrop-blur border border-white/60 shadow-lg p-5 flex flex-col gap-4">
