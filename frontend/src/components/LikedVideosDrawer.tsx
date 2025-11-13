@@ -229,6 +229,7 @@ const LikedVideosDrawer: React.FC<LikedVideosDrawerProps> = ({ isOpen, onClose }
               >
                 <Dialog.Panel
                   className="pointer-events-auto w-screen relative z-[70]"
+                  onClick={(e) => e.stopPropagation()}
                 >
                   <div className="w-full rounded-t-2xl bg-white shadow-2xl">
                     <div className="mx-auto mt-2 mb-1 h-1.5 w-12 rounded-full bg-gray-300" />
@@ -427,6 +428,7 @@ const LikedVideosDrawer: React.FC<LikedVideosDrawerProps> = ({ isOpen, onClose }
               >
                 <Dialog.Panel
                   className="pointer-events-auto w-screen max-w-4xl relative z-[70]"
+                  onClick={(e) => e.stopPropagation()}
                 >
                   <div className="h-full bg-white/70 backdrop-blur-xl shadow-2xl border border-white/60 rounded-tl-3xl rounded-bl-3xl overflow-hidden">
                     <div className="px-6 py-5 border-b bg-white/90 sticky top-0 z-10 flex items-center justify-between">
