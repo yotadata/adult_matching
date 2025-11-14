@@ -136,7 +136,9 @@ export default function VideoListDrawer({
   }, [performerOptions, selectedPerformerIds, performerSearch]);
 
   const buildOptionsClass = (isOpenDropdown: boolean, extra: string) =>
-    `absolute inset-x-0 top-full mt-2 ${extra} ${isOpenDropdown ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'} transition-opacity duration-150`;
+    `absolute inset-x-0 top-full mt-2 z-20 ${extra} ${
+      isOpenDropdown ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+    } transition-opacity duration-150`;
 
   const handleClose = () => {
     setMobileShowFilters(false);
