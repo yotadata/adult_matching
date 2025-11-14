@@ -1,7 +1,10 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { Share2, Info, Smile, Frown, TrendingUp, Tag as TagIcon, Users, Clock } from 'lucide-react';
+import { toPng } from 'html-to-image';
+import ShareModal from '@/components/ShareModal';
+import AnalysisShareCard from '@/components/AnalysisShareCard';
 import { useAnalysisResults } from '@/hooks/useAnalysisResults';
 
 const WINDOW_OPTIONS: Array<{ label: string; value: number | null }> = [
@@ -61,8 +64,12 @@ function SummaryCard({
 }
 
 export default function AnalysisResultsPage() {
-  const [windowDays, setWindowDays] = useState<number | null>(7);
-    const { data, loading, error } = useAnalysisResults({
+  const [windowDays, setWindowDays] = useState<number | null>(null);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [shareImageUrl, setShareImageUrl] = useState<string | null>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  const { data, loading, error } = useAnalysisResults({
     windowDays,
     tagLimit: 6,
     performerLimit: 6,
@@ -80,23 +87,56 @@ export default function AnalysisResultsPage() {
     return `直近 ${summary.window_days} 日`;
   }, [summary]);
 
+  const shareUrl = typeof window !== 'undefined' ? window.location.href : 'https://seiheki.me/analysis-results';
+  const primaryTag = topTags[0];
+  const secondaryTag = topTags[1];
+  const primaryPerformer = topPerformers[0];
+  const shareTagNames = [primaryTag, secondaryTag].flatMap((tag) => (tag ? [`#${tag.tag_name}`] : []));
+  const sharePerformerNames = primaryPerformer ? [primaryPerformer.performer_name] : [];
+  const shareText = (() => {
+    if (primaryTag && primaryPerformer) {
+      return `最近は ${primaryPerformer.performer_name} が出る #${primaryTag.tag_name} 系で毎回ときめいてる。あなたも #あなたの性癖 を診断して推しポイントをシェアしよう。`;
+    }
+    if (shareTagNames.length > 0) {
+      return `今の推しタグは ${shareTagNames.join(' / ')}。あなたも #あなたの性癖 を診断して嗜好カードを作ろう。`;
+    }
+    if (sharePerformerNames.length > 0) {
+      return `${sharePerformerNames.join(' / ')} が出ていたら即 LIKE。あなたも #あなたの性癖 を診断して推しを布教しよう。`;
+    }
+    if (summary) {
+      return `${windowLabel}の嗜好分析結果をシェアしました。あなたも #あなたの性癖 を診断してみて。`;
+    }
+    return 'あなたの性癖の結果をシェアしました。';
+  })();
+
   const handleShare = async () => {
+    if (!cardRef.current || !summary) {
+      if (typeof window !== 'undefined') {
+        window.alert('データを取得してからシェアしてください。');
+      }
+      return;
+    }
     try {
-      const shareData = {
-        title: 'あなたの性癖分析結果',
-        text: 'あなたの性癖の結果をシェアしました。',
-        url: typeof window !== 'undefined' ? window.location.href : undefined,
-      } as ShareData;
-      if (navigator.share) {
-        await navigator.share(shareData);
-        return;
+      const dataUrl = await toPng(cardRef.current, {
+        cacheBust: true,
+        pixelRatio: 2,
+        backgroundColor: '#050113',
+      });
+      setShareImageUrl(dataUrl);
+      setIsShareModalOpen(true);
+    } catch (err) {
+      console.error('Failed to generate share image', err);
+      if (typeof navigator !== 'undefined' && navigator.share) {
+        try {
+          await navigator.share({
+            title: 'あなたの性癖分析結果',
+            text: shareText,
+            url: shareUrl,
+          });
+        } catch {
+          /* noop */
+        }
       }
-      if (navigator.clipboard && typeof window !== 'undefined') {
-        await navigator.clipboard.writeText(window.location.href);
-        window.alert('リンクをクリップボードにコピーしました');
-      }
-    } catch {
-      /* noop */
     }
   };
 
@@ -110,11 +150,12 @@ export default function AnalysisResultsPage() {
   };
 
   return (
-    <main className="w-full min-h-screen px-0 sm:px-4 py-8">
-      <section className="w-full mx-auto rounded-none sm:rounded-2xl bg-white/20 backdrop-blur-xl border border-white/30 shadow-[0_20px_60px_rgba(0,0,0,0.25)] px-4 sm:px-8 py-6 sm:py-8 text-white">
+    <>
+      <main className="w-full min-h-screen px-0 sm:px-4 py-8">
+      <section className="w-full mx-auto rounded-2xl bg-white/20 backdrop-blur-xl border border-white/30 shadow-[0_20px_60px_rgba(0,0,0,0.25)] p-4 sm:p-8 text-white">
         <header className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="space-y-2">
-            <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight">あなたの性癖分析ダッシュボード</h1>
+            <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight">あなたの性癖</h1>
             <p className="text-sm text-white/80">LIKE / NOPE の履歴から嗜好の傾向を可視化します。</p>
           </div>
           <button
@@ -415,6 +456,23 @@ export default function AnalysisResultsPage() {
           </>
         )}
       </section>
-    </main>
+      </main>
+      <ShareModal
+        isOpen={isShareModalOpen}
+        onClose={() => setIsShareModalOpen(false)}
+        imageUrl={shareImageUrl}
+        shareUrl={shareUrl}
+        shareText={shareText}
+      />
+      <div className="absolute -left-[9999px] top-0 pointer-events-none select-none" aria-hidden>
+        <AnalysisShareCard
+          ref={cardRef}
+          summary={summary ?? null}
+          topTags={topTags}
+          topPerformers={topPerformers}
+          windowLabel={windowLabel}
+        />
+      </div>
+    </>
   );
 }

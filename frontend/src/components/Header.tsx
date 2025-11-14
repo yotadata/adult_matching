@@ -213,6 +213,10 @@ const Header = ({ cardWidth, mobileGauge }: { cardWidth: number | undefined; mob
                                 <HomeIcon size={18} />
                                 <span>スワイプ画面</span>
                               </button>
+                              <button className="w-full flex items-center gap-3 text-left px-4 py-3 text-gray-800 hover:bg-gray-100" onClick={() => { setIsMenuDrawerOpen(false); router.push('/lists'); }}>
+                                <List size={18} />
+                                <span>気になるリスト</span>
+                              </button>
                               <button className="w-full text-left px-4 py-3 text-gray-800 hover:bg-gray-100" onClick={() => { setIsMenuDrawerOpen(false); router.push('/ai-recommend'); }}>
                                 <div className="flex items-center gap-3 text-gray-800 mb-2">
                                   <Sparkles size={18} />
@@ -226,10 +230,6 @@ const Header = ({ cardWidth, mobileGauge }: { cardWidth: number | undefined; mob
                               <button className="w-full flex items-center gap-3 text-left px-4 py-3 text-gray-800 hover:bg-gray-100" onClick={() => { setIsMenuDrawerOpen(false); router.push('/analysis-results'); }}>
                                 <BarChart2 size={18} />
                                 <span>あなたの性癖</span>
-                              </button>
-                              <button className="w-full flex items-center gap-3 text-left px-4 py-3 text-gray-800 hover:bg-gray-100" onClick={() => { setIsMenuDrawerOpen(false); router.push('/lists'); }}>
-                                <List size={18} />
-                                <span>気になるリスト</span>
                               </button>
                             </div>
                             <div className="border-t px-4 py-3">

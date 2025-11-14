@@ -9,35 +9,18 @@ const corsHeaders = {
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
 
-type ModeKey = "focus" | "partner" | "quick" | "explore" | "relax";
-type SectionKey = "core_focus" | "trend_heat" | "fresh_start" | "community_mix";
+const DEFAULT_LIMIT = 6;
+const MAX_LIMIT = 12;
 
-type ModeDefinition = {
-  id: ModeKey;
-  label: string;
-  description: string;
-  sectionOrder: SectionKey[];
-  rationale: string;
-  tone: "energetic" | "warm" | "curious" | "calm";
-  defaultIntent: CustomIntent;
-};
-
-type CustomIntent = {
-  duration?: "short" | "medium" | "long";
-  mood?: "sweet" | "passion" | "healing" | "curious";
-  context?: "solo" | "partner" | "restricted";
-};
-
-type RequestPayload = {
-  mode_id?: string;
-  custom_intent?: CustomIntent;
+interface RequestPayload {
+  prompt?: string;
   limit_per_section?: number;
-};
+}
 
 type JsonPerformer = { id?: string; name?: string };
 type JsonTag = { id?: string; name?: string };
 
-type VideoCandidate = {
+interface VideoCandidate {
   id: string;
   title: string | null;
   description: string | null;
@@ -54,9 +37,9 @@ type VideoCandidate = {
   preview_video_url?: string | null;
   duration_minutes?: number | null;
   source: "personalized" | "trending" | "fresh";
-};
+}
 
-type SectionItem = {
+interface SectionItem {
   id: string;
   title: string | null;
   thumbnail_url: string | null;
@@ -77,101 +60,19 @@ type SectionItem = {
     detail: string;
     highlights: string[];
   };
-};
+}
 
-type Section = {
+interface Section {
   id: string;
   title: string;
   rationale: string;
   items: SectionItem[];
-};
-
-const MODE_DEFINITIONS: ModeDefinition[] = [
-  {
-    id: "focus",
-    label: "集中して楽しむ",
-    description: "最近のLIKE傾向をもとに、相性の良い作品をピンポイントで提案します。",
-    sectionOrder: ["core_focus", "fresh_start", "trend_heat"],
-    rationale: "あなたの嗜好に最もフィットするラインナップを短時間で絞り込みます。",
-    tone: "energetic",
-    defaultIntent: { duration: "medium", mood: "passion", context: "solo" },
-  },
-  {
-    id: "partner",
-    label: "パートナーと",
-    description: "共有しやすいテーマや会話のきっかけになる作品をまとめます。",
-    sectionOrder: ["community_mix", "core_focus", "trend_heat"],
-    rationale: "パートナーと楽しみやすい柔らかめの作品と、話題性のある作品を組み合わせました。",
-    tone: "warm",
-    defaultIntent: { duration: "long", mood: "sweet", context: "partner" },
-  },
-  {
-    id: "quick",
-    label: "サクッと",
-    description: "短時間で満足できるショートタイム向けの提案です。",
-    sectionOrder: ["fresh_start", "core_focus", "trend_heat"],
-    rationale: "尺の短い作品やテンポの良い作品を優先してピックアップしています。",
-    tone: "energetic",
-    defaultIntent: { duration: "short", mood: "passion", context: "solo" },
-  },
-  {
-    id: "explore",
-    label: "新しい刺激",
-    description: "まだ試していないタグや出演者を中心に、探索的なラインナップを提示します。",
-    sectionOrder: ["trend_heat", "community_mix", "fresh_start"],
-    rationale: "似た嗜好を持つユーザーが最近評価した作品と、人気上昇中の作品を組み合わせています。",
-    tone: "curious",
-    defaultIntent: { duration: "medium", mood: "curious", context: "solo" },
-  },
-  {
-    id: "relax",
-    label: "落ち着いて観る",
-    description: "長めに楽しめる静かめの作品を中心にピックアップします。",
-    sectionOrder: ["community_mix", "core_focus", "fresh_start"],
-    rationale: "リラックスした時間に合う穏やかなテンポの作品をつなげました。",
-    tone: "calm",
-    defaultIntent: { duration: "long", mood: "healing", context: "solo" },
-  },
-];
-
-const DEFAULT_MODE = MODE_DEFINITIONS[0];
-const DEFAULT_LIMIT = 6;
-const MAX_LIMIT = 12;
+}
 
 const toArray = <T>(value: unknown): T[] => {
   if (!value) return [];
   if (Array.isArray(value)) return value as T[];
   return [];
-};
-
-const extractNestedEntities = (
-  rows: unknown,
-  key: "tags" | "performers",
-): Array<{ id: string; name: string }> => {
-  if (!Array.isArray(rows)) return [];
-  const result: Array<{ id: string; name: string }> = [];
-  for (const row of rows) {
-    if (!row || typeof row !== "object") continue;
-    const nested = (row as Record<string, unknown>)[key];
-    if (!nested) continue;
-    if (Array.isArray(nested)) {
-      for (const entity of nested) {
-        if (!entity || typeof entity !== "object") continue;
-        const id = (entity as { id?: unknown }).id;
-        const name = (entity as { name?: unknown }).name;
-        if (typeof id === "string" && typeof name === "string") {
-          result.push({ id, name });
-        }
-      }
-    } else if (typeof nested === "object") {
-      const id = (nested as { id?: unknown }).id;
-      const name = (nested as { name?: unknown }).name;
-      if (typeof id === "string" && typeof name === "string") {
-        result.push({ id, name });
-      }
-    }
-  }
-  return result;
 };
 
 const normalizePerformers = (value: unknown): Array<{ id: string; name: string }> => {
@@ -188,52 +89,47 @@ const normalizeTags = (value: unknown): Array<{ id: string; name: string }> => {
     .map((item) => ({ id: item.id!, name: item.name! }));
 };
 
+const extractNestedEntities = (
+  rows: unknown,
+  key: "tags" | "performers",
+): Array<{ id: string; name: string }> => {
+  if (!Array.isArray(rows)) return [];
+  const result: Array<{ id: string; name: string }> = [];
+  for (const row of rows) {
+    if (!row || typeof row !== "object") continue;
+    const nested = (row as Record<string, unknown>)[key];
+    if (Array.isArray(nested)) {
+      for (const entity of nested) {
+        if (!entity || typeof entity !== "object") continue;
+        const id = (entity as { id?: unknown }).id;
+        const name = (entity as { name?: unknown }).name;
+        if (typeof id === "string" && typeof name === "string") {
+          result.push({ id, name });
+        }
+      }
+    } else if (nested && typeof nested === "object") {
+      const id = (nested as { id?: unknown }).id;
+      const name = (nested as { name?: unknown }).name;
+      if (typeof id === "string" && typeof name === "string") {
+        result.push({ id, name });
+      }
+    }
+  }
+  return result;
+};
+
 const clampLimit = (limit?: number | null) => {
   if (typeof limit !== "number" || Number.isNaN(limit) || limit <= 0) return DEFAULT_LIMIT;
   return Math.min(Math.floor(limit), MAX_LIMIT);
 };
 
-const resolveMode = (modeId: string | undefined | null): ModeDefinition => {
-  if (!modeId) return DEFAULT_MODE;
-  const normalized = modeId.toLowerCase();
-  return MODE_DEFINITIONS.find((mode) => mode.id === normalized) ?? DEFAULT_MODE;
-};
+const sanitizePrompt = (prompt?: string | null): string => (prompt ?? "").trim().slice(0, 120);
 
-const mergeIntent = (base: CustomIntent, override?: CustomIntent | null): CustomIntent => {
-  if (!override) return base;
-  return {
-    duration: override.duration ?? base.duration,
-    mood: override.mood ?? base.mood,
-    context: override.context ?? base.context,
-  };
-};
-
-const summarizeIntent = (intent: CustomIntent): string => {
-  const parts: string[] = [];
-  if (intent.duration) {
-    parts.push(
-      intent.duration === "short" ? "短時間" : intent.duration === "medium" ? "標準的な尺" : "じっくり観られる尺",
-    );
-  }
-  if (intent.mood) {
-    const moodMap: Record<string, string> = {
-      sweet: "甘めの雰囲気",
-      passion: "情熱的な雰囲気",
-      healing: "落ち着いた雰囲気",
-      curious: "刺激的なテーマ",
-    };
-    parts.push(moodMap[intent.mood] ?? intent.mood);
-  }
-  if (intent.context) {
-    const ctxMap: Record<string, string> = {
-      solo: "ひとり時間",
-      partner: "パートナーと共有",
-      restricted: "視聴環境に制約あり",
-    };
-    parts.push(ctxMap[intent.context] ?? intent.context);
-  }
-  return parts.length > 0 ? parts.join(" / ") : "おまかせ";
-};
+const extractKeywords = (prompt: string): string[] =>
+  prompt
+    .split(/[、。,\.\s]+/)
+    .map((word) => word.trim().toLowerCase())
+    .filter((word) => word.length > 0);
 
 const fetchPersonalized = async (
   client: ReturnType<typeof createClient>,
@@ -382,34 +278,31 @@ const pickUnique = (
   return picked;
 };
 
+interface ReasonContext {
+  summaryPrefix: string;
+  promptKeywords?: string[];
+}
+
 const buildReason = (
   item: VideoCandidate,
-  mode: ModeDefinition,
-  intentSummary: string,
+  ctx: ReasonContext,
 ): { summary: string; detail: string; highlights: string[] } => {
   const primaryTag = item.tags?.[0]?.name;
   const highlightTags = (item.tags ?? []).slice(0, 3).map((tag) => `#${tag.name}`);
   const performerName = item.performers?.[0]?.name;
 
-  const summaryParts: string[] = [];
-  summaryParts.push(mode.label);
-  if (primaryTag) summaryParts.push(`「${primaryTag}」要素に注目`);
-  if (item.score) summaryParts.push(`適合度 ${(item.score * 100).toFixed(0)}%`);
+  const summaryParts: string[] = [ctx.summaryPrefix];
+  if (primaryTag) summaryParts.push(`「${primaryTag}」`);
+  if (item.score) summaryParts.push(`スコア ${(item.score * 100).toFixed(0)}%`);
   const summary = summaryParts.join(" / ");
 
   const detailParts: string[] = [];
-  detailParts.push(intentSummary);
-  if (highlightTags.length > 0) {
-    detailParts.push(`タグ: ${highlightTags.join(" ")}`);
-  }
-  if (performerName) {
-    detailParts.push(`出演: ${performerName}`);
-  }
-  if (item.popularity_score) {
-    detailParts.push(`人気指標 ${item.popularity_score.toLocaleString("ja-JP")}`);
-  }
-  if (item.product_released_at) {
-    detailParts.push(`リリース: ${item.product_released_at.slice(0, 10)}`);
+  if (highlightTags.length > 0) detailParts.push(`タグ: ${highlightTags.join(" ")}`);
+  if (performerName) detailParts.push(`出演: ${performerName}`);
+  if (item.popularity_score) detailParts.push(`人気指標 ${item.popularity_score.toLocaleString("ja-JP")}`);
+  if (item.product_released_at) detailParts.push(`リリース: ${item.product_released_at.slice(0, 10)}`);
+  if (ctx.promptKeywords && ctx.promptKeywords.length > 0) {
+    detailParts.push(`入力ワード: ${ctx.promptKeywords.join(", ")}`);
   }
 
   return {
@@ -419,86 +312,36 @@ const buildReason = (
   };
 };
 
-const toSectionItems = (
-  videos: VideoCandidate[],
-  mode: ModeDefinition,
-  intentSummary: string,
-): SectionItem[] => videos.map((video) => ({
-  id: video.id,
-  title: video.title,
-  thumbnail_url: video.thumbnail_url,
-  product_url: video.product_url,
-  sample_video_url: video.sample_video_url,
-  preview_video_url: video.preview_video_url,
-  tags: video.tags,
-  performers: video.performers,
-  duration_minutes: video.duration_minutes ?? null,
-  metrics: {
-    score: video.score,
-    popularity_score: video.popularity_score,
-    product_released_at: video.product_released_at,
-    source: video.source,
-  },
-  reason: buildReason(video, mode, intentSummary),
-}));
+const toSectionItems = (videos: VideoCandidate[], ctx: ReasonContext): SectionItem[] =>
+  videos.map((video) => ({
+    id: video.id,
+    title: video.title,
+    thumbnail_url: video.thumbnail_url,
+    product_url: video.product_url,
+    sample_video_url: video.sample_video_url,
+    preview_video_url: video.preview_video_url,
+    tags: video.tags,
+    performers: video.performers,
+    duration_minutes: video.duration_minutes ?? null,
+    metrics: {
+      score: video.score,
+      popularity_score: video.popularity_score,
+      product_released_at: video.product_released_at,
+      source: video.source,
+    },
+    reason: buildReason(video, ctx),
+  }));
 
-const buildSection = (
-  key: SectionKey,
-  ctx: {
-    personalized: VideoCandidate[];
-    trending: VideoCandidate[];
-    fresh: VideoCandidate[];
-    mode: ModeDefinition;
-    intentSummary: string;
-    limit: number;
-    used: Set<string>;
-  },
-): Section | null => {
-  switch (key) {
-    case "core_focus": {
-      const picked = pickUnique(ctx.personalized, ctx.used, ctx.limit);
-      if (picked.length === 0) return null;
-      return {
-        id: "core-focus",
-        title: "集中セット",
-        rationale: "あなたの最近のLIKE履歴と埋め込み類似度を重視したピックアップです。",
-        items: toSectionItems(picked, ctx.mode, ctx.intentSummary),
-      };
-    }
-    case "trend_heat": {
-      const picked = pickUnique(ctx.trending, ctx.used, ctx.limit);
-      if (picked.length === 0) return null;
-      return {
-        id: "trend-heat",
-        title: "トレンド速報",
-        rationale: "コミュニティ全体で人気上昇中の作品を、あなたの嗜好に近い順に並べました。",
-        items: toSectionItems(picked, ctx.mode, ctx.intentSummary),
-      };
-    }
-    case "fresh_start": {
-      const picked = pickUnique(ctx.fresh, ctx.used, ctx.limit);
-      if (picked.length === 0) return null;
-      return {
-        id: "fresh-start",
-        title: "新着フォローアップ",
-        rationale: "ここ数日の新着作品から、視聴しやすい尺や雰囲気のものを抽出しています。",
-        items: toSectionItems(picked, ctx.mode, ctx.intentSummary),
-      };
-    }
-    case "community_mix": {
-      const combined = [...ctx.personalized, ...ctx.trending];
-      const picked = pickUnique(combined, ctx.used, ctx.limit);
-      if (picked.length === 0) return null;
-      return {
-        id: "community-mix",
-        title: "コミュニティセレクト",
-        rationale: "似た嗜好のユーザーが高評価した作品と、あなたの履歴をバランス良くミックスしました。",
-        items: toSectionItems(picked, ctx.mode, ctx.intentSummary),
-      };
-    }
-    default:
-      return null;
-  }
+const matchesKeywords = (video: VideoCandidate, keywords: string[]): boolean => {
+  if (keywords.length === 0) return false;
+  const haystack = [
+    video.title ?? "",
+    ...(video.tags ?? []).map((tag) => tag.name ?? ""),
+    ...(video.performers ?? []).map((perf) => perf.name ?? ""),
+  ]
+    .join(" ")
+    .toLowerCase();
+  return keywords.some((keyword) => haystack.includes(keyword));
 };
 
 const parseRequestPayload = async (req: Request): Promise<RequestPayload> => {
@@ -507,16 +350,13 @@ const parseRequestPayload = async (req: Request): Promise<RequestPayload> => {
     if (!json || typeof json !== "object") return {};
     const payload = json as Record<string, unknown>;
     return {
-      mode_id: typeof payload.mode_id === "string" ? payload.mode_id : undefined,
-      custom_intent: typeof payload.custom_intent === "object" && payload.custom_intent !== null
-        ? payload.custom_intent as CustomIntent
-        : undefined,
+      prompt: typeof payload.prompt === "string" ? payload.prompt : undefined,
       limit_per_section: typeof payload.limit_per_section === "number" ? payload.limit_per_section : undefined,
     };
   }
   const url = new URL(req.url);
   return {
-    mode_id: url.searchParams.get("mode_id") ?? undefined,
+    prompt: url.searchParams.get("prompt") ?? undefined,
     limit_per_section: url.searchParams.has("limit_per_section")
       ? Number(url.searchParams.get("limit_per_section"))
       : undefined,
@@ -534,10 +374,9 @@ Deno.serve(async (req) => {
 
   try {
     const payload = await parseRequestPayload(req);
-    const resolvedMode = resolveMode(payload.mode_id);
     const limitPerSection = clampLimit(payload.limit_per_section);
-    const intent = mergeIntent(resolvedMode.defaultIntent, payload.custom_intent ?? null);
-    const intentSummary = summarizeIntent(intent);
+    const normalizedPrompt = sanitizePrompt(payload.prompt);
+    const promptKeywords = extractKeywords(normalizedPrompt);
 
     const authHeader = req.headers.get("Authorization") ?? "";
     const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
@@ -558,7 +397,7 @@ Deno.serve(async (req) => {
 
     const [personalized, trending, fresh] = await Promise.all([
       fetchPersonalized(supabase, userId, limitPerSection),
-      fetchTrending(supabase, limitPerSection, intent.context === "partner" ? 14 : 7),
+      fetchTrending(supabase, limitPerSection, 7),
       fetchFresh(supabase, limitPerSection),
     ]);
 
@@ -579,47 +418,76 @@ Deno.serve(async (req) => {
 
     const used = new Set<string>();
     const sections: Section[] = [];
-    for (const key of resolvedMode.sectionOrder) {
-      const section = buildSection(key, {
-        personalized: enhancedPersonalized,
-        trending: enhancedTrending,
-        fresh: enhancedFresh,
-        mode: resolvedMode,
-        intentSummary,
-        limit: limitPerSection,
-        used,
+
+    const personalizedItems = pickUnique(enhancedPersonalized, used, limitPerSection);
+    if (personalizedItems.length > 0) {
+      sections.push({
+        id: "for-you",
+        title: "あなたに合わせた提案",
+        rationale: "LIKE 履歴と埋め込み類似度から抽出した作品です。",
+        items: toSectionItems(personalizedItems, { summaryPrefix: "あなた向け" }),
       });
-      if (section && section.items.length > 0) {
-        sections.push(section);
-      }
+    }
+
+    const trendingItems = pickUnique(enhancedTrending, used, limitPerSection);
+    if (trendingItems.length > 0) {
+      sections.push({
+        id: "trend-now",
+        title: "みんなが観ているトレンド",
+        rationale: "コミュニティ全体で人気が高まっている作品をピックアップしました。",
+        items: toSectionItems(trendingItems, { summaryPrefix: "トレンド" }),
+      });
+    }
+
+    const freshItems = pickUnique(enhancedFresh, used, limitPerSection);
+    if (freshItems.length > 0) {
+      sections.push({
+        id: "fresh-releases",
+        title: "新着ピックアップ",
+        rationale: "発売日が新しい順に、注目度の高い作品を並べています。",
+        items: toSectionItems(freshItems, { summaryPrefix: "新着" }),
+      });
+    }
+
+    const promptCandidates = promptKeywords.length > 0
+      ? [...enhancedPersonalized, ...enhancedTrending, ...enhancedFresh].filter((video) => matchesKeywords(video, promptKeywords))
+      : [...enhancedPersonalized, ...enhancedTrending];
+
+    const promptItems = pickUnique(promptCandidates, used, limitPerSection);
+    if (promptItems.length > 0) {
+      sections.push({
+        id: "prompt-match",
+        title: promptKeywords.length > 0 ? "気分キーワードとマッチ" : "AIセレクト（気分未入力）",
+        rationale: promptKeywords.length > 0
+          ? `入力ワード: ${promptKeywords.join(", ")}`
+          : "キーワードが未入力でも、AI があなた向けとトレンドの余白から再提案します。",
+        items: toSectionItems(promptItems, {
+          summaryPrefix: promptKeywords.length > 0 ? "気分マッチ" : "AIセレクト",
+          promptKeywords,
+        }),
+      });
     }
 
     if (sections.length === 0) {
-      const fallbackItems = pickUnique([...enhancedTrending, ...enhancedFresh], used, limitPerSection);
-      if (fallbackItems.length > 0) {
+      const fallback = pickUnique([...enhancedTrending, ...enhancedFresh], used, limitPerSection);
+      if (fallback.length > 0) {
         sections.push({
           id: "fallback",
           title: "おすすめセット",
-          rationale: "コンテンツ数が少なかったため、最新と人気の作品をミックスしました。",
-          items: toSectionItems(fallbackItems, resolvedMode, intentSummary),
+          rationale: "十分な候補が得られなかったため、人気と新着をミックスしました。",
+          items: toSectionItems(fallback, { summaryPrefix: "おすすめ" }),
         });
       }
     }
 
     const responseBody = {
       generated_at: new Date().toISOString(),
-      mode: {
-        id: resolvedMode.id,
-        label: resolvedMode.label,
-        description: resolvedMode.description,
-        rationale: resolvedMode.rationale,
-        custom_intent: intent,
-      },
       sections,
       metadata: {
         personalized_candidates: personalized.length,
         trending_candidates: trending.length,
         fresh_candidates: fresh.length,
+        prompt_keywords: promptKeywords,
         has_user_context: Boolean(userId),
         limit_per_section: limitPerSection,
       },

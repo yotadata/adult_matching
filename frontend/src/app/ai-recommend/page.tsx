@@ -1,106 +1,31 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
-import {
-  Sparkles,
-  Users,
-  Clock,
-  Wand2,
-  Loader2,
-  Check,
-  RefreshCcw,
-  Info,
-  Play,
-  Flame,
-} from 'lucide-react';
-import { toast } from 'react-hot-toast';
-import { useAiRecommend, CustomIntent, AiRecommendSection } from '@/hooks/useAiRecommend';
+import { useState } from 'react';
+import Link from 'next/link';
+import { Sparkles, RefreshCcw, Info, Play, Loader2, Clapperboard, Search } from 'lucide-react';
+import { useAiRecommend, type AiRecommendSection } from '@/hooks/useAiRecommend';
 import { useAnalysisResults } from '@/hooks/useAnalysisResults';
-import { trackEvent } from '@/lib/analytics';
 
-type ModeKey = 'focus' | 'partner' | 'quick' | 'explore' | 'relax';
-
-type ModePreset = {
-  id: ModeKey;
-  label: string;
-  description: string;
-  rationale: string;
-  tone: 'energetic' | 'warm' | 'curious' | 'calm';
-  icon: React.ComponentType<{ size?: number }>;
-  defaultIntent: CustomIntent;
-};
-
-type IntentOption<T extends keyof CustomIntent> = {
-  value: NonNullable<CustomIntent[T]>;
-  label: string;
-  description: string;
-};
-
-const MODE_PRESETS: ModePreset[] = [
+const QUICK_PROMPTS = ['甘め', '刺激的', '癒やし', '探索', 'パートナーと'];
+const SEARCH_SHORTCUTS = [
   {
-    id: 'focus',
-    label: '集中して楽しむ',
-    description: '最近のLIKE傾向に寄せた、最短で満足できる作品を中心に提供します。',
-    rationale: '適合度と類似タグを重視し、迷わず視聴に移れるように構成します。',
-    tone: 'energetic',
-    icon: Sparkles,
-    defaultIntent: { duration: 'medium', mood: 'passion', context: 'solo' },
+    title: 'スワイプでサクッと探す',
+    description: 'テンポ良く LIKE/NOPE しながら直感的に選びたいとき',
+    href: '/swipe',
+    badge: 'スワイプ',
   },
   {
-    id: 'partner',
-    label: 'パートナーと',
-    description: '共有しやすいテーマや柔らかいトーンの作品を組み合わせます。',
-    rationale: 'パートナーと観ても会話が弾みやすいラインナップをバランスよく選定します。',
-    tone: 'warm',
-    icon: Users,
-    defaultIntent: { duration: 'long', mood: 'sweet', context: 'partner' },
+    title: 'タグ・出演者で深掘り',
+    description: '嗜好分析ページで最近の好みや人気タグを確認しながら探す',
+    href: '/analysis-results',
+    badge: '嗜好分析',
   },
   {
-    id: 'quick',
-    label: 'サクッと',
-    description: '空き時間で素早く楽しめる短尺・テンポ重視の候補を集めます。',
-    rationale: '視聴所要時間の短さとテンポ感に重点を置きます。',
-    tone: 'energetic',
-    icon: Clock,
-    defaultIntent: { duration: 'short', mood: 'passion', context: 'solo' },
+    title: '気になるリストをまとめる',
+    description: 'AIやスワイプで追加した「気になる」を一括で振り返る',
+    href: '/lists',
+    badge: 'リスト管理',
   },
-  {
-    id: 'explore',
-    label: '新しい刺激',
-    description: 'まだ出会っていないタグや出演者を中心に、探索的なラインナップを提示します。',
-    rationale: '似た嗜好ユーザーの最新評価や人気の揺れ動きを取り込みます。',
-    tone: 'curious',
-    icon: Wand2,
-    defaultIntent: { duration: 'medium', mood: 'curious', context: 'solo' },
-  },
-  {
-    id: 'relax',
-    label: '落ち着いて観る',
-    description: '静かなトーンでじっくり観られる作品をピックアップします。',
-    rationale: '穏やかなテンポや癒やし系のタグを優先し、リラックスできる構成にします。',
-    tone: 'calm',
-    icon: Users,
-    defaultIntent: { duration: 'long', mood: 'healing', context: 'solo' },
-  },
-];
-
-const DURATION_OPTIONS: IntentOption<'duration'>[] = [
-  { value: 'short', label: 'ショート', description: '〜20分程度で完結' },
-  { value: 'medium', label: 'スタンダード', description: '20〜45分で満足' },
-  { value: 'long', label: 'じっくり', description: '45分以上ゆっくり楽しむ' },
-];
-
-const MOOD_OPTIONS: IntentOption<'mood'>[] = [
-  { value: 'sweet', label: '甘め', description: '柔らかく穏やかな雰囲気' },
-  { value: 'passion', label: '情熱的', description: 'テンポが良く刺激的' },
-  { value: 'healing', label: '癒やし', description: 'リラックスして観たい' },
-  { value: 'curious', label: '探索', description: 'いつもと違う刺激にチャレンジ' },
-];
-
-const CONTEXT_OPTIONS: IntentOption<'context'>[] = [
-  { value: 'solo', label: 'ひとり時間', description: 'プライベートに没入' },
-  { value: 'partner', label: 'パートナーと', description: '共有しながら楽しむ' },
-  { value: 'restricted', label: '静音必須', description: '音量制限がある環境向け' },
 ];
 
 const formatDuration = (minutes: number | null) => {
@@ -123,25 +48,13 @@ const formatDate = (value: string | null | undefined) => {
 };
 
 export default function AiRecommendPage() {
-  const [modeId, setModeId] = useState<ModeKey>('focus');
-  const activePreset = useMemo(
-    () => MODE_PRESETS.find((preset) => preset.id === modeId) ?? MODE_PRESETS[0],
-    [modeId],
-  );
-  const [appliedIntent, setAppliedIntent] = useState<CustomIntent>(activePreset.defaultIntent);
-  const [draftIntent, setDraftIntent] = useState<CustomIntent>(activePreset.defaultIntent);
+  const [promptInput, setPromptInput] = useState('');
+  const [appliedPrompt, setAppliedPrompt] = useState('');
   const [expandedItemId, setExpandedItemId] = useState<string | null>(null);
 
-  useEffect(() => {
-    setAppliedIntent(activePreset.defaultIntent);
-    setDraftIntent(activePreset.defaultIntent);
-    setExpandedItemId(null);
-  }, [activePreset]);
-
   const { data, loading, error, refetch } = useAiRecommend({
-    modeId,
-    customIntent: appliedIntent,
-    limitPerSection: 8,
+    prompt: appliedPrompt,
+    limitPerSection: 12,
   });
 
   const { data: analysisData } = useAnalysisResults({
@@ -152,37 +65,28 @@ export default function AiRecommendPage() {
     recentLimit: 0,
   });
 
-  const handleModeChange = (preset: ModePreset) => {
-    if (preset.id === modeId) return;
-    setModeId(preset.id);
-    setExpandedItemId(null);
-    trackEvent('ai_rec_mode_switch', {
-      mode_id: preset.id,
-      tone: preset.tone,
-    });
-  };
-
-  const handleDraftIntentChange = <K extends keyof CustomIntent>(key: K, value: NonNullable<CustomIntent[K]>) => {
-    setDraftIntent((prev) => ({
-      ...prev,
-      [key]: prev[key] === value ? prev[key] : value,
-    }));
-  };
-
-  const handleApplyCustomIntent = () => {
-    setAppliedIntent(draftIntent);
-    setExpandedItemId(null);
-    toast.success('カスタム設定を適用しました');
-    trackEvent('ai_rec_custom_apply', {
-      mode_id: modeId,
-      duration: draftIntent.duration ?? 'auto',
-      mood: draftIntent.mood ?? 'auto',
-      context: draftIntent.context ?? 'auto',
-    });
-  };
-
   const topTags = analysisData?.top_tags ?? [];
   const topPerformers = analysisData?.top_performers ?? [];
+
+  const activePromptText = appliedPrompt ? appliedPrompt : 'キーワード未設定';
+
+  const handleApplyPrompt = () => {
+    setAppliedPrompt(promptInput.trim());
+    setExpandedItemId(null);
+  };
+
+  const handleClearPrompt = () => {
+    setPromptInput('');
+    setAppliedPrompt('');
+    setExpandedItemId(null);
+  };
+
+  const handlePromptChip = (keyword: string) => {
+    setPromptInput((prev) => {
+      if (prev.includes(keyword)) return prev;
+      return prev.trim().length > 0 ? `${prev} ${keyword}` : keyword;
+    });
+  };
 
   const renderSection = (section: AiRecommendSection) => (
     <section key={section.id} className="rounded-2xl bg-white/85 backdrop-blur border border-white/60 shadow-lg p-6 flex flex-col gap-4">
@@ -195,55 +99,48 @@ export default function AiRecommendPage() {
           <p className="text-sm text-gray-600 mt-1">{section.rationale}</p>
         </div>
       </header>
-      <div className="flex gap-4 overflow-x-auto pb-2">
+      <div className="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory">
         {section.items.map((item) => {
           const composedId = `${section.id}:${item.id}`;
           const isExpanded = expandedItemId === composedId;
           return (
             <article
               key={item.id}
-              className="w-[280px] shrink-0 rounded-2xl bg-white border border-gray-100 shadow-md flex flex-col overflow-hidden"
+              className="min-w-[220px] max-w-[220px] rounded-xl bg-white border border-gray-100 shadow-sm flex flex-col overflow-hidden text-sm snap-start"
             >
-              <div className="relative w-full aspect-[3/2] bg-gray-200">
+              <div className="relative w-full aspect-[16/9] bg-gray-200">
                 {item.thumbnail_url ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={item.thumbnail_url} alt={item.title ?? 'thumbnail'} className="absolute inset-0 w-full h-full object-cover" />
                 ) : (
                   <div className="absolute inset-0 flex items-center justify-center text-gray-400 text-sm">No Image</div>
                 )}
-                <div className="absolute top-2 right-2 bg-white/90 text-xs px-2 py-1 rounded-full text-gray-700">
-                  {item.metrics.source === 'personalized' ? 'Personal' : item.metrics.source === 'trending' ? 'Trend' : 'Fresh'}
+                <div className="absolute top-2 right-2 bg-white/90 text-[11px] px-1.5 py-0.5 rounded-full text-gray-700 capitalize">
+                  {item.metrics.source}
                 </div>
               </div>
-              <div className="flex flex-col gap-3 p-4 flex-1">
-                <div>
-                  <h4 className="text-sm font-bold text-gray-900 line-clamp-2">{item.title ?? 'タイトル未設定'}</h4>
-                  <div className="mt-1 text-xs text-gray-500 flex flex-wrap gap-1">
+              <div className="flex flex-col gap-2.5 p-3 flex-1">
+                <div className="space-y-1">
+                  <h4 className="text-[13px] font-semibold text-gray-900 line-clamp-2">{item.title ?? 'タイトル未設定'}</h4>
+                  <div className="text-[11px] text-gray-500 flex flex-wrap gap-1">
                     {item.tags.slice(0, 3).map((tag) => (
-                      <span key={tag.id} className="px-1.5 py-0.5 bg-gray-100 rounded-full border border-gray-200 text-gray-600">
+                      <span key={tag.id} className="px-1 py-0.5 bg-gray-100 rounded-full border border-gray-200 text-gray-600">
                         #{tag.name}
                       </span>
                     ))}
                   </div>
                 </div>
-                <div className="space-y-1 text-xs text-gray-500">
-                  <p>{item.reason.summary}</p>
+                <div className="space-y-1 text-[12px] text-gray-500">
+                  <p className="leading-tight">{item.reason.summary}</p>
                   <button
                     type="button"
                     onClick={() => {
-                      const nextId = isExpanded ? null : composedId;
-                      setExpandedItemId(nextId);
-                      trackEvent('ai_rec_reason_expand', {
-                        mode_id: modeId,
-                        section_id: section.id,
-                        video_id: item.id,
-                        expanded: nextId !== null,
-                      });
+                      setExpandedItemId(isExpanded ? null : composedId);
                     }}
-                    className="inline-flex items-center gap-1 text-rose-500 hover:text-rose-400 font-semibold"
+                    className="inline-flex items-center gap-1 text-rose-500 hover:text-rose-400 font-semibold text-[11px]"
                   >
                     <Info size={14} />
-                    詳細を見る
+                    {isExpanded ? '閉じる' : '詳細を見る'}
                   </button>
                   {isExpanded ? (
                     <div className="mt-1 rounded-md bg-gray-50 border border-gray-200 p-2 text-[11px] text-gray-600 space-y-1">
@@ -263,7 +160,7 @@ export default function AiRecommendPage() {
                     </div>
                   ) : null}
                 </div>
-                <div className="mt-auto flex items-center justify-between text-xs text-gray-500">
+                <div className="mt-auto flex items-center justify-between text-[11px] text-gray-500">
                   <span>{formatDuration(item.duration_minutes ?? null)}</span>
                   <button
                     type="button"
@@ -284,37 +181,76 @@ export default function AiRecommendPage() {
     </section>
   );
 
+  const isEmpty = !loading && !error && (data?.sections.length ?? 0) === 0;
+
   return (
     <main className="w-full min-h-screen px-0 sm:px-4 py-8">
       <div className="max-w-7xl mx-auto flex flex-col gap-6">
-        <header className="rounded-3xl bg-white/20 backdrop-blur-xl border border-white/40 shadow-[0_20px_60px_rgba(0,0,0,0.25)] px-6 sm:px-10 py-8 text-white flex flex-col gap-4">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">AIコンシェルジュ</h1>
-              <p className="text-sm sm:text-base text-white/80 mt-2">
-                嗜好と気分に合わせてAIがまとめた候補セットを提示します。スワイプで評価に入る前に、どのラインを深掘りするかをここで決めましょう。
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={() => {
-                setExpandedItemId(null);
-                refetch();
-              }}
-              className="inline-flex items-center gap-2 rounded-md bg-white/20 hover:bg-white/30 px-3 py-2 text-sm font-semibold transition"
-            >
-              <RefreshCcw size={16} />
-              再生成
-            </button>
+        <section className="w-full rounded-2xl bg-white/20 backdrop-blur-xl border border-white/30 shadow-[0_20px_60px_rgba(0,0,0,0.25)] p-4 sm:p-8 flex flex-col gap-8">
+          <div className="flex flex-col gap-3 text-white">
+            <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight">AIで探す</h1>
+            <p className="text-sm text-white/80">
+              あなたのLIKE履歴・全体トレンド・今の気分キーワードをもとに、3種類のリストを自動生成します。
+            </p>
           </div>
-        </header>
 
-        <div className="grid grid-cols-1 lg:grid-cols-[320px_minmax(0,1fr)] gap-4">
-          <aside className="flex flex-col gap-4">
-            <section className="rounded-2xl bg-white/85 backdrop-blur border border-white/60 shadow-lg p-5 flex flex-col gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-4">
+            <div className="space-y-4">
+              <div className="rounded-2xl bg-white/85 backdrop-blur border border-white/60 shadow-lg p-5 flex flex-col gap-4">
+                <header>
+                  <p className="text-xs uppercase tracking-[0.4em] text-rose-500/70">今の気分</p>
+                  <h2 className="text-xl font-bold text-gray-900 mt-1">キーワードを伝えて調整</h2>
+                  <p className="text-sm text-gray-600 mt-1">気分やシチュエーションを入力すると、3つ目のセクションで優先的に反映されます。</p>
+                </header>
+                <div className="space-y-3">
+                  <textarea
+                    value={promptInput}
+                    onChange={(e) => setPromptInput(e.target.value)}
+                    placeholder="例: 甘めで癒やされたい / 今日は刺激多め / パートナーと観られるもの"
+                    rows={3}
+                    className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-rose-400"
+                  />
+                  <div className="flex flex-wrap gap-2">
+                    {QUICK_PROMPTS.map((keyword) => (
+                      <button
+                        key={keyword}
+                        type="button"
+                        onClick={() => handlePromptChip(keyword)}
+                        className="px-3 py-1.5 rounded-full text-xs font-semibold bg-rose-500/15 text-rose-500 hover:bg-rose-500/25"
+                      >
+                        {keyword}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={handleApplyPrompt}
+                      className="inline-flex items-center gap-2 rounded-md bg-rose-500 text-white px-4 py-2 text-sm font-semibold hover:bg-rose-600"
+                    >
+                      <Sparkles size={16} />
+                      キーワードを適用
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleClearPrompt}
+                      className="inline-flex items-center gap-2 rounded-md border border-white/40 bg-white/10 text-white px-4 py-2 text-sm font-semibold hover:bg-white/20"
+                    >
+                      クリア
+                    </button>
+                  </div>
+                  <p className="text-xs text-gray-600">現在の入力: {activePromptText}</p>
+                </div>
+              </div>
+            </div>
+
+            <aside className="rounded-2xl bg-white/80 border border-white/60 shadow-lg p-5 flex flex-col gap-4 text-gray-900">
               <header>
-                <h2 className="text-base font-bold text-gray-900">最新の嗜好スナップショット</h2>
-                <p className="text-xs text-gray-500 mt-1">直近90日のLIKE履歴から抽出した傾向です。</p>
+                <h3 className="text-base font-bold flex items-center gap-2">
+                  <Sparkles size={16} className="text-rose-500" />
+                  最近の嗜好スナップショット
+                </h3>
+                <p className="text-xs text-gray-500 mt-1">直近90日のLIKE履歴から抽出</p>
               </header>
               <div className="space-y-3 text-sm text-gray-700">
                 <div>
@@ -346,160 +282,64 @@ export default function AiRecommendPage() {
                   </div>
                 </div>
               </div>
-            </section>
-
-            <section className="rounded-2xl bg-white/85 backdrop-blur border border-white/60 shadow-lg p-5 flex flex-col gap-4">
-              <header>
-                <h3 className="text-base font-bold text-gray-900">モードを選ぶ</h3>
-                <p className="text-xs text-gray-500 mt-1">目的に合わせてAIが提案するセットを切り替えます。</p>
-              </header>
-              <div className="flex flex-col gap-3">
-                {MODE_PRESETS.map((preset) => {
-                  const Icon = preset.icon;
-                  const active = preset.id === modeId;
-                  return (
-                    <button
-                      key={preset.id}
-                      type="button"
-                      onClick={() => handleModeChange(preset)}
-                      className={`rounded-xl border px-4 py-3 text-left transition ${
-                        active
-                          ? 'border-rose-400 bg-rose-500/10 text-rose-600 shadow-sm'
-                          : 'border-gray-200 hover:border-rose-200 hover:bg-rose-50 text-gray-700'
-                      }`}
-                    >
-                      <div className="flex items-start gap-3">
-                        <div className="mt-1">
-                          <Icon size={18} />
-                        </div>
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-semibold">{preset.label}</span>
-                            {active ? (
-                              <span className="inline-flex items-center gap-1 text-xs text-rose-500">
-                                <Check size={14} />
-                                選択中
-                              </span>
-                            ) : null}
-                          </div>
-                          <p className="text-xs text-gray-500 mt-1">{preset.description}</p>
-                        </div>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            </section>
-
-            <section className="rounded-2xl.bg-white/85 backdrop-blur border border-white/60 shadow-lg p-5 flex flex-col gap-4">
-              <header>
-                <h3 className="text-base font-bold text-gray-900">カスタムモード</h3>
-                <p className="text-xs text-gray-500.mt-1">気分に合わせて細かくチューニングし、AIに再提案させます。</p>
-              </header>
-              <div className="flex flex-col gap-3 text-sm">
-                <IntentSelector
-                  label="視聴時間の目安"
-                  options={DURATION_OPTIONS}
-                  current={draftIntent.duration ?? null}
-                  onSelect={(value) => handleDraftIntentChange('duration', value)}
-                />
-                <IntentSelector
-                  label="雰囲気"
-                  options={MOOD_OPTIONS}
-                  current={draftIntent.mood ?? null}
-                  onSelect={(value) => handleDraftIntentChange('mood', value)}
-                />
-                <IntentSelector
-                  label="視聴環境"
-                  options={CONTEXT_OPTIONS}
-                  current={draftIntent.context ?? null}
-                  onSelect={(value) => handleDraftIntentChange('context', value)}
-                />
-              </div>
-              <button
-                type="button"
-                onClick={handleApplyCustomIntent}
-                className="inline-flex items-center justify-center gap-2 rounded-md bg-gray-900 text-white px-3 py-2 text-sm font-semibold hover:bg-gray-800 transition"
-              >
-                <Wand2 size={16} />
-                AIに依頼
-              </button>
-              <p className="text-[11px] text-gray-500">
-                適用すると右側の提案が更新されます。結果が合わない場合はモードを切り替えて再度試してください。
-              </p>
-            </section>
-          </aside>
-
-          <div className="flex flex-col gap-4">
-            {loading ? (
-              <div className="rounded-2xl bg-white/85 backdrop-blur border border-white/60 shadow-lg p-12 flex flex-col items-center justify-center gap-3 text-gray-600">
-                <Loader2 className="animate-spin" size={28} />
-                <p className="text-sm">AIが最適な組み合わせを考えています…</p>
-              </div>
-            ) : null}
-            {error ? (
-              <div className="rounded-2xl bg-red-100 border border-red-200 text-red-700 p-4 text-sm">
-                {error}
-              </div>
-            ) : null}
-            {data?.sections?.length
-              ? data.sections.map((section) => renderSection(section))
-              : (!loading && !error) ? (
-                <div className="rounded-2xl bg-white/85 backdrop-blur border border-white/60 shadow-lg p-10 text-center text-gray-500">
-                  提案できる候補が見つかりませんでした。モードやカスタム設定を見直して再生成してください。
-                </div>
-              ) : null}
+            </aside>
           </div>
-        </div>
+        </section>
+
+        {error ? (
+          <div className="rounded-2xl bg-red-500/10 border border-red-400/40 text-red-600 px-4 py-3">
+            {error}
+          </div>
+        ) : null}
+
+        {loading ? (
+          <div className="grid gap-4">
+            {Array.from({ length: 3 }).map((_, idx) => (
+              <div key={`skeleton-${idx}`} className="h-64 rounded-2xl bg-white/10 backdrop-blur border border-white/20 animate-pulse" />
+            ))}
+          </div>
+        ) : isEmpty ? (
+          <div className="rounded-2xl bg-white/80 border border-white/60 shadow-lg p-6 text-center text-gray-600">
+            候補を取得できませんでした。キーワードを変えて再度お試しください。
+          </div>
+        ) : (
+          data?.sections.map(renderSection)
+        )}
+
+        {!loading && (
+          <section className="rounded-2xl bg-white/85 border border-white/60 shadow-lg p-6 flex flex-col gap-4">
+            <header className="flex flex-col gap-1">
+              <p className="text-xs uppercase tracking-[0.35em] text-gray-400">検索ショートカット</p>
+              <h3 className="text-lg font-bold text-gray-900">もっと探したいときは</h3>
+              <p className="text-sm text-gray-600">AI棚で気になったあとに、従来の探し方へすぐ移れます。</p>
+            </header>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              {SEARCH_SHORTCUTS.map((shortcut) => (
+                <Link
+                  key={shortcut.href}
+                  href={shortcut.href}
+                  className="group rounded-2xl border border-gray-200 bg-white/80 p-4 flex flex-col gap-2 hover:border-gray-400 transition"
+                >
+                  <div className="flex items-center gap-2 text-xs font-semibold text-rose-500">
+                    <Search size={14} />
+                    {shortcut.badge}
+                  </div>
+                  <h4 className="text-base font-bold text-gray-900 group-hover:text-gray-700">{shortcut.title}</h4>
+                  <p className="text-sm text-gray-600">{shortcut.description}</p>
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
       </div>
     </main>
   );
 }
 
-function IntentSelector<T extends keyof CustomIntent>({
-  label,
-  options,
-  current,
-  onSelect,
-}: {
-  label: string;
-  options: IntentOption<T>[];
-  current: CustomIntent[T] | null;
-  onSelect: (value: IntentOption<T>['value']) => void;
-}) {
-  return (
-    <div className="flex flex-col gap-2">
-      <p className="text-xs font-semibold text-gray-500">{label}</p>
-      <div className="grid grid-cols-1 gap-2">
-        {options.map((option) => {
-          const active = option.value === current;
-          return (
-            <button
-              type="button"
-              key={option.value}
-              onClick={() => onSelect(option.value)}
-              className={`rounded-lg border px-3 py-2 text-left transition ${
-                active
-                  ? 'border-rose-400 bg-rose-500/10 text-rose-600 shadow-sm'
-                  : 'border-gray-200 hover:border-rose-200 hover:bg-rose-50 text-gray-700'
-              }`}
-            >
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-sm font-semibold">{option.label}</span>
-                {active ? <Check size={16} className="text-rose-500" /> : null}
-              </div>
-              <p className="text-xs text-gray-500 mt-1">{option.description}</p>
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
 function LayersIcon({ sectionId }: { sectionId: string }) {
-  if (sectionId.includes('trend')) return <Flame size={18} className="text-orange-400" />;
-  if (sectionId.includes('fresh')) return <Sparkles size={18} className="text-rose-400" />;
-  if (sectionId.includes('community')) return <Users size={18} className="text-indigo-400" />;
-  return <Clock size={18} className="text-gray-500" />;
+  if (sectionId.includes('prompt')) return <Sparkles size={18} className="text-rose-500" />;
+  if (sectionId.includes('trend')) return <RefreshCcw size={18} className="text-indigo-500" />;
+  if (sectionId.includes('fresh')) return <Clapperboard size={18} className="text-orange-500" />;
+  if (sectionId.includes('fallback')) return <Loader2 size={18} className="text-gray-500" />;
+  return <Loader2 size={18} className="text-emerald-500" />;
 }
