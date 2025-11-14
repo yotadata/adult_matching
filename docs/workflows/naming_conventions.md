@@ -24,8 +24,7 @@
 | `.github/workflows/apprelease-release.yml` | `[AppRelease] Ops - Release Pipeline` | AppRelease / Ops |
 | `.github/workflows/cicd-deploy-functions.yml` | `[CiCd] Ops - Deploy Supabase Edge Functions` | CiCd / Ops |
 | `.github/workflows/cicd-deploy-db.yml` | `[CiCd] Sub - Deploy DB Migrations` | CiCd / Sub |
-| `.github/workflows/cicd-deploy-docs.yml` | `[CiCd] Sub - Deploy Docs` | CiCd / Sub |
-| `.github/workflows/cicd-deploy-db-docs.yml` | `[CiCd] Sub - Deploy DB Docs` | CiCd / Sub |
+| `.github/workflows/cicd-pr-tests.yml` | `[CiCd] Ops - PR Test Suite` | CiCd / Ops |
 
 ### 未整備のワークフロー
 

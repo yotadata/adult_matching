@@ -163,6 +163,8 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwi
         )}
         {/* iframe 埋め込み（litevideo） */}
         <iframe
+          scrolling="no"
+          referrerPolicy="no-referrer"
           src={cardData.embedUrl || cardData.videoUrl}
           title="Embedded Video Player"
           frameBorder="0"
@@ -175,7 +177,7 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwi
               overlayHideTimer.current = null;
             }, overlayHideDelayMs);
           }}
-          className="absolute top-0 left-0 w-full h-full"
+          className="absolute top-0 left-0 w-full h-full overflow-hidden"
         />
         {/* 外部タブ再生リンクは非表示にする */}
       </div>

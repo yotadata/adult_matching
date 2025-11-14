@@ -91,6 +91,8 @@ const MobileVideoLayout: React.FC<MobileVideoLayoutProps> = ({ cardData, onSkip,
           )}
           {/* iframe 埋め込み（litevideo） */}
           <iframe
+            scrolling="no"
+            referrerPolicy="no-referrer"
             src={cardData.embedUrl || cardData.videoUrl}
             title="Embedded video"
             frameBorder="0"
@@ -103,7 +105,7 @@ const MobileVideoLayout: React.FC<MobileVideoLayoutProps> = ({ cardData, onSkip,
                 overlayHideTimer.current = null;
               }, overlayHideDelayMs);
             }}
-            className="absolute inset-0 w-full h-full"
+            className="absolute inset-0 w-full h-full overflow-hidden"
           />
               {/* 外部タブ再生リンクは非表示にする */}
             </div>
