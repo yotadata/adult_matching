@@ -18,29 +18,34 @@
 3. 「甘め」「刺激的」など少ない入力で気分に合わせた AI 推薦を得る。
 4. さらに深掘りしたい場合にタグ/出演者/通常検索へ遷移し、同じ画面内で探索を継続する。
 
-## 画面要件（`frontend/src/app/ai-recommend/page.tsx`）
-- **ヒーロー**：タイトル・説明文・「再取得」ボタン（`refetch`）。一言で「AI棚を見渡す」価値を訴求。
-- **気分入力カード**：テキストエリア＋チップ。`prompt` として API に送信し、適用/クリアで `appliedPrompt` を更新。入力していない時でも他セクションが並ぶ。
+## 画面要件（`frontend/src/app/search/page.tsx`）
+- **ヒーロー**：タイトルとサマリーのみ。操作ボタンは置かず、初期表示で多量のサムネイルに視線を集める。
+- **プリセット入力（コンパクト）**：タグ/出演者をミニチップで提示し、タップで `選択済みタグ/出演者` が追加される。1行のインライン入力は「補助的に自由入力したい場合のみ」用意し、常に閉じた状態でカード欄を圧迫しない。適用時に `selectedTags/selectedPerformers` を API へ渡し、サムネイルセクションが即座に再描画される。
 - **嗜好スナップショット**：直近90日の Topタグ/出演者（`useAnalysisResults`）をカード化。自分の好みを思い出すためのサマリ。
-- **サムネイルグリッド**：各セクションを横スクロールだけでなく 2〜3 行のタイルグリッドとして描画し、YouTube 的に複数枚が一望できる。セクション内のカードにはタイトル/タグ/理由/作品リンク/プレビューを含め、必要に応じ理由を折りたたむ。
+- **サムネイルレール**：各セクションは 1 行の横スクロールレールで 12 枚を並べる（カードは 16:9 / 220px 程度）。縦方向のスクロール量を抑え、サムネイルが主役になるレイアウトにする。
 - **検索ショートカット**：通常検索・タグ絞り込み・出演者検索へのリンク/ボタンを同じページ下部に配置し、AI棚の閲覧から直ちに遷移できる。
 - **状態表示**：ローディング骨組み（タイル版）、エラー（赤バナー）、候補ゼロ（空状態カード）を用意。
 
 ## バックエンド要件（`supabase/functions/ai-recommend`）
-- リクエスト: `POST|GET { prompt?: string, limit_per_section?: number }`
+- リクエスト: `POST|GET { prompt?: string, limit_per_section?: number, tag_ids?: string[], performer_ids?: string[] }`
 - **最低構成セクション**
   1. `for-you`: `get_videos_recommendations` （ユーザー埋め込み）から取得。
   2. `trend-now`: `get_popular_videos` （過去7日）。
   3. `fresh-releases`: `videos` テーブルから product_released_at / published_at を基準に新着順で取得。
-  4. `prompt-match`: キーワード部分一致。未入力時は気分入力セクションとは独立して `fresh-releases` とは別ソースで最新/関連作品を引く。
+  4. `prompt-match`: `tag_ids` と `performer_ids` を最優先フィルタに使い、足りない分を任意キーワードや for-you/trend 余剰で補完。未指定時は AI セレクトとして for-you/trend の残り候補から提案する。
 - 追加で `fresh-picks`（最新リリース）や `hot-tags` などを順次拡張し、セクション数を増やしてもレスポンスを 1 API で返す。
 - 各候補は `hydrateVideoDetails` で product_url / preview_url / duration を補完し、`pickUnique` で重複を避ける。
 - レスポンス: `{ generated_at, sections[], metadata }`（候補件数、キーワード、ユーザー文脈、セクション上限を含む）。
 - fallback: すべて空の際はトレンド+新着をミックスした「おすすめセット」を返し、UI 側では空状態にしない。
 
+### プリセット入力のサーバ処理
+- `tag_ids` / `performer_ids` は最大 5 件ずつ。`prompt-match` はまずこれら ID に一致する動画を `videos`, `video_tags`, `video_performers` から取得する。
+- ID で足りない場合は `extractKeywords(prompt)` を使ってタイトル/タグ名/出演者名の部分一致で補完する。
+- レスポンス `metadata` に `selected_tag_ids`, `selected_performer_ids` を含め、フロントで選択状態を復元できるようにする。
+
 ## 主要な挙動
-- **適用ボタン**: `promptInput` を `appliedPrompt` へ反映→ `useAiRecommend` を再実行。`expandedItemId` を `null` に戻す。
-- **チップ追加**: 既に含まれていないキーワードのみ追記。
+- **プリセット選択**: チップのタップで `selectedTags/Performers` がトグルされ、適用ボタンを押すと `useAiRecommend` を再実行。次回アクセス時に直近の選択をサジェストする。
+- **簡易入力**: インライン入力は 20 文字程度に制限し、自然文ではなくタグ候補へのショートカットとして扱う（実際はタグ/出演者IDに変換可能なもののみ送信）。
 - **セクション描画**: `LayersIcon` でセクションIDに応じたアイコン/色を表示（for-you=緑、trend=青、prompt=ピンク）。
 - **説明文**: Edge Function が `reason.summary/detail` を返し、カード内で表示する。
 

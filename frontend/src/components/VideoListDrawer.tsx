@@ -28,6 +28,8 @@ export interface VideoRecord {
   source: string;
   published_at?: string;
   product_url?: string;
+  tags?: Array<{ id: string; name: string }>;
+  performers?: Array<{ id: string; name: string }>;
 }
 
 export type TagFilterOption = { id: string; name: string; cnt?: number };

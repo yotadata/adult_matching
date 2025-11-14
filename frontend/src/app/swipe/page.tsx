@@ -341,14 +341,17 @@ export default function Home() {
         user_id: user.id,
         video_id: d.video_id,
         decision_type: d.decision_type,
+        created_at: d.created_at ?? new Date().toISOString(),
         recommendation_source: d.recommendation_source ?? null,
         recommendation_score: d.recommendation_score ?? null,
         recommendation_model_version: d.recommendation_model_version ?? null,
         recommendation_params: d.recommendation_params ?? null,
       }));
-      const { error } = await supabase.from('user_video_decisions').insert(chunk);
+      const { error } = await supabase
+        .from('user_video_decisions')
+        .upsert(chunk, { onConflict: 'user_id,video_id' });
       if (error) {
-        console.error('Error flushing guest decisions:', error);
+        console.error('Error flushing guest decisions:', error?.message ?? error);
         return;
       }
     }
