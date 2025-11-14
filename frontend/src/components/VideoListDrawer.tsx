@@ -234,133 +234,135 @@ export default function VideoListDrawer({
                     mobileShowFilters ? 'flex' : 'hidden'
                   } sm:flex`}
                 >
+                  <div className="space-y-3">
+                    <div className="space-y-1 text-xs text-gray-600">
+                      <div>
+                        <span className="mt-2 text-xs font-semibold text-gray-500">並び替え</span>
+                      </div>
+                      <div className="flex gap-2">
+                        <select
+                          value={sort}
+                          onChange={(e) => onChangeSort(e.target.value as SortKey)}
+                          className="flex-1 rounded-xl border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
+                        >
+                          <option value="liked_at">LIKE日時</option>
+                          <option value="released">発売日</option>
+                          <option value="price">価格</option>
+                          <option value="title">タイトル</option>
+                        </select>
+                        <select
+                          value={order}
+                          onChange={(e) => onChangeOrder(e.target.value as SortOrder)}
+                          className="w-28 rounded-xl border border-gray-200 bg-white px-2 py-1.5 text-sm text-gray-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
+                        >
+                          <option value="desc">降順</option>
+                          <option value="asc">昇順</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+
                   <div className="space-y-2">
                     <div>
                       <span className="mt-2 text-xs font-semibold text-gray-500">検索 / 絞り込み</span>
                     </div>
-                    <div className="space-y-3">
-                      <div className="space-y-1">
-                        <label className="text-[11px] text-gray-600">タグ名で検索</label>
-                        {selectedTagIds.length > 0 && (
-                          <div className="flex flex-wrap gap-2 text-[11px]">
-                            {selectedTagIds.map((id) => {
-                              const name = tagOptions.find((t) => t.id === id)?.name || id;
-                              return (
-                                <button
-                                  key={`selected-tag-${id}`}
-                                  onClick={() => onToggleTag(id)}
-                                  className="px-2 py-1 rounded-full border border-rose-500/60 bg-rose-100 text-rose-600"
-                                >
-                                  #{name} ×
-                                </button>
-                              );
-                            })}
+                    <div className="space-y-1">
+                      <label className="text-[11px] text-gray-600">タグ名で検索</label>
+                      {selectedTagIds.length > 0 && (
+                        <div className="flex flex-wrap gap-2 text-[11px]">
+                          {selectedTagIds.map((id) => {
+                            const name = tagOptions.find((t) => t.id === id)?.name || id;
+                            return (
+                              <button
+                                key={`selected-tag-${id}`}
+                                onClick={() => onToggleTag(id)}
+                                className="px-2 py-1 rounded-full border border-rose-500/60 bg-rose-100 text-rose-600"
+                              >
+                                #{name} ×
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+                      <div className="relative">
+                        <Combobox value="" onChange={(val: string) => onToggleTag(val)}>
+                          <Combobox.Input
+                            onFocus={showTagDropdown}
+                            onBlur={hideTagDropdown}
+                            placeholder="タグを検索"
+                            value={tagSearch}
+                            onChange={(event) => setTagSearch(event.target.value)}
+                            className="w-full rounded-xl border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
+                          />
+                          <div className={buildOptionsClass(tagComboboxOpen, 'rounded-2xl border border-gray-200 bg-white shadow-lg max-h-48 overflow-auto')}>
+                            <Combobox.Options static className="py-2 text-sm text-gray-700">
+                              {filteredTagOptions.length === 0 ? (
+                                <p className="px-3 py-2 text-xs text-gray-400">該当するタグはありません</p>
+                              ) : (
+                                filteredTagOptions.map((tag) => (
+                                  <Combobox.Option
+                                    key={`tag-${tag.id}`}
+                                    value={tag.id}
+                                    className="px-3 py-1.5 cursor-pointer hover:bg-gray-50 flex justify-between text-sm"
+                                  >
+                                    <span>#{tag.name}</span>
+                                    {tag.cnt ? <span className="text-xs text-gray-400">{tag.cnt}</span> : null}
+                                  </Combobox.Option>
+                                ))
+                              )}
+                            </Combobox.Options>
                           </div>
-                        )}
-                        <div className="relative">
-                          <Combobox value="" onChange={(val: string) => onToggleTag(val)}>
-                            <Combobox.Input
-                              onFocus={showTagDropdown}
-                              onBlur={hideTagDropdown}
-                              placeholder="タグを検索"
-                              value={tagSearch}
-                              onChange={(event) => setTagSearch(event.target.value)}
-                              className="w-full rounded-xl border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
-                            />
-                            <div className={buildOptionsClass(tagComboboxOpen, 'rounded-2xl border border-gray-200 bg-white shadow-lg max-h-48 overflow-auto')}>
-                              <Combobox.Options static className="py-2 text-sm text-gray-700">
-                                {filteredTagOptions.length === 0 ? (
-                                  <p className="px-3 py-2 text-xs text-gray-400">該当するタグはありません</p>
-                                ) : (
-                                  filteredTagOptions.map((tag) => (
-                                    <Combobox.Option
-                                      key={`tag-${tag.id}`}
-                                      value={tag.id}
-                                      className="px-3 py-1.5 cursor-pointer hover:bg-gray-50 flex justify-between text-sm"
-                                    >
-                                      <span>#{tag.name}</span>
-                                      {tag.cnt ? <span className="text-xs text-gray-400">{tag.cnt}</span> : null}
-                                    </Combobox.Option>
-                                  ))
-                                )}
-                              </Combobox.Options>
-                            </div>
-                          </Combobox>
-                        </div>
+                        </Combobox>
                       </div>
+                    </div>
 
-                      <div className="space-y-1">
-                        <label className="text-[11px] text-gray-600">出演者で検索</label>
-                        {selectedPerformerIds.length > 0 && (
-                          <div className="flex flex-wrap gap-2 text-[11px]">
-                            {selectedPerformerIds.map((id) => {
-                              const name = performerOptions.find((p) => p.id === id)?.name || id;
-                              return (
-                                <button
-                                  key={`perf-${id}`}
-                                  onClick={() => onTogglePerformer(id)}
-                                  className="px-2 py-1 rounded-full border border-indigo-500/60 bg-indigo-100 text-indigo-600"
-                                >
-                                  {name} ×
-                                </button>
-                              );
-                            })}
+                    <div className="space-y-1">
+                      <label className="text-[11px] text-gray-600">出演者で検索</label>
+                      {selectedPerformerIds.length > 0 && (
+                        <div className="flex flex-wrap gap-2 text-[11px]">
+                          {selectedPerformerIds.map((id) => {
+                            const name = performerOptions.find((p) => p.id === id)?.name || id;
+                            return (
+                              <button
+                                key={`perf-${id}`}
+                                onClick={() => onTogglePerformer(id)}
+                                className="px-2 py-1 rounded-full border border-indigo-500/60 bg-indigo-100 text-indigo-600"
+                              >
+                                {name} ×
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+                      <div className="relative">
+                        <Combobox value="" onChange={(val: string) => onTogglePerformer(val)}>
+                          <Combobox.Input
+                            onFocus={showPerformerDropdown}
+                            onBlur={hidePerformerDropdown}
+                            placeholder="出演者を検索"
+                            value={performerSearch}
+                            onChange={(event) => setPerformerSearch(event.target.value)}
+                            className="w-full rounded-xl border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                          />
+                          <div className={buildOptionsClass(performerComboboxOpen, 'rounded-2xl border border-gray-200 bg-white shadow-lg max-h-48 overflow-auto')}>
+                            <Combobox.Options static className="py-2 text-sm text-gray-700">
+                              {filteredPerformerOptions.length === 0 ? (
+                                <p className="px-3 py-2 text-xs text-gray-400">該当する出演者がありません</p>
+                              ) : (
+                                filteredPerformerOptions.map((performer) => (
+                                  <Combobox.Option
+                                    key={`performer-${performer.id}`}
+                                    value={performer.id}
+                                    className="px-3 py-1.5 cursor-pointer hover:bg-gray-50 flex justify-between text-sm"
+                                  >
+                                    <span>{performer.name}</span>
+                                    {performer.cnt ? <span className="text-xs text-gray-400">{performer.cnt}</span> : null}
+                                  </Combobox.Option>
+                                ))
+                              )}
+                            </Combobox.Options>
                           </div>
-                        )}
-                        <div className="relative">
-                          <Combobox value="" onChange={(val: string) => onTogglePerformer(val)}>
-                            <Combobox.Input
-                              onFocus={showPerformerDropdown}
-                              onBlur={hidePerformerDropdown}
-                              placeholder="出演者を検索"
-                              value={performerSearch}
-                              onChange={(event) => setPerformerSearch(event.target.value)}
-                              className="w-full rounded-xl border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                            />
-                            <div className={buildOptionsClass(performerComboboxOpen, 'rounded-2xl border border-gray-200 bg-white shadow-lg max-h-48 overflow-auto')}>
-                              <Combobox.Options static className="py-2 text-sm text-gray-700">
-                                {filteredPerformerOptions.length === 0 ? (
-                                  <p className="px-3 py-2 text-xs text-gray-400">該当する出演者がありません</p>
-                                ) : (
-                                  filteredPerformerOptions.map((performer) => (
-                                    <Combobox.Option
-                                      key={`performer-${performer.id}`}
-                                      value={performer.id}
-                                      className="px-3 py-1.5 cursor-pointer hover:bg-gray-50 flex justify-between text-sm"
-                                    >
-                                      <span>{performer.name}</span>
-                                      {performer.cnt ? <span className="text-xs text-gray-400">{performer.cnt}</span> : null}
-                                    </Combobox.Option>
-                                  ))
-                                )}
-                              </Combobox.Options>
-                            </div>
-                          </Combobox>
-                        </div>
-                      </div>
-
-                      <div className="space-y-1 text-xs text-gray-600">
-                        <label className="font-semibold text-gray-500">並び替え</label>
-                        <div className="flex gap-2">
-                          <select
-                            value={sort}
-                            onChange={(e) => onChangeSort(e.target.value as SortKey)}
-                            className="flex-1 rounded-xl border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
-                          >
-                            <option value="liked_at">LIKE日時</option>
-                            <option value="released">発売日</option>
-                            <option value="price">価格</option>
-                            <option value="title">タイトル</option>
-                          </select>
-                          <select
-                            value={order}
-                            onChange={(e) => onChangeOrder(e.target.value as SortOrder)}
-                            className="w-28 rounded-xl border border-gray-200 bg-white px-2 py-1.5 text-sm text-gray-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
-                          >
-                            <option value="desc">降順</option>
-                            <option value="asc">昇順</option>
-                          </select>
-                        </div>
+                        </Combobox>
                       </div>
                     </div>
                   </div>
