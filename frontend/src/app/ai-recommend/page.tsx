@@ -21,10 +21,10 @@ const SEARCH_SHORTCUTS = [
     badge: '嗜好分析',
   },
   {
-    title: 'LIKE済みを整理',
-    description: 'これまでのいいね作品を一覧で眺めて気分に合うものを再生',
-    href: '/likes',
-    badge: 'LIKE一覧',
+    title: '気になるリストをまとめる',
+    description: 'AIやスワイプで追加した「気になる」を一括で振り返る',
+    href: '/lists',
+    badge: 'リスト管理',
   },
 ];
 
@@ -99,14 +99,14 @@ export default function AiRecommendPage() {
           <p className="text-sm text-gray-600 mt-1">{section.rationale}</p>
         </div>
       </header>
-      <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3">
+      <div className="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory">
         {section.items.map((item) => {
           const composedId = `${section.id}:${item.id}`;
           const isExpanded = expandedItemId === composedId;
           return (
             <article
               key={item.id}
-              className="w-full rounded-xl bg-white border border-gray-100 shadow-sm flex flex-col overflow-hidden text-sm"
+              className="min-w-[220px] max-w-[220px] rounded-xl bg-white border border-gray-100 shadow-sm flex flex-col overflow-hidden text-sm snap-start"
             >
               <div className="relative w-full aspect-[16/9] bg-gray-200">
                 {item.thumbnail_url ? (
@@ -187,24 +187,11 @@ export default function AiRecommendPage() {
     <main className="w-full min-h-screen px-0 sm:px-4 py-8">
       <div className="max-w-7xl mx-auto flex flex-col gap-6">
         <section className="w-full rounded-2xl bg-white/20 backdrop-blur-xl border border-white/30 shadow-[0_20px_60px_rgba(0,0,0,0.25)] p-4 sm:p-8 flex flex-col gap-8">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 text-white">
-            <div>
-              <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight">AIで探す</h1>
-              <p className="text-sm text-white/80 mt-2">
-                あなたのLIKE履歴・全体トレンド・今の気分キーワードをもとに、3種類のリストを自動生成します。
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={() => {
-                setExpandedItemId(null);
-                refetch();
-              }}
-              className="inline-flex items-center gap-2 rounded-md bg-white/20 hover:bg-white/30 px-3 py-2 text-sm font-semibold transition"
-            >
-              <RefreshCcw size={16} />
-              再取得
-            </button>
+          <div className="flex flex-col gap-3 text-white">
+            <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight">AIで探す</h1>
+            <p className="text-sm text-white/80">
+              あなたのLIKE履歴・全体トレンド・今の気分キーワードをもとに、3種類のリストを自動生成します。
+            </p>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-4">
