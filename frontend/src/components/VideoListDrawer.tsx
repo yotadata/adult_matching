@@ -372,7 +372,7 @@ export default function VideoListDrawer({
                       表示中: <strong>{videos.length.toLocaleString('ja-JP')}</strong> 件
                     </span>
                     <span>
-                      LIKE 合計:{' '}
+                      検索結果:{' '}
                       <strong>{typeof totalCount === 'number' ? totalCount.toLocaleString('ja-JP') : '—'}</strong> 件
                     </span>
                   </div>
