@@ -439,19 +439,32 @@ Deno.serve(async (req) => {
       });
     }
 
+    const freshItems = pickUnique(enhancedFresh, used, limitPerSection);
+    if (freshItems.length > 0) {
+      sections.push({
+        id: "fresh-releases",
+        title: "新着ピックアップ",
+        rationale: "発売日が新しい順に、注目度の高い作品を並べています。",
+        items: toSectionItems(freshItems, { summaryPrefix: "新着" }),
+      });
+    }
+
     const promptCandidates = promptKeywords.length > 0
       ? [...enhancedPersonalized, ...enhancedTrending, ...enhancedFresh].filter((video) => matchesKeywords(video, promptKeywords))
-      : enhancedFresh;
+      : [...enhancedPersonalized, ...enhancedTrending];
 
     const promptItems = pickUnique(promptCandidates, used, limitPerSection);
     if (promptItems.length > 0) {
       sections.push({
         id: "prompt-match",
-        title: promptKeywords.length > 0 ? "気分マッチ" : "新着フォローアップ",
+        title: promptKeywords.length > 0 ? "気分キーワードとマッチ" : "AIセレクト（気分未入力）",
         rationale: promptKeywords.length > 0
           ? `入力ワード: ${promptKeywords.join(", ")}`
-          : "キーワード未入力のため、新着作品からバランスよく選びました。",
-        items: toSectionItems(promptItems, { summaryPrefix: "気分マッチ", promptKeywords }),
+          : "キーワードが未入力でも、AI があなた向けとトレンドの余白から再提案します。",
+        items: toSectionItems(promptItems, {
+          summaryPrefix: promptKeywords.length > 0 ? "気分マッチ" : "AIセレクト",
+          promptKeywords,
+        }),
       });
     }
 

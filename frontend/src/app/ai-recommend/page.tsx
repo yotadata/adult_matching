@@ -1,11 +1,32 @@
 'use client';
 
 import { useState } from 'react';
-import { Sparkles, RefreshCcw, Info, Play, Loader2 } from 'lucide-react';
+import Link from 'next/link';
+import { Sparkles, RefreshCcw, Info, Play, Loader2, Clapperboard, Search } from 'lucide-react';
 import { useAiRecommend, type AiRecommendSection } from '@/hooks/useAiRecommend';
 import { useAnalysisResults } from '@/hooks/useAnalysisResults';
 
 const QUICK_PROMPTS = ['甘め', '刺激的', '癒やし', '探索', 'パートナーと'];
+const SEARCH_SHORTCUTS = [
+  {
+    title: 'スワイプでサクッと探す',
+    description: 'テンポ良く LIKE/NOPE しながら直感的に選びたいとき',
+    href: '/swipe',
+    badge: 'スワイプ',
+  },
+  {
+    title: 'タグ・出演者で深掘り',
+    description: '嗜好分析ページで最近の好みや人気タグを確認しながら探す',
+    href: '/analysis-results',
+    badge: '嗜好分析',
+  },
+  {
+    title: 'LIKE済みを整理',
+    description: 'これまでのいいね作品を一覧で眺めて気分に合うものを再生',
+    href: '/likes',
+    badge: 'LIKE一覧',
+  },
+];
 
 const formatDuration = (minutes: number | null) => {
   if (!minutes) return '—';
@@ -33,7 +54,7 @@ export default function AiRecommendPage() {
 
   const { data, loading, error, refetch } = useAiRecommend({
     prompt: appliedPrompt,
-    limitPerSection: 8,
+    limitPerSection: 12,
   });
 
   const { data: analysisData } = useAnalysisResults({
@@ -78,48 +99,48 @@ export default function AiRecommendPage() {
           <p className="text-sm text-gray-600 mt-1">{section.rationale}</p>
         </div>
       </header>
-      <div className="flex gap-4 overflow-x-auto pb-2">
+      <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3">
         {section.items.map((item) => {
           const composedId = `${section.id}:${item.id}`;
           const isExpanded = expandedItemId === composedId;
           return (
             <article
               key={item.id}
-              className="w-[280px] shrink-0 rounded-2xl bg-white border border-gray-100 shadow-md flex flex-col overflow-hidden"
+              className="w-full rounded-xl bg-white border border-gray-100 shadow-sm flex flex-col overflow-hidden text-sm"
             >
-              <div className="relative w-full aspect-[3/2] bg-gray-200">
+              <div className="relative w-full aspect-[16/9] bg-gray-200">
                 {item.thumbnail_url ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={item.thumbnail_url} alt={item.title ?? 'thumbnail'} className="absolute inset-0 w-full h-full object-cover" />
                 ) : (
                   <div className="absolute inset-0 flex items-center justify-center text-gray-400 text-sm">No Image</div>
                 )}
-                <div className="absolute top-2 right-2 bg-white/90 text-xs px-2 py-1 rounded-full text-gray-700 capitalize">
+                <div className="absolute top-2 right-2 bg-white/90 text-[11px] px-1.5 py-0.5 rounded-full text-gray-700 capitalize">
                   {item.metrics.source}
                 </div>
               </div>
-              <div className="flex flex-col gap-3 p-4 flex-1">
-                <div>
-                  <h4 className="text-sm font-bold text-gray-900 line-clamp-2">{item.title ?? 'タイトル未設定'}</h4>
-                  <div className="mt-1 text-xs text-gray-500 flex flex-wrap gap-1">
+              <div className="flex flex-col gap-2.5 p-3 flex-1">
+                <div className="space-y-1">
+                  <h4 className="text-[13px] font-semibold text-gray-900 line-clamp-2">{item.title ?? 'タイトル未設定'}</h4>
+                  <div className="text-[11px] text-gray-500 flex flex-wrap gap-1">
                     {item.tags.slice(0, 3).map((tag) => (
-                      <span key={tag.id} className="px-1.5 py-0.5 bg-gray-100 rounded-full border border-gray-200 text-gray-600">
+                      <span key={tag.id} className="px-1 py-0.5 bg-gray-100 rounded-full border border-gray-200 text-gray-600">
                         #{tag.name}
                       </span>
                     ))}
                   </div>
                 </div>
-                <div className="space-y-1 text-xs text-gray-500">
-                  <p>{item.reason.summary}</p>
+                <div className="space-y-1 text-[12px] text-gray-500">
+                  <p className="leading-tight">{item.reason.summary}</p>
                   <button
                     type="button"
                     onClick={() => {
                       setExpandedItemId(isExpanded ? null : composedId);
                     }}
-                    className="inline-flex items-center gap-1 text-rose-500 hover:text-rose-400 font-semibold"
+                    className="inline-flex items-center gap-1 text-rose-500 hover:text-rose-400 font-semibold text-[11px]"
                   >
                     <Info size={14} />
-                    詳細を見る
+                    {isExpanded ? '閉じる' : '詳細を見る'}
                   </button>
                   {isExpanded ? (
                     <div className="mt-1 rounded-md bg-gray-50 border border-gray-200 p-2 text-[11px] text-gray-600 space-y-1">
@@ -139,7 +160,7 @@ export default function AiRecommendPage() {
                     </div>
                   ) : null}
                 </div>
-                <div className="mt-auto flex items-center justify-between text-xs text-gray-500">
+                <div className="mt-auto flex items-center justify-between text-[11px] text-gray-500">
                   <span>{formatDuration(item.duration_minutes ?? null)}</span>
                   <button
                     type="button"
@@ -297,6 +318,32 @@ export default function AiRecommendPage() {
         ) : (
           data?.sections.map(renderSection)
         )}
+
+        {!loading && (
+          <section className="rounded-2xl bg-white/85 border border-white/60 shadow-lg p-6 flex flex-col gap-4">
+            <header className="flex flex-col gap-1">
+              <p className="text-xs uppercase tracking-[0.35em] text-gray-400">検索ショートカット</p>
+              <h3 className="text-lg font-bold text-gray-900">もっと探したいときは</h3>
+              <p className="text-sm text-gray-600">AI棚で気になったあとに、従来の探し方へすぐ移れます。</p>
+            </header>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              {SEARCH_SHORTCUTS.map((shortcut) => (
+                <Link
+                  key={shortcut.href}
+                  href={shortcut.href}
+                  className="group rounded-2xl border border-gray-200 bg-white/80 p-4 flex flex-col gap-2 hover:border-gray-400 transition"
+                >
+                  <div className="flex items-center gap-2 text-xs font-semibold text-rose-500">
+                    <Search size={14} />
+                    {shortcut.badge}
+                  </div>
+                  <h4 className="text-base font-bold text-gray-900 group-hover:text-gray-700">{shortcut.title}</h4>
+                  <p className="text-sm text-gray-600">{shortcut.description}</p>
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
       </div>
     </main>
   );
@@ -305,5 +352,7 @@ export default function AiRecommendPage() {
 function LayersIcon({ sectionId }: { sectionId: string }) {
   if (sectionId.includes('prompt')) return <Sparkles size={18} className="text-rose-500" />;
   if (sectionId.includes('trend')) return <RefreshCcw size={18} className="text-indigo-500" />;
+  if (sectionId.includes('fresh')) return <Clapperboard size={18} className="text-orange-500" />;
+  if (sectionId.includes('fallback')) return <Loader2 size={18} className="text-gray-500" />;
   return <Loader2 size={18} className="text-emerald-500" />;
 }
