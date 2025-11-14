@@ -217,17 +217,17 @@ const Header = ({ cardWidth, mobileGauge }: { cardWidth: number | undefined; mob
                                 <List size={18} />
                                 <span>気になるリスト</span>
                               </button>
-                              <button className="w-full text-left px-4 py-3 text-gray-800 hover:bg-gray-100" onClick={() => { setIsMenuDrawerOpen(false); router.push('/ai-recommend'); }}>
+                              <button className="w-full text-left px-4 py-3 text-gray-800 hover:bg-gray-100" onClick={() => { setIsMenuDrawerOpen(false); router.push('/search'); }}>
                                 <div className="flex items-center gap-3 text-gray-800 mb-2">
                                   <Sparkles size={18} />
-                                  <span>AIで探す</span>
+                                  <span>AI検索</span>
                                 </div>
                                 <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
                                   <div className="h-full rounded-full" style={{ width: `${Math.min(decisionCount / personalizeTarget, 1) * 100}%`, background: 'linear-gradient(90deg, #ADB4E3 0%, #C8BAE3 33.333%, #F7BECE 66.666%, #F9B1C4 100%)' }} />
                                 </div>
                                 <div className="mt-1 text-xs text-gray-600 text-right">パーソナライズまであと{Math.max(personalizeTarget - decisionCount, 0)}枚</div>
                               </button>
-                              <button className="w-full flex items-center gap-3 text-left px-4 py-3 text-gray-800 hover:bg-gray-100" onClick={() => { setIsMenuDrawerOpen(false); router.push('/analysis-results'); }}>
+                              <button className="w-full flex items-center gap-3 text-left px-4 py-3 text-gray-800 hover:bg-gray-100" onClick={() => { setIsMenuDrawerOpen(false); router.push('/insights'); }}>
                                 <BarChart2 size={18} />
                                 <span>あなたの性癖</span>
                               </button>

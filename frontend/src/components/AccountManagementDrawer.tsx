@@ -115,12 +115,12 @@ const AccountManagementDrawer: React.FC<AccountManagementDrawerProps> = ({ isOpe
                               <span className="truncate">気になるリスト</span>
                             </button>
                             <button
-                              onClick={() => handleNavigate('/ai-recommend')}
+                              onClick={() => handleNavigate('/search')}
                               className="w-full text-left min-w-0 px-3 py-2 rounded-md text-sm transition-colors text-gray-800 hover:bg-gray-100"
                             >
                               <div className="flex items-center gap-3">
                                 <Sparkles size={18} className="shrink-0" />
-                                <span className="truncate">AIで探す</span>
+                                <span className="truncate">AI検索</span>
                               </div>
                               <div className="mt-2 pr-1">
                                 <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
@@ -130,7 +130,7 @@ const AccountManagementDrawer: React.FC<AccountManagementDrawerProps> = ({ isOpe
                               </div>
                             </button>
                             <button
-                              onClick={() => handleNavigate('/analysis-results')}
+                              onClick={() => handleNavigate('/insights')}
                               className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors text-gray-800 hover:bg-gray-100"
                             >
                               <BarChart2 size={18} className="shrink-0" />

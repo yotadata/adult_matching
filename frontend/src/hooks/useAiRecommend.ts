@@ -47,16 +47,20 @@ export type AiRecommendResponse = {
     has_user_context: boolean;
     prompt_keywords: string[];
     limit_per_section: number;
+    selected_tag_ids: string[];
+    selected_performer_ids: string[];
   };
 };
 
 type UseAiRecommendOptions = {
   prompt?: string;
   limitPerSection?: number;
+  tagIds?: string[];
+  performerIds?: string[];
 };
 
 export function useAiRecommend(options: UseAiRecommendOptions) {
-  const { prompt, limitPerSection } = options;
+  const { prompt, limitPerSection, tagIds, performerIds } = options;
   const [data, setData] = useState<AiRecommendResponse | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -64,7 +68,9 @@ export function useAiRecommend(options: UseAiRecommendOptions) {
   const payload = useMemo(() => ({
     prompt: prompt && prompt.length > 0 ? prompt : undefined,
     limit_per_section: limitPerSection,
-  }), [prompt, limitPerSection]);
+    tag_ids: tagIds && tagIds.length > 0 ? tagIds : undefined,
+    performer_ids: performerIds && performerIds.length > 0 ? performerIds : undefined,
+  }), [prompt, limitPerSection, tagIds, performerIds]);
 
   const fetchData = useCallback(async () => {
     setLoading(true);

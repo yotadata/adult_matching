@@ -131,14 +131,14 @@ export default function DesktopSidebar() {
           <NavButton label="スワイプ" icon={HomeIcon} href="/swipe" disabled={!isLoggedIn} />
           <NavButton label="気になるリスト" icon={List} href="/lists" disabled={!isLoggedIn} />
           <NavButtonWithGauge
-            label="AIで探す"
+            label="AI検索"
             icon={Sparkles}
-            href="/ai-recommend"
+            href="/search"
             disabled={!isLoggedIn}
             progress={decisionCount / personalizeTarget}
             caption={caption}
           />
-          <NavButton label="あなたの性癖" icon={BarChart2} href="/analysis-results" disabled={!isLoggedIn} />
+          <NavButton label="あなたの性癖" icon={BarChart2} href="/insights" disabled={!isLoggedIn} />
           {/* 性癖パーソナリティ診断: 準備中表記・disableを解除 */}
         </nav>
         {isLoggedIn && (

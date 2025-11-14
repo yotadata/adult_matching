@@ -1,13 +1,13 @@
 # analysis-results エッジ関数仕様
 
 性癖分析 API は Supabase Edge Function として実装され、ユーザーの LIKE / NOPE 履歴を集計したサマリーを返します。  
-フロントエンド (`/analysis-results` 画面) から `supabase.functions.invoke('analysis-results')` で呼び出し、ダッシュボード表示に利用します。
+フロントエンド (`/insights` 画面) から `supabase.functions.invoke('analysis-results')` で呼び出し、ダッシュボード表示に利用します。
 
 ## サービス概要
 
 - 実体: `supabase/functions/analysis-results/index.ts`
 - 公開エンドポイント: `/functions/v1/analysis-results`
-- フロント側参照: `frontend/src/hooks/useAnalysisResults.ts` → `frontend/src/app/analysis-results/page.tsx`
+- フロント側参照: `frontend/src/hooks/useAnalysisResults.ts` → `frontend/src/app/insights/page.tsx`
 
 ## エンドポイント
 

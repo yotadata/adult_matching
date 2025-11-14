@@ -15,6 +15,8 @@ const MAX_LIMIT = 12;
 interface RequestPayload {
   prompt?: string;
   limit_per_section?: number;
+  tag_ids?: unknown;
+  performer_ids?: unknown;
 }
 
 type JsonPerformer = { id?: string; name?: string };
@@ -124,6 +126,18 @@ const clampLimit = (limit?: number | null) => {
 };
 
 const sanitizePrompt = (prompt?: string | null): string => (prompt ?? "").trim().slice(0, 120);
+
+const sanitizeIdList = (value?: unknown): string[] => {
+  if (!Array.isArray(value)) return [];
+  const result: string[] = [];
+  for (const item of value) {
+    if (typeof item === "string" && item.trim().length > 0) {
+      result.push(item);
+      if (result.length >= 5) break;
+    }
+  }
+  return result;
+};
 
 const extractKeywords = (prompt: string): string[] =>
   prompt
@@ -281,6 +295,7 @@ const pickUnique = (
 interface ReasonContext {
   summaryPrefix: string;
   promptKeywords?: string[];
+  selectionSummary?: string;
 }
 
 const buildReason = (
@@ -303,6 +318,9 @@ const buildReason = (
   if (item.product_released_at) detailParts.push(`リリース: ${item.product_released_at.slice(0, 10)}`);
   if (ctx.promptKeywords && ctx.promptKeywords.length > 0) {
     detailParts.push(`入力ワード: ${ctx.promptKeywords.join(", ")}`);
+  }
+  if (ctx.selectionSummary) {
+    detailParts.push(ctx.selectionSummary);
   }
 
   return {
@@ -352,14 +370,25 @@ const parseRequestPayload = async (req: Request): Promise<RequestPayload> => {
     return {
       prompt: typeof payload.prompt === "string" ? payload.prompt : undefined,
       limit_per_section: typeof payload.limit_per_section === "number" ? payload.limit_per_section : undefined,
+      tag_ids: Array.isArray(payload.tag_ids) ? payload.tag_ids : undefined,
+      performer_ids: Array.isArray(payload.performer_ids) ? payload.performer_ids : undefined,
     };
   }
   const url = new URL(req.url);
+  const parseCommaList = (value: string | null): string[] | undefined => {
+    if (!value) return undefined;
+    return value
+      .split(",")
+      .map((item) => item.trim())
+      .filter((item) => item.length > 0);
+  };
   return {
     prompt: url.searchParams.get("prompt") ?? undefined,
     limit_per_section: url.searchParams.has("limit_per_section")
       ? Number(url.searchParams.get("limit_per_section"))
       : undefined,
+    tag_ids: parseCommaList(url.searchParams.get("tag_ids")),
+    performer_ids: parseCommaList(url.searchParams.get("performer_ids")),
   };
 };
 
@@ -377,6 +406,8 @@ Deno.serve(async (req) => {
     const limitPerSection = clampLimit(payload.limit_per_section);
     const normalizedPrompt = sanitizePrompt(payload.prompt);
     const promptKeywords = extractKeywords(normalizedPrompt);
+    const selectedTagIds = sanitizeIdList(payload.tag_ids);
+    const selectedPerformerIds = sanitizeIdList(payload.performer_ids);
 
     const authHeader = req.headers.get("Authorization") ?? "";
     const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
@@ -449,21 +480,57 @@ Deno.serve(async (req) => {
       });
     }
 
-    const promptCandidates = promptKeywords.length > 0
-      ? [...enhancedPersonalized, ...enhancedTrending, ...enhancedFresh].filter((video) => matchesKeywords(video, promptKeywords))
-      : [...enhancedPersonalized, ...enhancedTrending];
+    const hasSelections = selectedTagIds.length > 0 || selectedPerformerIds.length > 0;
+    const selectionSummary = [
+      selectedTagIds.length ? `タグ ${selectedTagIds.length}件` : null,
+      selectedPerformerIds.length ? `出演者 ${selectedPerformerIds.length}件` : null,
+    ]
+      .filter(Boolean)
+      .join(" / ");
+
+    const matchesSelection = (video: VideoCandidate): boolean => {
+      const tagMatch = selectedTagIds.length === 0 || (video.tags ?? []).some((tag) => selectedTagIds.includes(tag.id));
+      const performerMatch = selectedPerformerIds.length === 0 || (video.performers ?? []).some((perf) => selectedPerformerIds.includes(perf.id));
+      return tagMatch && performerMatch;
+    };
+
+    let promptCandidates: VideoCandidate[] = [];
+    let promptTitle = "AIセレクト（気分未入力）";
+    let promptRationale = "キーワードやプリセット未選択のため、AI があなた向けとトレンドからピックアップしました。";
+    let summaryPrefix = "AIセレクト";
+    let reasonSelectionSummary: string | undefined;
+
+    if (hasSelections) {
+      promptCandidates = [...enhancedPersonalized, ...enhancedTrending, ...enhancedFresh].filter(matchesSelection);
+      promptTitle = "プリセットに基づくおすすめ";
+      promptRationale = selectionSummary || "選択したタグ/出演者に基づいて抽出しました。";
+      summaryPrefix = "プリセット";
+      reasonSelectionSummary = selectionSummary;
+    } else if (promptKeywords.length > 0) {
+      promptCandidates = [...enhancedPersonalized, ...enhancedTrending, ...enhancedFresh].filter((video) => matchesKeywords(video, promptKeywords));
+      promptTitle = "気分キーワードとマッチ";
+      promptRationale = `入力ワード: ${promptKeywords.join(", ")}`;
+      summaryPrefix = "気分マッチ";
+    } else {
+      promptCandidates = [...enhancedPersonalized, ...enhancedTrending];
+    }
+
+    if (promptCandidates.length === 0) {
+      promptRationale = `${promptRationale} / 条件に合う作品が少なかったためAIセレクトで補完しました。`;
+      promptCandidates = [...enhancedPersonalized, ...enhancedTrending];
+      summaryPrefix = hasSelections ? "プリセット" : promptKeywords.length > 0 ? "気分マッチ" : "AIセレクト";
+    }
 
     const promptItems = pickUnique(promptCandidates, used, limitPerSection);
     if (promptItems.length > 0) {
       sections.push({
         id: "prompt-match",
-        title: promptKeywords.length > 0 ? "気分キーワードとマッチ" : "AIセレクト（気分未入力）",
-        rationale: promptKeywords.length > 0
-          ? `入力ワード: ${promptKeywords.join(", ")}`
-          : "キーワードが未入力でも、AI があなた向けとトレンドの余白から再提案します。",
+        title: promptTitle,
+        rationale: promptRationale,
         items: toSectionItems(promptItems, {
-          summaryPrefix: promptKeywords.length > 0 ? "気分マッチ" : "AIセレクト",
+          summaryPrefix,
           promptKeywords,
+          selectionSummary: reasonSelectionSummary,
         }),
       });
     }
@@ -490,6 +557,8 @@ Deno.serve(async (req) => {
         prompt_keywords: promptKeywords,
         has_user_context: Boolean(userId),
         limit_per_section: limitPerSection,
+        selected_tag_ids: selectedTagIds,
+        selected_performer_ids: selectedPerformerIds,
       },
     };
 
