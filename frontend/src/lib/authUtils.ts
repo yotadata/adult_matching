@@ -22,3 +22,12 @@ export function forceClearSupabaseAuth() {
   } catch {}
 }
 
+export function normalizeUsername(raw: string) {
+  return raw.trim().toLowerCase();
+}
+
+export function buildPseudoEmail(username: string) {
+  const normalized = normalizeUsername(username);
+  const domain = process.env.NEXT_PUBLIC_PSEUDO_EMAIL_DOMAIN || 'anon.seihekilab.com';
+  return `${normalized}@${domain}`;
+}
