@@ -1,19 +1,13 @@
-# Search index policy
 User-agent: *
 
-# Public/marketing pages
-Allow: /design/sp
-Allow: /personality/result/
-Allow: /videos/
+Allow: /swipe
+Allow: /about
 
-# Application areas (require login)
+Disallow: /
 Disallow: /search
-Disallow: /swipe
-Disallow: /likes
 Disallow: /lists
 Disallow: /insights
-Disallow: /account-management
-Disallow: /admin
+Disallow: /contact
 Disallow: /api/
 
 Sitemap: https://seiheki.me/sitemap.xml
