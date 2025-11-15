@@ -69,6 +69,7 @@ type UseAnalysisResultsOptions = {
   tagLimit?: number;
   performerLimit?: number;
   recentLimit?: number;
+  enabled?: boolean;
 };
 
 export function useAnalysisResults({
@@ -77,12 +78,19 @@ export function useAnalysisResults({
   tagLimit,
   performerLimit,
   recentLimit,
+  enabled = true,
 }: UseAnalysisResultsOptions) {
   const [data, setData] = useState<AnalysisResultsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!enabled) {
+      setLoading(false);
+      setError(null);
+      setData(null);
+      return;
+    }
     let cancelled = false;
     const fetchAnalysis = async () => {
       setLoading(true);
@@ -120,7 +128,7 @@ export function useAnalysisResults({
     return () => {
       cancelled = true;
     };
-  }, [windowDays, includeNope, tagLimit, performerLimit, recentLimit]);
+  }, [enabled, windowDays, includeNope, tagLimit, performerLimit, recentLimit]);
 
   return { data, loading, error };
 }

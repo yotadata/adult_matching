@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Sparkles, RefreshCcw, Info, Play, Loader2, Clapperboard, Search } from 'lucide-react';
 import { Combobox } from '@headlessui/react';
 import { useAiRecommend, type AiRecommendSection } from '@/hooks/useAiRecommend';
@@ -49,6 +50,8 @@ const formatDate = (value: string | null | undefined) => {
 };
 
 export default function AiRecommendPage() {
+  const router = useRouter();
+  const [authStatus, setAuthStatus] = useState<'checking' | 'authenticated' | 'redirecting'>('checking');
   const [expandedItemId, setExpandedItemId] = useState<string | null>(null);
   const [selectedTags, setSelectedTags] = useState<Array<{ id: string; name: string }>>([]);
   const [selectedPerformers, setSelectedPerformers] = useState<Array<{ id: string; name: string }>>([]);
@@ -61,10 +64,53 @@ export default function AiRecommendPage() {
   const [tagLookupLoading, setTagLookupLoading] = useState(false);
   const [performerLookupLoading, setPerformerLookupLoading] = useState(false);
 
+  useEffect(() => {
+    let isMounted = true;
+    const redirectToSwipe = () => {
+      if (!isMounted) return;
+      setAuthStatus('redirecting');
+      try {
+        router.replace('/swipe');
+      } catch {
+        if (typeof window !== 'undefined') window.location.href = '/swipe';
+      }
+    };
+    const ensureAuthenticated = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!isMounted) return;
+        if (!session?.user) {
+          redirectToSwipe();
+          return;
+        }
+        setAuthStatus('authenticated');
+      } catch {
+        if (!isMounted) return;
+        redirectToSwipe();
+      }
+    };
+    ensureAuthenticated();
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!isMounted) return;
+      if (session?.user) {
+        setAuthStatus('authenticated');
+      } else {
+        redirectToSwipe();
+      }
+    });
+    return () => {
+      isMounted = false;
+      listener.subscription.unsubscribe();
+    };
+  }, [router]);
+
+  const isAuthenticated = authStatus === 'authenticated';
+
   const { data, loading, error } = useAiRecommend({
     limitPerSection: 12,
     tagIds: appliedTagIds,
     performerIds: appliedPerformerIds,
+    enabled: isAuthenticated,
   });
 
   const { data: analysisData } = useAnalysisResults({
@@ -73,11 +119,18 @@ export default function AiRecommendPage() {
     tagLimit: 3,
     performerLimit: 3,
     recentLimit: 0,
+    enabled: isAuthenticated,
   });
 
   const topTags = analysisData?.top_tags ?? [];
   const topPerformers = analysisData?.top_performers ?? [];
+
   useEffect(() => {
+    if (!isAuthenticated) {
+      setTagSearchResults([]);
+      setTagLookupLoading(false);
+      return;
+    }
     const term = tagSearchTerm.trim();
     if (term.length < 2) {
       setTagSearchResults([]);
@@ -107,9 +160,14 @@ export default function AiRecommendPage() {
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [tagSearchTerm]);
+  }, [isAuthenticated, tagSearchTerm]);
 
   useEffect(() => {
+    if (!isAuthenticated) {
+      setPerformerSearchResults([]);
+      setPerformerLookupLoading(false);
+      return;
+    }
     const term = performerSearchTerm.trim();
     if (term.length < 2) {
       setPerformerSearchResults([]);
@@ -141,7 +199,20 @@ export default function AiRecommendPage() {
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [performerSearchTerm]);
+  }, [isAuthenticated, performerSearchTerm]);
+
+  if (!isAuthenticated) {
+    return (
+      <main className="min-h-screen w-full bg-gradient-to-br from-slate-950 via-indigo-950 to-slate-900 text-white flex items-center justify-center px-4">
+        <div className="flex flex-col items-center gap-3 text-center">
+          <Loader2 className="h-6 w-6 animate-spin text-white/80" />
+          <p className="text-sm text-white/70">
+            {authStatus === 'checking' ? '閲覧可能か確認しています…' : 'ログインが必要なページです。スワイプに移動しています。'}
+          </p>
+        </div>
+      </main>
+    );
+  }
 
   const handleApplyFilters = () => {
     setAppliedTagIds(selectedTags.map((tag) => tag.id));
