@@ -4,9 +4,11 @@ import Input from './Input';
 import { useForm, SubmitHandler } from 'react-hook-form';
 import { useState } from 'react';
 import toast from 'react-hot-toast';
+import { buildPseudoEmail, normalizeUsername } from '@/lib/authUtils';
 
 type RegisterFormInputs = {
-  email: string;
+  username: string;
+  displayName: string;
   password: string;
   confirmPassword: string;
 };
@@ -26,9 +28,18 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onClose }) => {
     setIsLoading(true);
     try {
       const { supabase } = await import('@/lib/supabase');
+      const normalizedUsername = normalizeUsername(data.username);
+      const pseudoEmail = buildPseudoEmail(normalizedUsername);
+      const displayName = data.displayName.trim() || normalizedUsername;
       const { data: signUpData, error } = await supabase.auth.signUp({
-        email: data.email,
+        email: pseudoEmail,
         password: data.password,
+        options: {
+          data: {
+            display_name: displayName,
+            username: normalizedUsername,
+          },
+        },
       });
       if (error) throw new Error(error.message || '登録に失敗しました');
 
@@ -37,7 +48,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onClose }) => {
         await supabase.auth.getUser();
         toast.success('登録してログインしました！');
       } else {
-        toast.success('確認メールを送信しました。メールボックスをご確認ください。');
+        toast.success('登録しました！');
       }
       onClose();
     } catch (error: unknown) {
@@ -65,44 +76,62 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onClose }) => {
           {message.text}
         </div>
       )}
-      <Input
-        id="email"
-        label="メールアドレス"
-        type="email"
-        placeholder="your@example.com"
-        {...register('email', {
-          required: 'メールアドレスは必須です',
-          pattern: {
-            value: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/,
-            message: '有効なメールアドレスを入力してください',
-          },
-        })}
-      />
-      {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email.message}</p>}
+      <div className="space-y-1">
+        <Input
+          id="username"
+          label="ユーザーID"
+          type="text"
+          placeholder="例: neko123"
+          {...register('username', {
+            required: 'ユーザーIDは必須です',
+            minLength: { value: 3, message: '3文字以上で入力してください' },
+            pattern: {
+              value: /^[a-zA-Z0-9_]+$/,
+              message: '英数字とアンダーバーのみ利用できます',
+            },
+          })}
+        />
+        {errors.username && <p className="text-red-500 text-xs">{errors.username.message}</p>}
+        <p className="text-[11px] text-gray-500">※3文字以上、英数字とアンダーバーのみ／小文字に置き換えて管理します</p>
+      </div>
 
       <Input
-        id="password"
-        label="パスワード"
-        type="password"
-        placeholder="8文字以上"
-        {...register('password', {
-          required: 'パスワードは必須です',
-          minLength: { value: 8, message: 'パスワードは8文字以上です' },
+        id="displayName"
+        label="表示名"
+        type="text"
+        placeholder="例: ねこ好きさん"
+        {...register('displayName', {
+          required: '表示名は必須です',
+          maxLength: { value: 30, message: '30文字以内で入力してください' },
         })}
       />
-      {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password.message}</p>}
+      {errors.displayName && <p className="text-red-500 text-xs mt-1">{errors.displayName.message}</p>}
 
-      <Input
-        id="confirmPassword"
-        label="パスワード（確認用）"
-        type="password"
-        placeholder="パスワードを再入力"
-        {...register('confirmPassword', {
-          required: '確認用パスワードは必須です',
-          validate: (value) => value === password || 'パスワードが一致しません',
-        })}
-      />
-      {errors.confirmPassword && <p className="text-red-500 text-xs mt-1">{errors.confirmPassword.message}</p>}
+      <div className="space-y-2">
+        <Input
+          id="password"
+          label="パスワード"
+          type="password"
+          placeholder="8文字以上"
+          {...register('password', {
+            required: 'パスワードは必須です',
+            minLength: { value: 8, message: 'パスワードは8文字以上です' },
+          })}
+        />
+        {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password.message}</p>}
+
+        <Input
+          id="confirmPassword"
+          label=""
+          type="password"
+          placeholder="パスワード（確認用）"
+          {...register('confirmPassword', {
+            required: '確認用パスワードは必須です',
+            validate: (value) => value === password || 'パスワードが一致しません',
+          })}
+        />
+        {errors.confirmPassword && <p className="text-red-500 text-xs mt-1">{errors.confirmPassword.message}</p>}
+      </div>
 
       <button
         type="submit"

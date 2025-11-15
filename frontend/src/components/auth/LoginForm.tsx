@@ -6,9 +6,10 @@ import { supabase } from '@/lib/supabase';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
+import { buildPseudoEmail, normalizeUsername } from '@/lib/authUtils';
 
 type LoginFormInputs = {
-  email: string;
+  username: string;
   password: string;
 };
 
@@ -27,8 +28,9 @@ const LoginForm: React.FC<LoginFormProps> = ({ onClose }) => {
     setIsLoading(true);
     try {
       // クライアントで直接ログインし、ブラウザにセッションを保存する
+      const pseudoEmail = buildPseudoEmail(normalizeUsername(data.username));
       const { error } = await supabase.auth.signInWithPassword({
-        email: data.email,
+        email: pseudoEmail,
         password: data.password,
       });
       if (error) throw new Error(error.message || 'ログインに失敗しました');
@@ -64,19 +66,15 @@ const LoginForm: React.FC<LoginFormProps> = ({ onClose }) => {
         </div>
       )}
       <Input
-        id="email"
-        label="メールアドレス"
-        type="email"
-        placeholder="your@example.com"
-        {...register('email', {
-          required: 'メールアドレスは必須です',
-          pattern: {
-            value: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/,
-            message: '有効なメールアドレスを入力してください',
-          },
+        id="username"
+        label="ユーザーID"
+        type="text"
+        placeholder="登録したユーザーID"
+        {...register('username', {
+          required: 'ユーザーIDは必須です',
         })}
       />
-      {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email.message}</p>}
+      {errors.username && <p className="text-red-500 text-xs mt-1">{errors.username.message}</p>}
 
       <Input
         id="password"

@@ -49,6 +49,7 @@ const formatDate = (value: string | null | undefined) => {
 };
 
 export default function AiRecommendPage() {
+  const [authStatus, setAuthStatus] = useState<'checking' | 'authenticated' | 'guest'>('checking');
   const [expandedItemId, setExpandedItemId] = useState<string | null>(null);
   const [selectedTags, setSelectedTags] = useState<Array<{ id: string; name: string }>>([]);
   const [selectedPerformers, setSelectedPerformers] = useState<Array<{ id: string; name: string }>>([]);
@@ -61,10 +62,41 @@ export default function AiRecommendPage() {
   const [tagLookupLoading, setTagLookupLoading] = useState(false);
   const [performerLookupLoading, setPerformerLookupLoading] = useState(false);
 
+  useEffect(() => {
+    let isMounted = true;
+
+    const resolveSession = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!isMounted) return;
+        setAuthStatus(session?.user ? 'authenticated' : 'guest');
+      } catch {
+        if (!isMounted) return;
+        setAuthStatus('guest');
+      }
+    };
+
+    resolveSession();
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!isMounted) return;
+      setAuthStatus(session?.user ? 'authenticated' : 'guest');
+    });
+
+    return () => {
+      isMounted = false;
+      listener.subscription.unsubscribe();
+    };
+  }, []);
+
+  const isAuthenticated = authStatus === 'authenticated';
+  const isGuest = authStatus === 'guest';
+
+  const aiRecommendEnabled = authStatus !== 'checking';
   const { data, loading, error } = useAiRecommend({
     limitPerSection: 12,
-    tagIds: appliedTagIds,
-    performerIds: appliedPerformerIds,
+    tagIds: isAuthenticated ? appliedTagIds : undefined,
+    performerIds: isAuthenticated ? appliedPerformerIds : undefined,
+    enabled: aiRecommendEnabled,
   });
 
   const { data: analysisData } = useAnalysisResults({
@@ -73,11 +105,18 @@ export default function AiRecommendPage() {
     tagLimit: 3,
     performerLimit: 3,
     recentLimit: 0,
+    enabled: isAuthenticated,
   });
 
   const topTags = analysisData?.top_tags ?? [];
   const topPerformers = analysisData?.top_performers ?? [];
+
   useEffect(() => {
+    if (!isAuthenticated) {
+      setTagSearchResults([]);
+      setTagLookupLoading(false);
+      return;
+    }
     const term = tagSearchTerm.trim();
     if (term.length < 2) {
       setTagSearchResults([]);
@@ -107,9 +146,14 @@ export default function AiRecommendPage() {
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [tagSearchTerm]);
+  }, [isAuthenticated, tagSearchTerm]);
 
   useEffect(() => {
+    if (!isAuthenticated) {
+      setPerformerSearchResults([]);
+      setPerformerLookupLoading(false);
+      return;
+    }
     const term = performerSearchTerm.trim();
     if (term.length < 2) {
       setPerformerSearchResults([]);
@@ -141,7 +185,18 @@ export default function AiRecommendPage() {
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [performerSearchTerm]);
+  }, [isAuthenticated, performerSearchTerm]);
+
+  if (authStatus === 'checking') {
+    return (
+      <main className="min-h-screen w-full bg-gradient-to-br from-slate-950 via-indigo-950 to-slate-900 text-white flex items-center justify-center px-4">
+        <div className="flex flex-col items-center gap-3 text-center">
+          <Loader2 className="h-6 w-6 animate-spin text-white/80" />
+          <p className="text-sm text-white/70">閲覧可能か確認しています…</p>
+        </div>
+      </main>
+    );
+  }
 
   const handleApplyFilters = () => {
     setAppliedTagIds(selectedTags.map((tag) => tag.id));
@@ -270,235 +325,251 @@ export default function AiRecommendPage() {
     </section>
   );
 
-  const isEmpty = !loading && !error && (data?.sections.length ?? 0) === 0;
+  const sections = data?.sections ?? [];
+  const visibleSections = isGuest
+    ? sections.filter((section) => {
+        const normalizedId = section.id.toLowerCase();
+        return normalizedId.includes('trend') || normalizedId.includes('fresh');
+      })
+    : sections;
+  const isEmpty = !loading && !error && visibleSections.length === 0;
 
   return (
     <main className="w-full min-h-screen px-0 sm:px-4 py-8">
       <div className="max-w-7xl mx-auto flex flex-col gap-6">
-        <section className="w-full rounded-2xl bg-white/20 backdrop-blur-xl border border-white/30 shadow-[0_20px_60px_rgba(0,0,0,0.25)] p-4 sm:p-8 flex flex-col gap-8">
-          <div className="flex flex-col gap-3 text-white">
+        {isAuthenticated ? (
+          <section className="w-full rounded-2xl bg-white/20 backdrop-blur-xl border border-white/30 shadow-[0_20px_60px_rgba(0,0,0,0.25)] p-4 sm:p-8 flex flex-col gap-8">
+            <div className="flex flex-col gap-3 text-white">
             <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight">AIで探す</h1>
             <p className="text-sm text-white/80">
-              あなたのLIKE履歴・全体トレンド・今の気分キーワードをもとに、3種類のリストを自動生成します。
+            あなたのLIKE履歴・全体トレンド・今の気分キーワードをもとに、3種類のリストを自動生成します。
             </p>
-          </div>
+            </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-4">
+            <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-4">
             <div className="space-y-4">
-              <div className="rounded-2xl bg-white/85 backdrop-blur border border-white/60 shadow-lg p-5 flex flex-col gap-4">
-                <header className="space-y-1">
-                  <p className="text-xs uppercase tracking-[0.4em] text-rose-500/70">今の気分</p>
-                  <h2 className="text-xl font-bold text-gray-900 mt-1">キーワードを伝えて調整</h2>
-                  <p className="text-sm text-gray-600">
-                    下の検索欄からタグと出演者をそれぞれ最大5件まで選択すると、横並びのリストがその条件で入れ替わります。プリセットから選ぶか、キーワード検索で全体から探してください。
-                  </p>
-                </header>
-                <div className="space-y-4">
-                  <div className="space-y-3">
-                    <div className="space-y-2">
-                      <p className="text-xs text-gray-500 font-semibold">タグを検索（全体から）</p>
-                      <Combobox<{ id: string; name: string } | null>
-                        value={null}
-                        onChange={(value) => {
-                          if (value) toggleTagSelection(value);
-                        }}
-                      >
-                        <div className="relative">
-                          <div className="flex items-center gap-2 rounded-2xl border border-gray-200 bg-white px-3 py-2 shadow-sm">
-                            <Search size={16} className="text-rose-400" />
-                            <Combobox.Input
-                              className="w-full text-sm text-gray-900 placeholder-gray-400 focus:outline-none"
-                              placeholder="タグ名を入力（例: 制服, OL など）"
-                              onChange={(event) => setTagSearchTerm(event.target.value)}
-                              displayValue={() => ''}
-                            />
-                          </div>
-                          <Combobox.Options className="absolute z-20 mt-2 max-h-48 w-full overflow-auto rounded-2xl border border-gray-200 bg-white text-sm shadow-lg">
-                            {tagSearchTerm.trim().length < 2 ? (
-                              <div className="px-3 py-2 text-xs text-gray-400">2文字以上入力すると候補が表示されます。</div>
-                            ) : tagLookupLoading ? (
-                              <div className="px-3 py-2 text-xs text-gray-400">タグを検索中…</div>
-                            ) : tagSearchResults.length === 0 ? (
-                              <div className="px-3 py-2 text-xs text-gray-400">候補が見つかりません</div>
-                            ) : (
-                              tagSearchResults.map((tag) => (
-                                <Combobox.Option
-                                  key={`combobox-tag-${tag.id}`}
-                                  value={tag}
-                                  className={({ active }) =>
-                                    `flex items-center justify-between px-3 py-1.5 text-sm ${active ? 'bg-rose-50 text-rose-600' : 'text-gray-700'}`
-                                  }
-                                >
-                                  <span>#{tag.name}</span>
-                                  {selectedTags.some((t) => t.id === tag.id) ? (
-                                    <span className="text-[10px] text-rose-500">選択中</span>
-                                  ) : null}
-                                </Combobox.Option>
-                              )))
-                            }
-                          </Combobox.Options>
-                        </div>
-                      </Combobox>
-                    </div>
+            <div className="rounded-2xl bg-white/85 backdrop-blur border border-white/60 shadow-lg p-5 flex flex-col gap-4">
+            <header className="space-y-1">
+            <p className="text-xs uppercase tracking-[0.4em] text-rose-500/70">今の気分</p>
+            <h2 className="text-xl font-bold text-gray-900 mt-1">キーワードを伝えて調整</h2>
+            <p className="text-sm text-gray-600">
+            下の検索欄からタグと出演者をそれぞれ最大5件まで選択すると、横並びのリストがその条件で入れ替わります。プリセットから選ぶか、キーワード検索で全体から探してください。
+            </p>
+            </header>
+            <div className="space-y-4">
+            <div className="space-y-3">
+            <div className="space-y-2">
+            <p className="text-xs text-gray-500 font-semibold">タグを検索（全体から）</p>
+            <Combobox<{ id: string; name: string } | null>
+            value={null}
+            onChange={(value) => {
+            if (value) toggleTagSelection(value);
+            }}
+            >
+            <div className="relative">
+            <div className="flex items-center gap-2 rounded-2xl border border-gray-200 bg-white px-3 py-2 shadow-sm">
+            <Search size={16} className="text-rose-400" />
+            <Combobox.Input
+            className="w-full text-sm text-gray-900 placeholder-gray-400 focus:outline-none"
+            placeholder="タグ名を入力（例: 制服, OL など）"
+            onChange={(event) => setTagSearchTerm(event.target.value)}
+            displayValue={() => ''}
+            />
+            </div>
+            <Combobox.Options className="absolute z-20 mt-2 max-h-48 w-full overflow-auto rounded-2xl border border-gray-200 bg-white text-sm shadow-lg">
+            {tagSearchTerm.trim().length < 2 ? (
+            <div className="px-3 py-2 text-xs text-gray-400">2文字以上入力すると候補が表示されます。</div>
+            ) : tagLookupLoading ? (
+            <div className="px-3 py-2 text-xs text-gray-400">タグを検索中…</div>
+            ) : tagSearchResults.length === 0 ? (
+            <div className="px-3 py-2 text-xs text-gray-400">候補が見つかりません</div>
+            ) : (
+            tagSearchResults.map((tag) => (
+            <Combobox.Option
+            key={`combobox-tag-${tag.id}`}
+            value={tag}
+            className={({ active }) =>
+            `flex items-center justify-between px-3 py-1.5 text-sm ${active ? 'bg-rose-50 text-rose-600' : 'text-gray-700'}`
+            }
+            >
+            <span>#{tag.name}</span>
+            {selectedTags.some((t) => t.id === tag.id) ? (
+            <span className="text-[10px] text-rose-500">選択中</span>
+            ) : null}
+            </Combobox.Option>
+            )))
+            }
+            </Combobox.Options>
+            </div>
+            </Combobox>
+            </div>
 
-                    <div className="space-y-2">
-                      <p className="text-xs text-gray-500 font-semibold">出演者を検索（全体から）</p>
-                      <Combobox<{ id: string; name: string } | null>
-                        value={null}
-                        onChange={(value) => {
-                          if (value) togglePerformerSelection(value);
-                        }}
-                      >
-                        <div className="relative">
-                          <div className="flex items-center gap-2 rounded-2xl border border-gray-200 bg-white px-3 py-2 shadow-sm">
-                            <Search size={16} className="text-indigo-400" />
-                            <Combobox.Input
-                              className="w-full text-sm text-gray-900 placeholder-gray-400 focus:outline-none"
-                              placeholder="出演者名を入力（例: ○○○）"
-                              onChange={(event) => setPerformerSearchTerm(event.target.value)}
-                              displayValue={() => ''}
-                            />
-                          </div>
-                          <Combobox.Options className="absolute z-20 mt-2 max-h-48 w-full overflow-auto rounded-2xl border border-gray-200 bg-white text-sm shadow-lg">
-                            {performerSearchTerm.trim().length < 2 ? (
-                              <div className="px-3 py-2 text-xs text-gray-400">2文字以上入力すると候補が表示されます。</div>
-                            ) : performerLookupLoading ? (
-                              <div className="px-3 py-2 text-xs text-gray-400">出演者を検索中…</div>
-                            ) : performerSearchResults.length === 0 ? (
-                              <div className="px-3 py-2 text-xs text-gray-400">候補が見つかりません</div>
-                            ) : (
-                              performerSearchResults.map((performer) => (
-                                <Combobox.Option
-                                  key={`combobox-perf-${performer.id}`}
-                                  value={performer}
-                                  className={({ active }) =>
-                                    `flex items-center justify-between px-3 py-1.5 text-sm ${active ? 'bg-indigo-50 text-indigo-600' : 'text-gray-700'}`
-                                  }
-                                >
-                                  <span>{performer.name}</span>
-                                  {selectedPerformers.some((p) => p.id === performer.id) ? (
-                                    <span className="text-[10px] text-indigo-500">選択中</span>
-                                  ) : null}
-                                </Combobox.Option>
-                              )))
-                            }
-                          </Combobox.Options>
-                        </div>
-                      </Combobox>
-                    </div>
-                  </div>
-                  <div className="space-y-3">
-                    <div className="flex flex-wrap gap-2">
-                      {selectedTags.map((tag) => (
-                        <span
-                          key={`pill-tag-${tag.id}`}
-                          className="px-3 py-1 rounded-full text-xs font-semibold border border-rose-400 bg-rose-50 text-rose-600 truncate"
-                        >
-                          #{tag.name}
-                        </span>
-                      ))}
-                      {selectedPerformers.map((performer) => (
-                        <span
-                          key={`pill-perf-${performer.id}`}
-                          className="px-3 py-1 rounded-full text-xs font-semibold border border-indigo-400 bg-indigo-50 text-indigo-600 truncate"
-                        >
-                          {performer.name}
-                        </span>
-                      ))}
-                      {selectedTags.length === 0 && selectedPerformers.length === 0 ? (
-                        <span className="text-xs text-gray-400">選択なし</span>
-                      ) : null}
-                    </div>
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-                      <div className="flex gap-2">
-                        <button
-                          type="button"
-                          onClick={handleApplyFilters}
-                          className="inline-flex items-center gap-2 rounded-md bg-rose-500 text-white px-3 py-2 text-sm font-semibold hover:bg-rose-600"
-                        >
-                          条件を適用
-                        </button>
-                        <button
-                          type="button"
-                          onClick={handleClearFilters}
-                        className="inline-flex items-center gap-2 rounded-md border border-rose-200 bg-white px-3 py-2 text-sm font-semibold text-rose-500 hover:bg-rose-50"
-                      >
-                        クリア
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
+            <div className="space-y-2">
+            <p className="text-xs text-gray-500 font-semibold">出演者を検索（全体から）</p>
+            <Combobox<{ id: string; name: string } | null>
+            value={null}
+            onChange={(value) => {
+            if (value) togglePerformerSelection(value);
+            }}
+            >
+            <div className="relative">
+            <div className="flex items-center gap-2 rounded-2xl border border-gray-200 bg-white px-3 py-2 shadow-sm">
+            <Search size={16} className="text-indigo-400" />
+            <Combobox.Input
+            className="w-full text-sm text-gray-900 placeholder-gray-400 focus:outline-none"
+            placeholder="出演者名を入力（例: ○○○）"
+            onChange={(event) => setPerformerSearchTerm(event.target.value)}
+            displayValue={() => ''}
+            />
+            </div>
+            <Combobox.Options className="absolute z-20 mt-2 max-h-48 w-full overflow-auto rounded-2xl border border-gray-200 bg-white text-sm shadow-lg">
+            {performerSearchTerm.trim().length < 2 ? (
+            <div className="px-3 py-2 text-xs text-gray-400">2文字以上入力すると候補が表示されます。</div>
+            ) : performerLookupLoading ? (
+            <div className="px-3 py-2 text-xs text-gray-400">出演者を検索中…</div>
+            ) : performerSearchResults.length === 0 ? (
+            <div className="px-3 py-2 text-xs text-gray-400">候補が見つかりません</div>
+            ) : (
+            performerSearchResults.map((performer) => (
+            <Combobox.Option
+            key={`combobox-perf-${performer.id}`}
+            value={performer}
+            className={({ active }) =>
+            `flex items-center justify-between px-3 py-1.5 text-sm ${active ? 'bg-indigo-50 text-indigo-600' : 'text-gray-700'}`
+            }
+            >
+            <span>{performer.name}</span>
+            {selectedPerformers.some((p) => p.id === performer.id) ? (
+            <span className="text-[10px] text-indigo-500">選択中</span>
+            ) : null}
+            </Combobox.Option>
+            )))
+            }
+            </Combobox.Options>
+            </div>
+            </Combobox>
+            </div>
+            </div>
+            <div className="space-y-3">
+            <div className="flex flex-wrap gap-2">
+            {selectedTags.map((tag) => (
+            <span
+            key={`pill-tag-${tag.id}`}
+            className="px-3 py-1 rounded-full text-xs font-semibold border border-rose-400 bg-rose-50 text-rose-600 truncate"
+            >
+            #{tag.name}
+            </span>
+            ))}
+            {selectedPerformers.map((performer) => (
+            <span
+            key={`pill-perf-${performer.id}`}
+            className="px-3 py-1 rounded-full text-xs font-semibold border border-indigo-400 bg-indigo-50 text-indigo-600 truncate"
+            >
+            {performer.name}
+            </span>
+            ))}
+            {selectedTags.length === 0 && selectedPerformers.length === 0 ? (
+            <span className="text-xs text-gray-400">選択なし</span>
+            ) : null}
+            </div>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+            <div className="flex gap-2">
+            <button
+            type="button"
+            onClick={handleApplyFilters}
+            className="inline-flex items-center gap-2 rounded-md bg-rose-500 text-white px-3 py-2 text-sm font-semibold hover:bg-rose-600"
+            >
+            条件を適用
+            </button>
+            <button
+            type="button"
+            onClick={handleClearFilters}
+            className="inline-flex items-center gap-2 rounded-md border border-rose-200 bg-white px-3 py-2 text-sm font-semibold text-rose-500 hover:bg-rose-50"
+            >
+            クリア
+            </button>
+            </div>
+            </div>
+            </div>
+            </div>
+            </div>
             </div>
 
             <aside className="rounded-2xl bg-white/80 border border-white/60 shadow-lg p-5 flex flex-col gap-4 text-gray-900">
-              <header>
-                <h3 className="text-base font-bold flex items-center gap-2">
-                  <Sparkles size={16} className="text-rose-500" />
-                  最近の嗜好スナップショット
-                </h3>
-                <p className="text-xs text-gray-500 mt-1">直近90日のLIKE履歴から抽出</p>
-              </header>
-              <div className="space-y-3 text-sm text-gray-700">
-                <div>
-                  <p className="text-xs text-gray-500 flex justify-between items-center">
-                    <span>トップタグ</span>
-                    <span className="text-[10px] text-gray-400">タップで条件に追加</span>
-                  </p>
-                  <div className="mt-1 flex flex-wrap gap-2">
-                    {topTags.length === 0 ? (
-                      <span className="text-xs text-gray-400">データなし</span>
-                    ) : (
-                      topTags.map((tag) => {
-                        const active = selectedTags.some((t) => t.id === tag.tag_id);
-                        return (
-                          <button
-                            key={tag.tag_id}
-                            type="button"
-                            onClick={() => toggleTagSelection({ id: tag.tag_id, name: tag.tag_name })}
-                            className={`px-2 py-1 rounded-full text-xs font-semibold border transition ${
-                              active ? 'bg-rose-500 text-white border-rose-500' : 'bg-white text-gray-600 border-gray-200 hover:border-rose-300'
-                            }`}
-                          >
-                            #{tag.tag_name}
-                          </button>
-                        );
-                      })
-                    )}
-                  </div>
-                </div>
-                <div>
-                  <p className="text-xs text-gray-500 flex justify-between items-center">
-                    <span>よく観ている出演者</span>
-                    <span className="text-[10px] text-gray-400">タップで条件に追加</span>
-                  </p>
-                  <div className="mt-1 flex flex-wrap gap-2">
-                    {topPerformers.length === 0 ? (
-                      <span className="text-xs text-gray-400">データなし</span>
-                    ) : (
-                      topPerformers.map((performer) => {
-                        const active = selectedPerformers.some((p) => p.id === performer.performer_id);
-                        return (
-                          <button
-                            key={performer.performer_id}
-                            type="button"
-                            onClick={() => togglePerformerSelection({ id: performer.performer_id, name: performer.performer_name })}
-                            className={`px-2 py-1 rounded-full text-xs font-semibold border transition ${
-                              active ? 'bg-indigo-500 text-white border-indigo-500' : 'bg-white text-gray-600 border-gray-200 hover:border-indigo-300'
-                            }`}
-                          >
-                            {performer.performer_name}
-                          </button>
-                        );
-                      })
-                    )}
-                  </div>
-                </div>
-              </div>
+            <header>
+            <h3 className="text-base font-bold flex items-center gap-2">
+            <Sparkles size={16} className="text-rose-500" />
+            最近の嗜好スナップショット
+            </h3>
+            <p className="text-xs text-gray-500 mt-1">直近90日のLIKE履歴から抽出</p>
+            </header>
+            <div className="space-y-3 text-sm text-gray-700">
+            <div>
+            <p className="text-xs text-gray-500 flex justify-between items-center">
+            <span>トップタグ</span>
+            <span className="text-[10px] text-gray-400">タップで条件に追加</span>
+            </p>
+            <div className="mt-1 flex flex-wrap gap-2">
+            {topTags.length === 0 ? (
+            <span className="text-xs text-gray-400">データなし</span>
+            ) : (
+            topTags.map((tag) => {
+            const active = selectedTags.some((t) => t.id === tag.tag_id);
+            return (
+            <button
+            key={tag.tag_id}
+            type="button"
+            onClick={() => toggleTagSelection({ id: tag.tag_id, name: tag.tag_name })}
+            className={`px-2 py-1 rounded-full text-xs font-semibold border transition ${
+            active ? 'bg-rose-500 text-white border-rose-500' : 'bg-white text-gray-600 border-gray-200 hover:border-rose-300'
+            }`}
+            >
+            #{tag.tag_name}
+            </button>
+            );
+            })
+            )}
+            </div>
+            </div>
+            <div>
+            <p className="text-xs text-gray-500 flex justify-between items-center">
+            <span>よく観ている出演者</span>
+            <span className="text-[10px] text-gray-400">タップで条件に追加</span>
+            </p>
+            <div className="mt-1 flex flex-wrap gap-2">
+            {topPerformers.length === 0 ? (
+            <span className="text-xs text-gray-400">データなし</span>
+            ) : (
+            topPerformers.map((performer) => {
+            const active = selectedPerformers.some((p) => p.id === performer.performer_id);
+            return (
+            <button
+            key={performer.performer_id}
+            type="button"
+            onClick={() => togglePerformerSelection({ id: performer.performer_id, name: performer.performer_name })}
+            className={`px-2 py-1 rounded-full text-xs font-semibold border transition ${
+            active ? 'bg-indigo-500 text-white border-indigo-500' : 'bg-white text-gray-600 border-gray-200 hover:border-indigo-300'
+            }`}
+            >
+            {performer.performer_name}
+            </button>
+            );
+            })
+            )}
+            </div>
+            </div>
+            </div>
             </aside>
-          </div>
-        </section>
+            </div>
+          </section>
+        ) : (
+          <section className="w-full rounded-2xl bg-white/15 backdrop-blur border border-white/20 shadow-lg p-5 text-white">
+            <h1 className="text-xl font-bold">ゲストとして閲覧中</h1>
+            <p className="text-sm text-white/80 mt-2">
+              ログインするとタグ検索や嗜好に合わせたAIリストが利用できます。ゲスト閲覧では「みんなが見ているトレンド」と「新着」のみを表示中です。
+            </p>
+          </section>
+        )}
 
         {error ? (
           <div className="rounded-2xl bg-red-500/10 border border-red-400/40 text-red-600 px-4 py-3">
@@ -517,10 +588,10 @@ export default function AiRecommendPage() {
             候補を取得できませんでした。キーワードを変えて再度お試しください。
           </div>
         ) : (
-          data?.sections.map(renderSection)
+          visibleSections.map(renderSection)
         )}
 
-        {!loading && (
+        {!loading && isAuthenticated && (
           <section className="rounded-2xl bg-white/85 border border-white/60 shadow-lg p-6 flex flex-col gap-4">
             <header className="flex flex-col gap-1">
               <p className="text-xs uppercase tracking-[0.35em] text-gray-400">検索ショートカット</p>

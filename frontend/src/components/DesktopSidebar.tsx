@@ -139,16 +139,23 @@ export default function DesktopSidebar() {
             caption={caption}
           />
           <NavButton label="あなたの性癖" icon={BarChart2} href="/insights" disabled={!isLoggedIn} />
-          {/* 性癖パーソナリティ診断: 準備中表記・disableを解除 */}
         </nav>
-        {isLoggedIn && (
-          <div className="p-3 border-t border-white/30">
+        <div className="px-3 pt-2">
+          <div className="border-t border-white/50 my-2" />
+          <div className="space-y-1 text-sm text-gray-600">
+            <NavButton label="お問い合わせ" icon={Sparkles} href="/contact" disabled={!isLoggedIn} />
+            <NavButton label="アカウント設定" icon={UserPlus} href="/settings" disabled={!isLoggedIn} />
+            <NavButton label="このサイトについて" icon={BarChart2} href="/about" disabled={false} />
+          </div>
+        </div>
+        <div className="p-3 border-t border-white/30">
+          {isLoggedIn ? (
             <button onClick={handleLogout} className="w-full flex items-center gap-2 px-3 py-2 text-left rounded-md text-sm text-gray-800 hover:bg-white/70 shadow-md hover:shadow-lg transition-shadow">
               <LogOut size={18} />
               <span className="truncate">ログアウト</span>
             </button>
-          </div>
-        )}
+          ) : null}
+        </div>
       </div>
     </aside>
   );

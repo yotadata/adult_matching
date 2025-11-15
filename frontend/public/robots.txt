@@ -1,0 +1,13 @@
+User-agent: *
+
+Allow: /swipe
+Allow: /about
+
+Disallow: /
+Disallow: /search
+Disallow: /lists
+Disallow: /insights
+Disallow: /contact
+Disallow: /api/
+
+Sitemap: https://seiheki.me/sitemap.xml

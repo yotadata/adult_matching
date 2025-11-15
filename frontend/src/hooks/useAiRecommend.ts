@@ -57,10 +57,17 @@ type UseAiRecommendOptions = {
   limitPerSection?: number;
   tagIds?: string[];
   performerIds?: string[];
+  enabled?: boolean;
 };
 
 export function useAiRecommend(options: UseAiRecommendOptions) {
-  const { prompt, limitPerSection, tagIds, performerIds } = options;
+  const {
+    prompt,
+    limitPerSection,
+    tagIds,
+    performerIds,
+    enabled = true,
+  } = options;
   const [data, setData] = useState<AiRecommendResponse | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -73,6 +80,7 @@ export function useAiRecommend(options: UseAiRecommendOptions) {
   }), [prompt, limitPerSection, tagIds, performerIds]);
 
   const fetchData = useCallback(async () => {
+    if (!enabled) return;
     setLoading(true);
     setError(null);
     try {
@@ -90,11 +98,12 @@ export function useAiRecommend(options: UseAiRecommendOptions) {
     } finally {
       setLoading(false);
     }
-  }, [payload]);
+  }, [payload, enabled]);
 
   useEffect(() => {
+    if (!enabled) return;
     fetchData();
-  }, [fetchData]);
+  }, [fetchData, enabled]);
 
   return { data, loading, error, refetch: fetchData };
 }
