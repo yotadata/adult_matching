@@ -23,7 +23,7 @@ const HowToUseCard: React.FC<HowToUseCardProps> = ({ onClose }) => {
       </div>
       <p className="text-sm leading-relaxed">
         カードを<span className="font-bold text-amber-500">右にスワイプ</span>すると「いいね」、
-        <span className="font-bold text-violet-500">左にスワイプ</span>すると「スキップ」できます。
+        <span className="font-bold text-violet-500">左にスワイプ</span>すると「パス」できます。
       </p>
     </div>
   );

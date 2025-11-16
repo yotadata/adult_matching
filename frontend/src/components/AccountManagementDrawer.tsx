@@ -120,7 +120,7 @@ const AccountManagementDrawer: React.FC<AccountManagementDrawerProps> = ({ isOpe
                             >
                               <div className="flex items-center gap-3">
                                 <Sparkles size={18} className="shrink-0" />
-                                <span className="truncate">AI検索</span>
+                                <span className="truncate">AIで探す</span>
                               </div>
                               <div className="mt-2 pr-1">
                                 <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">

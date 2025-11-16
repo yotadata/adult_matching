@@ -14,11 +14,11 @@ on:
         required: false
         default: '3'
       skip_ingest:
-        description: 'FANZA 取得をスキップする'
+        description: 'FANZA 取得をパスする'
         required: false
         default: 'false'
       skip_fetch:
-        description: 'Storage からモデルを取得するステップをスキップする'
+        description: 'Storage からモデルを取得するステップをパスする'
         required: false
         default: 'false'
   schedule:

@@ -8,7 +8,7 @@ on:
         required: false
         default: '8'
       skip_fetch:
-        description: 'Storage からモデルを取得するステップをスキップ'
+        description: 'Storage からモデルを取得するステップをパス'
         required: false
         default: 'false'
   schedule:

@@ -7,6 +7,11 @@ import Script from 'next/script'; // ★ 追加
 export const metadata: Metadata = {
   title: "性癖ラボ",
   description: "アダルト動画とのマッチング",
+  icons: {
+    icon: '/seiheki_icon.png',
+    shortcut: '/seiheki_icon.png',
+    apple: '/seiheki_icon.png',
+  },
 };
 
 export default function RootLayout({

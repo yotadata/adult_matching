@@ -78,8 +78,8 @@ Secrets 名はリポジトリ設定（Settings → Secrets and variables → Act
 | `start_date` | FANZA 取得範囲の開始日（`YYYY-MM-DD` JST） | 空 |
 | `end_date` | FANZA 取得範囲の終了日 | 空 |
 | `lookback_days` | 上記が未指定の場合の取得日数 | `3` |
-| `skip_ingest` | FANZA 取得ステップをスキップするか | `false` |
-| `skip_fetch` | Storage からモデルを取得するステップをスキップするか | `false` |
+| `skip_ingest` | FANZA 取得ステップをパスするか | `false` |
+| `skip_fetch` | Storage からモデルを取得するステップをパスするか | `false` |
 
 > GitHub Actions では Secrets `SUPABASE_CA_CERT` に Base64 エンコードした Supabase の CA 証明書を登録し、`docker/env/supabase-ca.crt` に展開しています。ローカルで同等の処理を行う場合も同一の CA ファイルを用意し、`PGSSLROOTCERT` をそのパスに設定してください（詳細は `docs/ml/two_tower_training.md` を参照）。
 
@@ -100,7 +100,7 @@ Base64 エンコード例: `base64 -w0 docker/env/supabase-ca.crt`
   | 入力名 | 説明 | 既定値 |
   | --- | --- | --- |
   | `recent_hours` | 直近何時間のユーザーを対象にするか | `1` |
-  | `skip_fetch` | Storage からのモデル取得をスキップするか | `false` |
+  | `skip_fetch` | Storage からのモデル取得をパスするか | `false` |
 
 > `sync_user_embeddings` は FANZA 連携を行わないため、FANZA 系 Secrets は不要です。
 

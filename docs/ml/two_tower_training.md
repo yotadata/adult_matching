@@ -315,7 +315,7 @@ Secrets を設定した後は手動 `workflow_dispatch` もしくはスケジュ
 | --- | --- |
 | `start_date`, `end_date` | `GTE_RELEASE_DATE` / `LTE_RELEASE_DATE` を直接指定。`YYYY-MM-DD`（JST基準） |
 | `lookback_days` | 日数で指定したい場合に利用（デフォルト 3 日） |
-| `skip_ingest`, `skip_fetch` | FANZA 取得／Storage 取得ステップをスキップするブール値（`true` / `false`） |
+| `skip_ingest`, `skip_fetch` | FANZA 取得／Storage 取得ステップをパスするブール値（`true` / `false`） |
 | `mode` | `full`（取得+埋め込み）/ `embeddings`（埋め込みのみ再実行） |
 
 ローカルで同じ流れを再現したい場合は上記 `scripts/sync_video_embeddings/run.sh` を利用するだけでよい。
@@ -425,7 +425,7 @@ jobs:
 - バージョニング: `two_tower_YYYYMMDD_HHMMSS.pkl.gz` を保存しつつ、`two_tower_latest.pkl` を上書き
 - 品質ゲート（推奨）:
   - 評価指標の下限（例: Recall@10 が前回値から大幅悪化しない）を満たさない場合は `latest` の更新を抑止
-  - 失敗時フォールバック: 直近安定版の `latest` を維持し、埋め込み Upsert はスキップ
+  - 失敗時フォールバック: 直近安定版の `latest` を維持し、埋め込み Upsert はパス
 - 通知: Slack/メールで成功・失敗を通知
 
 上記の GitHub Actions 雛形（Train TwoTower）は、手動実行 `workflow_dispatch` と週次 `schedule` の両方をサポートしています。そのまま週次更新として利用できます。

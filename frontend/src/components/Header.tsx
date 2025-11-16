@@ -3,6 +3,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { useState, useEffect, useRef, Fragment } from 'react';
+import type { ComponentType } from 'react';
 import AuthModal from './auth/AuthModal';
 import useMediaQuery from '@/hooks/useMediaQuery';
 import { supabase } from '@/lib/supabase';
@@ -27,6 +28,31 @@ const Header = ({ cardWidth, mobileGauge }: { cardWidth: number | undefined; mob
   const router = useRouter();
   const [decisionCount, setDecisionCount] = useState<number>(0);
   const personalizeTarget = Number(process.env.NEXT_PUBLIC_PERSONALIZE_TARGET || 20);
+  const isLoggedIn = Boolean(user);
+  const remainingSwipes = Math.max(personalizeTarget - decisionCount, 0);
+  const gaugeCaption = remainingSwipes === 0 ? 'パーソナライズ完了' : `あと${remainingSwipes}枚`;
+  const gaugeProgress = Math.min(decisionCount / personalizeTarget, 1);
+
+  type NavItem = {
+    label: string;
+    href: string;
+    icon: ComponentType<{ size?: number }>;
+    requiresLogin: boolean;
+    withGauge?: boolean;
+  };
+
+  const primaryNavItems: NavItem[] = [
+    { label: 'スワイプ', href: '/swipe', icon: HomeIcon, requiresLogin: false },
+    { label: '気になるリスト', href: '/lists', icon: List, requiresLogin: true },
+    { label: 'AIで探す', href: '/search', icon: Sparkles, requiresLogin: true, withGauge: true },
+    { label: 'あなたの性癖', href: '/insights', icon: BarChart2, requiresLogin: true },
+  ];
+
+  const secondaryNavItems: NavItem[] = [
+    { label: 'お問い合わせ', href: '/contact', icon: Sparkles, requiresLogin: true },
+    { label: 'アカウント設定', href: '/settings', icon: UserPlus, requiresLogin: true },
+    { label: 'このサイトについて', href: '/about', icon: BarChart2, requiresLogin: false },
+  ];
 
   useEffect(() => {
     const getSession = async () => {
@@ -200,43 +226,74 @@ const Header = ({ cardWidth, mobileGauge }: { cardWidth: number | undefined; mob
                   <div className="absolute inset-0 overflow-hidden">
                     <div className="pointer-events-none fixed inset-y-0 right-0 flex max-w-full">
                       <Transition.Child as={Fragment} enter="transform transition ease-in-out duration-300" enterFrom="translate-x-full" enterTo="translate-x-0" leave="transform transition ease-in-out duration-300" leaveFrom="translate-x-0" leaveTo="translate-x-full">
-                        <Dialog.Panel className="pointer-events-auto w-screen max-w-xs h-full bg-white text-gray-800 shadow-xl flex flex-col">
-                          <div className="p-4 border-b flex items-center justify-between">
-                            <Dialog.Title className="text-base font-bold text-gray-900">メニュー</Dialog.Title>
-                            <button ref={mobileCloseBtnRef} aria-label="閉じる" onClick={() => setIsMenuDrawerOpen(false)} className="p-1 text-gray-600 hover:text-gray-800">
+                        <Dialog.Panel className="pointer-events-auto w-screen max-w-xs h-full bg-white/80 backdrop-blur-md text-gray-800 shadow-[0_10px_40px_rgba(15,23,42,0.35)] border-l border-white/30 flex flex-col">
+                          <div className="p-4 border-b border-white/40 flex items-center justify-between">
+                            <Dialog.Title className="text-sm font-bold tracking-wide text-gray-900">メニュー</Dialog.Title>
+                            <button ref={mobileCloseBtnRef} aria-label="閉じる" onClick={() => setIsMenuDrawerOpen(false)} className="p-1 text-gray-500 hover:text-gray-700">
                               <X size={20} />
                             </button>
                           </div>
                           <div className="flex-1 flex flex-col">
-                            <div className="flex-1 flex flex-col divide-y divide-gray-200 overflow-y-auto">
-                              <button className="w-full flex items-center gap-3 text-left px-4 py-3 text-gray-800 hover:bg-gray-100" onClick={() => { setIsMenuDrawerOpen(false); router.push('/swipe'); }}>
-                                <HomeIcon size={18} />
-                                <span>スワイプ画面</span>
-                              </button>
-                              <button className="w-full flex items-center gap-3 text-left px-4 py-3 text-gray-800 hover:bg-gray-100" onClick={() => { setIsMenuDrawerOpen(false); router.push('/lists'); }}>
-                                <List size={18} />
-                                <span>気になるリスト</span>
-                              </button>
-                              <button className="w-full text-left px-4 py-3 text-gray-800 hover:bg-gray-100" onClick={() => { setIsMenuDrawerOpen(false); router.push('/search'); }}>
-                                <div className="flex items-center gap-3 text-gray-800 mb-2">
-                                  <Sparkles size={18} />
-                                  <span>AI検索</span>
-                                </div>
-                                <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
-                                  <div className="h-full rounded-full" style={{ width: `${Math.min(decisionCount / personalizeTarget, 1) * 100}%`, background: 'linear-gradient(90deg, #ADB4E3 0%, #C8BAE3 33.333%, #F7BECE 66.666%, #F9B1C4 100%)' }} />
-                                </div>
-                                <div className="mt-1 text-xs text-gray-600 text-right">パーソナライズまであと{Math.max(personalizeTarget - decisionCount, 0)}枚</div>
-                              </button>
-                              <button className="w-full flex items-center gap-3 text-left px-4 py-3 text-gray-800 hover:bg-gray-100" onClick={() => { setIsMenuDrawerOpen(false); router.push('/insights'); }}>
-                                <BarChart2 size={18} />
-                                <span>あなたの性癖</span>
-                              </button>
+                            <div className="flex-1 flex flex-col divide-y divide-white/40 overflow-y-auto text-sm">
+                              <div className="py-0.5">
+                                {primaryNavItems.map((item) => {
+                                  const Icon = item.icon;
+                                  const disabled = item.requiresLogin && !isLoggedIn;
+                                  if (item.withGauge) {
+                                    return (
+                                      <button
+                                        key={item.label}
+                                        disabled={disabled}
+                                        onClick={() => { if (!disabled) { setIsMenuDrawerOpen(false); router.push(item.href); } }}
+                                      className={`w-full text-left px-4 py-2.5 ${disabled ? 'opacity-40 cursor-not-allowed' : 'hover:bg-white/20'} transition rounded-none`}
+                                    >
+                                        <div className="flex items-center gap-2 text-sm font-semibold">
+                                          <Icon size={18} />
+                                          <span>{item.label}</span>
+                                        </div>
+                                        <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                                          <div className="h-full rounded-full" style={{ width: `${gaugeProgress * 100}%`, background: 'linear-gradient(90deg, #ADB4E3 0%, #C8BAE3 33.333%, #F7BECE 66.666%, #F9B1C4 100%)' }} />
+                                        </div>
+                                        <div className="mt-0.5 text-[10px] text-gray-600 text-right">{gaugeCaption}</div>
+                                      </button>
+                                    );
+                                  }
+                                  return (
+                                    <button
+                                      key={item.label}
+                                      disabled={disabled}
+                                      onClick={() => { if (!disabled) { setIsMenuDrawerOpen(false); router.push(item.href); } }}
+                                      className={`w-full flex items-center gap-2 text-left px-4 py-2.5 ${disabled ? 'opacity-40 cursor-not-allowed' : 'hover:bg-white/70'} transition`}
+                                    >
+                                      <Icon size={18} />
+                                      <span className="text-sm font-medium">{item.label}</span>
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                              <div className="py-0.5">
+                                {secondaryNavItems.map((item) => {
+                                  const Icon = item.icon;
+                                  const disabled = item.requiresLogin && !isLoggedIn;
+                                  return (
+                                    <button
+                                      key={item.label}
+                                      disabled={disabled}
+                                      onClick={() => { if (!disabled) { setIsMenuDrawerOpen(false); router.push(item.href); } }}
+                                      className={`w-full flex items-center gap-2 text-left px-4 py-2.5 ${disabled ? 'opacity-40 cursor-not-allowed' : 'hover:bg-white/70'} transition`}
+                                    >
+                                      <Icon size={18} />
+                                      <span className="text-sm font-medium">{item.label}</span>
+                                    </button>
+                                  );
+                                })}
+                              </div>
                             </div>
-                            <div className="border-t px-4 py-3">
+                            <div className="border-t border-white/40 px-4 py-2.5 bg-white/60">
                               {user ? (
-                                <button onClick={handleLogout} className="w-full text-left text-gray-800 hover:bg-gray-100 rounded-md px-3 py-2">ログアウト</button>
+                                <button onClick={handleLogout} className="w-full text-left text-sm font-semibold text-gray-800 hover:bg-white rounded-md px-3 py-2">ログアウト</button>
                               ) : (
-                                <button onClick={() => { setIsMenuDrawerOpen(false); handleOpenModal(); }} className="w-full text-left text-gray-800 hover:bg-gray-100 rounded-md px-3 py-2">ログイン / 新規登録</button>
+                                <button onClick={() => { setIsMenuDrawerOpen(false); handleOpenModal(); }} className="w-full text-left text-sm font-semibold text-gray-800 hover:bg-white rounded-md px-3 py-2">ログイン / 新規登録</button>
                               )}
                             </div>
                           </div>
@@ -255,10 +312,10 @@ const Header = ({ cardWidth, mobileGauge }: { cardWidth: number | undefined; mob
             <div className="flex justify-center">
               <Link href="/swipe" aria-label="ホームへ移動" className="inline-flex">
                 <Image
-                  src="/seiheki_lab.png"
-                  alt="Seiheki Lab Logo"
-                  width={180}
-                  height={78}
+                  src="/seiheki_icon.png"
+                  alt="Seiheki Lab Icon"
+                  width={96}
+                  height={96}
                   priority
                   draggable="false"
                   className="cursor-pointer"
