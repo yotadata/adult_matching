@@ -10,6 +10,8 @@ import { supabase } from "@/lib/supabase";
 import { trackEvent, generateSessionId } from "@/lib/analytics";
 import { ChevronsLeft, Heart, List } from "lucide-react";
 import { useDecisionCount } from "@/hooks/useDecisionCount";
+import OnboardingSlides from "@/components/OnboardingSlides";
+import SpotlightTutorial from "@/components/SpotlightTutorial";
 
 interface VideoFromApi {
   id: number;
@@ -47,6 +49,8 @@ interface VideosFeedMetadata {
 const ORIGINAL_GRADIENT = 'linear-gradient(90deg, #C4C8E3 0%, #D7D1E3 33.333%, #F7D7E0 66.666%, #F9C9D6 100%)';
 const LEFT_SWIPE_GRADIENT = ORIGINAL_GRADIENT;
 const RIGHT_SWIPE_GRADIENT = ORIGINAL_GRADIENT;
+const ONBOARDING_STORAGE_KEY = 'seihekiLab_hasSeenOnboardingSlides';
+const SPOTLIGHT_STORAGE_KEY = 'seihekiLab_hasSeenSpotlightTutorial';
 export default function Home() {
 
   const [cards, setCards] = useState<CardData[]>([]);
@@ -71,6 +75,59 @@ export default function Home() {
   const samplePlayCountRef = useRef<number>(0);
   const previousCardRef = useRef<CardData | null>(null);
   const currentPositionRef = useRef<number>(0);
+  const likeButtonRef = useRef<HTMLButtonElement | null>(null);
+  const skipButtonRef = useRef<HTMLButtonElement | null>(null);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [showSpotlight, setShowSpotlight] = useState(false);
+  const [spotlightReady, setSpotlightReady] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const seenOnboarding = localStorage.getItem(ONBOARDING_STORAGE_KEY) === 'true';
+    const seenSpotlight = localStorage.getItem(SPOTLIGHT_STORAGE_KEY) === 'true';
+    if (!seenOnboarding) {
+      setShowOnboarding(true);
+    } else if (!seenSpotlight) {
+      setShowSpotlight(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!showSpotlight) {
+      setSpotlightReady(false);
+      return;
+    }
+    if (typeof window === 'undefined') return;
+    let rafId: number | null = null;
+    const checkReady = () => {
+      if (likeButtonRef.current && skipButtonRef.current) {
+        setSpotlightReady(true);
+        return;
+      }
+      rafId = window.requestAnimationFrame(checkReady);
+    };
+    checkReady();
+    return () => {
+      if (rafId) {
+        window.cancelAnimationFrame(rafId);
+      }
+    };
+  }, [showSpotlight]);
+
+  const handleFinishOnboarding = useCallback(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(ONBOARDING_STORAGE_KEY, 'true');
+    }
+    setShowOnboarding(false);
+    setTimeout(() => setShowSpotlight(true), 0);
+  }, []);
+
+  const handleFinishSpotlight = useCallback(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(SPOTLIGHT_STORAGE_KEY, 'true');
+    }
+    setShowSpotlight(false);
+  }, []);
 
   const toIsoString = useCallback((ms: number | null) => (ms != null ? new Date(ms).toISOString() : undefined), []);
 
@@ -506,6 +563,8 @@ export default function Home() {
                 onSkip={() => handleSwipe('left')}
                 onLike={() => handleSwipe('right')}
                 onSamplePlay={(card) => handleSamplePlay(card, 'mobile')}
+                skipButtonRef={skipButtonRef}
+                likeButtonRef={likeButtonRef}
               />
             ) : (
               <SwipeCard
@@ -550,6 +609,7 @@ export default function Home() {
               <div className="mx-auto w-full flex items-center justify-center gap-6 py-3">
               <button
                 onClick={() => triggerSwipe('left')}
+                ref={skipButtonRef}
                 className="w-20 h-20 rounded-full bg-[#6C757D] shadow-2xl drop-shadow-xl active:scale-95 transition flex items-center justify-center leading-none"
                 aria-label="パス"
                 title="パス"
@@ -566,6 +626,7 @@ export default function Home() {
               </button>
               <button
                 onClick={() => triggerSwipe('right')}
+                ref={likeButtonRef}
                 className="w-20 h-20 rounded-full bg-[#FF6B81] shadow-2xl drop-shadow-xl active:scale-95 transition flex items-center justify-center leading-none"
                 aria-label="気になる"
                 title="気になる"
@@ -577,6 +638,13 @@ export default function Home() {
           )}
         </footer>
       )}
+      <OnboardingSlides open={showOnboarding} onFinish={handleFinishOnboarding} />
+      <SpotlightTutorial
+        likeButtonRef={likeButtonRef}
+        skipButtonRef={skipButtonRef}
+        visible={showSpotlight && spotlightReady && !showOnboarding}
+        onFinish={handleFinishSpotlight}
+      />
     </motion.div>
   );
 }

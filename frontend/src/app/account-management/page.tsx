@@ -150,7 +150,6 @@ export default function AccountManagementPage() {
             <p className="mt-4 text-sm text-gray-500">ユーザー情報を取得できませんでした。再読み込みしてください。</p>
           )}
         </div>
-
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {cards.map((card) => {
             const Icon = card.icon;
