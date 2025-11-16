@@ -4,9 +4,8 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import { Home as HomeIcon, Sparkles, BarChart2, List, UserPlus, LogOut } from 'lucide-react';
+import { Home as HomeIcon, Sparkles, BarChart2, List, UserPlus } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
-import { forceClearSupabaseAuth } from '@/lib/authUtils';
 import { useDecisionCount } from '@/hooks/useDecisionCount';
 
 export default function DesktopSidebar() {
@@ -36,21 +35,6 @@ export default function DesktopSidebar() {
     } catch {}
   };
 
-  const handleLogout = async () => {
-    try {
-      await supabase.auth.getSession();
-      const { error } = await supabase.auth.signOut({ scope: 'global' });
-      if (error) console.error('signOut error:', error.message);
-    } catch (e) {
-      console.error('logout exception', e);
-    }
-    setIsLoggedIn(false);
-    try { forceClearSupabaseAuth(); } catch {}
-    try { router.push('/swipe'); } catch {}
-    try { router.refresh(); } catch {}
-    try { setTimeout(() => { if (typeof window !== 'undefined') window.location.assign('/swipe'); }, 100); } catch {}
-  };
-
   const NavButton = ({
     label,
     icon: Icon,
@@ -59,7 +43,7 @@ export default function DesktopSidebar() {
   }: { label: string; icon: React.ComponentType<{ size?: number; className?: string }>; href: string; disabled?: boolean }) => (
     <button
       disabled={disabled}
-      className={`w-full min-w-0 flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors ${disabled ? 'opacity-50 cursor-not-allowed text-gray-400' : pathname === href ? 'bg-white text-gray-900' : 'text-gray-800 hover:bg-white/70'}`}
+      className={`w-full min-w-0 flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors ${disabled ? 'opacity-50 cursor-not-allowed text-gray-400' : pathname === href ? 'bg-gray-100 text-gray-900' : 'text-gray-800 hover:bg-gray-100'}`}
       onClick={() => { if (!disabled) router.push(href); }}
       title={label}
     >
@@ -85,7 +69,7 @@ export default function DesktopSidebar() {
   }) => (
     <button
       disabled={disabled}
-      className={`w-full text-left min-w-0 px-3 py-2 rounded-md text-sm transition-colors ${disabled ? 'opacity-50 cursor-not-allowed text-gray-400' : pathname === href ? 'bg-white text-gray-900' : 'text-gray-800 hover:bg-white/70'}`}
+      className={`w-full text-left min-w-0 px-3 py-2 rounded-md text-sm transition-colors ${disabled ? 'opacity-50 cursor-not-allowed text-gray-400' : pathname === href ? 'bg-gray-100 text-gray-900' : 'text-gray-800 hover:bg-gray-100'}`}
       onClick={() => { if (!disabled) router.push(href); }}
       title={label}
     >
@@ -106,9 +90,9 @@ export default function DesktopSidebar() {
   const caption = remainingSwipes === 0 ? 'パーソナライズ完了' : `パーソナライズまであと${remainingSwipes}枚`;
 
   return (
-    <aside className="hidden sm:block fixed left-0 top-0 h-screen w-56 bg-white/80 backdrop-blur-md border-r border-white/30 shadow-md text-gray-800 z-40">
+    <aside className="hidden sm:block fixed left-0 top-0 h-screen w-56 bg-white border-r border-gray-100 shadow-md text-gray-800 z-40">
       <div className="h-full flex flex-col">
-        <div className="px-4 py-4 border-b border-white/30">
+        <div className="px-4 py-4 border-b border-gray-100">
           <div className="flex items-center gap-2">
             <Link href="/swipe" aria-label="スワイプへ移動" className="inline-flex">
               <Image src="/seiheki_lab.png" alt="Seiheki Lab Logo" width={120} height={40} priority draggable="false" className="cursor-pointer" />
@@ -128,33 +112,25 @@ export default function DesktopSidebar() {
           )}
         </div>
         <nav className="flex-1 p-3 space-y-1">
-          <NavButton label="スワイプ" icon={HomeIcon} href="/swipe" disabled={!isLoggedIn} />
+          <NavButton label="スワイプ" icon={HomeIcon} href="/swipe" disabled={false} />
           <NavButton label="気になるリスト" icon={List} href="/lists" disabled={!isLoggedIn} />
           <NavButtonWithGauge
             label="AIで探す"
             icon={Sparkles}
             href="/search"
-            disabled={!isLoggedIn}
+            disabled={false}
             progress={decisionCount / personalizeTarget}
             caption={caption}
           />
           <NavButton label="あなたの性癖" icon={BarChart2} href="/insights" disabled={!isLoggedIn} />
         </nav>
-        <div className="px-3 pt-2">
-          <div className="border-t border-white/50 my-2" />
+        <div className="px-3 pt-2 pb-10">
+          <div className="border-t border-gray-100 my-2" />
           <div className="space-y-1 text-sm text-gray-600">
             <NavButton label="お問い合わせ" icon={Sparkles} href="/contact" disabled={!isLoggedIn} />
-            <NavButton label="アカウント設定" icon={UserPlus} href="/settings" disabled={!isLoggedIn} />
+            <NavButton label="アカウント設定" icon={UserPlus} href="/account-management" disabled={!isLoggedIn} />
             <NavButton label="このサイトについて" icon={BarChart2} href="/about" disabled={false} />
           </div>
-        </div>
-        <div className="p-3 border-t border-white/30">
-          {isLoggedIn ? (
-            <button onClick={handleLogout} className="w-full flex items-center gap-2 px-3 py-2 text-left rounded-md text-sm text-gray-800 hover:bg-white/70 shadow-md hover:shadow-lg transition-shadow">
-              <LogOut size={18} />
-              <span className="truncate">ログアウト</span>
-            </button>
-          ) : null}
         </div>
       </div>
     </aside>

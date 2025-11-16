@@ -5,15 +5,16 @@ export default function ContactPage() {
   const formUrl = process.env.NEXT_PUBLIC_GOOGLE_FORM_URL || defaultUrl;
 
   return (
-    <main className="min-h-screen bg-gray-50 py-10 px-4">
-      <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-lg border border-gray-100">
-        <div className="p-8 space-y-4">
-          <p className="text-xs uppercase text-gray-500 tracking-[0.4em]">Contact</p>
-          <h1 className="text-2xl font-bold text-gray-900">お問い合わせ</h1>
-          <p className="text-sm text-gray-600">不具合報告やご要望などは下記フォームからお気軽にお送りください。</p>
-        </div>
-        {formUrl ? (
-          <div className="px-4 pb-8">
+    <main className="w-full min-h-screen px-0 sm:px-4 py-8 text-white">
+      <section className="w-full max-w-4xl mx-auto rounded-2xl bg-white/20 backdrop-blur-xl border border-white/30 shadow-[0_20px_60px_rgba(0,0,0,0.25)] p-4 sm:p-8 text-white space-y-6">
+        <header className="space-y-3">
+          <p className="text-xs uppercase tracking-[0.35em] text-white/60">Contact</p>
+          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">お問い合わせ</h1>
+          <p className="text-sm text-white/80">不具合報告やご要望などは下記フォームからお気軽にお送りください。</p>
+        </header>
+
+        <div className="rounded-2xl bg-white/95 text-gray-900 shadow-lg border border-white/60 p-6">
+          {formUrl ? (
             <div className="relative w-full pt-[140%]">
               <iframe
                 src={formUrl}
@@ -23,13 +24,13 @@ export default function ContactPage() {
                 referrerPolicy="no-referrer"
               />
             </div>
-          </div>
-        ) : (
-          <div className="px-8 pb-8 text-sm text-red-600">
-            フォームURLが設定されていません。NEXT_PUBLIC_GOOGLE_FORM_URL を設定してください。
-          </div>
-        )}
-      </div>
+          ) : (
+            <div className="text-sm text-red-600">
+              フォームURLが設定されていません。NEXT_PUBLIC_GOOGLE_FORM_URL を設定してください。
+            </div>
+          )}
+        </div>
+      </section>
     </main>
   );
 }

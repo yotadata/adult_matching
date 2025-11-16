@@ -37,3 +37,9 @@
 | `[AppRelease]` | `apprelease-pages-build-deployment.yml` | `[AppRelease] Sub - Pages Build Deployment` | GitHub Pages 自動デプロイ（必要であれば手動ワークフロー化） |
 
 今後ワークフローを追加・改名する場合は、この表を更新しながら命名規約に沿って運用してください。
+
+## PR テストスイートの運用ルール
+
+- `[CiCd] Ops - PR Test Suite` は `pull_request` のラベルイベントでは常に起動しますが、ジョブは `ci:run-tests` ラベルが付与された場合のみ実行されます。
+- 開発者は PR に対して `ci:run-tests` ラベルを手動で付けるか、`workflow_dispatch` を実行してテストを走らせます。
+- 実行結果は `report` ジョブが自動で PR にコメントします。不要な re-run を避けるため、ラベルを付ける際はレビュー準備が整った段階で行ってください。

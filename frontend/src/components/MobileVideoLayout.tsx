@@ -1,7 +1,7 @@
 'use client';
 
 import { CardData } from '@/components/SwipeCard';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, RefObject } from 'react';
 import { Play, Calendar, User, Tag, ChevronsLeft, Heart, List, Share2 } from 'lucide-react';
 
 interface MobileVideoLayoutProps {
@@ -9,9 +9,11 @@ interface MobileVideoLayoutProps {
   onSkip: () => void;
   onLike: () => void;
   onSamplePlay?: (card: CardData) => void;
+  skipButtonRef?: RefObject<HTMLButtonElement | null>;
+  likeButtonRef?: RefObject<HTMLButtonElement | null>;
 }
 
-const MobileVideoLayout: React.FC<MobileVideoLayoutProps> = ({ cardData, onSkip, onLike, onSamplePlay }) => {
+const MobileVideoLayout: React.FC<MobileVideoLayoutProps> = ({ cardData, onSkip, onLike, onSamplePlay, skipButtonRef, likeButtonRef }) => {
   const [showVideo, setShowVideo] = useState(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [showOverlay, setShowOverlay] = useState(true);
@@ -187,6 +189,7 @@ const MobileVideoLayout: React.FC<MobileVideoLayoutProps> = ({ cardData, onSkip,
           {/* パス (ChevronsLeft, #6C757D) */}
           <button
             onClick={onSkip}
+            ref={skipButtonRef}
             className="w-20 h-20 rounded-full bg-[#6C757D] shadow-2xl drop-shadow-xl active:scale-95 transition flex items-center justify-center"
             aria-label="パス"
             title="パス"
@@ -205,6 +208,7 @@ const MobileVideoLayout: React.FC<MobileVideoLayoutProps> = ({ cardData, onSkip,
           {/* 気になる (heart, #FF6B81) */}
           <button
             onClick={onLike}
+            ref={likeButtonRef}
             className="w-20 h-20 rounded-full bg-[#FF6B81] shadow-2xl drop-shadow-xl active:scale-95 transition flex items-center justify-center"
             aria-label="気になる"
             title="気になる"

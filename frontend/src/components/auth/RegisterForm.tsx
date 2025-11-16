@@ -5,12 +5,14 @@ import { useForm, SubmitHandler } from 'react-hook-form';
 import { useState } from 'react';
 import toast from 'react-hot-toast';
 import { buildPseudoEmail, normalizeUsername } from '@/lib/authUtils';
+import TermsModal from './TermsModal';
 
 type RegisterFormInputs = {
   username: string;
   displayName: string;
   password: string;
   confirmPassword: string;
+  isAdult: boolean;
 };
 
 interface RegisterFormProps {
@@ -18,10 +20,13 @@ interface RegisterFormProps {
 }
 
 const RegisterForm: React.FC<RegisterFormProps> = ({ onClose }) => {
-  const { register, handleSubmit, watch, formState: { errors } } = useForm<RegisterFormInputs>();
+  const { register, handleSubmit, watch, formState: { errors } } = useForm<RegisterFormInputs>({
+    defaultValues: { isAdult: false },
+  });
   const password = watch('password');
   const [message, setMessage] = useState<{ type: 'error'; text: string } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isTermsOpen, setIsTermsOpen] = useState(false);
 
   const onSubmit: SubmitHandler<RegisterFormInputs> = async (data) => {
     setMessage(null);
@@ -133,6 +138,25 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onClose }) => {
         {errors.confirmPassword && <p className="text-red-500 text-xs mt-1">{errors.confirmPassword.message}</p>}
       </div>
 
+      <div className="space-y-2 text-sm text-gray-700">
+        <label className="flex items-start gap-2">
+          <input
+            type="checkbox"
+            className="mt-1 h-4 w-4 rounded border-gray-300 text-rose-500 focus:ring-rose-400"
+            {...register('isAdult', { required: '18歳以上のみ登録できます' })}
+          />
+          <span>私は18歳以上です。</span>
+        </label>
+        {errors.isAdult && <p className="text-red-500 text-xs">{errors.isAdult.message}</p>}
+        <p className="text-xs text-gray-500">
+          利用規約は{' '}
+          <button type="button" onClick={() => setIsTermsOpen(true)} className="text-rose-500 underline">
+            こちら
+          </button>
+          {' '}から確認できます。
+        </p>
+      </div>
+
       <button
         type="submit"
         className="w-full py-3 px-4 bg-transparent border border-[#FF6B81] text-[#FF6B81] hover:bg-[#FF6B81] hover:text-white font-bold rounded-lg transition-all duration-300 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
@@ -140,6 +164,8 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onClose }) => {
       >
         {isLoading ? '登録中...' : '利用規約に同意して登録'}
       </button>
+
+      <TermsModal open={isTermsOpen} onClose={() => setIsTermsOpen(false)} />
     </form>
   );
 };
