@@ -135,10 +135,10 @@ const Header = ({ cardWidth, mobileGauge }: { cardWidth: number | undefined; mob
                 <div className="flex justify-center">
                   <Link href="/swipe" aria-label="スワイプへ移動" className="inline-flex">
                     <Image
-                      src="/seiheki_lab.png"
-                      alt="Seiheki Lab Logo"
-                      width={120}
-                      height={50}
+                      src="/seiheki_icon.png"
+                      alt="Seiheki Lab Icon"
+                      width={64}
+                      height={64}
                       priority
                       draggable="false"
                       className="cursor-pointer"
@@ -163,10 +163,10 @@ const Header = ({ cardWidth, mobileGauge }: { cardWidth: number | undefined; mob
                 <div className="flex justify-start">
                   <Link href="/swipe" aria-label="スワイプへ移動" className="inline-flex">
                     <Image
-                      src="/seiheki_lab.png"
-                      alt="Seiheki Lab Logo"
-                      width={120}
-                      height={50}
+                      src="/seiheki_icon.png"
+                      alt="Seiheki Lab Icon"
+                      width={64}
+                      height={64}
                       priority
                       draggable="false"
                       className="cursor-pointer"
@@ -255,10 +255,10 @@ const Header = ({ cardWidth, mobileGauge }: { cardWidth: number | undefined; mob
             <div className="flex justify-center">
               <Link href="/swipe" aria-label="ホームへ移動" className="inline-flex">
                 <Image
-                  src="/seiheki_lab.png"
-                  alt="Seiheki Lab Logo"
-                  width={180}
-                  height={78}
+                  src="/seiheki_icon.png"
+                  alt="Seiheki Lab Icon"
+                  width={96}
+                  height={96}
                   priority
                   draggable="false"
                   className="cursor-pointer"
