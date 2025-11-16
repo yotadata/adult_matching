@@ -4,9 +4,8 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import { Home as HomeIcon, Sparkles, BarChart2, List, UserPlus, LogOut } from 'lucide-react';
+import { Home as HomeIcon, Sparkles, BarChart2, List, UserPlus } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
-import { forceClearSupabaseAuth } from '@/lib/authUtils';
 import { useDecisionCount } from '@/hooks/useDecisionCount';
 
 export default function DesktopSidebar() {
@@ -34,21 +33,6 @@ export default function DesktopSidebar() {
     try {
       window.dispatchEvent(new Event('open-auth-modal'));
     } catch {}
-  };
-
-  const handleLogout = async () => {
-    try {
-      await supabase.auth.getSession();
-      const { error } = await supabase.auth.signOut({ scope: 'global' });
-      if (error) console.error('signOut error:', error.message);
-    } catch (e) {
-      console.error('logout exception', e);
-    }
-    setIsLoggedIn(false);
-    try { forceClearSupabaseAuth(); } catch {}
-    try { router.push('/swipe'); } catch {}
-    try { router.refresh(); } catch {}
-    try { setTimeout(() => { if (typeof window !== 'undefined') window.location.assign('/swipe'); }, 100); } catch {}
   };
 
   const NavButton = ({
@@ -140,21 +124,13 @@ export default function DesktopSidebar() {
           />
           <NavButton label="あなたの性癖" icon={BarChart2} href="/insights" disabled={!isLoggedIn} />
         </nav>
-        <div className="px-3 pt-2">
+        <div className="px-3 pt-2 pb-6">
           <div className="border-t border-white/50 my-2" />
           <div className="space-y-1 text-sm text-gray-600">
             <NavButton label="お問い合わせ" icon={Sparkles} href="/contact" disabled={!isLoggedIn} />
-            <NavButton label="アカウント設定" icon={UserPlus} href="/settings" disabled={!isLoggedIn} />
+            <NavButton label="アカウント設定" icon={UserPlus} href="/account-management" disabled={!isLoggedIn} />
             <NavButton label="このサイトについて" icon={BarChart2} href="/about" disabled={false} />
           </div>
-        </div>
-        <div className="p-3 border-t border-white/30">
-          {isLoggedIn ? (
-            <button onClick={handleLogout} className="w-full flex items-center gap-2 px-3 py-2 text-left rounded-md text-sm text-gray-800 hover:bg-white/70 shadow-md hover:shadow-lg transition-shadow">
-              <LogOut size={18} />
-              <span className="truncate">ログアウト</span>
-            </button>
-          ) : null}
         </div>
       </div>
     </aside>

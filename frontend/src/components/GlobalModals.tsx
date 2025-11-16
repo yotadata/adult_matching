@@ -49,8 +49,8 @@ export default function GlobalModals() {
         initialTab={authInitialTab}
         registerNotice={showRegisterNotice ? (
           <>
-            <p className="mb-1">・捨てアドレスでの登録で大丈夫です。</p>
-            <p>・個人情報やクレジットカード情報の取得意図は一切ありません。</p>
+            <p className="mb-1">・AIにあなたの好みを記憶させるため、アカウント登録が必要です。</p>
+            <p>・登録時に個人情報やクレジットカード情報を求めることはありません。</p>
           </>
         ) : undefined}
       />

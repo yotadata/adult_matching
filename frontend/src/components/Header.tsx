@@ -12,8 +12,6 @@ import { Dialog, Transition } from '@headlessui/react';
 import { UserPlus, Menu as MenuIcon, X, Home as HomeIcon, Sparkles, BarChart2, List } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import LikedVideosDrawer from './LikedVideosDrawer'; // ドロワーコンポーネントをインポート
-import { toast } from 'react-hot-toast';
-import { forceClearSupabaseAuth } from '@/lib/authUtils';
 
 const Header = ({ cardWidth, mobileGauge }: { cardWidth: number | undefined; mobileGauge?: React.ReactNode }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -50,7 +48,7 @@ const Header = ({ cardWidth, mobileGauge }: { cardWidth: number | undefined; mob
 
   const secondaryNavItems: NavItem[] = [
     { label: 'お問い合わせ', href: '/contact', icon: Sparkles, requiresLogin: true },
-    { label: 'アカウント設定', href: '/settings', icon: UserPlus, requiresLogin: true },
+    { label: 'アカウント設定', href: '/account-management', icon: UserPlus, requiresLogin: true },
     { label: 'このサイトについて', href: '/about', icon: BarChart2, requiresLogin: false },
   ];
 
@@ -119,26 +117,6 @@ const Header = ({ cardWidth, mobileGauge }: { cardWidth: number | undefined; mob
   // const handleOpenDrawer = () => setIsDrawerOpen(true);
   const handleCloseDrawer = () => setIsDrawerOpen(false);
 
-  const handleLogout = async () => {
-    try {
-      // セッションを確実に初期化してからサインアウト
-      await supabase.auth.getSession();
-      const { error } = await supabase.auth.signOut({ scope: 'global' });
-      if (error) console.error('signOut error:', error.message);
-    } catch (e) {
-      console.error('logout exception', e);
-    }
-    setIsMenuDrawerOpen(false);
-    setIsDrawerOpen(false);
-    // 即時にUIへ反映
-    setUser(null);
-    setAuthChecked(true);
-    toast.success('ログアウトしました');
-    try { forceClearSupabaseAuth(); } catch {}
-    try { router.push('/swipe'); } catch {}
-    try { router.refresh(); } catch {}
-    try { setTimeout(() => { if (typeof window !== 'undefined') window.location.assign('/swipe'); }, 100); } catch {}
-  };
 
   return (
     <header
@@ -289,13 +267,11 @@ const Header = ({ cardWidth, mobileGauge }: { cardWidth: number | undefined; mob
                                 })}
                               </div>
                             </div>
-                            <div className="border-t border-white/40 px-4 py-2.5 bg-white/60">
-                              {user ? (
-                                <button onClick={handleLogout} className="w-full text-left text-sm font-semibold text-gray-800 hover:bg-white rounded-md px-3 py-2">ログアウト</button>
-                              ) : (
+                            {!user && (
+                              <div className="border-t border-white/40 px-4 py-2.5 bg-white/60">
                                 <button onClick={() => { setIsMenuDrawerOpen(false); handleOpenModal(); }} className="w-full text-left text-sm font-semibold text-gray-800 hover:bg-white rounded-md px-3 py-2">ログイン / 新規登録</button>
-                              )}
-                            </div>
+                              </div>
+                            )}
                           </div>
                         </Dialog.Panel>
                       </Transition.Child>
@@ -355,8 +331,8 @@ const Header = ({ cardWidth, mobileGauge }: { cardWidth: number | undefined; mob
         initialTab={authInitialTab}
         registerNotice={showRegisterNotice ? (
           <>
-            <p className="mb-1">・捨てアドレスでの登録で大丈夫です。</p>
-            <p>・個人情報やクレジットカード情報の取得意図は一切ありません。</p>
+            <p className="mb-1">・AIにあなたの好みを記憶させるため、アカウント登録が必要です。</p>
+            <p>・登録時に個人情報やクレジットカード情報を求めることはありません。</p>
           </>
         ) : undefined}
       />
