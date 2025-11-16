@@ -266,7 +266,7 @@ function ActionModal({
                 type="text"
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-rose-400 focus:outline-none"
+                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-rose-400 focus:outline-none"
                 placeholder="例: 新しい表示名"
               />
             </div>
@@ -287,7 +287,7 @@ function ActionModal({
                 type="password"
                 value={passwords.next}
                 onChange={(e) => setPasswords((prev) => ({ ...prev, next: e.target.value }))}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-rose-400 focus:outline-none"
+                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-rose-400 focus:outline-none"
                 placeholder="8文字以上"
               />
             </div>
@@ -297,7 +297,7 @@ function ActionModal({
                 type="password"
                 value={passwords.confirm}
                 onChange={(e) => setPasswords((prev) => ({ ...prev, confirm: e.target.value }))}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-rose-400 focus:outline-none"
+                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-rose-400 focus:outline-none"
                 placeholder="同じパスワードを入力"
               />
             </div>
