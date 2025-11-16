@@ -29,12 +29,12 @@ const FLOW = [
 
 export default function AboutPage() {
   return (
-    <main className="w-full min-h-screen px-0 sm:px-4 py-8 text-white">
+    <main className="w-full min-h-screen px-0 sm:px-4 py-8 text-slate-900">
       <div className="max-w-5xl mx-auto space-y-10">
-        <section className="rounded-3xl border border-white/25 bg-white/15 backdrop-blur-xl p-6 sm:p-10 shadow-[0_20px_50px_rgba(15,23,42,0.45)]">
-          <p className="text-xs uppercase tracking-[0.35em] text-white/70">About</p>
-          <h1 className="mt-2 text-3xl font-extrabold leading-tight text-white">このサイトについて</h1>
-          <p className="mt-4 text-sm sm:text-base text-white/85">
+        <section className="rounded-3xl border border-slate-200 bg-white p-6 sm:p-10 shadow-[0_20px_50px_rgba(15,23,42,0.15)]">
+          <p className="text-xs uppercase tracking-[0.35em] text-slate-500">About</p>
+          <h1 className="mt-2 text-3xl font-extrabold leading-tight text-slate-900">このサイトについて</h1>
+          <p className="mt-4 text-sm sm:text-base text-slate-600">
             性癖ラボは、スワイプで「気になる」か「パス」を重ねるほど AI があなたの好みを学習し、探す時間を短縮します。
             4 つのステップでやるべきことと結果が明確になるよう設計しています。
           </p>
@@ -44,29 +44,29 @@ export default function AboutPage() {
           {FLOW.map((step) => (
             <article
               key={step.title}
-              className="rounded-2xl border border-white/20 bg-white/10 p-6 backdrop-blur-lg shadow-[0_12px_35px_rgba(15,23,42,0.35)] text-white"
+              className="rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_12px_35px_rgba(15,23,42,0.12)] text-slate-900"
             >
               <div className="flex items-center gap-3">
-                <div className="rounded-2xl bg-white/20 p-3 text-white">
+                <div className="rounded-2xl bg-rose-50 p-3 text-rose-500">
                   <step.icon className="h-6 w-6" />
                 </div>
                 <h2 className="text-lg font-semibold">{step.title}</h2>
               </div>
-              <div className="mt-4 space-y-4 text-sm text-white/90">
+              <div className="mt-4 space-y-4 text-sm text-slate-700">
                 <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-rose-200/80">やること</p>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-rose-400">やること</p>
                   <p className="mt-1 leading-relaxed">{step.action}</p>
                 </div>
-                <div className="rounded-xl border border-white/20 bg-white/5 p-4">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-emerald-200/80">起こること</p>
-                  <p className="mt-1 leading-relaxed">{step.result}</p>
+                <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-emerald-400">起こること</p>
+                  <p className="mt-1 leading-relaxed text-slate-800">{step.result}</p>
                 </div>
               </div>
             </article>
           ))}
         </section>
 
-        <section className="rounded-2xl border border-white/20 bg-white/10 p-6 text-sm text-white/85">
+        <section className="rounded-2xl border border-slate-200 bg-white p-6 text-sm text-slate-600">
           <p>
             迷ったら `/swipe` で 10 枚以上の作品にリアクションしてください。AI が即座にあなたのダッシュボードを最適化し、「AIで探す」や「あなたの性癖」での分析にも反映されます。
             気になることがあればいつでもヘッダーの「お問い合わせ」からご連絡ください。
