@@ -8,7 +8,7 @@ import useWindowSize from "@/hooks/useWindowSize";
 import MobileVideoLayout from "@/components/MobileVideoLayout";
 import { supabase } from "@/lib/supabase";
 import { trackEvent, generateSessionId } from "@/lib/analytics";
-import { ThumbsDown, Heart, List } from "lucide-react";
+import { ChevronsLeft, Heart, List } from "lucide-react";
 import { useDecisionCount } from "@/hooks/useDecisionCount";
 
 interface VideoFromApi {
@@ -546,14 +546,15 @@ export default function Home() {
       {!isMobile && (
         <footer className="py-8 mx-auto" style={{ width: cardWidth ? `${cardWidth}px` : 'auto' }}>
           {activeCard && (
-            <div className="mx-auto w-full flex items-center justify-center gap-6 py-3">
+            <>
+              <div className="mx-auto w-full flex items-center justify-center gap-6 py-3">
               <button
                 onClick={() => triggerSwipe('left')}
                 className="w-20 h-20 rounded-full bg-[#6C757D] shadow-2xl drop-shadow-xl active:scale-95 transition flex items-center justify-center leading-none"
-                aria-label="イマイチ"
-                title="イマイチ"
+                aria-label="パス"
+                title="パス"
               >
-                <ThumbsDown size={36} className="text-white" />
+                <ChevronsLeft size={36} className="text-white" />
               </button>
               <button
                 onClick={() => { try { window.dispatchEvent(new Event('open-liked-drawer')); } catch {} }}
@@ -566,12 +567,13 @@ export default function Home() {
               <button
                 onClick={() => triggerSwipe('right')}
                 className="w-20 h-20 rounded-full bg-[#FF6B81] shadow-2xl drop-shadow-xl active:scale-95 transition flex items-center justify-center leading-none"
-                aria-label="好み"
-                title="好み"
+                aria-label="気になる"
+                title="気になる"
               >
                 <Heart size={36} className="text-white" />
               </button>
             </div>
+            </>
           )}
         </footer>
       )}

@@ -247,7 +247,7 @@ export default function VideoListDrawer({
                           onChange={(e) => onChangeSort(e.target.value as SortKey)}
                           className="flex-1 rounded-xl border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
                         >
-                          <option value="liked_at">LIKE日時</option>
+                          <option value="liked_at">気になる日時</option>
                           <option value="released">発売日</option>
                           <option value="price">価格</option>
                           <option value="title">タイトル</option>

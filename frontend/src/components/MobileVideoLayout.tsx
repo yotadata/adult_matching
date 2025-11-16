@@ -2,7 +2,7 @@
 
 import { CardData } from '@/components/SwipeCard';
 import { useEffect, useRef, useState } from 'react';
-import { Play, Calendar, User, Tag, ThumbsDown, Heart, List, Share2 } from 'lucide-react';
+import { Play, Calendar, User, Tag, ChevronsLeft, Heart, List, Share2 } from 'lucide-react';
 
 interface MobileVideoLayoutProps {
   cardData: CardData;
@@ -184,14 +184,14 @@ const MobileVideoLayout: React.FC<MobileVideoLayoutProps> = ({ cardData, onSkip,
       {/* フッター（透明）: 3つの色ボタン＋白アイコン */}
       <div className="fixed left-0 right-0 bottom-0 z-50 pb-[calc(8px+env(safe-area-inset-bottom,0px))]">
         <div className="mx-auto max-w-md w-full flex items-center justify-center gap-6 py-3">
-          {/* NOPE (thumb_down, #6C757D) */}
+          {/* パス (ChevronsLeft, #6C757D) */}
           <button
             onClick={onSkip}
             className="w-20 h-20 rounded-full bg-[#6C757D] shadow-2xl drop-shadow-xl active:scale-95 transition flex items-center justify-center"
-            aria-label="イマイチ"
-            title="イマイチ"
+            aria-label="パス"
+            title="パス"
           >
-            <ThumbsDown size={36} className="text-white" />
+            <ChevronsLeft size={36} className="text-white" />
           </button>
           {/* Liked list */}
           <button
@@ -202,12 +202,12 @@ const MobileVideoLayout: React.FC<MobileVideoLayoutProps> = ({ cardData, onSkip,
           >
             <List size={28} className="text-white" />
           </button>
-          {/* GOOD (heart, #FF6B81) */}
+          {/* 気になる (heart, #FF6B81) */}
           <button
             onClick={onLike}
             className="w-20 h-20 rounded-full bg-[#FF6B81] shadow-2xl drop-shadow-xl active:scale-95 transition flex items-center justify-center"
-            aria-label="好み"
-            title="好み"
+            aria-label="気になる"
+            title="気になる"
           >
             <Heart size={36} className="text-white" />
           </button>

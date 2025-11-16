@@ -51,7 +51,7 @@ export default function ListsPage() {
     {
       id: 'liked',
       title: 'いいねした作品',
-      description: 'AI検索やスワイプでLIKEした作品をまとめて見返せます。',
+      description: 'AIで探すやスワイプで「気になる」とした作品をまとめて見返せます。',
       onClick: () => setIsDrawerOpen(true),
       icon: Heart,
       accent: 'from-rose-500/80 to-pink-400/80',
@@ -117,7 +117,7 @@ export default function ListsPage() {
           <header className="space-y-3">
             <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight">あなたの気になるリスト</h1>
             <p className="text-sm text-white/80 mt-2">
-              いいね済みの作品や今後追加予定のオリジナル気になるリストをここから管理できます。
+              「気になる」とした作品や今後追加予定のオリジナル気になるリストをここから管理できます。
             </p>
             {isAuthenticated === false ? (
               <div className="rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-xs text-white/70">

@@ -11,15 +11,15 @@ import { supabase } from '@/lib/supabase';
 const SEARCH_SHORTCUTS = [
   {
     title: 'スワイプでサクッと探す',
-    description: 'テンポ良く LIKE/NOPE しながら直感的に選びたいとき',
+    description: 'テンポ良く「気になる」/「パス」で直感的に選びたいとき',
     href: '/swipe',
     badge: 'スワイプ',
   },
   {
-    title: '嗜好レポートを見る',
+    title: 'あなたの性癖をチェック',
     description: '最近の傾向やランキングを可視化しながら条件を考える',
     href: '/insights',
-    badge: 'インサイト',
+    badge: 'あなたの性癖',
   },
   {
     title: '気になるリストをまとめる',
@@ -342,7 +342,7 @@ export default function AiRecommendPage() {
             <div className="flex flex-col gap-3 text-white">
             <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight">AIで探す</h1>
             <p className="text-sm text-white/80">
-            あなたのLIKE履歴・全体トレンド・今の気分キーワードをもとに、3種類のリストを自動生成します。
+              あなたの「気になる」履歴・全体トレンド・今の気分キーワードをもとに、3種類のリストを自動生成します。
             </p>
             </div>
 
@@ -501,7 +501,7 @@ export default function AiRecommendPage() {
             <Sparkles size={16} className="text-rose-500" />
             最近の嗜好スナップショット
             </h3>
-            <p className="text-xs text-gray-500 mt-1">直近90日のLIKE履歴から抽出</p>
+                <p className="text-xs text-gray-500 mt-1">直近90日の「気になる」履歴から抽出</p>
             </header>
             <div className="space-y-3 text-sm text-gray-700">
             <div>

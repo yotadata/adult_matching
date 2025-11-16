@@ -63,7 +63,7 @@ export default function VideoList({ title, description, videos, loading, error, 
 
         {!isAuthenticated && !loading ? (
           <div className="rounded-2xl bg-white/10 border border-white/15 p-8 text-center space-y-4">
-            <p className="text-sm text-white/80">ログインすると、LIKE した作品を自動的に気になるリストへ保存します。</p>
+            <p className="text-sm text-white/80">ログインすると、「気になる」とした作品を自動的に気になるリストへ保存します。</p>
             <button
               type="button"
               onClick={() => {
@@ -132,7 +132,7 @@ export default function VideoList({ title, description, videos, loading, error, 
             ))}
             {videos.length === 0 && !loading ? (
               <div className="col-span-full rounded-2xl border border-white/30 bg-white/80 text-gray-600 p-8 text-center">
-                まだ LIKE した作品がありません。
+                まだ「気になる」とした作品がありません。
               </div>
             ) : null}
           </section>

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ThumbsDown, ThumbsUp } from 'lucide-react';
+import { ChevronsLeft, ThumbsUp } from 'lucide-react';
 
 interface ActionButtonsProps {
   onSkip: () => void;
@@ -46,10 +46,10 @@ const ActionButtons = ({ onSkip, onLike, nopeColor, likeColor, isMobileLayout = 
           onMouseEnter={() => setIsNopeHovered(true)}
           onMouseLeave={() => setIsNopeHovered(false)}
           className={`w-14 h-14 rounded-full bg-white border border-gray-200 shadow-lg active:scale-95 transition`}
-          aria-label="イマイチ"
-          title="イマイチ"
+          aria-label="パス"
+          title="パス"
         >
-          <ThumbsDown size={22} className={`mx-auto ${isNopeHovered ? 'text-gray-700' : 'text-gray-500'}`} />
+          <ChevronsLeft size={22} className={`mx-auto ${isNopeHovered ? 'text-gray-700' : 'text-gray-500'}`} />
         </button>
         {includeCenter && (
           <button
@@ -68,8 +68,8 @@ const ActionButtons = ({ onSkip, onLike, nopeColor, likeColor, isMobileLayout = 
           onMouseEnter={() => setIsLikeHovered(true)}
           onMouseLeave={() => setIsLikeHovered(false)}
           className={`w-14 h-14 rounded-full bg-white border border-gray-200 shadow-lg active:scale-95 transition`}
-          aria-label="好み"
-          title="好み"
+          aria-label="気になる"
+          title="気になる"
         >
           <ThumbsUp size={22} className={`mx-auto ${isLikeHovered ? 'text-rose-600' : 'text-rose-500'}`} />
         </button>
@@ -79,18 +79,18 @@ const ActionButtons = ({ onSkip, onLike, nopeColor, likeColor, isMobileLayout = 
 
   return (
     <div className={`flex items-center ${isMobileLayout ? 'w-full gap-3 px-4 py-3' : 'justify-between gap-6'} ${isMobileLayout ? '' : 'mx-auto'}`} style={!isMobileLayout && cardWidth ? { width: `${cardWidth}px` } : {}}>
-      {/* NOPE Button */}
+      {/* パス Button */}
       <button 
         onClick={onSkip} 
         onMouseEnter={() => setIsNopeHovered(true)}
         onMouseLeave={() => setIsNopeHovered(false)}
         className={`${buttonBaseClasses} ${isMobileLayout ? 'flex-1 rounded-full shadow-btnPurple' : 'w-40 rounded-2xl hover:scale-105 active:scale-95 shadow-btnPurple'}`}
         style={nopeButtonStyle}
-        aria-label="イマイチ"
-        title="イマイチ"
+        aria-label="パス"
+        title="パス"
       >
-        <ThumbsDown size={22} className="mr-2" />
-        イマイチ
+        <ChevronsLeft size={22} className="mr-2" />
+        パス
       </button>
       {!isMobileLayout && includeCenter && (
         <button
@@ -103,18 +103,18 @@ const ActionButtons = ({ onSkip, onLike, nopeColor, likeColor, isMobileLayout = 
           ❤︎
         </button>
       )}
-      {/* LIKE Button */}
+      {/* 気になる Button */}
       <button 
         onClick={onLike} 
         onMouseEnter={() => setIsLikeHovered(true)}
         onMouseLeave={() => setIsLikeHovered(false)}
         className={`${buttonBaseClasses} ${isMobileLayout ? 'flex-1 rounded-full shadow-btnAmber' : 'w-40 rounded-2xl hover:scale-105 active:scale-95 shadow-btnAmber'}`}
         style={likeButtonStyle}
-        aria-label="好み"
-        title="好み"
+        aria-label="気になる"
+        title="気になる"
       >
         <ThumbsUp size={22} className="mr-2" />
-        好み
+        気になる
       </button>
     </div>
   );

@@ -21,7 +21,7 @@ Two-Tower 推薦モデル向けの学習データを生成するための標準�
   - `--ranking-period <period>`: ランキング期間（`year`/`month`/`3month`/`halfyear`/`all`）を指定。複数回指定すると結合して重複を除外。
   - `--max-reviewers`（既定100）: ランキング上位レビュアー数
   - `--delay`（既定1.2秒）: リクエスト間隔（レートリミット対策）
-  - `--only-reviewers <ID...>`: 指定レビュアーのみ巡回（ランキング取得をスキップ）
+  - `--only-reviewers <ID...>`: 指定レビュアーのみ巡回（ランキング取得をパス）
   - `--dump-html-dir`, `--dump-on-missing-star` など: HTML ダンプによるデバッグ
 - 出力列: `product_url`, `reviewer_id`, `stars`
 - 特徴:

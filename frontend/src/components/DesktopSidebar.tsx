@@ -131,7 +131,7 @@ export default function DesktopSidebar() {
           <NavButton label="スワイプ" icon={HomeIcon} href="/swipe" disabled={!isLoggedIn} />
           <NavButton label="気になるリスト" icon={List} href="/lists" disabled={!isLoggedIn} />
           <NavButtonWithGauge
-            label="AI検索"
+            label="AIで探す"
             icon={Sparkles}
             href="/search"
             disabled={!isLoggedIn}
