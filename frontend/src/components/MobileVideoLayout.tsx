@@ -9,8 +9,8 @@ interface MobileVideoLayoutProps {
   onSkip: () => void;
   onLike: () => void;
   onSamplePlay?: (card: CardData) => void;
-  skipButtonRef?: RefObject<HTMLButtonElement>;
-  likeButtonRef?: RefObject<HTMLButtonElement>;
+  skipButtonRef?: RefObject<HTMLButtonElement | null>;
+  likeButtonRef?: RefObject<HTMLButtonElement | null>;
 }
 
 const MobileVideoLayout: React.FC<MobileVideoLayoutProps> = ({ cardData, onSkip, onLike, onSamplePlay, skipButtonRef, likeButtonRef }) => {

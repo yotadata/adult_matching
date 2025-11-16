@@ -3,8 +3,8 @@
 import { RefObject, useEffect, useState } from 'react';
 
 type SpotlightTutorialProps = {
-  likeButtonRef: RefObject<HTMLElement>;
-  skipButtonRef: RefObject<HTMLElement>;
+  likeButtonRef: RefObject<HTMLElement | null>;
+  skipButtonRef: RefObject<HTMLElement | null>;
   visible: boolean;
   onFinish: () => void;
 };
