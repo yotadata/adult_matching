@@ -42,7 +42,7 @@ const Header = ({ cardWidth, mobileGauge }: { cardWidth: number | undefined; mob
   const primaryNavItems: NavItem[] = [
     { label: 'スワイプ', href: '/swipe', icon: HomeIcon, requiresLogin: false },
     { label: '気になるリスト', href: '/lists', icon: List, requiresLogin: true },
-    { label: 'AIで探す', href: '/search', icon: Sparkles, requiresLogin: true, withGauge: true },
+    { label: 'AIで探す', href: '/search', icon: Sparkles, requiresLogin: false, withGauge: true },
     { label: 'あなたの性癖', href: '/insights', icon: BarChart2, requiresLogin: true },
   ];
 
@@ -183,12 +183,12 @@ const Header = ({ cardWidth, mobileGauge }: { cardWidth: number | undefined; mob
                   {authChecked ? (
                     <button
                       onClick={handleOpenModal}
-                      className={`flex items-center gap-2 px-3 py-1.5 text-xs font-bold text-white rounded-full backdrop-blur-md bg-white/10 border border-white/30 hover:bg-[#FF6B81] hover:text-white shadow-md transition-all duration-300`}
+                      className="flex items-center gap-2 px-3 py-1.5 text-xs font-bold text-white rounded-full backdrop-blur-md bg-white/10 border border-white/30 hover:bg-[#FF6B81] hover:text-white shadow-md transition-all duration-300"
                       style={{ filter: 'drop-shadow(0 0 0.5rem rgba(0, 0, 0, 0.1))' }}
                       aria-label="ログインまたは新規登録"
                     >
                       <UserPlus size={16} className="opacity-90" />
-                      <span>ログイン</span>
+                      <span>ログイン / 新規登録</span>
                     </button>
                   ) : null}
                 </div>
@@ -204,15 +204,15 @@ const Header = ({ cardWidth, mobileGauge }: { cardWidth: number | undefined; mob
                   <div className="absolute inset-0 overflow-hidden">
                     <div className="pointer-events-none fixed inset-y-0 right-0 flex max-w-full">
                       <Transition.Child as={Fragment} enter="transform transition ease-in-out duration-300" enterFrom="translate-x-full" enterTo="translate-x-0" leave="transform transition ease-in-out duration-300" leaveFrom="translate-x-0" leaveTo="translate-x-full">
-                        <Dialog.Panel className="pointer-events-auto w-screen max-w-xs h-full bg-white/80 backdrop-blur-md text-gray-800 shadow-[0_10px_40px_rgba(15,23,42,0.35)] border-l border-white/30 flex flex-col">
-                          <div className="p-4 border-b border-white/40 flex items-center justify-between">
+                        <Dialog.Panel className="pointer-events-auto w-screen max-w-xs h-full bg-white text-gray-900 shadow-[0_10px_40px_rgba(15,23,42,0.35)] border-l border-gray-100 flex flex-col">
+                          <div className="p-4 border-b border-gray-200 flex items-center justify-between">
                             <Dialog.Title className="text-sm font-bold tracking-wide text-gray-900">メニュー</Dialog.Title>
                             <button ref={mobileCloseBtnRef} aria-label="閉じる" onClick={() => setIsMenuDrawerOpen(false)} className="p-1 text-gray-500 hover:text-gray-700">
                               <X size={20} />
                             </button>
                           </div>
                           <div className="flex-1 flex flex-col">
-                            <div className="flex-1 flex flex-col divide-y divide-white/40 overflow-y-auto text-sm">
+                            <div className="flex-1 flex flex-col divide-y divide-gray-100 overflow-y-auto text-sm">
                               <div className="py-0.5">
                                 {primaryNavItems.map((item) => {
                                   const Icon = item.icon;
@@ -223,7 +223,7 @@ const Header = ({ cardWidth, mobileGauge }: { cardWidth: number | undefined; mob
                                         key={item.label}
                                         disabled={disabled}
                                         onClick={() => { if (!disabled) { setIsMenuDrawerOpen(false); router.push(item.href); } }}
-                                      className={`w-full text-left px-4 py-2.5 ${disabled ? 'opacity-40 cursor-not-allowed' : 'hover:bg-white/20'} transition rounded-none`}
+                                      className={`w-full text-left px-4 py-2 ${disabled ? 'opacity-40 cursor-not-allowed' : 'hover:bg-gray-100'} transition rounded-none`}
                                     >
                                         <div className="flex items-center gap-2 text-sm font-semibold">
                                           <Icon size={18} />
@@ -241,7 +241,7 @@ const Header = ({ cardWidth, mobileGauge }: { cardWidth: number | undefined; mob
                                       key={item.label}
                                       disabled={disabled}
                                       onClick={() => { if (!disabled) { setIsMenuDrawerOpen(false); router.push(item.href); } }}
-                                      className={`w-full flex items-center gap-2 text-left px-4 py-2.5 ${disabled ? 'opacity-40 cursor-not-allowed' : 'hover:bg-white/70'} transition`}
+                                      className={`w-full flex items-center gap-2 text-left px-4 py-2 ${disabled ? 'opacity-40 cursor-not-allowed' : 'hover:bg-gray-100'} transition`}
                                     >
                                       <Icon size={18} />
                                       <span className="text-sm font-medium">{item.label}</span>
@@ -258,7 +258,7 @@ const Header = ({ cardWidth, mobileGauge }: { cardWidth: number | undefined; mob
                                       key={item.label}
                                       disabled={disabled}
                                       onClick={() => { if (!disabled) { setIsMenuDrawerOpen(false); router.push(item.href); } }}
-                                      className={`w-full flex items-center gap-2 text-left px-4 py-2.5 ${disabled ? 'opacity-40 cursor-not-allowed' : 'hover:bg-white/70'} transition`}
+                                      className={`w-full flex items-center gap-2 text-left px-4 py-2 ${disabled ? 'opacity-40 cursor-not-allowed' : 'hover:bg-gray-100'} transition`}
                                     >
                                       <Icon size={18} />
                                       <span className="text-sm font-medium">{item.label}</span>
@@ -268,7 +268,7 @@ const Header = ({ cardWidth, mobileGauge }: { cardWidth: number | undefined; mob
                               </div>
                             </div>
                             {!user && (
-                              <div className="border-t border-white/40 px-4 py-2.5 bg-white/60">
+                              <div className="border-t border-gray-100 px-4 py-2 bg-gray-50">
                                 <button onClick={() => { setIsMenuDrawerOpen(false); handleOpenModal(); }} className="w-full text-left text-sm font-semibold text-gray-800 hover:bg-white rounded-md px-3 py-2">ログイン / 新規登録</button>
                               </div>
                             )}
@@ -288,10 +288,10 @@ const Header = ({ cardWidth, mobileGauge }: { cardWidth: number | undefined; mob
             <div className="flex justify-center">
               <Link href="/swipe" aria-label="ホームへ移動" className="inline-flex">
                 <Image
-                  src="/seiheki_icon.png"
-                  alt="Seiheki Lab Icon"
-                  width={96}
-                  height={96}
+                  src="/seiheki_lab.png"
+                  alt="Seiheki Lab Logo"
+                  width={140}
+                  height={50}
                   priority
                   draggable="false"
                   className="cursor-pointer"

@@ -15,11 +15,14 @@ concurrency:
   group: pr-tests-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
+env:
+  REQUIRED_PR_LABEL: 'ci:run-tests'
+
 jobs:
   migration_tests:
     name: Migration Tests
     runs-on: ubuntu-latest
-    if: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.action == 'labeled' && github.event.label.name == 'ci:run-tests') }}
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.action == 'labeled' && github.event.label.name == env.REQUIRED_PR_LABEL) }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -36,7 +39,7 @@ jobs:
   function_tests:
     name: Supabase Function Tests
     runs-on: ubuntu-latest
-    if: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.action == 'labeled' && github.event.label.name == 'ci:run-tests') }}
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.action == 'labeled' && github.event.label.name == env.REQUIRED_PR_LABEL) }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -66,7 +69,7 @@ jobs:
     defaults:
       run:
         working-directory: frontend
-    if: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.action == 'labeled' && github.event.label.name == 'ci:run-tests') }}
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.action == 'labeled' && github.event.label.name == env.REQUIRED_PR_LABEL) }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -90,7 +93,7 @@ jobs:
   report:
     name: Comment results
     needs: [migration_tests, function_tests, frontend_tests]
-    if: ${{ github.event_name == 'pull_request' && github.event.action == 'labeled' && github.event.label.name == 'ci:run-tests' }}
+    if: ${{ github.event_name == 'pull_request' && github.event.action == 'labeled' && github.event.label.name == env.REQUIRED_PR_LABEL }}
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
