@@ -16,6 +16,7 @@ export type AnalysisSummary = {
 export type AnalysisTag = {
   tag_id: string;
   tag_name: string;
+  tag_group_name: string | null;
   likes: number;
   nopes: number;
   like_ratio: number | null;
@@ -52,7 +53,7 @@ export type AnalysisDecision = {
   decided_at: string;
   thumbnail_url: string | null;
   product_url: string | null;
-  tags: Array<{ id: string; name: string }>;
+  tags: Array<{ id: string; name: string; tag_group_name?: string | null }>;
   performers: Array<{ id: string; name: string }>;
 };
 

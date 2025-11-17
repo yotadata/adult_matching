@@ -257,10 +257,6 @@ export default function AnalysisResultsPage() {
                             <span>気になる比率</span>
                             <span className="text-base font-bold text-gray-900">{formatPercent(tag.like_ratio)}</span>
                           </div>
-                          <div className="flex flex-col text-right">
-                            <span>最新の気になる</span>
-                            <span className="text-base font-semibold text-gray-900">{formatDate(tag.last_liked_at)}</span>
-                          </div>
                           {tag.representative_video ? (
                             <button
                               onClick={() => handleOpenProduct(tag.representative_video?.product_url)}
@@ -305,10 +301,6 @@ export default function AnalysisResultsPage() {
                           <div className="flex flex-col text-right">
                             <span>気になる比率</span>
                             <span className="text-base font-bold text-gray-900">{formatPercent(performer.like_ratio)}</span>
-                          </div>
-                          <div className="flex flex-col text-right">
-                            <span>最新の気になる</span>
-                            <span className="text-base font-semibold text-gray-900">{formatDate(performer.last_liked_at)}</span>
                           </div>
                           {performer.representative_video ? (
                             <button

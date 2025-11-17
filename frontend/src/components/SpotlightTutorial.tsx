@@ -16,7 +16,7 @@ type TutorialStep = {
   body: string;
 };
 
-const SPOTLIGHT_PADDING = 120;
+const BUBBLE_PADDING = 16;
 const BUBBLE_HALF_WIDTH = 160;
 
 const STEPS: TutorialStep[] = [
@@ -63,7 +63,7 @@ export default function SpotlightTutorial({ likeButtonRef, skipButtonRef, likedL
       window.removeEventListener('resize', updateRect);
       window.removeEventListener('scroll', updateRect, true);
     };
-  }, [currentStep, likeButtonRef, skipButtonRef, visible]);
+  }, [currentStep, likeButtonRef, skipButtonRef, likedListButtonRef, visible]);
 
   useEffect(() => {
     if (!visible) setCurrentStep(0);
