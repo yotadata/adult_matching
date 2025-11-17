@@ -1,6 +1,8 @@
 import axios from 'axios';
 import { createClient } from '@supabase/supabase-js';
 import * as dotenv from 'dotenv';
+import fs from 'fs';
+import path from 'path';
 
 const defaultEnvPath = 'docker/env/dev.env';
 const envFilePath = process.env.INGEST_FANZA_ENV_FILE && process.env.INGEST_FANZA_ENV_FILE.trim().length > 0
@@ -73,8 +75,33 @@ type PreparedVideoData = VideoInsertPayload & {
 };
 
 const tagCache = new Map<string, string>();
+const tagGroupIdCache = new Map<string, string>();
 const performerNameCache = new Map<string, string>();
 const performerFanzaCache = new Map<string, string>();
+const DEFAULT_TAG_GROUP_NAME = '未分類';
+const csvTagGroupMap = new Map<string, string>();
+
+(() => {
+  try {
+    const csvPath = path.join(process.cwd(), 'docs', 'dmm_genres.csv');
+    const raw = fs.readFileSync(csvPath, 'utf-8').trim();
+    const lines = raw.split(/\r?\n/);
+    for (const line of lines.slice(1)) {
+      const trimmed = line.trim();
+      if (!trimmed) continue;
+      const withoutQuotes = trimmed.replace(/^"|"$/g, '');
+      const cells = withoutQuotes.split('","');
+      if (cells.length < 2) continue;
+      const [groupName, tagName] = cells;
+      if (tagName) {
+        csvTagGroupMap.set(tagName, groupName);
+      }
+    }
+    console.log(`[ingest_fanza] Loaded ${csvTagGroupMap.size} tag->group mappings from docs/dmm_genres.csv`);
+  } catch (error) {
+    console.warn('[ingest_fanza] Failed to load docs/dmm_genres.csv for tag grouping. Missing file or unreadable?', error);
+  }
+})();
 
 function toFanzaAffiliate(rawUrl: string | null | undefined, affiliateId: string | undefined | null): string | null {
   if (!rawUrl) return null;
@@ -168,7 +195,7 @@ async function ensureTagId(name: string): Promise<string | null> {
   const { data, error } = await supabase
     .from('tags')
     .upsert([{ name }], { onConflict: 'name' })
-    .select('id')
+    .select('id, tag_group_id, name')
     .single();
 
   if (error || !data) {
@@ -177,6 +204,53 @@ async function ensureTagId(name: string): Promise<string | null> {
   }
 
   tagCache.set(name, data.id);
+  await ensureTagGroupAssignment(data.id, data.name ?? name, data.tag_group_id);
+  return data.id;
+}
+
+async function ensureTagGroupAssignment(tagId: string, tagName: string, currentGroupId: string | null) {
+  if (currentGroupId) return;
+  const preferredGroupName = csvTagGroupMap.get(tagName) ?? DEFAULT_TAG_GROUP_NAME;
+  const targetGroupId = await getTagGroupIdByName(preferredGroupName);
+  if (!targetGroupId) {
+    console.warn(`[ingest_fanza] tag group id not found for name="${preferredGroupName}"`);
+    return;
+  }
+
+  const { error } = await supabase
+    .from('tags')
+    .update({ tag_group_id: targetGroupId })
+    .eq('id', tagId)
+    .is('tag_group_id', null);
+
+  if (error) {
+    console.error(`[ingest_fanza] failed to update tag_group for tag_id=${tagId}:`, error);
+  }
+}
+
+async function getTagGroupIdByName(name: string): Promise<string | null> {
+  if (tagGroupIdCache.has(name)) {
+    return tagGroupIdCache.get(name) ?? null;
+  }
+
+  const { data, error } = await supabase
+    .from('tag_groups')
+    .select('id')
+    .eq('name', name)
+    .maybeSingle();
+
+  if (error) {
+    console.error(`[ingest_fanza] failed to fetch tag_group "${name}":`, error);
+    tagGroupIdCache.set(name, '');
+    return null;
+  }
+
+  if (!data) {
+    tagGroupIdCache.set(name, '');
+    return null;
+  }
+
+  tagGroupIdCache.set(name, data.id);
   return data.id;
 }
 
