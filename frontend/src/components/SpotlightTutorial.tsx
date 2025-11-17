@@ -5,12 +5,13 @@ import { RefObject, useEffect, useState } from 'react';
 type SpotlightTutorialProps = {
   likeButtonRef: RefObject<HTMLElement | null>;
   skipButtonRef: RefObject<HTMLElement | null>;
+  likedListButtonRef: RefObject<HTMLElement | null>;
   visible: boolean;
   onFinish: () => void;
 };
 
 type TutorialStep = {
-  key: 'like' | 'skip';
+  key: 'like' | 'skip' | 'list';
   title: string;
   body: string;
 };
@@ -26,16 +27,25 @@ const STEPS: TutorialStep[] = [
     title: 'ここは “そこまで刺さらない” 時に使います。',
     body: 'こういう作品は、おすすめから外れていきます。',
   },
+  {
+    key: 'list',
+    title: 'ストックした作品はここから開けます。',
+    body: 'たまった「気になる」をまとめて見返せます。',
+  },
 ];
 
-export default function SpotlightTutorial({ likeButtonRef, skipButtonRef, visible, onFinish }: SpotlightTutorialProps) {
+export default function SpotlightTutorial({ likeButtonRef, skipButtonRef, likedListButtonRef, visible, onFinish }: SpotlightTutorialProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [rect, setRect] = useState<DOMRect | null>(null);
 
   useEffect(() => {
     if (!visible) return;
     const updateRect = () => {
-      const targetRef = (STEPS[currentStep].key === 'like' ? likeButtonRef : skipButtonRef);
+      const stepKey = STEPS[currentStep].key;
+      const targetRef =
+        stepKey === 'like' ? likeButtonRef :
+        stepKey === 'skip' ? skipButtonRef :
+        likedListButtonRef;
       const node = targetRef.current;
       if (!node) {
         setRect(null);

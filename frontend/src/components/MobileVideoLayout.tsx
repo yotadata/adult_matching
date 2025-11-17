@@ -11,9 +11,10 @@ interface MobileVideoLayoutProps {
   onSamplePlay?: (card: CardData) => void;
   skipButtonRef?: RefObject<HTMLButtonElement | null>;
   likeButtonRef?: RefObject<HTMLButtonElement | null>;
+  likedListButtonRef?: RefObject<HTMLButtonElement | null>;
 }
 
-const MobileVideoLayout: React.FC<MobileVideoLayoutProps> = ({ cardData, onSkip, onLike, onSamplePlay, skipButtonRef, likeButtonRef }) => {
+const MobileVideoLayout: React.FC<MobileVideoLayoutProps> = ({ cardData, onSkip, onLike, onSamplePlay, skipButtonRef, likeButtonRef, likedListButtonRef }) => {
   const [showVideo, setShowVideo] = useState(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [showOverlay, setShowOverlay] = useState(true);
@@ -199,6 +200,7 @@ const MobileVideoLayout: React.FC<MobileVideoLayoutProps> = ({ cardData, onSkip,
           {/* Liked list */}
           <button
             onClick={() => { try { window.dispatchEvent(new Event('open-liked-drawer')); } catch {} }}
+            ref={likedListButtonRef}
             className="w-[60px] h-[60px] rounded-full bg-[#BEBEBE] shadow-2xl drop-shadow-xl active:scale-95 transition flex items-center justify-center"
             aria-label="気になるリスト"
             title="気になるリスト"

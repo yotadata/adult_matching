@@ -80,6 +80,7 @@ export default function Home() {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showSpotlight, setShowSpotlight] = useState(false);
   const [spotlightReady, setSpotlightReady] = useState(false);
+  const likedListButtonRef = useRef<HTMLButtonElement | null>(null);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -100,7 +101,7 @@ export default function Home() {
     if (typeof window === 'undefined') return;
     let rafId: number | null = null;
     const checkReady = () => {
-      if (likeButtonRef.current && skipButtonRef.current) {
+      if (likeButtonRef.current && skipButtonRef.current && likedListButtonRef.current) {
         setSpotlightReady(true);
         return;
       }
@@ -565,6 +566,7 @@ export default function Home() {
                 onSamplePlay={(card) => handleSamplePlay(card, 'mobile')}
                 skipButtonRef={skipButtonRef}
                 likeButtonRef={likeButtonRef}
+                likedListButtonRef={likedListButtonRef}
               />
             ) : (
               <SwipeCard
@@ -618,6 +620,7 @@ export default function Home() {
               </button>
               <button
                 onClick={() => { try { window.dispatchEvent(new Event('open-liked-drawer')); } catch {} }}
+                ref={likedListButtonRef}
                 className="w-[60px] h-[60px] rounded-full bg-[#BEBEBE] shadow-2xl drop-shadow-xl active:scale-95 transition flex items-center justify-center leading-none"
                 aria-label="気になるリスト"
                 title="気になるリスト"
@@ -642,6 +645,7 @@ export default function Home() {
       <SpotlightTutorial
         likeButtonRef={likeButtonRef}
         skipButtonRef={skipButtonRef}
+        likedListButtonRef={likedListButtonRef}
         visible={showSpotlight && spotlightReady && !showOnboarding}
         onFinish={handleFinishSpotlight}
       />
