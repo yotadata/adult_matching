@@ -234,7 +234,7 @@ export default function AnalysisResultsPage() {
                       <TagIcon size={18} className="text-rose-400" />
                       好きなタグ Top {topTags.length}
                     </h2>
-                    <p className="text-xs text-gray-500 mt-1">「気になる」が多いタグの傾向とシェアを表示します。</p>
+                    <p className="text-xs text-gray-500 mt-1">「気になる」が多いタグの傾向を表示します。</p>
                   </div>
                   <Info size={16} className="text-gray-400 shrink-0" />
                 </header>
@@ -252,16 +252,12 @@ export default function AnalysisResultsPage() {
                             気になる: {formatCount(tag.likes)} / スキップ: {formatCount(tag.nopes)}
                           </span>
                         </div>
-                        <div className="flex items-center gap-4">
-                          <div className="flex flex-col text-right text-xs text-gray-500">
+                        <div className="flex items-center gap-4 text-xs text-gray-500">
+                          <div className="flex flex-col text-right">
                             <span>気になる比率</span>
                             <span className="text-base font-bold text-gray-900">{formatPercent(tag.like_ratio)}</span>
                           </div>
-                          <div className="flex flex-col text-right text-xs text-gray-500">
-                            <span>気になるシェア</span>
-                            <span className="text-base font-bold text-gray-900">{formatPercent(tag.share)}</span>
-                          </div>
-                          <div className="flex flex-col text-right text-xs text-gray-500">
+                          <div className="flex flex-col text-right">
                             <span>最新の気になる</span>
                             <span className="text-base font-semibold text-gray-900">{formatDate(tag.last_liked_at)}</span>
                           </div>
@@ -305,16 +301,12 @@ export default function AnalysisResultsPage() {
                             気になる: {formatCount(performer.likes)} / スキップ: {formatCount(performer.nopes)}
                           </span>
                         </div>
-                        <div className="flex items-center gap-4">
-                          <div className="flex flex-col text-right text-xs text-gray-500">
+                        <div className="flex items-center gap-4 text-xs text-gray-500">
+                          <div className="flex flex-col text-right">
                             <span>気になる比率</span>
                             <span className="text-base font-bold text-gray-900">{formatPercent(performer.like_ratio)}</span>
                           </div>
-                          <div className="flex flex-col text-right text-xs text-gray-500">
-                            <span>気になるシェア</span>
-                            <span className="text-base font-bold text-gray-900">{formatPercent(performer.share)}</span>
-                          </div>
-                          <div className="flex flex-col text-right text-xs text-gray-500">
+                          <div className="flex flex-col text-right">
                             <span>最新の気になる</span>
                             <span className="text-base font-semibold text-gray-900">{formatDate(performer.last_liked_at)}</span>
                           </div>
