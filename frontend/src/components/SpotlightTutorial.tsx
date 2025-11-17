@@ -16,15 +16,18 @@ type TutorialStep = {
   body: string;
 };
 
+const SPOTLIGHT_PADDING = 120;
+const BUBBLE_HALF_WIDTH = 160;
+
 const STEPS: TutorialStep[] = [
   {
     key: 'like',
     title: 'ここを押すと “ストック” されます。',
-    body: '後から見返す “刺さる候補リスト” を作れます。',
+    body: '後から見返す “抜ける候補リスト” を作れます。',
   },
   {
     key: 'skip',
-    title: 'ここは “そこまで刺さらない” 時に使います。',
+    title: 'ここは “そこまで抜けない” 時に使います。',
     body: 'こういう作品は、おすすめから外れていきます。',
   },
   {
@@ -92,11 +95,15 @@ export default function SpotlightTutorial({ likeButtonRef, skipButtonRef, likedL
     }
     const centerX = rect.left + rect.width / 2;
     const viewportHeight = typeof window !== 'undefined' ? window.innerHeight : 0;
+    const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 0;
     const preferBelow = viewportHeight ? rect.top < viewportHeight / 2 : true;
     const top = preferBelow ? rect.bottom + 16 : rect.top - 16;
+    const minLeft = BUBBLE_HALF_WIDTH + 16;
+    const maxLeft = viewportWidth ? Math.max(viewportWidth - (BUBBLE_HALF_WIDTH + 16), minLeft) : centerX;
+    const clampedLeft = viewportWidth ? Math.min(Math.max(centerX, minLeft), maxLeft) : centerX;
     return {
       top,
-      left: centerX,
+      left: clampedLeft,
       transform: preferBelow ? 'translate(-50%, 0)' : 'translate(-50%, -100%)',
     };
   })();

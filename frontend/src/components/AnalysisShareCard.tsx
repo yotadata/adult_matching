@@ -30,10 +30,10 @@ const buildHighlightCopy = (tag?: AnalysisTag, performer?: AnalysisPerformer) =>
     return `#${tag.tag_name} の作品で ${performer.performer_name} が登場すると即反応する傾向あり。沼りポイントを友だちにも共有しよう。`;
   }
   if (tag) {
-    return `#${tag.tag_name} 系のキーワードに触れると指が勝手に「気になる」。次の推しタグを発見しよう。`;
+    return `#${tag.tag_name} 系のキーワードに触れると指が勝手に「気になる」。次の抜けるタグを発見しよう。`;
   }
   if (performer) {
-    return `${performer.performer_name} の出演作は高確率で「気になる」。ほかの人にも推しを布教しませんか？`;
+    return `${performer.performer_name} の出演作は高確率で「気になる」。ほかの人にも抜ける出演者を共有しませんか？`;
   }
   return '「気になる」の履歴からあなたのツボを解析中。結果が出たらシェアして盛り上がろう！';
 };
@@ -75,7 +75,7 @@ const AnalysisShareCard = forwardRef<HTMLDivElement, AnalysisShareCardProps>(fun
 
       <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="rounded-[28px] bg-white/12 border border-white/25 p-6 shadow-inner">
-          <p className="text-xs uppercase tracking-[0.3em] text-white/70 mb-2">最近刺さったタグ</p>
+          <p className="text-xs uppercase tracking-[0.3em] text-white/70 mb-2">最近抜けたタグ</p>
           <p className="text-4xl font-black leading-tight">
             {highlightTag ? `#${highlightTag.tag_name}` : 'データ取得中'}
           </p>
@@ -87,7 +87,7 @@ const AnalysisShareCard = forwardRef<HTMLDivElement, AnalysisShareCardProps>(fun
         </div>
         <div className="rounded-[28px] bg-gradient-to-br from-rose-500/70 via-fuchsia-500/60 to-indigo-500/60 border border-white/20 p-6 shadow-lg flex flex-col justify-between">
           <div>
-            <p className="text-xs uppercase tracking-[0.3em] text-white/80 mb-2">推し出演者</p>
+            <p className="text-xs uppercase tracking-[0.3em] text-white/80 mb-2">抜ける出演者</p>
             <p className="text-4xl font-black leading-tight">
               {highlightPerformer ? highlightPerformer.performer_name : 'データ取得中'}
             </p>

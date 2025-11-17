@@ -95,13 +95,13 @@ export default function AnalysisResultsPage() {
   const sharePerformerNames = primaryPerformer ? [primaryPerformer.performer_name] : [];
   const shareText = (() => {
     if (primaryTag && primaryPerformer) {
-      return `最近は ${primaryPerformer.performer_name} が出る #${primaryTag.tag_name} 系で毎回「気になる」。あなたも #あなたの性癖 を診断して推しポイントをシェアしよう。`;
+      return `最近は ${primaryPerformer.performer_name} が出る #${primaryTag.tag_name} 系で毎回「気になる」。あなたも #あなたの性癖 を診断して抜けるポイントをシェアしよう。`;
     }
     if (shareTagNames.length > 0) {
-      return `今の推しタグは ${shareTagNames.join(' / ')}。あなたも #あなたの性癖 を診断して嗜好カードを作ろう。`;
+      return `今の抜けるタグは ${shareTagNames.join(' / ')}。あなたも #あなたの性癖 を診断して嗜好カードを作ろう。`;
     }
     if (sharePerformerNames.length > 0) {
-      return `${sharePerformerNames.join(' / ')} が出ていたら即「気になる」。あなたも #あなたの性癖 を診断して推しを布教しよう。`;
+      return `${sharePerformerNames.join(' / ')} が出ていたら即「気になる」。あなたも #あなたの性癖 を診断して抜ける出演者を布教しよう。`;
     }
     if (summary) {
       return `${windowLabel}の嗜好分析結果をシェアしました。あなたも #あなたの性癖 を診断してみて。`;
