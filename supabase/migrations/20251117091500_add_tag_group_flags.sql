@@ -35,6 +35,7 @@ set
 
 -- Map tags to tag_groups using docs/dmm_genres.csv
 with tag_mapping(tag_name, group_name) as (
+  select * from (values
   ('アイドル・芸能人','シチュエーション'),
   ('アクメ・オーガズム','シチュエーション'),
   ('アスリート','シチュエーション'),
@@ -345,6 +346,7 @@ with tag_mapping(tag_name, group_name) as (
   ('エスワンキャンペーン30％OFF第5弾','セール'),
   ('熟女・人妻30％OFF第10弾','セール'),
   ('期間限定セール','セール')
+  ) as v(tag_name, group_name)
 ),
 resolved as (
   select
