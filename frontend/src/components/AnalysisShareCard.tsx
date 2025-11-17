@@ -117,7 +117,7 @@ const AnalysisShareCard = forwardRef<HTMLDivElement, AnalysisShareCardProps>(fun
                     <div>
                       <p className="font-semibold text-base">{tag.tag_name}</p>
                       <p className="text-[11px] text-white/60">
-                        気になる {formatCount(tag.likes)} / パス {formatCount(tag.nopes)}
+                        気になる {formatCount(tag.likes)} / スキップ {formatCount(tag.nopes)}
                       </p>
                     </div>
                   </div>
@@ -147,7 +147,7 @@ const AnalysisShareCard = forwardRef<HTMLDivElement, AnalysisShareCardProps>(fun
                     <div>
                       <p className="font-semibold text-base">{performer.performer_name}</p>
                       <p className="text-[11px] text-white/60">
-                        気になる {formatCount(performer.likes)} / パス {formatCount(performer.nopes)}
+                        気になる {formatCount(performer.likes)} / スキップ {formatCount(performer.nopes)}
                       </p>
                     </div>
                   </div>

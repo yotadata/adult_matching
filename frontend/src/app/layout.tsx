@@ -8,9 +8,23 @@ export const metadata: Metadata = {
   title: "性癖ラボ",
   description: "アダルト動画とのマッチング",
   icons: {
-    icon: '/seiheki_icon.png',
-    shortcut: '/seiheki_icon.png',
-    apple: '/seiheki_icon.png',
+    icon: [
+      { url: '/seiheki_icon.png' },
+      { url: '/icon.png' },
+    ],
+    shortcut: ['/seiheki_icon.png'],
+    apple: ['/apple-icon.png'],
+  },
+  openGraph: {
+    title: "性癖ラボ",
+    description: "アダルト動画とのマッチング",
+    images: ['/opengraph-image.png'],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: "性癖ラボ",
+    description: "アダルト動画とのマッチング",
+    images: ['/twitter-image.png'],
   },
 };
 

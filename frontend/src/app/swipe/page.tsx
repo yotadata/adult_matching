@@ -611,8 +611,8 @@ export default function Home() {
                 onClick={() => triggerSwipe('left')}
                 ref={skipButtonRef}
                 className="w-20 h-20 rounded-full bg-[#6C757D] shadow-2xl drop-shadow-xl active:scale-95 transition flex items-center justify-center leading-none"
-                aria-label="パス"
-                title="パス"
+                aria-label="スキップ"
+                title="スキップ"
               >
                 <ChevronsLeft size={36} className="text-white" />
               </button>

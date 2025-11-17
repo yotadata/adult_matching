@@ -11,7 +11,7 @@ import { supabase } from '@/lib/supabase';
 const SEARCH_SHORTCUTS = [
   {
     title: 'スワイプでサクッと探す',
-    description: 'テンポ良く「気になる」/「パス」で直感的に選びたいとき',
+    description: 'テンポ良く「気になる」/「スキップ」で直感的に選びたいとき',
     href: '/swipe',
     badge: 'スワイプ',
   },

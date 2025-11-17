@@ -79,18 +79,18 @@ const ActionButtons = ({ onSkip, onLike, nopeColor, likeColor, isMobileLayout = 
 
   return (
     <div className={`flex items-center ${isMobileLayout ? 'w-full gap-3 px-4 py-3' : 'justify-between gap-6'} ${isMobileLayout ? '' : 'mx-auto'}`} style={!isMobileLayout && cardWidth ? { width: `${cardWidth}px` } : {}}>
-      {/* パス Button */}
+      {/* スキップ Button */}
       <button 
         onClick={onSkip} 
         onMouseEnter={() => setIsNopeHovered(true)}
         onMouseLeave={() => setIsNopeHovered(false)}
         className={`${buttonBaseClasses} ${isMobileLayout ? 'flex-1 rounded-full shadow-btnPurple' : 'w-40 rounded-2xl hover:scale-105 active:scale-95 shadow-btnPurple'}`}
         style={nopeButtonStyle}
-        aria-label="パス"
-        title="パス"
+          aria-label="スキップ"
+          title="スキップ"
       >
         <ChevronsLeft size={22} className="mr-2" />
-        パス
+        スキップ
       </button>
       {!isMobileLayout && includeCenter && (
         <button

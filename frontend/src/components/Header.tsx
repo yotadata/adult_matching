@@ -225,7 +225,7 @@ const Header = ({ cardWidth, mobileGauge }: { cardWidth: number | undefined; mob
                                         onClick={() => { if (!disabled) { setIsMenuDrawerOpen(false); router.push(item.href); } }}
                                       className={`w-full text-left px-4 py-2 ${disabled ? 'opacity-40 cursor-not-allowed' : 'hover:bg-gray-100'} transition rounded-none`}
                                     >
-                                        <div className="flex items-center gap-2 text-sm font-semibold">
+                                        <div className="flex items-center gap-2 text-sm font-semibold mb-2">
                                           <Icon size={18} />
                                           <span>{item.label}</span>
                                         </div>
@@ -241,7 +241,7 @@ const Header = ({ cardWidth, mobileGauge }: { cardWidth: number | undefined; mob
                                       key={item.label}
                                       disabled={disabled}
                                       onClick={() => { if (!disabled) { setIsMenuDrawerOpen(false); router.push(item.href); } }}
-                                      className={`w-full flex items-center gap-2 text-left px-4 py-2 ${disabled ? 'opacity-40 cursor-not-allowed' : 'hover:bg-gray-100'} transition`}
+                                      className={`w-full flex items-center gap-2 text-left px-4 py-3 ${disabled ? 'opacity-40 cursor-not-allowed' : 'hover:bg-gray-100'} transition`}
                                     >
                                       <Icon size={18} />
                                       <span className="text-sm font-medium">{item.label}</span>
@@ -258,7 +258,7 @@ const Header = ({ cardWidth, mobileGauge }: { cardWidth: number | undefined; mob
                                       key={item.label}
                                       disabled={disabled}
                                       onClick={() => { if (!disabled) { setIsMenuDrawerOpen(false); router.push(item.href); } }}
-                                      className={`w-full flex items-center gap-2 text-left px-4 py-2 ${disabled ? 'opacity-40 cursor-not-allowed' : 'hover:bg-gray-100'} transition`}
+                                      className={`w-full flex items-center gap-2 text-left px-4 py-3 ${disabled ? 'opacity-40 cursor-not-allowed' : 'hover:bg-gray-100'} transition`}
                                     >
                                       <Icon size={18} />
                                       <span className="text-sm font-medium">{item.label}</span>
