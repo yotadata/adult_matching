@@ -10,3 +10,4 @@ ml/data/processed/
 ml/artifacts/
 __pycache__/
 *.pyc
+scripts/**/node_modules/
