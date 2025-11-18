@@ -101,7 +101,7 @@ jobs:
       - name: Push migrations (push to main)
         if: github.event_name == 'push'
         working-directory: supabase
-        run: supabase db push
+        run: supabase db push --include-all
 
       - name: Confirm apply flag (dispatch)
         if: github.event_name == 'workflow_dispatch'
@@ -117,7 +117,7 @@ jobs:
         run: |
           PROJECT_REF=${{ inputs.target != '' && inputs.target || env.SUPABASE_PROJECT_ID }}
           echo "Applying migrations to: $PROJECT_REF"
-          supabase db push
+          supabase db push --include-all
 
     # Notes:
     # - Configure repo secrets: SUPABASE_ACCESS_TOKEN, SUPABASE_PROJECT_ID, SUPABASE_DB_PASSWORD
