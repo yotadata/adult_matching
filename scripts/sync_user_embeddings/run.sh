@@ -5,7 +5,7 @@ SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
 REPO_ROOT=$(cd "$SCRIPT_DIR/../.." && pwd)
 
 ENV_FILE=${SYNC_USER_ENV_FILE:-docker/env/prd.env}
-RECENT_HOURS=${SYNC_USER_RECENT_HOURS:-1}
+RECENT_HOURS=${SYNC_USER_RECENT_HOURS:-4}
 OUTPUT_ROOT=${SYNC_USER_OUTPUT_ROOT:-ml/artifacts/live/user_embedding_syncs}
 RUN_ID=${SYNC_USER_RUN_ID:-$(date +%Y%m%d_%H%M%S)}
 FETCH_LATEST=false
