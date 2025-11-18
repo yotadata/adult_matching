@@ -26,6 +26,7 @@ export type AnalysisTag = {
     id: string;
     title: string | null;
     thumbnail_url: string | null;
+    thumbnail_vertical_url?: string | null;
     product_url: string | null;
   } | null;
 };
@@ -42,6 +43,7 @@ export type AnalysisPerformer = {
     id: string;
     title: string | null;
     thumbnail_url: string | null;
+    thumbnail_vertical_url?: string | null;
     product_url: string | null;
   } | null;
 };
@@ -52,6 +54,7 @@ export type AnalysisDecision = {
   decision_type: 'like' | 'nope';
   decided_at: string;
   thumbnail_url: string | null;
+  thumbnail_vertical_url?: string | null;
   product_url: string | null;
   tags: Array<{ id: string; name: string; tag_group_name?: string | null }>;
   performers: Array<{ id: string; name: string }>;

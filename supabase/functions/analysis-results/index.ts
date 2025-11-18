@@ -24,6 +24,8 @@ type VideoRow = {
   id: string;
   title: string | null;
   thumbnail_url: string | null;
+  thumbnail_vertical_url?: string | null;
+  affiliate_url?: string | null;
   product_url: string | null;
   video_tags?: TagRow[] | null;
   video_performers?: PerformerRow[] | null;
@@ -33,6 +35,7 @@ type VideoDetails = {
   id: string;
   title: string | null;
   thumbnail_url: string | null;
+  thumbnail_vertical_url?: string | null;
   product_url: string | null;
   tags: Array<{ id: string; name: string; group_name: string | null }>;
   performers: Array<{ id: string; name: string }>;
@@ -42,6 +45,7 @@ type VideoSummary = {
   id: string;
   title: string | null;
   thumbnail_url: string | null;
+  thumbnail_vertical_url?: string | null;
   product_url: string | null;
 };
 
@@ -101,6 +105,7 @@ type AnalysisResponse = {
     decision_type: "like" | "nope";
     decided_at: string;
     thumbnail_url: string | null;
+    thumbnail_vertical_url?: string | null;
     product_url: string | null;
     tags: Array<{ id: string; name: string }>;
     performers: Array<{ id: string; name: string }>;
@@ -322,7 +327,7 @@ Deno.serve(async (req) => {
       const chunk = uniqueVideoIds.slice(i, i + VIDEO_CHUNK_SIZE);
       const { data, error } = await supabase
         .from("videos")
-        .select("id, title, thumbnail_url, product_url, video_tags(tags(id, name, tag_groups(name, show_in_ui))), video_performers(performers(id, name)))")
+        .select("id, title, thumbnail_url, thumbnail_vertical_url, affiliate_url, product_url, video_tags(tags(id, name, tag_groups(name, show_in_ui))), video_performers(performers(id, name)))")
         .in("id", chunk);
 
       if (error) {
@@ -334,11 +339,13 @@ Deno.serve(async (req) => {
       }
 
       for (const row of (data ?? []) as VideoRow[]) {
+        const resolvedUrl = row.affiliate_url ?? row.product_url ?? null;
         videoDetails.set(row.id, {
           id: row.id,
           title: row.title ?? null,
           thumbnail_url: row.thumbnail_url ?? null,
-          product_url: row.product_url ?? null,
+          thumbnail_vertical_url: row.thumbnail_vertical_url ?? null,
+          product_url: resolvedUrl,
           tags: normalizeTagRows(row.video_tags),
           performers: normalizePerformerRows(row.video_performers),
         });
@@ -379,6 +386,7 @@ Deno.serve(async (req) => {
               id: video.id,
               title: video.title,
               thumbnail_url: video.thumbnail_url,
+              thumbnail_vertical_url: video.thumbnail_vertical_url,
               product_url: video.product_url,
             };
           }
@@ -404,6 +412,7 @@ Deno.serve(async (req) => {
               id: video.id,
               title: video.title,
               thumbnail_url: video.thumbnail_url,
+              thumbnail_vertical_url: video.thumbnail_vertical_url,
               product_url: video.product_url,
             };
           }
@@ -497,6 +506,7 @@ Deno.serve(async (req) => {
         decision_type: decision.decision_type,
         decided_at: toIsoString(decision.created_at) ?? new Date().toISOString(),
         thumbnail_url: video?.thumbnail_url ?? null,
+        thumbnail_vertical_url: video?.thumbnail_vertical_url ?? null,
         product_url: video?.product_url ?? null,
         tags: video ? video.tags.slice(0, 6) : [],
         performers: video ? video.performers.slice(0, 6) : [],

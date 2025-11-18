@@ -15,6 +15,7 @@ type Video = {
   description?: string | null;
   thumbnail_url?: string | null;
   product_url?: string | null;
+  affiliate_url?: string | null;
   price?: number | null;
   product_released_at?: string | null;
   director?: string | null;
@@ -71,7 +72,8 @@ export default function VideoDetailPage() {
           if (Array.isArray(t)) return t.filter(Boolean);
           return t ? [t] : [];
         });
-        setVideo({ ...v, performers, tags });
+        const resolvedProductUrl = v.affiliate_url ?? v.product_url ?? null;
+        setVideo({ ...v, product_url: resolvedProductUrl, performers, tags });
       } catch (e: unknown) {
         let message = '読み込みエラー';
         if (typeof e === 'string') message = e;
@@ -89,19 +91,6 @@ export default function VideoDetailPage() {
   if (loading) return <div className="max-w-4xl mx-auto px-4 py-8">読み込み中...</div>;
   if (error) return <div className="max-w-4xl mx-auto px-4 py-8 text-red-600">{error}</div>;
   if (!video) return null;
-
-  const toFanzaAffiliate = (raw: string | null | undefined): string | undefined => {
-    if (!raw) return undefined;
-    const AF_ID = 'yotadata2-001';
-    try {
-      if (raw.startsWith('https://al.fanza.co.jp/')) {
-        const url = new URL(raw);
-        url.searchParams.set('af_id', AF_ID);
-        return url.toString();
-      }
-    } catch {}
-    return `https://al.fanza.co.jp/?lurl=${encodeURIComponent(raw)}&af_id=${encodeURIComponent(AF_ID)}&ch=link_tool&ch_id=link`;
-  };
 
   const fanzaEmbedUrl = `https://www.dmm.co.jp/litevideo/-/part/=/affi_id=${process.env.NEXT_PUBLIC_FANZA_AFFILIATE_ID}/cid=${video.external_id}/size=1280_720/`;
 
@@ -156,7 +145,7 @@ export default function VideoDetailPage() {
         <div>
           <div className="border rounded-lg p-3">
             <div className="text-sm text-gray-700 mb-2">外部サイトで見る</div>
-            <Link href={toFanzaAffiliate(video.product_url) || '#'} target="_blank" className="block w-full text-center bg-amber-500 text-white font-bold rounded-lg py-2">
+            <Link href={video.product_url || '#'} target="_blank" className="block w-full text-center bg-amber-500 text-white font-bold rounded-lg py-2">
               商品ページへ
             </Link>
           </div>

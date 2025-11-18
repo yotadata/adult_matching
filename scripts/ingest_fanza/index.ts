@@ -52,6 +52,7 @@ type VideoInsertPayload = {
   title: string;
   description: string | null;
   thumbnail_url: string | null;
+  thumbnail_vertical_url: string | null;
   preview_video_url: string | null;
   sample_video_url: string | null;
   product_released_at: string | null;
@@ -61,9 +62,9 @@ type VideoInsertPayload = {
   maker: string | null;
   label: string | null;
   product_url: string | null;
+  affiliate_url: string | null;
   price: number | null;
   image_urls: string[] | null;
-  published_at: string | null;
   distribution_code: string | null;
   maker_code: string | null;
   source: string;
@@ -140,6 +141,31 @@ async function fetchFanzaApiItems(queryParams: Record<string, any>) {
 function coalesce<T>(...vals: (T | undefined | null)[]): T | null {
   for (const v of vals) if (v != null) return v as T;
   return null;
+}
+
+function normalizeFanzaDateTime(input: string | undefined | null): string | null {
+  if (!input) return null;
+  const raw = input.trim();
+  if (!raw) return null;
+  if (/^\d{8}$/.test(raw)) {
+    const year = raw.slice(0, 4);
+    const month = raw.slice(4, 6);
+    const day = raw.slice(6, 8);
+    return `${year}-${month}-${day}T00:00:00`;
+  }
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+    return `${raw}T00:00:00`;
+  }
+  if (/^\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}(:\d{2})?$/.test(raw)) {
+    const replaced = raw.replace(/\s+/, ' ');
+    const [datePart, timePart] = replaced.split(' ');
+    const time = timePart.length === 5 ? `${timePart}:00` : timePart;
+    return `${datePart}T${time}`;
+  }
+  if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2})?$/.test(raw)) {
+    return raw.length === 16 ? `${raw}:00` : raw;
+  }
+  return raw;
 }
 
 function pickName(value: any): string | null {
@@ -349,6 +375,7 @@ async function insertVideoData(data: PreparedVideoData): Promise<boolean> {
     title: data.title,
     description: data.description ?? null,
     thumbnail_url: data.thumbnail_url ?? null,
+    thumbnail_vertical_url: data.thumbnail_vertical_url ?? null,
     preview_video_url: data.preview_video_url ?? null,
     sample_video_url: data.sample_video_url ?? null,
     product_released_at: data.product_released_at ?? null,
@@ -358,9 +385,9 @@ async function insertVideoData(data: PreparedVideoData): Promise<boolean> {
     maker: data.maker ?? null,
     label: data.label ?? null,
     product_url: data.product_url ?? null,
+    affiliate_url: data.affiliate_url ?? null,
     price: data.price ?? null,
     image_urls: data.image_urls ?? null,
-    published_at: data.published_at ?? null,
     distribution_code: data.distribution_code ?? null,
     maker_code: data.maker_code ?? null,
     source: 'FANZA',
@@ -513,6 +540,16 @@ async function main() {
         item.sampleImageURL?.sample_s?.image,
         item.sampleImageURL?.sample_l?.image
       );
+      const horizontalThumbnail: string | null = coalesce(
+        item.imageURL?.large,
+        item.imageURL?.list,
+        item.imageURL?.small
+      );
+      const verticalThumbnail: string | null = coalesce(
+        item.imageURL?.small,
+        item.imageURL?.large,
+        item.imageURL?.list
+      );
 
       // ジャンルと女優の抽出
       const genres = item.iteminfo?.genre
@@ -536,10 +573,11 @@ async function main() {
         external_id: item.content_id,
         title: item.title,
         description: null, // DMMのレスポンスには詳細説明がないため
-        thumbnail_url: coalesce(item.imageURL?.large, item.imageURL?.list, item.imageURL?.small),
+        thumbnail_url: horizontalThumbnail,
+        thumbnail_vertical_url: verticalThumbnail,
         preview_video_url: previewUrl,
         sample_video_url: previewUrl, // 同一のプレビューURLを格納
-        product_released_at: item.date ?? null,
+        product_released_at: normalizeFanzaDateTime(item.date) ?? null,
         duration_seconds: durationSeconds,
         director,
         series,
@@ -547,10 +585,10 @@ async function main() {
         label,
         genres,
         actresses: actressesRaw, // 後段でIDも考慮して処理
-        product_url: toFanzaAffiliate(item.URL, fanzaLinkAffiliateId),
+        product_url: item.URL ?? null,
+        affiliate_url: item.affiliateURL ?? toFanzaAffiliate(item.URL, fanzaLinkAffiliateId),
         price: parsedPrice,
         image_urls: imageUrls,
-        published_at: null,
         distribution_code: distributionCode,
         maker_code: makerCode,
         source: 'FANZA',

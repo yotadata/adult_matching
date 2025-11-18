@@ -33,7 +33,7 @@
 | 変数名 | 説明 | 主な利用先 | 推奨設定場所 |
 | --- | --- | --- | --- |
 | `SUPABASE_PROJECT_ID` / `SUPABASE_PROJECT_REF` / `SUPABASE_REGION` | プール接続補助（上段と共通） | `prep_two_tower`, `gen_user_embeddings`, `gen_video_embeddings` | `docker/env/*.env` |
-| `INGEST_FANZA_ENV_FILE`, `SYNC_VIDEO_ENV_FILE`, `UPSERT_TT_ENV_FILE`, `GEN_USER_ENV_FILE` など | 各スクリプトの `--env-file` オーバーライド用。省略時は `docker/env/prd.env` を参照 | Docker スクリプト | 実行時に指定 |
+| `INGEST_FANZA_ENV_FILE`, `FANZA_BACKFILL_ENV_FILE`, `SYNC_VIDEO_ENV_FILE`, `UPSERT_TT_ENV_FILE`, `GEN_USER_ENV_FILE` など | 各スクリプトの `--env-file` オーバーライド用。省略時は `docker/env/prd.env` を参照 | Docker スクリプト | 実行時に指定 |
 | `SYNC_USER_ENV_FILE`, `SYNC_USER_OUTPUT_ROOT`, `SYNC_USER_RECENT_HOURS` | ユーザー埋め込み増分同期（`scripts/sync_user_embeddings`）向けのデフォルト設定 | Docker スクリプト, GHA | 実行時に指定 |
 | `SUPABASE_DB_DISABLE_SSL` | ローカル Postgres など SSL 非対応環境で `gen_user_embeddings` / `update_user_embeddings` からの接続時に SSL を無効化（`1` で無効） | `gen_user_embeddings`, `update_user_embeddings`, `sync_user_embeddings` | `.env` / 実行時に指定 |
 | `POSTGRES_KEEP_CONTAINER`, `LOCAL_DB_STARTUP_TIMEOUT`, `POSTGRES_PLATFORM` | 一部スクリプトで Postgres コンテナを制御するためのオプション | `scripts/prep_two_tower/run_with_remote_db.sh` など | 実行時に必要なら設定 |
