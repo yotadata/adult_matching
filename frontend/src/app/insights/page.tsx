@@ -99,13 +99,13 @@ export default function AnalysisResultsPage() {
       return `最近は ${primaryPerformer.performer_name} が出る #${primaryTag.tag_name} 系で毎回「気になる」。あなたも #あなたの性癖 を診断して抜けるポイントをシェアしよう。`;
     }
     if (shareTagNames.length > 0) {
-      return `今の抜けるタグは ${shareTagNames.join(' / ')}。あなたも #あなたの性癖 を診断して嗜好カードを作ろう。`;
+      return `今の抜けるタグは ${shareTagNames.join(' / ')}。あなたも #あなたの性癖 を診断して好みカードを作ろう。`;
     }
     if (sharePerformerNames.length > 0) {
       return `${sharePerformerNames.join(' / ')} が出ていたら即「気になる」。あなたも #あなたの性癖 を診断して抜ける出演者を布教しよう。`;
     }
     if (summary) {
-      return `${windowLabel}の嗜好分析結果をシェアしました。あなたも #あなたの性癖 を診断してみて。`;
+      return `${windowLabel}の好み分析結果をシェアしました。あなたも #あなたの性癖 を診断してみて。`;
     }
     return 'あなたの性癖の結果をシェアしました。';
   })();
@@ -157,7 +157,7 @@ export default function AnalysisResultsPage() {
         <header className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="space-y-2">
             <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight">あなたの性癖</h1>
-            <p className="text-sm text-white/80">「気になる」 / 「スキップ」の履歴から嗜好の傾向を可視化します。</p>
+            <p className="text-sm text-white/80">「気になる」 / 「スキップ」の履歴から好みの傾向を可視化します。</p>
           </div>
           <button
             onClick={handleShare}

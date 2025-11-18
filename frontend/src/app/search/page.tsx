@@ -102,14 +102,14 @@ export default function AiRecommendPage() {
   const { data: analysisData } = useAnalysisResults({
     windowDays: 90,
     includeNope: false,
-    tagLimit: 3,
-    performerLimit: 3,
+    tagLimit: 7,
+    performerLimit: 7,
     recentLimit: 0,
     enabled: isAuthenticated,
   });
 
-  const topTags = analysisData?.top_tags ?? [];
-  const topPerformers = analysisData?.top_performers ?? [];
+  const topTags = (analysisData?.top_tags ?? []).slice(0, 7);
+  const topPerformers = (analysisData?.top_performers ?? []).slice(0, 7);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -499,7 +499,7 @@ export default function AiRecommendPage() {
             <header>
             <h3 className="text-base font-bold flex items-center gap-2">
             <Sparkles size={16} className="text-rose-500" />
-            最近の嗜好スナップショット
+            最近の好みまとめ
             </h3>
                 <p className="text-xs text-gray-500 mt-1">直近90日の「気になる」履歴から抽出</p>
             </header>
@@ -566,7 +566,7 @@ export default function AiRecommendPage() {
           <section className="w-full rounded-2xl bg-white/15 backdrop-blur border border-white/20 shadow-lg p-5 text-white">
             <h1 className="text-xl font-bold">ゲストとして閲覧中</h1>
             <p className="text-sm text-white/80 mt-2">
-              ログインするとタグ検索や嗜好に合わせたAIリストが利用できます。ゲスト閲覧では「みんなが見ているトレンド」と「新着」のみを表示中です。
+              ログインするとタグ検索や好みに合わせたAIリストが利用できます。ゲスト閲覧では「みんなが見ているトレンド」と「新着」のみを表示中です。
             </p>
           </section>
         )}

@@ -89,7 +89,7 @@ CREATE TABLE public.user_features (
 ### 処理内容
 
 1.  `user_features` テーブルからユーザーごとの集計済み特徴量データを読み込みます。
-2.  `train_two_tower.py` と同じロジック（`max_tag_features`, `max_performer_features` など）で、嗜好データからユーザーの特徴ベクトルを構築します。
+2.  `train_two_tower.py` と同じロジック（`max_tag_features`, `max_performer_features` など）で、好みデータからユーザーの特徴ベクトルを構築します。
 3.  `publish_two_tower` で公開されている最新のTwo-Towerモデルの `user_encoder` を使用し、特徴ベクトルからユーザーの埋め込みベクトルを推論します。
 4.  推論結果（`user_id`, `embedding`, `model_version`）を `user_embeddings` テーブルに `upsert` します。
 
@@ -125,7 +125,7 @@ CREATE TABLE public.user_embeddings (
 
 ### 背景
 
-AI レコメンドの応答速度を維持するため、ユーザーの嗜好変化を 1 時間単位で反映させる増分更新ジョブを GitHub Actions で自動実行します。大量の全件再計算ではなく、直近 1 時間に `user_video_decisions` へ書き込みのあったユーザーのみを対象にすることで、コストを最小化します。
+AI レコメンドの応答速度を維持するため、ユーザーの好み変化を 1 時間単位で反映させる増分更新ジョブを GitHub Actions で自動実行します。大量の全件再計算ではなく、直近 1 時間に `user_video_decisions` へ書き込みのあったユーザーのみを対象にすることで、コストを最小化します。
 
 ### 実行単位
 
