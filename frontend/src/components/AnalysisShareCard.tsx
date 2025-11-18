@@ -322,11 +322,11 @@ const AnalysisShareCard = forwardRef<HTMLDivElement, AnalysisShareCardProps>(fun
         }}
       >
         <div
-          className="ShareCardInner flex flex-col justify-between h-full w-full"
+          className="ShareCardInner flex flex-col h-full w-full"
           style={{ width: '100%', height: '100%', padding: 0, margin: 0, boxSizing: 'border-box' }}
         >
           <div className="TopSection flex flex-col gap-6">
-          <section className="HeaderRow flex items-start justify-between gap-10" style={{ marginBottom: '40px' }}>
+          <section className="HeaderRow flex items-start justify-between gap-10" style={{ marginBottom: '48px' }}>
             <div className="HeaderTextBlock flex flex-col gap-4" style={{ maxWidth: '68%' }}>
               <div>
                 <p className="text-sm font-semibold tracking-[0.35em] text-rose-400 uppercase">あなたのおかずタイプ</p>
@@ -342,19 +342,19 @@ const AnalysisShareCard = forwardRef<HTMLDivElement, AnalysisShareCardProps>(fun
             <div
               className="QRStamp flex flex-col items-center text-center gap-1.5"
               style={{
-                width: '136px',
-                height: '136px',
-                padding: '12px',
-                borderRadius: '26px',
+                width: '152px',
+                height: '152px',
+                padding: '18px',
+                borderRadius: '32px',
                 background: 'rgba(255, 255, 255, 0.92)',
                 boxShadow: '0 12px 30px rgba(15,23,42,0.18)',
                 flexShrink: 0,
                 marginLeft: '32px',
-                marginTop: '12px',
+                marginTop: '8px',
               }}
             >
               <p className="text-[10px] font-semibold tracking-[0.35em] text-rose-400 uppercase">診断</p>
-              <div className="w-[120px] h-[120px] bg-white rounded-[22px] border border-gray-200 shadow-inner flex items-center justify-center p-2">
+              <div className="w-[130px] h-[130px] bg-white rounded-[26px] border border-gray-200 shadow-inner flex items-center justify-center p-2">
                 {qrDataUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={qrDataUrl} alt="Seiheki Lab QR" className="w-full h-full object-contain" />
@@ -366,7 +366,7 @@ const AnalysisShareCard = forwardRef<HTMLDivElement, AnalysisShareCardProps>(fun
             </div>
           </section>
 
-          <section className="HighlightsRow flex gap-4 w-full flex-nowrap">
+          <section className="HighlightsRow flex gap-4 w-full flex-nowrap" style={{ marginBottom: '24px' }}>
             {highlightTexts.slice(0, 3).map((text, index) => (
               <div
                 key={`highlight-${index}`}
