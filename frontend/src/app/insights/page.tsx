@@ -15,6 +15,7 @@ const WINDOW_OPTIONS: Array<{ label: string; value: number | null }> = [
 ];
 
 const MAX_FETCH = 2000;
+const SHARE_CARD_LANDING_URL = 'https://seihekilab.com/?utm_source=share_card&utm_medium=user_profile';
 
 const formatPercent = (value: number | null): string => {
   if (value === null || Number.isNaN(value)) return '—';
@@ -165,7 +166,7 @@ export default function AnalysisResultsPage() {
             title="共有"
           >
             <Share2 size={16} />
-            シェア
+            シェア（β版）
           </button>
         </header>
 
@@ -454,7 +455,7 @@ export default function AnalysisResultsPage() {
           summary={summary ?? null}
           topTags={topTags}
           topPerformers={topPerformers}
-          windowLabel={windowLabel}
+          shareUrl={SHARE_CARD_LANDING_URL}
         />
       </div>
     </>
