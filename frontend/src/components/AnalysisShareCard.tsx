@@ -253,7 +253,7 @@ const AnalysisShareCard = forwardRef<HTMLDivElement, AnalysisShareCardProps>(fun
       margin: 1,
       color: { dark: '#111827', light: '#ffffff' },
     })
-      .then((url) => {
+      .then((url: string) => {
         if (!cancelled) setQrDataUrl(url);
       })
       .catch(() => {
