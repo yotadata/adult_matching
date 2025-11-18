@@ -16,6 +16,7 @@ type VideoRow = {
   description?: string | null;
   thumbnail_url?: string | null;
   product_url?: string | null;
+  affiliate_url?: string | null;
   price?: number | null;
   product_released_at?: string | null;
   director?: string | null;
@@ -23,19 +24,6 @@ type VideoRow = {
   maker?: string | null;
   label?: string | null;
 };
-
-function toFanzaAffiliate(raw: string | null | undefined): string | undefined {
-  if (!raw) return undefined;
-  const AF_ID = 'yotadata2-001';
-  try {
-    if (raw.startsWith('https://al.fanza.co.jp/')) {
-      const url = new URL(raw);
-      url.searchParams.set('af_id', AF_ID);
-      return url.toString();
-    }
-  } catch {}
-  return `https://al.fanza.co.jp/?lurl=${encodeURIComponent(raw)}&af_id=${encodeURIComponent(AF_ID)}&ch=link_tool&ch_id=link`;
-}
 
 export default function VideoDetailModal({ isOpen, onClose, videoId }: { isOpen: boolean; onClose: () => void; videoId: string | null; }) {
   const [loading, setLoading] = useState(false);
@@ -64,7 +52,8 @@ export default function VideoDetailModal({ isOpen, onClose, videoId }: { isOpen:
           supabase.from('video_performers').select('performers(id, name)').eq('video_id', videoId),
           supabase.from('video_tags').select('tags(id, name)').eq('video_id', videoId),
         ]);
-        setVideo(v as VideoRow);
+        const resolvedProductUrl = (v as VideoRow).affiliate_url ?? (v as VideoRow).product_url ?? null;
+        setVideo({ ...(v as VideoRow), product_url: resolvedProductUrl });
         const perfRows = ((perf || []) as { performers: Performer | Performer[] | null }[]);
         setPerformers(
           perfRows.flatMap(r => {
@@ -164,7 +153,7 @@ export default function VideoDetailModal({ isOpen, onClose, videoId }: { isOpen:
                       <div>
                         <div className="border rounded-lg p-3">
                           <div className="text-sm text-gray-700 mb-2">外部サイトで見る</div>
-                          <Link href={toFanzaAffiliate(video.product_url) || '#'} target="_blank" className="block w-full text-center bg-amber-500 text-white font-bold rounded-lg py-2">
+                          <Link href={video.product_url || '#'} target="_blank" className="block w-full text-center bg-amber-500 text-white font-bold rounded-lg py-2">
                             商品ページへ
                           </Link>
                         </div>

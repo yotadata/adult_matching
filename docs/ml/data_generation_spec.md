@@ -41,10 +41,25 @@ Two-Tower 推薦モデル向けの学習データを生成するための標準�
 - 仕様:
   - FANZA Affiliate API `ItemList` を 1 年分（`gte_release_date`, `lte_release_date`）でページング取得。
   - `external_id`（FANZA CID）をキーに `videos` を upsert し、既存レコードも最新情報で更新。
+  - `imageURL.large` を横長サムネ（`videos.thumbnail_url`）、`imageURL.small` を縦長サムネ（`videos.thumbnail_vertical_url`）として保存する。
+  - 作品ページの URL は `item.URL` を `videos.product_url` に保持し、API が返す `item.affiliateURL` を `videos.affiliate_url` にそのまま保存する（未提供時のみ fallback で生成）。
+  - 発売日は `item.date` を ISO 8601 へ正規化し `product_released_at` に格納する。公開日は FANZA API で提供されないため、`videos.published_at` は “取得した日時（=挿入時刻）” を保持し、既存データは `created_at` をコピーして補完する。
   - ジャンルは `tags` / `video_tags`、出演者は `performers` / `video_performers` に upsert。実行中は名前/IDをキャッシュしておき、重複する API 呼び出しを避ける。
   - 動画1件につき `videos`・`video_tags`・`video_performers` への upsert をそれぞれ1リクエストにまとめ、Supabase REST の呼び出し回数を削減。API 取得は発売日の降順（新しい順）で進め、途中で中断してもリスタートしやすい構成にする。
   - 価格・収録時間は文字列を数値化して格納。リンクはアフィリエイト ID 付き URL に書き換え。
   - すべて Supabase REST API（`supabase-js`）経由で実行するため、Docker コンテナから直接 Supabase に書き込む。
+
+### 既存データの補完ショット
+- スクリプト: `scripts/fanza_backfill_metadata/index.ts`
+- 実行方法: `bash scripts/fanza_backfill_metadata/run.sh [--limit 500] [--chunk-size 10]`
+- 動作: `source = 'FANZA'` かつ `thumbnail_vertical_url` / `affiliate_url` のいずれかが欠損している動画を Supabase から取得し、FANZA API (`cid` 指定) で再フェッチ → 対象列のみ upsert。
+- 利用例:
+  ```bash
+  # 欠損レコードを最大 2000 件まで補完
+  FANZA_BACKFILL_ENV_FILE=docker/env/prd.env \
+    bash scripts/fanza_backfill_metadata/run.sh --limit 2000
+  ```
+- 本番データに新カラムを追加した直後は、このショットを 1 度実行して既存レコードを穴埋めする。以降は通常の `scripts/ingest_fanza/run.sh` / `ml-sync-video-embeddings` が継続的に新カラムを更新する。
 
 ### 動画マスタのローカル複製
 - スクリプト: `scripts/prep_two_tower/run_with_remote_db.sh`

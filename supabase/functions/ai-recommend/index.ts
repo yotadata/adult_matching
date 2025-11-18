@@ -257,7 +257,7 @@ const hydrateVideoDetails = async (
 
   const { data, error } = await client
     .from("videos")
-    .select("id, product_url, preview_video_url, duration_seconds")
+    .select("id, affiliate_url, product_url, preview_video_url, duration_seconds")
     .in("id", ids);
 
   if (error) {
@@ -269,7 +269,7 @@ const hydrateVideoDetails = async (
   for (const row of data ?? []) {
     const durationSeconds = typeof row.duration_seconds === "number" ? row.duration_seconds : null;
     map.set(row.id, {
-      product_url: row.product_url ?? null,
+      product_url: row.affiliate_url ?? row.product_url ?? null,
       preview_video_url: row.preview_video_url ?? null,
       duration_minutes: durationSeconds ? Math.max(1, Math.round(durationSeconds / 60)) : null,
     });
