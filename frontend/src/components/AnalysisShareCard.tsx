@@ -19,9 +19,7 @@ type TypeProfile = {
   headerCopy: string;
 };
 
-const BACKGROUND_GRADIENT = 'linear-gradient(135deg, #d8d9ff 0%, #ffc7da 50%, #ffe6d0 100%)';
-const NOISE_TEXTURE =
-  "url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2240%22 height=%2240%22 viewBox=%220 0 40 40%22><filter id=%22n%22 x=%220%22 y=%220%22 width=%22100%25%22 height=%22100%25%22><feTurbulence type=%22fractalNoise%22 baseFrequency=%220.8%22 numOctaves=%222%22 stitchTiles=%22stitch%22/></filter><rect width=%2240%22 height=%2240%22 filter=%22url(%23n)%22 opacity=%220.09%22/></svg>')";
+const BACKGROUND_GRADIENT = 'linear-gradient(135deg, #d7d8ff 0%, #ffc8da 45%, #ffe6cf 100%)';
 
 const TYPE_PROFILES: TypeProfile[] = [
   {
@@ -97,6 +95,28 @@ const DEFAULT_PROFILE = {
   headerCopy: '王道からマニアックまで幅広くいける万能スタイル。',
 };
 
+const TAG_CATEGORY_MAP: Record<string, 'look' | 'body' | 'situation'> = {
+  美少女: 'look',
+  ロリ: 'look',
+  制服: 'look',
+  ギャル: 'look',
+  人妻: 'situation',
+  不倫: 'situation',
+  寝取られ: 'situation',
+  NTR: 'situation',
+  単体作品: 'situation',
+  調教: 'situation',
+  中出し: 'body',
+  巨乳: 'body',
+  爆乳: 'body',
+};
+
+const TAG_CATEGORY_LABELS: Record<'look' | 'body' | 'situation', string> = {
+  look: 'ルックス系',
+  body: '体型系',
+  situation: 'シチュ系',
+};
+
 const formatCount = (value: number | undefined | null) => {
   if (value === null || value === undefined) return '—';
   return value.toLocaleString('ja-JP');
@@ -158,28 +178,6 @@ const buildHighlights = (
   }
 
   return highlightTexts.slice(0, 3);
-};
-
-const TAG_CATEGORY_MAP: Record<string, 'look' | 'body' | 'situation'> = {
-  美少女: 'look',
-  ロリ: 'look',
-  制服: 'look',
-  ギャル: 'look',
-  人妻: 'situation',
-  不倫: 'situation',
-  寝取られ: 'situation',
-  NTR: 'situation',
-  単体作品: 'situation',
-  調教: 'situation',
-  中出し: 'body',
-  巨乳: 'body',
-  爆乳: 'body',
-};
-
-const TAG_CATEGORY_LABELS: Record<'look' | 'body' | 'situation', string> = {
-  look: 'ルックス系',
-  body: '体型系',
-  situation: 'シチュ系',
 };
 
 const mapTagToCategory = (tagName: string): 'look' | 'body' | 'situation' => {
@@ -285,110 +283,134 @@ const AnalysisShareCard = forwardRef<HTMLDivElement, AnalysisShareCardProps>(fun
 
   const keywordPills = keywordLabels.slice(0, 4);
   const totalDecisions = formatCount(summary?.sample_size);
-  const highlightCount = Math.max(highlightTexts.length, 1);
-  const highlightCardWidth =
-    highlightCount >= 3
-      ? 'calc((100% - 48px) / 3)'
-      : `calc((100% - ${(highlightCount - 1) * 24}px) / ${highlightCount})`;
 
   return (
     <div
       ref={ref}
       id="share-card"
-      className="ShareCard text-gray-900"
+      className="ShareCardRoot"
       style={{
+        position: 'relative',
         width: '1920px',
         height: '1080px',
-        padding: '32px',
+        padding: '32px 40px',
         boxSizing: 'border-box',
         borderRadius: '32px',
         overflow: 'hidden',
-        backgroundImage: `${BACKGROUND_GRADIENT}, ${NOISE_TEXTURE}`,
-        backgroundSize: 'cover, 200px 200px',
+        background: BACKGROUND_GRADIENT,
         fontFamily:
           '"Noto Sans JP", "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic", "Inter", system-ui, -apple-system, BlinkMacSystemFont, sans-serif',
       }}
     >
       <div
-        className="ShareCardInner flex flex-col gap-5 h-full w-full"
+        className="ShareCardFrame"
         style={{
+          position: 'relative',
           width: '100%',
           height: '100%',
           borderRadius: '40px',
-          padding: '40px 48px',
-          paddingBottom: '200px',
           boxSizing: 'border-box',
           background: 'rgba(255, 255, 255, 0.88)',
-          border: '1px solid rgba(255, 255, 255, 0.7)',
+          border: '1px solid rgba(255, 255, 255, 0.8)',
           backdropFilter: 'blur(18px)',
-          boxShadow: '0 16px 40px rgba(15, 23, 42, 0.18)',
-          position: 'relative',
+          boxShadow: '0 24px 80px rgba(15, 23, 42, 0.18)',
           overflow: 'hidden',
+          padding: '64px 80px 32px 64px',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'space-between',
         }}
       >
-        <section className="flex flex-col gap-3">
-          <div>
-            <p className="text-sm font-semibold tracking-[0.35em] text-rose-400 uppercase">あなたのおかずタイプ</p>
-            <h1 className="text-[56px] leading-[1.05] font-black text-gray-900 mt-2">{typeProfile.typeName}</h1>
-          </div>
-          <p className="text-lg text-gray-600">{typeProfile.headerCopy}</p>
-          <div>
-            <span className="inline-flex items-center text-xs font-semibold text-gray-700 bg-[rgba(15,23,42,0.05)] px-4 py-1.5 rounded-full">
-              判定数 {totalDecisions} 件
-            </span>
-          </div>
-        </section>
+        <div
+          className="ShareCardInner flex flex-col justify-between h-full w-full"
+          style={{ width: '100%', height: '100%', padding: 0, margin: 0, boxSizing: 'border-box' }}
+        >
+          <div className="TopSection flex flex-col gap-6">
+          <section className="HeaderRow flex items-start justify-between gap-10" style={{ marginBottom: '40px' }}>
+            <div className="HeaderTextBlock flex flex-col gap-4" style={{ maxWidth: '68%' }}>
+              <div>
+                <p className="text-sm font-semibold tracking-[0.35em] text-rose-400 uppercase">あなたのおかずタイプ</p>
+                <h1 className="text-[54px] leading-[1.05] font-black text-gray-900 mt-1">{typeProfile.typeName}</h1>
+              </div>
+              <p className="text-lg text-gray-600 leading-relaxed">{typeProfile.headerCopy}</p>
+              <div>
+                <span className="inline-flex items-center text-xs font-semibold text-gray-700 bg-[rgba(15,23,42,0.05)] px-4 py-1.5 rounded-full">
+                  判定数 {totalDecisions} 件
+                </span>
+              </div>
+            </div>
+            <div
+              className="QRStamp flex flex-col items-center text-center gap-1.5"
+              style={{
+                width: '136px',
+                height: '136px',
+                padding: '12px',
+                borderRadius: '26px',
+                background: 'rgba(255, 255, 255, 0.92)',
+                boxShadow: '0 12px 30px rgba(15,23,42,0.18)',
+                flexShrink: 0,
+                marginLeft: '32px',
+                marginTop: '12px',
+              }}
+            >
+              <p className="text-[10px] font-semibold tracking-[0.35em] text-rose-400 uppercase">診断</p>
+              <div className="w-[120px] h-[120px] bg-white rounded-[22px] border border-gray-200 shadow-inner flex items-center justify-center p-2">
+                {qrDataUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={qrDataUrl} alt="Seiheki Lab QR" className="w-full h-full object-contain" />
+                ) : (
+                  <span className="text-xs text-gray-400">QR準備中...</span>
+                )}
+              </div>
+              <p className="text-[10px] text-gray-500">seihekilab.com</p>
+            </div>
+          </section>
 
-        <section className="flex flex-col gap-4">
-          <div className="flex flex-wrap gap-6 w-full">
+          <section className="HighlightsRow flex gap-4 w-full flex-nowrap">
             {highlightTexts.slice(0, 3).map((text, index) => (
               <div
-                key={`highlight-top-${index}`}
-                className="rounded-[24px] bg-white shadow-[0_12px_30px_rgba(15,23,42,0.15)] border border-white/70 px-6 py-6 flex flex-col gap-2 min-w-0"
+                key={`highlight-${index}`}
+                className="rounded-[24px] bg-white shadow-[0_12px_30px_rgba(15,23,42,0.15)] border border-white/70 px-5 py-5 flex flex-col gap-2 min-w-0"
                 style={{
-                  minHeight: '160px',
-                  width: highlightCardWidth,
-                  maxWidth: highlightCardWidth,
-                  flex: `0 0 ${highlightCardWidth}`,
+                  minHeight: '140px',
+                  width: 'calc((100% - 32px) / 3)',
+                  flex: '0 0 calc((100% - 32px) / 3)',
                   wordBreak: 'break-word',
-                  whiteSpace: 'normal',
                 }}
               >
                 <p className="text-xs font-semibold tracking-[0.3em] uppercase text-rose-400">
                   HIGHLIGHT {String(index + 1).padStart(2, '0')}
                 </p>
-                <p className="text-lg font-semibold text-gray-900 leading-snug">{text}</p>
+                <p className="text-lg font-semibold text-gray-900 leading-snug whitespace-normal">{text}</p>
               </div>
             ))}
-          </div>
-        </section>
+          </section>
 
-        <section className="mt-6 flex flex-col gap-6">
-          <div className="text-sm font-semibold text-gray-500 flex items-center gap-2">
+          <div className="EvidenceLabelRow text-sm font-semibold text-gray-500 flex items-center gap-2" style={{ marginBottom: '8px' }}>
             <span className="text-lg">▼</span>
             このタイプの根拠
           </div>
-          <div
-            className="rounded-[28px] flex flex-col gap-6"
-            style={{
-              background: 'rgba(255,255,255,0.88)',
-              padding: '40px 32px 40px',
-              borderRadius: '28px',
-              border: '1px solid rgba(255,255,255,0.8)',
-              boxShadow: '0 12px 30px rgba(15,23,42,0.12)',
-              backdropFilter: 'blur(16px)',
-              width: '100%',
-              maxWidth: '100%',
-              overflow: 'hidden',
-            }}
-          >
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-10" style={{ width: '100%' }}>
-              <div className="flex flex-col gap-4 min-w-0">
-                <div>
+          </div>
+          <div className="BottomSection mt-6">
+            <div
+              className="EvidenceCard rounded-[28px] flex flex-col gap-3"
+              style={{
+                background: 'rgba(255,255,255,0.88)',
+                padding: '24px 24px 28px',
+                borderRadius: '28px',
+                border: '1px solid rgba(255,255,255,0.8)',
+                boxShadow: '0 12px 30px rgba(15,23,42,0.12)',
+                backdropFilter: 'blur(16px)',
+                width: '100%',
+              }}
+            >
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="flex flex-col gap-1.5 min-w-0">
+                <div className="EvidenceSectionTitle" style={{ marginBottom: '8px' }}>
                   <p className="text-sm font-semibold tracking-[0.05em] text-[#F082A9] uppercase">Tag Evidence</p>
                   <p className="text-lg font-bold text-gray-900 mt-1">タグの傾向</p>
                 </div>
-                <div className="flex flex-col gap-3">
+                <div className="flex flex-col gap-1.5">
                   {tagEvidence.categoryEvidence.map((category) => (
                     <div key={category.label} className="flex flex-col gap-1">
                       <div className="flex items-center justify-between text-sm text-gray-600">
@@ -404,7 +426,7 @@ const AnalysisShareCard = forwardRef<HTMLDivElement, AnalysisShareCardProps>(fun
                     </div>
                   ))}
                 </div>
-                <div className="flex flex-col gap-2">
+                <div className="flex flex-col gap-1.5">
                   {tagEvidence.tagTop.map((tag) => (
                     <div
                       key={tag.rank}
@@ -423,10 +445,12 @@ const AnalysisShareCard = forwardRef<HTMLDivElement, AnalysisShareCardProps>(fun
                     </div>
                   ))}
                 </div>
-                <p className="text-xs text-gray-500">{tagEvidence.comment}</p>
+                <p className="EvidenceFooterText text-xs text-gray-500 truncate" style={{ marginTop: '4px', lineHeight: 1.2 }}>
+                  {tagEvidence.comment}
+                </p>
               </div>
-              <div className="flex flex-col gap-4 min-w-0">
-                <div>
+              <div className="flex flex-col gap-1.5 min-w-0">
+                <div className="EvidenceSectionTitle" style={{ marginBottom: '8px' }}>
                   <p className="text-sm font-semibold tracking-[0.05em] text-[#F082A9] uppercase">Actress Evidence</p>
                   <p className="text-lg font-bold text-gray-900 mt-1">よく見る出演者</p>
                 </div>
@@ -444,7 +468,7 @@ const AnalysisShareCard = forwardRef<HTMLDivElement, AnalysisShareCardProps>(fun
                     <span className="text-sm text-gray-400">まだ推し女優の傾向が出ていません。</span>
                   )}
                 </div>
-                <div className="flex flex-col gap-2">
+                <div className="flex flex-col gap-1.5">
                   {performerEvidence.performerTop.map((performer) => (
                     <div
                       key={`perf-${performer.rank}`}
@@ -463,10 +487,18 @@ const AnalysisShareCard = forwardRef<HTMLDivElement, AnalysisShareCardProps>(fun
                     </div>
                   ))}
                 </div>
-                <p className="text-xs text-gray-500">{performerEvidence.comment}</p>
+                <p className="EvidenceFooterText text-xs text-gray-500 truncate" style={{ lineHeight: 1.2, marginTop: '4px' }}>
+                  {performerEvidence.comment}
+                </p>
               </div>
             </div>
-            <div className="flex flex-wrap gap-3">
+            <div
+              className="KeywordChips flex flex-wrap"
+              style={{
+                gap: '8px 12px',
+                maxWidth: '640px',
+              }}
+            >
               {keywordPills.map((keyword) => (
                 <span
                   key={`evidence-keyword-${keyword}`}
@@ -476,57 +508,8 @@ const AnalysisShareCard = forwardRef<HTMLDivElement, AnalysisShareCardProps>(fun
                 </span>
               ))}
             </div>
-          </div>
-          <div
-            className="qr-stamp flex flex-col items-center text-center gap-1.5"
-            style={{
-              position: 'absolute',
-              right: '32px',
-              bottom: '32px',
-              width: '120px',
-              padding: '10px',
-              borderRadius: '26px',
-              background: 'rgba(255, 255, 255, 0.92)',
-              boxShadow: '0 12px 30px rgba(15,23,42,0.18)',
-            }}
-          >
-            <p className="text-[10px] font-semibold tracking-[0.35em] text-rose-400 uppercase text-center">診断</p>
-            <div className="w-[120px] h-[120px] bg-white rounded-[22px] border border-gray-200 shadow-inner flex items-center justify-center p-2">
-              {qrDataUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={qrDataUrl} alt="Seiheki Lab QR" className="w-full h-full object-contain" />
-              ) : (
-                <span className="text-xs text-gray-400">QR準備中...</span>
-              )}
             </div>
-            <p className="text-[10px] text-gray-500 text-center">seihekilab.com</p>
           </div>
-        </section>
-
-        <div
-          className="qr-stamp flex flex-col items-center text-center gap-1.5"
-          style={{
-            position: 'absolute',
-            right: '32px',
-            bottom: '32px',
-            width: '120px',
-            boxSizing: 'border-box',
-            padding: '10px',
-            borderRadius: '26px',
-            background: 'rgba(255, 255, 255, 0.92)',
-            boxShadow: '0 12px 30px rgba(15,23,42,0.18)',
-          }}
-        >
-          <p className="text-[10px] font-semibold tracking-[0.35em] text-rose-400 uppercase text-center">診断</p>
-          <div className="w-[120px] h-[120px] bg-white rounded-[22px] border border-gray-200 shadow-inner flex items-center justify-center p-2">
-            {qrDataUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={qrDataUrl} alt="Seiheki Lab QR" className="w-full h-full object-contain" />
-            ) : (
-              <span className="text-xs text-gray-400">QR準備中...</span>
-            )}
-          </div>
-          <p className="text-[10px] text-gray-500 text-center">seihekilab.com</p>
         </div>
       </div>
     </div>
