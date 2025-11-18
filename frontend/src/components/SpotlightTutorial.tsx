@@ -16,7 +16,6 @@ type TutorialStep = {
   body: string;
 };
 
-const BUBBLE_PADDING = 16;
 const BUBBLE_HALF_WIDTH = 160;
 
 const STEPS: TutorialStep[] = [

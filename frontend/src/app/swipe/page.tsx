@@ -81,6 +81,8 @@ export default function Home() {
   const [showSpotlight, setShowSpotlight] = useState(false);
   const [spotlightReady, setSpotlightReady] = useState(false);
   const likedListButtonRef = useRef<HTMLButtonElement | null>(null);
+  const onboardingStartedRef = useRef(false);
+  const spotlightStartedRef = useRef(false);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -115,10 +117,34 @@ export default function Home() {
     };
   }, [showSpotlight]);
 
+  useEffect(() => {
+    if (showOnboarding) {
+      if (!onboardingStartedRef.current) {
+        trackEvent('onboarding_slides_start');
+        onboardingStartedRef.current = true;
+      }
+    } else {
+      onboardingStartedRef.current = false;
+    }
+  }, [showOnboarding]);
+
+  useEffect(() => {
+    const visible = showSpotlight && spotlightReady && !showOnboarding;
+    if (visible) {
+      if (!spotlightStartedRef.current) {
+        trackEvent('spotlight_tutorial_start');
+        spotlightStartedRef.current = true;
+      }
+    } else if (!showSpotlight) {
+      spotlightStartedRef.current = false;
+    }
+  }, [showSpotlight, spotlightReady, showOnboarding]);
+
   const handleFinishOnboarding = useCallback(() => {
     if (typeof window !== 'undefined') {
       localStorage.setItem(ONBOARDING_STORAGE_KEY, 'true');
     }
+    trackEvent('onboarding_slides_complete');
     setShowOnboarding(false);
     setTimeout(() => setShowSpotlight(true), 0);
   }, []);
@@ -127,6 +153,7 @@ export default function Home() {
     if (typeof window !== 'undefined') {
       localStorage.setItem(SPOTLIGHT_STORAGE_KEY, 'true');
     }
+    trackEvent('spotlight_tutorial_complete');
     setShowSpotlight(false);
   }, []);
 
@@ -484,6 +511,13 @@ export default function Home() {
     }
 
     emitDecisionEvents(card, decisionType);
+    trackEvent('swipe_action', {
+      direction,
+      decision_type: decisionType,
+      video_id: card.id,
+      logged_in: isLoggedIn ? 1 : 0,
+      recommendation_source: card.recommendationSource ?? 'videos_feed',
+    });
     setActiveIndex((prev) => prev + 1);
     setCurrentGradient(ORIGINAL_GRADIENT);
     incrementDecisionCount();
