@@ -102,28 +102,34 @@ async function fetchTargetExternalIds(limit) {
   const ids = [];
   const pageSize = 1000;
   const effectiveLimit = limit > 0 ? limit : Number.MAX_SAFE_INTEGER;
-  let start = 0;
+  let lastCreatedAt = null;
 
-  while (start < effectiveLimit) {
-    const end = start + Math.min(pageSize, effectiveLimit - start) - 1;
-    const { data, error } = await supabase
+  while (ids.length < effectiveLimit) {
+    let query = supabase
       .from('videos')
-      .select('external_id')
+      .select('external_id, created_at')
       .eq('source', 'FANZA')
       .or('thumbnail_vertical_url.is.null,affiliate_url.is.null')
       .order('created_at', { ascending: true })
-      .range(start, end);
+      .limit(Math.min(pageSize, effectiveLimit - ids.length));
 
+    if (lastCreatedAt) {
+      query = query.gt('created_at', lastCreatedAt);
+    }
+
+    const { data, error } = await query;
     if (error) {
       throw new Error(`[fanza_backfill] Failed to fetch candidate videos: ${error.message}`);
     }
 
-    (data ?? []).forEach((row) => {
+    if (!data || data.length === 0) {
+      break;
+    }
+
+    data.forEach((row) => {
       if (row.external_id) ids.push(row.external_id);
     });
-
-    if (!data || data.length < (end - start + 1)) break;
-    start += data.length;
+    lastCreatedAt = data[data.length - 1].created_at;
   }
 
   return ids;
