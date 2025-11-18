@@ -5,37 +5,49 @@ import { RefObject, useEffect, useState } from 'react';
 type SpotlightTutorialProps = {
   likeButtonRef: RefObject<HTMLElement | null>;
   skipButtonRef: RefObject<HTMLElement | null>;
+  likedListButtonRef: RefObject<HTMLElement | null>;
   visible: boolean;
   onFinish: () => void;
 };
 
 type TutorialStep = {
-  key: 'like' | 'skip';
+  key: 'like' | 'skip' | 'list';
   title: string;
   body: string;
 };
+
+const BUBBLE_HALF_WIDTH = 160;
 
 const STEPS: TutorialStep[] = [
   {
     key: 'like',
     title: 'ここを押すと “ストック” されます。',
-    body: '後から見返す “刺さる候補リスト” を作れます。',
+    body: '後から見返す “抜ける候補リスト” を作れます。',
   },
   {
     key: 'skip',
-    title: 'ここは “そこまで刺さらない” 時に使います。',
+    title: 'ここは “そこまで抜けない” 時に使います。',
     body: 'こういう作品は、おすすめから外れていきます。',
+  },
+  {
+    key: 'list',
+    title: 'ストックした作品はここから開けます。',
+    body: 'たまった「気になる」をまとめて見返せます。',
   },
 ];
 
-export default function SpotlightTutorial({ likeButtonRef, skipButtonRef, visible, onFinish }: SpotlightTutorialProps) {
+export default function SpotlightTutorial({ likeButtonRef, skipButtonRef, likedListButtonRef, visible, onFinish }: SpotlightTutorialProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [rect, setRect] = useState<DOMRect | null>(null);
 
   useEffect(() => {
     if (!visible) return;
     const updateRect = () => {
-      const targetRef = (STEPS[currentStep].key === 'like' ? likeButtonRef : skipButtonRef);
+      const stepKey = STEPS[currentStep].key;
+      const targetRef =
+        stepKey === 'like' ? likeButtonRef :
+        stepKey === 'skip' ? skipButtonRef :
+        likedListButtonRef;
       const node = targetRef.current;
       if (!node) {
         setRect(null);
@@ -50,7 +62,7 @@ export default function SpotlightTutorial({ likeButtonRef, skipButtonRef, visibl
       window.removeEventListener('resize', updateRect);
       window.removeEventListener('scroll', updateRect, true);
     };
-  }, [currentStep, likeButtonRef, skipButtonRef, visible]);
+  }, [currentStep, likeButtonRef, skipButtonRef, likedListButtonRef, visible]);
 
   useEffect(() => {
     if (!visible) setCurrentStep(0);
@@ -82,11 +94,15 @@ export default function SpotlightTutorial({ likeButtonRef, skipButtonRef, visibl
     }
     const centerX = rect.left + rect.width / 2;
     const viewportHeight = typeof window !== 'undefined' ? window.innerHeight : 0;
+    const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 0;
     const preferBelow = viewportHeight ? rect.top < viewportHeight / 2 : true;
     const top = preferBelow ? rect.bottom + 16 : rect.top - 16;
+    const minLeft = BUBBLE_HALF_WIDTH + 16;
+    const maxLeft = viewportWidth ? Math.max(viewportWidth - (BUBBLE_HALF_WIDTH + 16), minLeft) : centerX;
+    const clampedLeft = viewportWidth ? Math.min(Math.max(centerX, minLeft), maxLeft) : centerX;
     return {
       top,
-      left: centerX,
+      left: clampedLeft,
       transform: preferBelow ? 'translate(-50%, 0)' : 'translate(-50%, -100%)',
     };
   })();

@@ -33,6 +33,7 @@ export interface VideoRecord {
 }
 
 export type TagFilterOption = { id: string; name: string; cnt?: number };
+export type TagFilterWithGroup = TagFilterOption & { tag_group_name?: string | null };
 export type PerformerFilterOption = { id: string; name: string; cnt?: number };
 export type SortKey = 'liked_at' | 'released' | 'price' | 'title';
 export type SortOrder = 'asc' | 'desc';
@@ -78,7 +79,7 @@ export interface VideoListDrawerProps {
   order: SortOrder;
   onChangeSort: (value: SortKey) => void;
   onChangeOrder: (value: SortOrder) => void;
-  tagOptions: TagFilterOption[];
+  tagOptions: TagFilterWithGroup[];
   performerOptions: PerformerFilterOption[];
   selectedTagIds: string[];
   selectedPerformerIds: string[];
@@ -273,14 +274,17 @@ export default function VideoListDrawer({
                       {selectedTagIds.length > 0 && (
                         <div className="flex flex-wrap gap-2 text-[11px]">
                           {selectedTagIds.map((id) => {
-                            const name = tagOptions.find((t) => t.id === id)?.name || id;
+                            const option = tagOptions.find((t) => t.id === id);
+                            const name = option?.name || id;
+                            const group = option?.tag_group_name ?? null;
                             return (
                               <button
                                 key={`selected-tag-${id}`}
                                 onClick={() => onToggleTag(id)}
                                 className="px-2 py-1 rounded-full border border-rose-500/60 bg-rose-100 text-rose-600"
                               >
-                                #{name} ×
+                                {group ? `[${group}] ` : '#'}
+                                {name} ×
                               </button>
                             );
                           })}

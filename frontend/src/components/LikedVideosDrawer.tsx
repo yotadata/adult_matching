@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import VideoListDrawer, {
   VideoRecord,
-  TagFilterOption,
+  TagFilterWithGroup,
   PerformerFilterOption,
   SortKey,
   SortOrder,
@@ -21,7 +21,7 @@ const LikedVideosDrawer: React.FC<LikedVideosDrawerProps> = ({ isOpen, onClose }
   const [error, setError] = useState<string | null>(null);
   const [sort, setSort] = useState<SortKey>('liked_at');
   const [order, setOrder] = useState<SortOrder>('desc');
-  const [tagOptions, setTagOptions] = useState<TagFilterOption[]>([]);
+  const [tagOptions, setTagOptions] = useState<TagFilterWithGroup[]>([]);
   const [performerOptions, setPerformerOptions] = useState<PerformerFilterOption[]>([]);
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
   const [selectedPerformerIds, setSelectedPerformerIds] = useState<string[]>([]);
@@ -45,7 +45,7 @@ const LikedVideosDrawer: React.FC<LikedVideosDrawerProps> = ({ isOpen, onClose }
           supabase.rpc('get_user_liked_tags'),
           supabase.rpc('get_user_liked_performers'),
         ]);
-        setTagOptions((tags as TagFilterOption[] | null)?.filter(Boolean) ?? []);
+        setTagOptions((tags as TagFilterWithGroup[] | null)?.filter(Boolean) ?? []);
         setPerformerOptions((performers as PerformerFilterOption[] | null)?.filter(Boolean) ?? []);
       } catch {
         /* noop */

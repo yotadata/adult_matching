@@ -80,6 +80,9 @@ export default function Home() {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showSpotlight, setShowSpotlight] = useState(false);
   const [spotlightReady, setSpotlightReady] = useState(false);
+  const likedListButtonRef = useRef<HTMLButtonElement | null>(null);
+  const onboardingStartedRef = useRef(false);
+  const spotlightStartedRef = useRef(false);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -100,7 +103,7 @@ export default function Home() {
     if (typeof window === 'undefined') return;
     let rafId: number | null = null;
     const checkReady = () => {
-      if (likeButtonRef.current && skipButtonRef.current) {
+      if (likeButtonRef.current && skipButtonRef.current && likedListButtonRef.current) {
         setSpotlightReady(true);
         return;
       }
@@ -114,10 +117,34 @@ export default function Home() {
     };
   }, [showSpotlight]);
 
+  useEffect(() => {
+    if (showOnboarding) {
+      if (!onboardingStartedRef.current) {
+        trackEvent('onboarding_slides_start');
+        onboardingStartedRef.current = true;
+      }
+    } else {
+      onboardingStartedRef.current = false;
+    }
+  }, [showOnboarding]);
+
+  useEffect(() => {
+    const visible = showSpotlight && spotlightReady && !showOnboarding;
+    if (visible) {
+      if (!spotlightStartedRef.current) {
+        trackEvent('spotlight_tutorial_start');
+        spotlightStartedRef.current = true;
+      }
+    } else if (!showSpotlight) {
+      spotlightStartedRef.current = false;
+    }
+  }, [showSpotlight, spotlightReady, showOnboarding]);
+
   const handleFinishOnboarding = useCallback(() => {
     if (typeof window !== 'undefined') {
       localStorage.setItem(ONBOARDING_STORAGE_KEY, 'true');
     }
+    trackEvent('onboarding_slides_complete');
     setShowOnboarding(false);
     setTimeout(() => setShowSpotlight(true), 0);
   }, []);
@@ -126,6 +153,7 @@ export default function Home() {
     if (typeof window !== 'undefined') {
       localStorage.setItem(SPOTLIGHT_STORAGE_KEY, 'true');
     }
+    trackEvent('spotlight_tutorial_complete');
     setShowSpotlight(false);
   }, []);
 
@@ -483,6 +511,13 @@ export default function Home() {
     }
 
     emitDecisionEvents(card, decisionType);
+    trackEvent('swipe_action', {
+      direction,
+      decision_type: decisionType,
+      video_id: card.id,
+      logged_in: isLoggedIn ? 1 : 0,
+      recommendation_source: card.recommendationSource ?? 'videos_feed',
+    });
     setActiveIndex((prev) => prev + 1);
     setCurrentGradient(ORIGINAL_GRADIENT);
     incrementDecisionCount();
@@ -565,6 +600,7 @@ export default function Home() {
                 onSamplePlay={(card) => handleSamplePlay(card, 'mobile')}
                 skipButtonRef={skipButtonRef}
                 likeButtonRef={likeButtonRef}
+                likedListButtonRef={likedListButtonRef}
               />
             ) : (
               <SwipeCard
@@ -611,13 +647,14 @@ export default function Home() {
                 onClick={() => triggerSwipe('left')}
                 ref={skipButtonRef}
                 className="w-20 h-20 rounded-full bg-[#6C757D] shadow-2xl drop-shadow-xl active:scale-95 transition flex items-center justify-center leading-none"
-                aria-label="パス"
-                title="パス"
+                aria-label="スキップ"
+                title="スキップ"
               >
                 <ChevronsLeft size={36} className="text-white" />
               </button>
               <button
                 onClick={() => { try { window.dispatchEvent(new Event('open-liked-drawer')); } catch {} }}
+                ref={likedListButtonRef}
                 className="w-[60px] h-[60px] rounded-full bg-[#BEBEBE] shadow-2xl drop-shadow-xl active:scale-95 transition flex items-center justify-center leading-none"
                 aria-label="気になるリスト"
                 title="気になるリスト"
@@ -642,6 +679,7 @@ export default function Home() {
       <SpotlightTutorial
         likeButtonRef={likeButtonRef}
         skipButtonRef={skipButtonRef}
+        likedListButtonRef={likedListButtonRef}
         visible={showSpotlight && spotlightReady && !showOnboarding}
         onFinish={handleFinishSpotlight}
       />

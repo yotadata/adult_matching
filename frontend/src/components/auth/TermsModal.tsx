@@ -46,7 +46,7 @@ const TermsModal: React.FC<TermsModalProps> = ({ open, onClose }) => (
               </div>
               <div className="mt-4 space-y-4 text-sm text-gray-700 max-h-[60vh] overflow-y-auto">
                 <p>
-                  性癖ラボは、成人向けコンテンツのレコメンド機能を提供する 18 歳以上限定のサービスです。AI が嗜好を学習し、スワイプや検索結果をパーソナライズする目的でアカウント登録をお願いしています。
+                  性癖ラボは、成人向けコンテンツのレコメンド機能を提供する 18 歳以上限定のサービスです。AI が好みを学習し、スワイプや検索結果をパーソナライズする目的でアカウント登録をお願いしています。
                 </p>
                 <ul className="list-disc pl-5 space-y-2">
                   <li>18 歳未満、もしくは居住地域で成人年齢に達していない方は利用できません。登録時の年齢確認チェックに必ず同意してください。</li>

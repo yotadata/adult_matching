@@ -13,6 +13,15 @@ create policy "Allow individual user access" on public.user_features
     for all
     using (auth.uid() = user_id);
 
+-- service_role ロールが存在しないローカル環境でも GRANT できるよう、必要に応じて作成
+do $$
+begin
+    if not exists (select 1 from pg_roles where rolname = 'service_role') then
+        create role service_role;
+    end if;
+end
+$$;
+
 -- service_role は全アクセス可能
 grant select, insert, update, delete on table public.user_features to service_role;
 

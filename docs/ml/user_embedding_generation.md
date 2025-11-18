@@ -89,7 +89,7 @@ CREATE TABLE public.user_features (
 ### 処理内容
 
 1.  `user_features` テーブルからユーザーごとの集計済み特徴量データを読み込みます。
-2.  `train_two_tower.py` と同じロジック（`max_tag_features`, `max_performer_features` など）で、嗜好データからユーザーの特徴ベクトルを構築します。
+2.  `train_two_tower.py` と同じロジック（`max_tag_features`, `max_performer_features` など）で、好みデータからユーザーの特徴ベクトルを構築します。
 3.  `publish_two_tower` で公開されている最新のTwo-Towerモデルの `user_encoder` を使用し、特徴ベクトルからユーザーの埋め込みベクトルを推論します。
 4.  推論結果（`user_id`, `embedding`, `model_version`）を `user_embeddings` テーブルに `upsert` します。
 
@@ -125,7 +125,7 @@ CREATE TABLE public.user_embeddings (
 
 ### 背景
 
-AI レコメンドの応答速度を維持するため、ユーザーの嗜好変化を 1 時間単位で反映させる増分更新ジョブを GitHub Actions で自動実行します。大量の全件再計算ではなく、直近 1 時間に `user_video_decisions` へ書き込みのあったユーザーのみを対象にすることで、コストを最小化します。
+AI レコメンドの応答速度を維持するため、ユーザーの好み変化を 1 時間単位で反映させる増分更新ジョブを GitHub Actions で自動実行します。大量の全件再計算ではなく、直近 1 時間に `user_video_decisions` へ書き込みのあったユーザーのみを対象にすることで、コストを最小化します。
 
 ### 実行単位
 
@@ -143,6 +143,6 @@ AI レコメンドの応答速度を維持するため、ユーザーの嗜好�
 | --- | --- |
 | `SYNC_USER_ENV_FILE` | `sync_user_embeddings` が参照する `.env` パス（未指定時は `docker/env/prd.env`） |
 | `SYNC_USER_OUTPUT_ROOT` | 生成物を保存するルートディレクトリ |
-| `SYNC_USER_RECENT_HOURS` | デフォルトの参照時間幅（既定: `1`） |
+| `SYNC_USER_RECENT_HOURS` | デフォルトの参照時間幅（既定: `4`） |
 
 これらの値は GitHub Actions では `docker/env/prd.ci.env` を動的生成して渡します。ローカル検証時は `docker/env/dev.env` を指定して実行できます。ローカル実行の際は既存の `ml/artifacts/latest` を信頼し、Storage からのダウンロードは行いません（必要な場合のみ `--fetch-latest` を付与してください）。

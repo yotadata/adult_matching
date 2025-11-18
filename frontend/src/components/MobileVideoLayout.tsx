@@ -11,9 +11,10 @@ interface MobileVideoLayoutProps {
   onSamplePlay?: (card: CardData) => void;
   skipButtonRef?: RefObject<HTMLButtonElement | null>;
   likeButtonRef?: RefObject<HTMLButtonElement | null>;
+  likedListButtonRef?: RefObject<HTMLButtonElement | null>;
 }
 
-const MobileVideoLayout: React.FC<MobileVideoLayoutProps> = ({ cardData, onSkip, onLike, onSamplePlay, skipButtonRef, likeButtonRef }) => {
+const MobileVideoLayout: React.FC<MobileVideoLayoutProps> = ({ cardData, onSkip, onLike, onSamplePlay, skipButtonRef, likeButtonRef, likedListButtonRef }) => {
   const [showVideo, setShowVideo] = useState(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [showOverlay, setShowOverlay] = useState(true);
@@ -186,19 +187,20 @@ const MobileVideoLayout: React.FC<MobileVideoLayoutProps> = ({ cardData, onSkip,
       {/* フッター（透明）: 3つの色ボタン＋白アイコン */}
       <div className="fixed left-0 right-0 bottom-0 z-50 pb-[calc(8px+env(safe-area-inset-bottom,0px))]">
         <div className="mx-auto max-w-md w-full flex items-center justify-center gap-6 py-3">
-          {/* パス (ChevronsLeft, #6C757D) */}
+          {/* スキップ (ChevronsLeft, #6C757D) */}
           <button
             onClick={onSkip}
             ref={skipButtonRef}
             className="w-20 h-20 rounded-full bg-[#6C757D] shadow-2xl drop-shadow-xl active:scale-95 transition flex items-center justify-center"
-            aria-label="パス"
-            title="パス"
+            aria-label="スキップ"
+            title="スキップ"
           >
             <ChevronsLeft size={36} className="text-white" />
           </button>
           {/* Liked list */}
           <button
             onClick={() => { try { window.dispatchEvent(new Event('open-liked-drawer')); } catch {} }}
+            ref={likedListButtonRef}
             className="w-[60px] h-[60px] rounded-full bg-[#BEBEBE] shadow-2xl drop-shadow-xl active:scale-95 transition flex items-center justify-center"
             aria-label="気になるリスト"
             title="気になるリスト"

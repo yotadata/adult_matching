@@ -9,7 +9,7 @@ Two-Tower 推薦モデル向けの学習データを生成するための標準�
   - リモート DB ダンプ: `ml/data/raw/db_dumps/<run-id>/prep_subset.sql`
 - 加工データ (`processed`): `ml/data/processed/two_tower/`
   - 最新成果物: `latest/`（`interactions_train.parquet`, `interactions_val.parquet`, `item_features.parquet`, `summary.json`）
-  - スナップショット: `runs/<run-id>/`（Train/Val/Items/summary + 必要に応じて inputs/）
+  - アーカイブ: `runs/<run-id>/`（Train/Val/Items/summary + 必要に応じて inputs/）
 - 学習成果物: `ml/artifacts/`（モデルや埋め込みを別ドキュメントで定義）
 
 ## 生データ取得
@@ -90,7 +90,7 @@ Two-Tower 推薦モデル向けの学習データを生成するための標準�
 | `public.user_video_decisions` 集計 | `like_count_30d` | int32 | `12` | 直近 30 日間の LIKE 件数。コールドスタート判定・重み付けに利用。 |
 | `public.user_video_decisions` 集計 | `positive_ratio_30d` | float32 | `0.67` | LIKE / (LIKE+DISLIKE) の比率。0 除算時は `null`。 |
 | `public.profiles` | `signup_days` | int32 | `124` | `now() - created_at` を日数換算。アクティブ度の proxy。 |
-| `public.profiles` + 集計 | `preferred_tag_ids` | uuid[] | `["0c8c...", "9f2b..."]` | LIKE した動画タグの上位 N 件。タグ軸のユーザー嗜好を表現。 |
+| `public.profiles` + 集計 | `preferred_tag_ids` | uuid[] | `["0c8c...", "9f2b..."]` | LIKE した動画タグの上位 N 件。タグ軸のユーザーの好みを表現。 |
 > `user_features.parquet` を追加する際は、上記列を含む長形式（主キー: `reviewer_id`）で保存し、欠損は `null` のまま後段でマスク処理する。数値列は `float32` / `int32` ベースで書き出し、ONNX 入力テンソルのスキーマは `model_meta.json` の `input_schema_version` と同期させる。  
 > レビューデータ（星評価 CSV）は初期モデル構築時の暫定データであり、恒常運用の特徴量には利用しない方針とする。ユーザー集計は `user_video_decisions` / `profiles` / `video_tags` を参照するため、`--db-url` を指定して Postgres から直接取得する。ローカル開発で DB 接続が難しい場合は、`interactions_train/val.parquet` を元に LIKE 件数やタグ頻度など最小限の統計量を合成し、`preferred_tag_ids` などの多値列を空配列で埋める暫定措置を取ってもよい（本番前には必ず DB 集計版に差し替える）。
 
@@ -108,7 +108,7 @@ Two-Tower 推薦モデル向けの学習データを生成するための標準�
 | `public.videos` | `series` | string | `超S級` | 作品シリーズ名。 |
 | `public.videos` | `price` | float32 | `1980.0` | 価格帯をバケット化して特徴にする想定。 |
 | `public.video_tags` join | `tag_ids` | uuid[] | `["4d2c...", "a8be..."]` | 多値カテゴリ。タグ一覧を保持し後段で multi-hot 化。 |
-| `public.video_performers` join | `performer_ids` | uuid[] | `["1f20...", "9bb4..."]` | 出演者 ID リスト。出演者の嗜好学習に利用。 |
+| `public.video_performers` join | `performer_ids` | uuid[] | `["1f20...", "9bb4..."]` | 出演者 ID リスト。出演者軸の好み学習に利用。 |
 | `item_features.parquet` 派生 | `tag_multi_hot` | float32[]（vector） | `[0,1,0,1,...]` | タグ集合を固定長ベクトル化したもの。生成時はタグ辞書のバージョンを記録。 |
 | `item_features.parquet` 派生 | `title_embedding` | float32[] | `[0.12, -0.03, ...]` | 外部テキストエンコーダの出力。モデル更新時に再計算し、ONNX 入力と揃える。 |
 
@@ -141,22 +141,22 @@ Two-Tower 推薦モデル向けの学習データを生成するための標準�
 - 突合結果に video_id 欠損が発生した行は削除し、件数をサマリーに記録。
 - 付随情報（`title`, `maker`, `label`, `tags` など）は `item_features.parquet` として保存。
 
-### 出力とスナップショット
+### 出力とアーカイブ
 - 既定出力（`--skip-legacy-output` 未指定時）:
   - `ml/data/processed/two_tower/latest/interactions_train.parquet`
   - `ml/data/processed/two_tower/latest/interactions_val.parquet`
   - `ml/data/processed/two_tower/latest/item_features.parquet`（動画マスタが利用できた場合）
   - `ml/data/processed/two_tower/latest/summary.json`（統計と出力ファイル情報を JSON で記録）
-- `--run-id` を指定すると `runs/<run-id>/` 以下にスナップショットを残す。
+- `--run-id` を指定すると `runs/<run-id>/` 以下にアーカイブを残す。
   - `--run-id auto` で JST（UTC+9）の `YYYY-MM-DD_HH-MM-SS` 形式を自動採番。
-  - `--snapshot-inputs` で参照した CSV を `runs/<run-id>/inputs/` にコピー。
-  - `--skip-legacy-output` を併用するとスナップショットのみを書き出し、`latest/` は更新しない。
+  - `--snapshot-inputs` で参照した CSV を `runs/<run-id>/inputs/` にコピー（アーカイブ入力）。
+  - `--skip-legacy-output` を併用するとアーカイブのみを書き出し、`latest/` は更新しない。
 
 ### サマリー項目
 - `train_rows`, `val_rows`, `users_train`, `users_val`, `items`
 - `merged_decisions`, `joined_videos`, `missing_video_id_before_drop`
 - `interactions_before_join`, `dropped_no_video_id`, `items_matched`, `join_used`, `cid_missing_in_input`
-- `paths`: 各成果物パス、スナップショットパス
+- `paths`: 各成果物パス、アーカイブパス
 - コンソール出力でも同じ JSON を `print` するため、ログからも整形可能。
 
 ### 実行例

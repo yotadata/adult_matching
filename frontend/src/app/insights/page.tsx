@@ -15,6 +15,7 @@ const WINDOW_OPTIONS: Array<{ label: string; value: number | null }> = [
 ];
 
 const MAX_FETCH = 2000;
+const SHARE_CARD_LANDING_URL = 'https://seihekilab.com/?utm_source=share_card&utm_medium=user_profile';
 
 const formatPercent = (value: number | null): string => {
   if (value === null || Number.isNaN(value)) return '—';
@@ -95,16 +96,16 @@ export default function AnalysisResultsPage() {
   const sharePerformerNames = primaryPerformer ? [primaryPerformer.performer_name] : [];
   const shareText = (() => {
     if (primaryTag && primaryPerformer) {
-      return `最近は ${primaryPerformer.performer_name} が出る #${primaryTag.tag_name} 系で毎回「気になる」。あなたも #あなたの性癖 を診断して推しポイントをシェアしよう。`;
+      return `最近は ${primaryPerformer.performer_name} が出る #${primaryTag.tag_name} 系で毎回「気になる」。あなたも #あなたの性癖 を診断して抜けるポイントをシェアしよう。`;
     }
     if (shareTagNames.length > 0) {
-      return `今の推しタグは ${shareTagNames.join(' / ')}。あなたも #あなたの性癖 を診断して嗜好カードを作ろう。`;
+      return `今の抜けるタグは ${shareTagNames.join(' / ')}。あなたも #あなたの性癖 を診断して好みカードを作ろう。`;
     }
     if (sharePerformerNames.length > 0) {
-      return `${sharePerformerNames.join(' / ')} が出ていたら即「気になる」。あなたも #あなたの性癖 を診断して推しを布教しよう。`;
+      return `${sharePerformerNames.join(' / ')} が出ていたら即「気になる」。あなたも #あなたの性癖 を診断して抜ける出演者を布教しよう。`;
     }
     if (summary) {
-      return `${windowLabel}の嗜好分析結果をシェアしました。あなたも #あなたの性癖 を診断してみて。`;
+      return `${windowLabel}の好み分析結果をシェアしました。あなたも #あなたの性癖 を診断してみて。`;
     }
     return 'あなたの性癖の結果をシェアしました。';
   })();
@@ -156,7 +157,7 @@ export default function AnalysisResultsPage() {
         <header className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="space-y-2">
             <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight">あなたの性癖</h1>
-            <p className="text-sm text-white/80">「気になる」 / 「パス」の履歴から嗜好の傾向を可視化します。</p>
+            <p className="text-sm text-white/80">「気になる」 / 「スキップ」の履歴から好みの傾向を可視化します。</p>
           </div>
           <button
             onClick={handleShare}
@@ -165,7 +166,7 @@ export default function AnalysisResultsPage() {
             title="共有"
           >
             <Share2 size={16} />
-            シェア
+            シェア（β版）
           </button>
         </header>
 
@@ -213,9 +214,9 @@ export default function AnalysisResultsPage() {
                 icon={Smile}
               />
               <SummaryCard
-                title="パス数"
+                title="スキップ数"
                 value={summary ? formatCount(summary.total_nope) : '—'}
-                sub={summary ? `${windowLabel}の「パス」合計` : undefined}
+                sub={summary ? `${windowLabel}の「スキップ」合計` : undefined}
                 icon={Frown}
               />
               <SummaryCard
@@ -234,7 +235,7 @@ export default function AnalysisResultsPage() {
                       <TagIcon size={18} className="text-rose-400" />
                       好きなタグ Top {topTags.length}
                     </h2>
-                    <p className="text-xs text-gray-500 mt-1">「気になる」が多いタグの傾向とシェアを表示します。</p>
+                    <p className="text-xs text-gray-500 mt-1">「気になる」が多いタグの傾向を表示します。</p>
                   </div>
                   <Info size={16} className="text-gray-400 shrink-0" />
                 </header>
@@ -249,21 +250,13 @@ export default function AnalysisResultsPage() {
                         <div className="flex flex-col">
                           <span className="text-sm font-semibold text-gray-700">{tag.tag_name}</span>
                           <span className="text-xs text-gray-500">
-                            気になる: {formatCount(tag.likes)} / パス: {formatCount(tag.nopes)}
+                            気になる: {formatCount(tag.likes)} / スキップ: {formatCount(tag.nopes)}
                           </span>
                         </div>
-                        <div className="flex items-center gap-4">
-                          <div className="flex flex-col text-right text-xs text-gray-500">
+                        <div className="flex items-center gap-4 text-xs text-gray-500">
+                          <div className="flex flex-col text-right">
                             <span>気になる比率</span>
                             <span className="text-base font-bold text-gray-900">{formatPercent(tag.like_ratio)}</span>
-                          </div>
-                          <div className="flex flex-col text-right text-xs text-gray-500">
-                            <span>気になるシェア</span>
-                            <span className="text-base font-bold text-gray-900">{formatPercent(tag.share)}</span>
-                          </div>
-                          <div className="flex flex-col text-right text-xs text-gray-500">
-                            <span>最新の気になる</span>
-                            <span className="text-base font-semibold text-gray-900">{formatDate(tag.last_liked_at)}</span>
                           </div>
                           {tag.representative_video ? (
                             <button
@@ -302,21 +295,13 @@ export default function AnalysisResultsPage() {
                         <div className="flex flex-col">
                           <span className="text-sm font-semibold text-gray-700">{performer.performer_name}</span>
                           <span className="text-xs text-gray-500">
-                            気になる: {formatCount(performer.likes)} / パス: {formatCount(performer.nopes)}
+                            気になる: {formatCount(performer.likes)} / スキップ: {formatCount(performer.nopes)}
                           </span>
                         </div>
-                        <div className="flex items-center gap-4">
-                          <div className="flex flex-col text-right text-xs text-gray-500">
+                        <div className="flex items-center gap-4 text-xs text-gray-500">
+                          <div className="flex flex-col text-right">
                             <span>気になる比率</span>
                             <span className="text-base font-bold text-gray-900">{formatPercent(performer.like_ratio)}</span>
-                          </div>
-                          <div className="flex flex-col text-right text-xs text-gray-500">
-                            <span>気になるシェア</span>
-                            <span className="text-base font-bold text-gray-900">{formatPercent(performer.share)}</span>
-                          </div>
-                          <div className="flex flex-col text-right text-xs text-gray-500">
-                            <span>最新の気になる</span>
-                            <span className="text-base font-semibold text-gray-900">{formatDate(performer.last_liked_at)}</span>
                           </div>
                           {performer.representative_video ? (
                             <button
@@ -341,7 +326,7 @@ export default function AnalysisResultsPage() {
                     <Clock size={18} className="text-rose-400" />
                     直近の判断履歴
                   </h2>
-                  <p className="text-xs text-gray-500 mt-1">最新の「気になる」 / 「パス」を新しい順に表示します。</p>
+                  <p className="text-xs text-gray-500 mt-1">最新の「気になる」 / 「スキップ」を新しい順に表示します。</p>
                 </div>
                 <Info size={16} className="text-gray-400 shrink-0" />
               </header>
@@ -387,7 +372,7 @@ export default function AnalysisResultsPage() {
                                 item.decision_type === 'like' ? 'bg-rose-500/15 text-rose-500' : 'bg-gray-200 text-gray-700'
                               }`}
                             >
-                              {item.decision_type === 'like' ? '気になる' : 'パス'}
+                              {item.decision_type === 'like' ? '気になる' : 'スキップ'}
                             </span>
                           </td>
                           <td className="px-3 py-3 align-top">
@@ -437,7 +422,7 @@ export default function AnalysisResultsPage() {
                 <div>
                   <h2 className="text-lg font-bold">集計メモ</h2>
                   <p className="text-xs text-gray-500 mt-1">
-                    集計対象は {windowLabel} に行った「気になる」 / 「パス」で、最大 {MAX_FETCH.toLocaleString('ja-JP')} 件までを対象にしています。
+                    集計対象は {windowLabel} に行った「気になる」 / 「スキップ」で、最大 {MAX_FETCH.toLocaleString('ja-JP')} 件までを対象にしています。
                     タグ・出演者のシェアは「気になる」件数を母数に算出されます。
                   </p>
                 </div>
@@ -470,7 +455,7 @@ export default function AnalysisResultsPage() {
           summary={summary ?? null}
           topTags={topTags}
           topPerformers={topPerformers}
-          windowLabel={windowLabel}
+          shareUrl={SHARE_CARD_LANDING_URL}
         />
       </div>
     </>

@@ -13,7 +13,7 @@ type DecisionRow = {
 };
 
 type TagRow = {
-  tags?: { id: string; name: string } | { id: string; name: string }[] | null;
+  tags?: { id: string; name: string; tag_groups?: { name: string | null; show_in_ui: boolean | null } | null } | { id: string; name: string; tag_groups?: { name: string | null; show_in_ui: boolean | null } | null }[] | null;
 };
 
 type PerformerRow = {
@@ -34,7 +34,7 @@ type VideoDetails = {
   title: string | null;
   thumbnail_url: string | null;
   product_url: string | null;
-  tags: Array<{ id: string; name: string }>;
+  tags: Array<{ id: string; name: string; group_name: string | null }>;
   performers: Array<{ id: string; name: string }>;
 };
 
@@ -48,6 +48,7 @@ type VideoSummary = {
 type TagStat = {
   tag_id: string;
   tag_name: string;
+  tag_group_name: string | null;
   likes: number;
   nopes: number;
   lastLikedAt: string | null;
@@ -76,6 +77,7 @@ type AnalysisResponse = {
   top_tags: Array<{
     tag_id: string;
     tag_name: string;
+    tag_group_name: string | null;
     likes: number;
     nopes: number;
     like_ratio: number | null;
@@ -162,21 +164,26 @@ const toIsoString = (value: string | Date | null | undefined): string | null => 
   }
 };
 
-const normalizeTagRows = (rows?: TagRow[] | null): Array<{ id: string; name: string }> => {
+const normalizeTagRows = (rows?: TagRow[] | null): Array<{ id: string; name: string; group_name: string | null }> => {
   if (!rows) return [];
-  const result: Array<{ id: string; name: string }> = [];
+  const result: Array<{ id: string; name: string; group_name: string | null }> = [];
   for (const row of rows) {
     if (!row || !row.tags) continue;
     const tag = row.tags;
     if (Array.isArray(tag)) {
       for (const t of tag) {
-        if (t) result.push(t);
+        if (t && shouldDisplayTag(t)) result.push({ id: t.id, name: t.name, group_name: t.tag_groups?.name ?? null });
       }
-    } else if (tag) {
-      result.push(tag);
+    } else if (tag && shouldDisplayTag(tag)) {
+      result.push({ id: tag.id, name: tag.name, group_name: tag.tag_groups?.name ?? null });
     }
   }
   return result;
+};
+
+const shouldDisplayTag = (tag: { tag_groups?: { show_in_ui: boolean | null } | null }): boolean => {
+  if (!tag.tag_groups) return true;
+  return tag.tag_groups.show_in_ui !== false;
 };
 
 const normalizePerformerRows = (rows?: PerformerRow[] | null): Array<{ id: string; name: string }> => {
@@ -315,7 +322,7 @@ Deno.serve(async (req) => {
       const chunk = uniqueVideoIds.slice(i, i + VIDEO_CHUNK_SIZE);
       const { data, error } = await supabase
         .from("videos")
-        .select("id, title, thumbnail_url, product_url, video_tags(tags(id, name)), video_performers(performers(id, name)))")
+        .select("id, title, thumbnail_url, product_url, video_tags(tags(id, name, tag_groups(name, show_in_ui))), video_performers(performers(id, name)))")
         .in("id", chunk);
 
       if (error) {
@@ -355,12 +362,15 @@ Deno.serve(async (req) => {
             stat = {
               tag_id: tag.id,
               tag_name: tag.name,
+              tag_group_name: tag.group_name ?? null,
               likes: 0,
               nopes: 0,
               lastLikedAt: null,
               representativeVideo: null,
             };
             tagStats.set(tag.id, stat);
+          } else if (!stat.tag_group_name && tag.group_name) {
+            stat.tag_group_name = tag.group_name;
           }
           stat.likes += 1;
           if (!stat.lastLikedAt || stat.lastLikedAt < decision.created_at) {
@@ -405,12 +415,15 @@ Deno.serve(async (req) => {
             stat = {
               tag_id: tag.id,
               tag_name: tag.name,
+              tag_group_name: tag.group_name ?? null,
               likes: 0,
               nopes: 0,
               lastLikedAt: null,
               representativeVideo: null,
             };
             tagStats.set(tag.id, stat);
+          } else if (stat && !stat.tag_group_name && tag.group_name) {
+            stat.tag_group_name = tag.group_name;
           }
           if (stat) stat.nopes += 1;
         }
@@ -438,6 +451,7 @@ Deno.serve(async (req) => {
       .map((stat) => ({
         tag_id: stat.tag_id,
         tag_name: stat.tag_name,
+        tag_group_name: stat.tag_group_name ?? null,
         likes: stat.likes,
         nopes: stat.nopes,
         like_ratio: stat.likes + stat.nopes > 0 ? stat.likes / (stat.likes + stat.nopes) : null,
