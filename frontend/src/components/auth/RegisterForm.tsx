@@ -6,6 +6,7 @@ import { useState } from 'react';
 import toast from 'react-hot-toast';
 import { buildPseudoEmail, normalizeUsername } from '@/lib/authUtils';
 import TermsModal from './TermsModal';
+import { trackEvent } from '@/lib/analytics';
 
 type RegisterFormInputs = {
   username: string;
@@ -48,6 +49,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onClose }) => {
       });
       if (error) throw new Error(error.message || '登録に失敗しました');
 
+      trackEvent('sign_up', { method: 'password' });
       if (signUpData.session) {
         // autoConfirm 環境では即ログイン状態
         await supabase.auth.getUser();

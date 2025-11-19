@@ -7,6 +7,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { buildPseudoEmail, normalizeUsername } from '@/lib/authUtils';
+import { trackEvent } from '@/lib/analytics';
 
 type LoginFormInputs = {
   username: string;
@@ -34,6 +35,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onClose }) => {
         password: data.password,
       });
       if (error) throw new Error(error.message || 'ログインに失敗しました');
+      trackEvent('login', { method: 'password' });
       // 念のため取得して確定させる（CORS/環境差異の切り分け用）
       await supabase.auth.getUser();
 
