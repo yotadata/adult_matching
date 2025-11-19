@@ -10,7 +10,7 @@ WORKDIR /workspace
 RUN mkdir -p /opt/ingest && \
     cd /opt/ingest && \
     npm init -y && \
-    npm install dotenv axios pg && \
+    npm install @supabase/supabase-js dotenv axios && \
     npm install -g tsx
 
 # Default command runs the TS script
