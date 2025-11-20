@@ -95,6 +95,20 @@ jobs:
           echo "If previous step succeeded, Vercel printed the deployment URL."
         shell: bash
 
+      - name: Notify Discord (Frontend Deploy)
+        if: always()
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          JOB_STATUS: ${{ job.status }}
+        run: |
+          if [ -n "$DISCORD_WEBHOOK_URL" ]; then
+            STATUS="✅ success"
+            if [ "$JOB_STATUS" != "success" ]; then
+              STATUS="❌ $JOB_STATUS"
+            fi
+            curl -X POST -H "Content-Type: application/json" -d "{\"content\":\"[AppRelease Frontend] $STATUS\"}" "$DISCORD_WEBHOOK_URL"
+          fi
+
     # Notes:
     # - Configure repo secrets: VERCEL_TOKEN, VERCEL_ORG_ID, VERCEL_PROJECT_ID
     # - This workflow relies on Vercel Git integration or project linking via 'vercel pull'.

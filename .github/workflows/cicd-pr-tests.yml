@@ -147,3 +147,21 @@ jobs:
 
       - name: Build
         run: npm run build
+
+  discord_notify:
+    name: Notify Discord (CI/CD)
+    needs: [migration_tests, function_tests, frontend_tests]
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Notify Discord
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: |
+          if [ -n "$DISCORD_WEBHOOK_URL" ]; then
+            MIG_STATUS=${{ needs.migration_tests.result }}
+            FUN_STATUS=${{ needs.function_tests.result }}
+            FRT_STATUS=${{ needs.frontend_tests.result }}
+            MSG="[CiCd PR Tests] migration=${MIG_STATUS}, functions=${FUN_STATUS}, frontend=${FRT_STATUS}"
+            curl -X POST -H "Content-Type: application/json" -d "{\"content\":\"$MSG\"}" "$DISCORD_WEBHOOK_URL"
+          fi
