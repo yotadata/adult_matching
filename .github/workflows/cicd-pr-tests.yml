@@ -52,8 +52,11 @@ jobs:
       - name: Install PostgreSQL client
         run: |
           sudo apt-get update
-          sudo apt-get install -y postgresql-client
-          sudo apt-get install -y postgresql-server-dev-all make gcc git
+          sudo apt-get install -y gnupg lsb-release
+          wget -qO - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo tee /etc/apt/trusted.gpg.d/pgdg.asc
+          echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client postgresql-server-dev-13 make gcc git make
       - name: Build plpgsql_check extension
         run: |
           rm -rf /tmp/plpgsql_check
