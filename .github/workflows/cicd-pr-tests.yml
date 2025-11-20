@@ -60,7 +60,9 @@ jobs:
       - name: Build plpgsql_check extension
         run: |
           rm -rf /tmp/plpgsql_check
-          git clone --depth 1 https://github.com/petere/plpgsql_check.git /tmp/plpgsql_check
+          mkdir -p /tmp/plpgsql_check
+          wget -qO /tmp/plpgsql_check/plpgsql_check.tar.gz https://github.com/petere/plpgsql_check/archive/refs/tags/v1.22.0.tar.gz
+          tar -xf /tmp/plpgsql_check/plpgsql_check.tar.gz -C /tmp/plpgsql_check --strip-components=1
           cd /tmp/plpgsql_check
           make PG_CONFIG=/usr/lib/postgresql/13/bin/pg_config
           sudo make PG_CONFIG=/usr/lib/postgresql/13/bin/pg_config install
