@@ -54,8 +54,9 @@ Deno.serve(async (req) => {
     });
 
   } catch (error) {
-    console.error('Unexpected error in embed-user:', error?.message ?? error);
-    return new Response(JSON.stringify({ error: error?.message ?? 'unknown error' }), {
+    const message = error instanceof Error ? error.message : "unknown error";
+    console.error("Unexpected error in embed-user:", message);
+    return new Response(JSON.stringify({ error: message }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 500,
     });

@@ -86,7 +86,7 @@ const LikedVideosDrawer: React.FC<LikedVideosDrawerProps> = ({ isOpen, onClose }
         setVideos([]);
       } else {
         const rows = (data as RpcVideoRecord[]) ?? [];
-        const nextVideos = rows.map(({ total_count, ...rest }) => ({
+        const nextVideos = rows.map(({ total_count: _total_count, ...rest }) => ({
           ...rest,
           source: rest.source || 'personalized',
         }));

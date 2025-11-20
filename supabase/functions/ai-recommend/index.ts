@@ -1,4 +1,4 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.43.0";
+import { createClient, type SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.43.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -77,6 +77,22 @@ const toArray = <T>(value: unknown): T[] => {
   return [];
 };
 
+const ensureArray = <T extends Record<string, unknown>>(data: unknown): T[] => {
+  if (!Array.isArray(data)) return [];
+  return data as T[];
+};
+
+const ensureId = (value: unknown): string | null => {
+  if (typeof value === "string" && value.length > 0) return value;
+  if (typeof value === "number" || typeof value === "bigint") return value.toString();
+  return null;
+};
+
+const toStringOrNull = (value: unknown): string | null =>
+  typeof value === "string" ? value : null;
+
+const filterNonNull = <T>(value: T | null): value is T => value !== null;
+
 const normalizePerformers = (value: unknown): Array<{ id: string; name: string }> => {
   const list = toArray<JsonPerformer>(value);
   return list
@@ -145,8 +161,10 @@ const extractKeywords = (prompt: string): string[] =>
     .map((word) => word.trim().toLowerCase())
     .filter((word) => word.length > 0);
 
+type EdgeSupabaseClient = SupabaseClient<any, "public", any>;
+
 const fetchPersonalized = async (
-  client: ReturnType<typeof createClient>,
+  client: EdgeSupabaseClient,
   userId: string | null,
   limit: number,
 ): Promise<VideoCandidate[]> => {
@@ -159,28 +177,34 @@ const fetchPersonalized = async (
     console.error("[ai-recommend] get_videos_recommendations error:", error.message);
     return [];
   }
-  return (data ?? []).map((item: Record<string, unknown>) => ({
-    id: String(item.id),
-    title: (item.title ?? null) as string | null,
-    description: (item.description ?? null) as string | null,
-    external_id: (item.external_id ?? null) as string | null,
-    thumbnail_url: (item.thumbnail_url ?? null) as string | null,
-    sample_video_url: (item.sample_video_url ?? null) as string | null,
-    product_released_at: (item.product_released_at ?? null) as string | null,
-    performers: normalizePerformers(item.performers),
-    tags: normalizeTags(item.tags),
-    score: typeof item.score === "number" ? item.score : null,
-    model_version: typeof item.model_version === "string" ? item.model_version : null,
-    popularity_score: null,
-    product_url: null,
-    preview_video_url: null,
-    duration_minutes: null,
-    source: "personalized",
-  }));
+  const rows = ensureArray<Record<string, unknown>>(data);
+  const mapped: (VideoCandidate | null)[] = rows.map((item) => {
+      const id = ensureId(item.id ?? item.external_id);
+      if (!id) return null;
+      return {
+        id,
+        title: toStringOrNull(item.title),
+        description: toStringOrNull(item.description),
+        external_id: toStringOrNull(item.external_id),
+        thumbnail_url: toStringOrNull(item.thumbnail_url),
+        sample_video_url: toStringOrNull(item.sample_video_url),
+        product_released_at: toStringOrNull(item.product_released_at),
+        performers: normalizePerformers(item.performers),
+        tags: normalizeTags(item.tags),
+        score: typeof item.score === "number" ? item.score : null,
+        model_version: typeof item.model_version === "string" ? item.model_version : null,
+        popularity_score: null,
+        product_url: null,
+        preview_video_url: null,
+        duration_minutes: null,
+        source: "personalized" as const,
+      };
+    });
+  return mapped.filter((value): value is VideoCandidate => value !== null);
 };
 
 const fetchTrending = async (
-  client: ReturnType<typeof createClient>,
+  client: EdgeSupabaseClient,
   limit: number,
   lookbackDays: number,
 ): Promise<VideoCandidate[]> => {
@@ -192,33 +216,39 @@ const fetchTrending = async (
     console.error("[ai-recommend] get_popular_videos error:", error.message);
     return [];
   }
-  return (data ?? []).map((item: Record<string, unknown>) => ({
-    id: String(item.id),
-    title: (item.title ?? null) as string | null,
-    description: (item.description ?? null) as string | null,
-    external_id: (item.external_id ?? null) as string | null,
-    thumbnail_url: (item.thumbnail_url ?? null) as string | null,
-    sample_video_url: (item.sample_video_url ?? null) as string | null,
-    product_released_at: (item.product_released_at ?? null) as string | null,
-    performers: normalizePerformers(item.performers),
-    tags: normalizeTags(item.tags),
-    score: null,
-    model_version: null,
-    popularity_score: typeof item.score === "number" ? item.score : null,
-    product_url: null,
-    preview_video_url: null,
-    duration_minutes: null,
-    source: "trending",
-  }));
+  const rows = ensureArray<Record<string, unknown>>(data);
+  const mapped: (VideoCandidate | null)[] = rows.map((item) => {
+      const id = ensureId(item.id ?? item.external_id);
+      if (!id) return null;
+      return {
+        id,
+        title: toStringOrNull(item.title),
+        description: toStringOrNull(item.description),
+        external_id: toStringOrNull(item.external_id),
+        thumbnail_url: toStringOrNull(item.thumbnail_url),
+        sample_video_url: toStringOrNull(item.sample_video_url),
+        product_released_at: toStringOrNull(item.product_released_at),
+        performers: normalizePerformers(item.performers),
+        tags: normalizeTags(item.tags),
+        score: null,
+        model_version: null,
+        popularity_score: typeof item.score === "number" ? item.score : null,
+        product_url: null,
+        preview_video_url: null,
+        duration_minutes: null,
+        source: "trending" as const,
+      };
+    });
+  return mapped.filter((value): value is VideoCandidate => value !== null);
 };
 
 const fetchFresh = async (
-  client: ReturnType<typeof createClient>,
+  client: EdgeSupabaseClient,
   limit: number,
 ): Promise<VideoCandidate[]> => {
   const { data, error } = await client
     .from("videos")
-    .select("id, title, description, external_id, thumbnail_url, sample_video_url, product_released_at, video_tags(tags(id, name)), video_performers(performers(id, name)))")
+    .select("id, title, description, external_id, thumbnail_url, sample_video_url, product_released_at, video_tags(tags(id, name)), video_performers(performers(id, name))")
     .not("sample_video_url", "is", null)
     .order("product_released_at", { ascending: false })
     .limit(limit * 3);
@@ -228,28 +258,34 @@ const fetchFresh = async (
     return [];
   }
 
-  return (data ?? []).map((item) => ({
-    id: item.id,
-    title: item.title ?? null,
-    description: item.description ?? null,
-    external_id: item.external_id ?? null,
-    thumbnail_url: item.thumbnail_url ?? null,
-    sample_video_url: item.sample_video_url ?? null,
-    product_released_at: item.product_released_at ?? null,
-    performers: extractNestedEntities((item as { video_performers?: unknown }).video_performers, "performers"),
-    tags: extractNestedEntities((item as { video_tags?: unknown }).video_tags, "tags"),
-    score: null,
-    model_version: null,
-    popularity_score: null,
-    product_url: null,
-    preview_video_url: null,
-    duration_minutes: null,
-    source: "fresh",
-  }));
+  const rows = ensureArray<Record<string, unknown>>(data);
+  const mapped: (VideoCandidate | null)[] = rows.map((item) => {
+      const id = ensureId(item.id ?? item.external_id);
+      if (!id) return null;
+      return {
+        id,
+        title: toStringOrNull(item.title),
+        description: toStringOrNull(item.description),
+        external_id: toStringOrNull(item.external_id),
+        thumbnail_url: toStringOrNull(item.thumbnail_url),
+        sample_video_url: toStringOrNull(item.sample_video_url),
+        product_released_at: toStringOrNull(item.product_released_at),
+        performers: extractNestedEntities((item as { video_performers?: unknown }).video_performers, "performers"),
+        tags: extractNestedEntities((item as { video_tags?: unknown }).video_tags, "tags"),
+        score: null,
+        model_version: null,
+        popularity_score: null,
+        product_url: null,
+        preview_video_url: null,
+        duration_minutes: null,
+        source: "fresh" as const,
+      };
+    });
+  return mapped.filter((value): value is VideoCandidate => value !== null);
 };
 
 const hydrateVideoDetails = async (
-  client: ReturnType<typeof createClient>,
+  client: EdgeSupabaseClient,
   candidates: VideoCandidate[],
 ): Promise<Map<string, { product_url: string | null; preview_video_url: string | null; duration_minutes: number | null }>> => {
   const ids = Array.from(new Set(candidates.map((item) => item.id)));
@@ -266,11 +302,17 @@ const hydrateVideoDetails = async (
   }
 
   const map = new Map<string, { product_url: string | null; preview_video_url: string | null; duration_minutes: number | null }>();
-  for (const row of data ?? []) {
+  const rows = ensureArray<Record<string, unknown>>(data);
+  for (const row of rows) {
+    const id = ensureId(row.id);
+    if (!id) continue;
     const durationSeconds = typeof row.duration_seconds === "number" ? row.duration_seconds : null;
-    map.set(row.id, {
-      product_url: row.affiliate_url ?? row.product_url ?? null,
-      preview_video_url: row.preview_video_url ?? null,
+    const affiliate = typeof row.affiliate_url === "string" ? row.affiliate_url : null;
+    const productUrl = typeof row.product_url === "string" ? row.product_url : null;
+    const preview = typeof row.preview_video_url === "string" ? row.preview_video_url : null;
+    map.set(id, {
+      product_url: affiliate ?? productUrl,
+      preview_video_url: preview,
       duration_minutes: durationSeconds ? Math.max(1, Math.round(durationSeconds / 60)) : null,
     });
   }

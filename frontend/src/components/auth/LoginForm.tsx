@@ -18,7 +18,6 @@ interface LoginFormProps {
   onClose: () => void;
 }
 
-const CTA_GRADIENT = 'linear-gradient(90deg, #ADB4E3 0%, #C8BAE3 33.333%, #F7BECE 66.666%, #F9B1C4 100%)';
 const CTA_GRADIENT_CLASS = 'from-[#ADB4E3] via-[#F7BECE] to-[#F9B1C4]';
 
 const LoginForm: React.FC<LoginFormProps> = ({ onClose }) => {

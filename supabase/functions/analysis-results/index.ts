@@ -31,6 +31,11 @@ type VideoRow = {
   video_performers?: PerformerRow[] | null;
 };
 
+const ensureArray = <T>(value: unknown): T[] => {
+  if (!Array.isArray(value)) return [];
+  return value as T[];
+};
+
 type VideoDetails = {
   id: string;
   title: string | null;
@@ -327,7 +332,7 @@ Deno.serve(async (req) => {
       const chunk = uniqueVideoIds.slice(i, i + VIDEO_CHUNK_SIZE);
       const { data, error } = await supabase
         .from("videos")
-        .select("id, title, thumbnail_url, thumbnail_vertical_url, affiliate_url, product_url, video_tags(tags(id, name, tag_groups(name, show_in_ui))), video_performers(performers(id, name)))")
+        .select("id, title, thumbnail_url, thumbnail_vertical_url, affiliate_url, product_url, video_tags(tags(id, name, tag_groups(name, show_in_ui))), video_performers(performers(id, name))")
         .in("id", chunk);
 
       if (error) {
@@ -338,7 +343,8 @@ Deno.serve(async (req) => {
         });
       }
 
-      for (const row of (data ?? []) as VideoRow[]) {
+      const rows = ensureArray<VideoRow>(data);
+      for (const row of rows) {
         const resolvedUrl = row.affiliate_url ?? row.product_url ?? null;
         videoDetails.set(row.id, {
           id: row.id,
