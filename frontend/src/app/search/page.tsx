@@ -7,6 +7,7 @@ import { Combobox } from '@headlessui/react';
 import { useAiRecommend, type AiRecommendSection } from '@/hooks/useAiRecommend';
 import { useAnalysisResults } from '@/hooks/useAnalysisResults';
 import { supabase } from '@/lib/supabase';
+import { isUpcomingRelease } from '@/lib/videoMeta';
 
 const SEARCH_SHORTCUTS = [
   {
@@ -262,6 +263,11 @@ export default function AiRecommendPage() {
                 <div className="absolute top-2 right-2 bg-white/90 text-[11px] px-1.5 py-0.5 rounded-full text-gray-700 capitalize">
                   {item.metrics.source}
                 </div>
+                {isUpcomingRelease(item.metrics.product_released_at) ? (
+                  <div className="absolute top-2 left-2 bg-amber-100/90 text-[11px] px-1.5 py-0.5 rounded-full text-amber-800 border border-amber-200">
+                    予約作品
+                  </div>
+                ) : null}
               </div>
               <div className="flex flex-col gap-2.5 p-3 flex-1">
                 <div className="space-y-1">
@@ -299,7 +305,14 @@ export default function AiRecommendPage() {
                         <p>人気指標 {item.metrics.popularity_score.toLocaleString('ja-JP')}</p>
                       ) : null}
                       {item.metrics.product_released_at ? (
-                        <p>リリース日 {formatDate(item.metrics.product_released_at)}</p>
+                        <div className="flex items-center gap-2">
+                          <p>発売日 {formatDate(item.metrics.product_released_at)}</p>
+                          {isUpcomingRelease(item.metrics.product_released_at) ? (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-amber-100/80 border border-amber-200 px-1.5 py-0.5 text-[10px] text-amber-700">
+                              予約作品
+                            </span>
+                          ) : null}
+                        </div>
                       ) : null}
                     </div>
                   ) : null}

@@ -10,6 +10,8 @@ import VideoListDrawer, {
   SortOrder,
 } from './VideoListDrawer';
 
+type RpcVideoRecord = VideoRecord & { total_count?: number | null };
+
 interface LikedVideosDrawerProps {
   isOpen: boolean;
   onClose: () => void;
@@ -66,13 +68,6 @@ const LikedVideosDrawer: React.FC<LikedVideosDrawerProps> = ({ isOpen, onClose }
         return;
       }
 
-      const { count } = await supabase
-        .from('user_video_decisions')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', user.id)
-        .eq('decision_type', 'like');
-      setTotalCount(typeof count === 'number' ? count : null);
-
       const { data, error } = await supabase.rpc('get_user_likes', {
         p_search: null,
         p_sort: sort,
@@ -90,7 +85,16 @@ const LikedVideosDrawer: React.FC<LikedVideosDrawerProps> = ({ isOpen, onClose }
         setError(error.message);
         setVideos([]);
       } else {
-        setVideos(((data as VideoRecord[]) ?? []).map((row) => ({ ...row, source: row.source || 'personalized' })));
+        const rows = (data as RpcVideoRecord[]) ?? [];
+        const nextVideos = rows.map(({ total_count: _total_count, ...rest }) => ({
+          ...rest,
+          source: rest.source || 'personalized',
+        }));
+        const nextTotal = rows.length > 0
+          ? rows[0]?.total_count ?? rows.length
+          : 0;
+        setVideos(nextVideos);
+        setTotalCount(nextTotal);
       }
       setLoading(false);
     };

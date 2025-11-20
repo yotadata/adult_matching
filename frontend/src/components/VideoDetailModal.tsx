@@ -5,6 +5,7 @@ import { Fragment, useEffect, useState } from 'react';
 import { X } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
+import { isUpcomingRelease } from '@/lib/videoMeta';
 
 type Performer = { id: string; name: string };
 type Tag = { id: string; name: string };
@@ -121,7 +122,14 @@ export default function VideoDetailModal({ isOpen, onClose, videoId }: { isOpen:
                       <div className="sm:col-span-2 space-y-3">
                         <h2 className="text-lg font-bold">{video.title}</h2>
                         {video.product_released_at && (
-                          <div className="text-sm text-gray-600">発売日: {new Date(video.product_released_at).toLocaleDateString('ja-JP')}</div>
+                          <div className="text-sm text-gray-600 flex items-center gap-2 flex-wrap">
+                            <span>発売日: {new Date(video.product_released_at).toLocaleDateString('ja-JP')}</span>
+                            {isUpcomingRelease(video.product_released_at) ? (
+                              <span className="inline-flex items-center gap-1 rounded-full bg-amber-100/80 border border-amber-200 px-2 py-0.5 text-xs text-amber-700">
+                                予約作品
+                              </span>
+                            ) : null}
+                          </div>
                         )}
                         {typeof video.price === 'number' && (
                           <div className="text-sm text-gray-600">価格: ￥{Number(video.price).toLocaleString()}</div>

@@ -258,6 +258,10 @@ export default function AnalysisResultsPage() {
                             <span>気になる比率</span>
                             <span className="text-base font-bold text-gray-900">{formatPercent(tag.like_ratio)}</span>
                           </div>
+                          <div className="flex flex-col text-right">
+                            <span>気になるシェア</span>
+                            <span className="text-base font-bold text-gray-900">{tag.share != null ? formatPercent(tag.share) : '—'}</span>
+                          </div>
                           {tag.representative_video ? (
                             <button
                               onClick={() => handleOpenProduct(tag.representative_video?.product_url)}
@@ -302,6 +306,10 @@ export default function AnalysisResultsPage() {
                           <div className="flex flex-col text-right">
                             <span>気になる比率</span>
                             <span className="text-base font-bold text-gray-900">{formatPercent(performer.like_ratio)}</span>
+                          </div>
+                          <div className="flex flex-col text-right">
+                            <span>気になるシェア</span>
+                            <span className="text-base font-bold text-gray-900">{performer.share != null ? formatPercent(performer.share) : '—'}</span>
                           </div>
                           {performer.representative_video ? (
                             <button

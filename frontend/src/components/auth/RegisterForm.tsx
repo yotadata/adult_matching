@@ -6,6 +6,7 @@ import { useState } from 'react';
 import toast from 'react-hot-toast';
 import { buildPseudoEmail, normalizeUsername } from '@/lib/authUtils';
 import TermsModal from './TermsModal';
+import { trackEvent } from '@/lib/analytics';
 
 type RegisterFormInputs = {
   username: string;
@@ -18,6 +19,8 @@ type RegisterFormInputs = {
 interface RegisterFormProps {
   onClose: () => void;
 }
+
+const CTA_GRADIENT_CLASS = 'from-[#ADB4E3] via-[#F7BECE] to-[#F9B1C4]';
 
 const RegisterForm: React.FC<RegisterFormProps> = ({ onClose }) => {
   const { register, handleSubmit, watch, formState: { errors } } = useForm<RegisterFormInputs>({
@@ -48,6 +51,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onClose }) => {
       });
       if (error) throw new Error(error.message || '登録に失敗しました');
 
+      trackEvent('sign_up', { method: 'password' });
       if (signUpData.session) {
         // autoConfirm 環境では即ログイン状態
         await supabase.auth.getUser();
@@ -157,13 +161,17 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onClose }) => {
         </p>
       </div>
 
-      <button
-        type="submit"
-        className="w-full py-3 px-4 bg-transparent border border-[#FF6B81] text-[#FF6B81] hover:bg-[#FF6B81] hover:text-white font-bold rounded-lg transition-all duration-300 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-        disabled={isLoading}
-      >
-        {isLoading ? '登録中...' : '利用規約に同意して登録'}
-      </button>
+      <div className={`rounded-full bg-gradient-to-r ${CTA_GRADIENT_CLASS} p-[2px]`}>
+        <button
+          type="submit"
+          className="w-full py-3 px-4 font-bold rounded-full transition-all duration-300 shadow-sm hover:shadow-md disabled:opacity-60 disabled:cursor-not-allowed bg-white hover:bg-gradient-to-r hover:from-[#ADB4E3]/15 hover:via-[#F7BECE]/15 hover:to-[#F9B1C4]/15"
+          disabled={isLoading}
+        >
+          <span className={`bg-gradient-to-r ${CTA_GRADIENT_CLASS} bg-clip-text text-transparent`}>
+            {isLoading ? '登録中...' : '利用規約に同意して登録'}
+          </span>
+        </button>
+      </div>
 
       <TermsModal open={isTermsOpen} onClose={() => setIsTermsOpen(false)} />
     </form>

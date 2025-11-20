@@ -5,6 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import { X, Filter, Tag, Users, ExternalLink } from 'lucide-react';
+import { isUpcomingRelease } from '@/lib/videoMeta';
 
 export interface VideoRecord {
   id?: string;
@@ -13,6 +14,7 @@ export interface VideoRecord {
   description?: string;
   duration_seconds?: number;
   thumbnail_url?: string;
+  thumbnail_vertical_url?: string;
   preview_video_url?: string;
   distribution_code?: string;
   maker_code?: string;
@@ -35,8 +37,17 @@ export interface VideoRecord {
 export type TagFilterOption = { id: string; name: string; cnt?: number };
 export type TagFilterWithGroup = TagFilterOption & { tag_group_name?: string | null };
 export type PerformerFilterOption = { id: string; name: string; cnt?: number };
-export type SortKey = 'liked_at' | 'released' | 'price' | 'title';
+export type SortKey = 'liked_at' | 'released' | 'price';
 export type SortOrder = 'asc' | 'desc';
+
+const sortOptions = [
+  { id: 'liked_desc', label: '「気になる」が新しい順', sort: 'liked_at', order: 'desc' },
+  { id: 'liked_asc', label: '「気になる」が古い順', sort: 'liked_at', order: 'asc' },
+  { id: 'released_desc', label: '発売日が新しい順', sort: 'released', order: 'desc' },
+  { id: 'released_asc', label: '発売日が古い順', sort: 'released', order: 'asc' },
+  { id: 'price_asc', label: '価格が安い順', sort: 'price', order: 'asc' },
+  { id: 'price_desc', label: '価格が高い順', sort: 'price', order: 'desc' },
+] as const;
 
 const formatDate = (value?: string | null) => {
   if (!value) return '—';
@@ -244,22 +255,24 @@ export default function VideoListDrawer({
                       </div>
                       <div className="flex gap-2">
                         <select
-                          value={sort}
-                          onChange={(e) => onChangeSort(e.target.value as SortKey)}
+                          value={
+                            sortOptions.find((opt) => opt.sort === sort && opt.order === order)?.id ??
+                            sortOptions[0].id
+                          }
+                          onChange={(e) => {
+                            const selected = sortOptions.find((opt) => opt.id === e.target.value);
+                            if (selected) {
+                              onChangeSort(selected.sort);
+                              onChangeOrder(selected.order);
+                            }
+                          }}
                           className="flex-1 rounded-xl border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
                         >
-                          <option value="liked_at">気になる日時</option>
-                          <option value="released">発売日</option>
-                          <option value="price">価格</option>
-                          <option value="title">タイトル</option>
-                        </select>
-                        <select
-                          value={order}
-                          onChange={(e) => onChangeOrder(e.target.value as SortOrder)}
-                          className="w-28 rounded-xl border border-gray-200 bg-white px-2 py-1.5 text-sm text-gray-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
-                        >
-                          <option value="desc">降順</option>
-                          <option value="asc">昇順</option>
+                          {sortOptions.map((option) => (
+                            <option key={option.id} value={option.id}>
+                              {option.label}
+                            </option>
+                          ))}
                         </select>
                       </div>
                     </div>
@@ -397,52 +410,63 @@ export default function VideoListDrawer({
                     </div>
                   ) : (
                     <div className="p-4 space-y-4 overflow-y-auto rounded-3xl">
-                      {videos.map((video) => (
-                        <article
-                          key={video.external_id}
-                          className="rounded-2xl border border-gray-200 bg-white text-gray-900 overflow-hidden flex flex-row gap-3 p-3 shadow-sm"
-                        >
-                          <div className="relative w-60 aspect-[5/4] rounded-xl overflow-hidden bg-slate-200">
-                            {video.thumbnail_url ? (
-                              <Image src={video.thumbnail_url} alt={video.title} fill className="object-cover" />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center text-sm text-gray-500">No Image</div>
-                            )}
-                          </div>
-                          <div className="flex flex-col gap-3 flex-1 min-w-0">
-                            <h2 className="text-base font-semibold leading-tight line-clamp-2">{video.title}</h2>
-                            <div className="text-xs text-gray-600 space-y-1">
-                              <p>{formatPrice(video.price)}</p>
-                              <p>リリース日: {formatDate(video.product_released_at)}</p>
+                      {videos.map((video) => {
+                        const previewImage = video.thumbnail_vertical_url ?? video.thumbnail_url ?? null;
+                        const isPreorder = isUpcomingRelease(video.product_released_at);
+                        return (
+                          <article
+                            key={video.external_id}
+                            className="rounded-2xl border border-gray-200 bg-white text-gray-900 overflow-hidden flex flex-row gap-3 p-3 shadow-sm min-h-[160px]"
+                          >
+                            <div className="relative w-[120px] h-[160px] rounded-xl overflow-hidden bg-slate-200 shrink-0">
+                              {previewImage ? (
+                                <Image src={previewImage} alt={video.title} fill className="object-cover" />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center text-sm text-gray-500">No Image</div>
+                              )}
                             </div>
-                            <div className="flex flex-wrap gap-1.5 text-[11px] text-gray-600">
-                              {video.tags?.slice(0, 3).map((tag) => (
-                                <span key={tag.id} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gray-100 border border-gray-200">
-                                  <Tag size={12} />
-                                  {tag.name}
-                                </span>
-                              ))}
-                              {video.performers?.slice(0, 2).map((perf) => (
-                                <span key={perf.id} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gray-100 border border-gray-200">
-                                  <Users size={12} />
-                                  {perf.name}
-                                </span>
-                              ))}
+                            <div className="flex flex-col gap-3 flex-1 min-w-0">
+                              <h2 className="text-base font-semibold leading-tight line-clamp-2">{video.title}</h2>
+                              <div className="text-xs text-gray-600 space-y-1">
+                                <p>{formatPrice(video.price)}</p>
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <p>発売日: {formatDate(video.product_released_at)}</p>
+                                  {isPreorder ? (
+                                    <span className="inline-flex items-center gap-1 rounded-full bg-amber-100/80 border border-amber-200 px-2 py-0.5 text-[11px] text-amber-700">
+                                      予約作品
+                                    </span>
+                                  ) : null}
+                                </div>
+                              </div>
+                              <div className="flex flex-wrap gap-1.5 text-[11px] text-gray-600">
+                                {video.tags?.slice(0, 3).map((tag) => (
+                                  <span key={tag.id} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gray-100 border border-gray-200">
+                                    <Tag size={12} />
+                                    {tag.name}
+                                  </span>
+                                ))}
+                                {video.performers?.slice(0, 2).map((perf) => (
+                                  <span key={perf.id} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gray-100 border border-gray-200">
+                                    <Users size={12} />
+                                    {perf.name}
+                                  </span>
+                                ))}
+                              </div>
+                              <div className="mt-auto flex gap-2">
+                                <Link
+                                  href={buildAffiliateHref(video.product_url) ?? '#'}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-full bg-rose-500 text-white text-sm font-semibold hover:bg-rose-400 transition"
+                                >
+                                  作品ページへ
+                                  <ExternalLink size={14} />
+                                </Link>
+                              </div>
                             </div>
-                            <div className="mt-auto flex gap-2">
-                              <Link
-                                href={buildAffiliateHref(video.product_url) ?? '#'}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-full bg-rose-500 text-white text-sm font-semibold hover:bg-rose-400 transition"
-                              >
-                                作品ページへ
-                                <ExternalLink size={14} />
-                              </Link>
-                            </div>
-                          </div>
-                        </article>
-                      ))}
+                          </article>
+                        );
+                      })}
                       {videos.length === 0 && !loading ? (
                         <div className="rounded-2xl border border-dashed border-gray-300 bg-white text-gray-600 p-8 text-center">
                           条件に一致する作品がありませんでした。

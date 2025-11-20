@@ -22,19 +22,72 @@ jobs:
   migration_tests:
     name: Migration Tests
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg13
+        env:
+          POSTGRES_DB: test_db
+          POSTGRES_USER: user
+          POSTGRES_PASSWORD: password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     if: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.action == 'labeled' && github.event.label.name == 'ci:run-tests') }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Wait for PostgreSQL
+        run: sleep 10
 
       - name: Setup Supabase CLI
         uses: supabase/setup-cli@v1
         with:
           version: latest
 
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+
+      - name: Prepare auth schema and roles
+        run: |
+          PGPASSWORD=password psql -h localhost -p 5432 -U user -d test_db -v ON_ERROR_STOP=1 -c "CREATE SCHEMA IF NOT EXISTS auth;"
+          PGPASSWORD=password psql -h localhost -p 5432 -U user -d test_db -v ON_ERROR_STOP=1 -c "CREATE TABLE IF NOT EXISTS auth.users (id UUID PRIMARY KEY, email TEXT UNIQUE, created_at TIMESTAMPTZ DEFAULT NOW());"
+          PGPASSWORD=password psql -h localhost -p 5432 -U user -d test_db -v ON_ERROR_STOP=1 -c "CREATE ROLE authenticated;"
+          PGPASSWORD=password psql -h localhost -p 5432 -U user -d test_db -v ON_ERROR_STOP=1 -c "CREATE ROLE anon;"
+
+      - name: Create auth.uid() function
+        run: |
+          PGPASSWORD=password psql -h localhost -p 5432 -U user -d test_db -v ON_ERROR_STOP=1 <<'SQL'
+          CREATE OR REPLACE FUNCTION auth.uid() RETURNS uuid LANGUAGE plpgsql STABLE AS $$
+          BEGIN
+            RETURN '00000000-0000-0000-0000-000000000000';
+          END;
+          $$;
+          SQL
+
+      - name: Enable pgvector
+        run: |
+          PGPASSWORD=password psql -h localhost -p 5432 -U user -d test_db -v ON_ERROR_STOP=1 -c "CREATE EXTENSION IF NOT EXISTS vector;"
+
       - name: Lint SQL migrations
         working-directory: supabase
+        env:
+          SUPABASE_DB_URL: postgresql://user:password@127.0.0.1:5432/test_db
         run: supabase db lint
+
+      - name: Apply migrations (in order)
+        run: |
+          set -euo pipefail
+          for f in $(ls -1 supabase/migrations/*.sql | sort); do
+            echo "Applying $f";
+            PGPASSWORD=password psql -h localhost -p 5432 -U user -d test_db -v ON_ERROR_STOP=1 -f "$f";
+          done
 
   function_tests:
     name: Supabase Function Tests
@@ -66,6 +119,13 @@ jobs:
     runs-on: ubuntu-latest
     env:
       NEXT_TELEMETRY_DISABLED: 1
+      NEXT_PUBLIC_SUPABASE_URL: http://localhost:54321
+      SUPABASE_URL: http://localhost:54321
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: test-anon-key
+      SUPABASE_ANON_KEY: test-anon-key
+      SUPABASE_INTERNAL_URL: http://localhost:54321
+      SUPABASE_SERVICE_ROLE_KEY: service_role_test
+      SUPABASE_DB_URL: postgresql://user:password@127.0.0.1:5432/test_db
     defaults:
       run:
         working-directory: frontend

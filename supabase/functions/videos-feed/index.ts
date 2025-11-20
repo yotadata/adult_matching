@@ -1,4 +1,4 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.43.0"
+import { createClient, type SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.43.0"
 
 type VideoEntry = {
   id: string
@@ -30,6 +30,23 @@ const EXPLOITATION_RATIO = 0.6
 const POPULARITY_RATIO = 0.2
 const CANDIDATE_MULTIPLIER = 3
 
+type EdgeSupabaseClient = SupabaseClient<any, "public", any>
+
+const ensureArray = <T>(value: unknown): T[] => {
+  if (!Array.isArray(value)) return []
+  return value as T[]
+}
+
+const ensureId = (value: unknown): string | null => {
+  if (typeof value === "string" && value.length > 0) return value
+  if (typeof value === "number" || typeof value === "bigint") return value.toString()
+  return null
+}
+
+const toStringOrNull = (value: unknown): string | null =>
+  typeof value === "string" ? value : null
+
+
 function clampLimit(limit?: number): number {
   if (!limit || limit <= 0) return DEFAULT_LIMIT
   return Math.min(limit, MAX_LIMIT)
@@ -45,7 +62,7 @@ function shuffle<T>(arr: T[]): T[] {
 }
 
 async function fetchModelVersions(
-  client: ReturnType<typeof createClient>,
+  client: EdgeSupabaseClient,
   ids: string[],
 ): Promise<Map<string, string | null>> {
   if (ids.length === 0) return new Map()
@@ -58,8 +75,12 @@ async function fetchModelVersions(
     return new Map()
   }
   const map = new Map<string, string | null>()
-  for (const row of data ?? []) {
-    map.set(row.video_id, row.model_version ?? null)
+  const rows = ensureArray<Record<string, unknown>>(data)
+  for (const row of rows) {
+    const videoId = ensureId(row.video_id)
+    if (!videoId) continue
+    const version = toStringOrNull(row.model_version)
+    map.set(videoId, version)
   }
   return map
 }
@@ -291,8 +312,9 @@ Deno.serve(async (req) => {
       status: 200,
     })
   } catch (error) {
-    console.error('Unexpected error:', error?.message ?? error)
-    return new Response(JSON.stringify({ error: error?.message ?? 'unknown error' }), {
+    const message = error instanceof Error ? error.message : 'unknown error'
+    console.error('Unexpected error:', message)
+    return new Response(JSON.stringify({ error: message }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 400,
     })
