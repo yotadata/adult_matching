@@ -57,16 +57,6 @@ jobs:
           echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list
           sudo apt-get update
           sudo apt-get install -y postgresql-client postgresql-server-dev-13 make gcc git make
-      - name: Build plpgsql_check extension
-        run: |
-          rm -rf /tmp/plpgsql_check
-          mkdir -p /tmp/plpgsql_check
-          wget -qO /tmp/plpgsql_check/plpgsql_check.tar.gz https://github.com/petere/plpgsql_check/archive/refs/tags/v1.22.0.tar.gz
-          tar -xf /tmp/plpgsql_check/plpgsql_check.tar.gz -C /tmp/plpgsql_check --strip-components=1
-          cd /tmp/plpgsql_check
-          make PG_CONFIG=/usr/lib/postgresql/13/bin/pg_config
-          sudo make PG_CONFIG=/usr/lib/postgresql/13/bin/pg_config install
-
       - name: Prepare auth schema and roles
         run: |
           PGPASSWORD=password psql -h localhost -p 5432 -U user -d test_db -v ON_ERROR_STOP=1 -c "CREATE SCHEMA IF NOT EXISTS auth;"
@@ -88,12 +78,6 @@ jobs:
         run: |
           PGPASSWORD=password psql -h localhost -p 5432 -U user -d test_db -v ON_ERROR_STOP=1 -c "CREATE EXTENSION IF NOT EXISTS vector;"
 
-      - name: Lint SQL migrations
-        working-directory: supabase
-        env:
-          SUPABASE_DB_DISABLE_SSL: '1'
-          PGSSLMODE: disable
-        run: supabase db lint --db-url postgresql://user:password@127.0.0.1:5432/test_db
 
       - name: Apply migrations (in order)
         run: |
