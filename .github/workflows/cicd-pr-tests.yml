@@ -53,7 +53,14 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y postgresql-client
-          sudo apt-get install -y postgresql-13-plpgsql-check
+          sudo apt-get install -y postgresql-server-dev-13 make gcc git
+      - name: Build plpgsql_check extension
+        run: |
+          rm -rf /tmp/plpgsql_check
+          git clone --depth 1 https://github.com/petere/plpgsql_check.git /tmp/plpgsql_check
+          cd /tmp/plpgsql_check
+          make PG_CONFIG=/usr/lib/postgresql/13/bin/pg_config
+          sudo make PG_CONFIG=/usr/lib/postgresql/13/bin/pg_config install
 
       - name: Prepare auth schema and roles
         run: |
