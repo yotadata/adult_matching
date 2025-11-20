@@ -78,8 +78,9 @@ jobs:
       - name: Lint SQL migrations
         working-directory: supabase
         env:
-          SUPABASE_DB_URL: postgresql://user:password@127.0.0.1:5432/test_db
-        run: supabase db lint
+          SUPABASE_DB_DISABLE_SSL: '1'
+          PGSSLMODE: disable
+        run: supabase db lint --db-url postgresql://user:password@127.0.0.1:5432/test_db
 
       - name: Apply migrations (in order)
         run: |

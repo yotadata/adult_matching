@@ -29,13 +29,26 @@ const LikedVideosDrawer: React.FC<LikedVideosDrawerProps> = ({ isOpen, onClose }
   const [selectedPerformerIds, setSelectedPerformerIds] = useState<string[]>([]);
   const [totalCount, setTotalCount] = useState<number | null>(null);
   const pageSize = 40;
+  const [page, setPage] = useState(0);
 
   const toggleTag = (id: string) => {
     setSelectedTagIds((prev) => (prev.includes(id) ? prev.filter((value) => value !== id) : [...prev, id]));
+    setPage(0);
   };
 
   const togglePerformer = (id: string) => {
     setSelectedPerformerIds((prev) => (prev.includes(id) ? prev.filter((value) => value !== id) : [...prev, id]));
+    setPage(0);
+  };
+
+  const handleSortChange = (value: SortKey) => {
+    setPage(0);
+    setSort(value);
+  };
+
+  const handleOrderChange = (value: SortOrder) => {
+    setPage(0);
+    setOrder(value);
   };
 
   useEffect(() => {
@@ -73,7 +86,7 @@ const LikedVideosDrawer: React.FC<LikedVideosDrawerProps> = ({ isOpen, onClose }
         p_sort: sort,
         p_order: order,
         p_limit: pageSize,
-        p_offset: 0,
+        p_offset: page * pageSize,
         p_price_min: null,
         p_price_max: null,
         p_release_gte: null,
@@ -100,7 +113,15 @@ const LikedVideosDrawer: React.FC<LikedVideosDrawerProps> = ({ isOpen, onClose }
     };
 
     fetchLikedVideos();
-  }, [isOpen, sort, order, selectedTagIds, selectedPerformerIds]);
+  }, [isOpen, sort, order, selectedTagIds, selectedPerformerIds, page]);
+
+  useEffect(() => {
+    if (totalCount === null) return;
+    const maxPage = Math.max(0, Math.ceil(totalCount / pageSize) - 1);
+    if (page > maxPage) {
+      setPage(maxPage);
+    }
+  }, [totalCount, pageSize, page]);
 
   return (
     <VideoListDrawer
@@ -108,6 +129,7 @@ const LikedVideosDrawer: React.FC<LikedVideosDrawerProps> = ({ isOpen, onClose }
       onClose={() => {
         setSelectedTagIds([]);
         setSelectedPerformerIds([]);
+        setPage(0);
         onClose();
       }}
       title="いいねした作品"
@@ -116,8 +138,8 @@ const LikedVideosDrawer: React.FC<LikedVideosDrawerProps> = ({ isOpen, onClose }
       error={error}
       sort={sort}
       order={order}
-      onChangeSort={setSort}
-      onChangeOrder={setOrder}
+      onChangeSort={handleSortChange}
+      onChangeOrder={handleOrderChange}
       tagOptions={tagOptions}
       performerOptions={performerOptions}
       selectedTagIds={selectedTagIds}
@@ -125,6 +147,9 @@ const LikedVideosDrawer: React.FC<LikedVideosDrawerProps> = ({ isOpen, onClose }
       onToggleTag={toggleTag}
       onTogglePerformer={togglePerformer}
       totalCount={totalCount}
+      page={page}
+      onChangePage={setPage}
+      pageSize={pageSize}
     />
   );
 };

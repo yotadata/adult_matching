@@ -98,6 +98,9 @@ export interface VideoListDrawerProps {
   onTogglePerformer: (id: string) => void;
   buildAffiliateHref?: (url?: string | null) => string | undefined;
   totalCount?: number | null;
+  page: number;
+  pageSize: number;
+  onChangePage: (next: number) => void;
 }
 
 export default function VideoListDrawer({
@@ -119,6 +122,9 @@ export default function VideoListDrawer({
   onTogglePerformer,
   buildAffiliateHref = defaultAffiliateBuilder,
   totalCount,
+  page,
+  pageSize,
+  onChangePage,
 }: VideoListDrawerProps) {
   const [tagSearch, setTagSearch] = useState('');
   const [performerSearch, setPerformerSearch] = useState('');
@@ -149,15 +155,21 @@ export default function VideoListDrawer({
       .filter((perf) => (keyword ? perf.name.toLowerCase().includes(keyword) : true));
   }, [performerOptions, selectedPerformerIds, performerSearch]);
 
-  const buildOptionsClass = (isOpenDropdown: boolean, extra: string) =>
-    `absolute inset-x-0 top-full mt-2 z-20 ${extra} ${
-      isOpenDropdown ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
-    } transition-opacity duration-150`;
+const buildOptionsClass = (isOpenDropdown: boolean, extra: string) =>
+  `absolute inset-x-0 top-full mt-2 z-20 ${extra} ${
+    isOpenDropdown ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+  } transition-opacity duration-150`;
 
   const handleClose = () => {
     setMobileShowFilters(false);
     onClose();
   };
+
+  const totalPages =
+    typeof totalCount === 'number' && pageSize > 0 ? Math.max(1, Math.ceil(totalCount / pageSize)) : null;
+  const hasPrevPage = page > 0;
+  const hasNextPage =
+    typeof totalPages === 'number' ? page < totalPages - 1 : videos.length >= pageSize;
 
   const showTagDropdown = () => {
     if (tagBlurTimerRef.current) clearTimeout(tagBlurTimerRef.current);
@@ -390,12 +402,55 @@ export default function VideoListDrawer({
                 <section className="flex flex-col overflow-y-auto">
                   <div className="sticky top-0 z-10 bg-white/50 backdrop-blur px-4 py-3 border-b border-white/40 text-xs sm:text-sm text-gray-700 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                     <span>
-                      表示中: <strong>{videos.length.toLocaleString('ja-JP')}</strong> 件
+                      {(() => {
+                        const start = videos.length > 0 ? page * pageSize + 1 : 0;
+                        const end = videos.length > 0 ? page * pageSize + videos.length : 0;
+                        return typeof totalCount === 'number' ? (
+                          <>
+                            全 <strong>{totalCount.toLocaleString('ja-JP')}</strong> 件中{' '}
+                            <strong>
+                              {Math.min(start || 1, totalCount).toLocaleString('ja-JP')} -{' '}
+                              {Math.min(totalCount, end || totalCount).toLocaleString('ja-JP')}
+                            </strong>{' '}
+                            件
+                          </>
+                        ) : videos.length > 0 ? (
+                          <>
+                            全 <strong>{videos.length.toLocaleString('ja-JP')}</strong> 件中{' '}
+                            <strong>
+                              {start.toLocaleString('ja-JP')} - {end.toLocaleString('ja-JP')}
+                            </strong>{' '}
+                            件
+                          </>
+                        ) : (
+                          '表示中: 0 件'
+                        );
+                      })()}
                     </span>
-                    <span>
-                      検索結果:{' '}
-                      <strong>{typeof totalCount === 'number' ? totalCount.toLocaleString('ja-JP') : '—'}</strong> 件
-                    </span>
+                    {((typeof totalCount === 'number' && totalCount > pageSize) || (typeof totalCount !== 'number' && videos.length >= pageSize)) && (
+                      <div className="flex items-center gap-2 text-[11px] text-gray-500">
+                        <span>
+                          ページ {page + 1}
+                          {typeof totalPages === 'number' ? ` / ${totalPages}` : ''}
+                        </span>
+                        <button
+                          type="button"
+                          className="rounded-full border border-gray-300 px-3 py-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                          disabled={!hasPrevPage}
+                          onClick={() => onChangePage(Math.max(0, page - 1))}
+                        >
+                          前へ
+                        </button>
+                        <button
+                          type="button"
+                          className="rounded-full border border-gray-300 px-3 py-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                          disabled={!hasNextPage}
+                          onClick={() => onChangePage(page + 1)}
+                        >
+                          次へ
+                        </button>
+                      </div>
+                    )}
                   </div>
                   {error ? (
                     <div className="m-4 rounded-xl bg-red-100 border border-red-300 text-sm text-red-700 px-4 py-3">
