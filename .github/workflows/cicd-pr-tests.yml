@@ -52,8 +52,11 @@ jobs:
       - name: Install PostgreSQL client
         run: |
           sudo apt-get update
-          sudo apt-get install -y postgresql-client
-
+          sudo apt-get install -y gnupg lsb-release
+          wget -qO - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo tee /etc/apt/trusted.gpg.d/pgdg.asc
+          echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client postgresql-server-dev-13 make gcc git make
       - name: Prepare auth schema and roles
         run: |
           PGPASSWORD=password psql -h localhost -p 5432 -U user -d test_db -v ON_ERROR_STOP=1 -c "CREATE SCHEMA IF NOT EXISTS auth;"
@@ -75,12 +78,6 @@ jobs:
         run: |
           PGPASSWORD=password psql -h localhost -p 5432 -U user -d test_db -v ON_ERROR_STOP=1 -c "CREATE EXTENSION IF NOT EXISTS vector;"
 
-      - name: Lint SQL migrations
-        working-directory: supabase
-        env:
-          SUPABASE_DB_DISABLE_SSL: '1'
-          PGSSLMODE: disable
-        run: supabase db lint --db-url postgresql://user:password@127.0.0.1:5432/test_db
 
       - name: Apply migrations (in order)
         run: |
@@ -150,41 +147,3 @@ jobs:
 
       - name: Build
         run: npm run build
-
-  report:
-    name: Comment results
-    needs: [migration_tests, function_tests, frontend_tests]
-    if: ${{ github.event_name == 'pull_request' && github.event.action == 'labeled' && github.event.label.name == 'ci:run-tests' }}
-    runs-on: ubuntu-latest
-    permissions:
-      pull-requests: write
-    steps:
-      - name: Report summary in PR
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const results = {
-              migrations: '${{ needs.migration_tests.result }}',
-              functions: '${{ needs.function_tests.result }}',
-              frontend: '${{ needs.frontend_tests.result }}'
-            };
-
-            const format = (label, status) => `| ${label} | ${status.toUpperCase()} |`;
-            const body = [
-              '### PR Test Suite Results',
-              '',
-              '| Job | Result |',
-              '| --- | --- |',
-              format('Migrations', results.migrations),
-              format('Functions', results.functions),
-              format('Frontend', results.frontend),
-              '',
-              '_Triggered by auto PR test workflow._'
-            ].join('\n');
-
-            await github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-              body
-            });

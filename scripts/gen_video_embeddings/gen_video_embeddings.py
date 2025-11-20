@@ -273,11 +273,13 @@ def fetch_target_videos(
           v.series,
           v.price,
           v.product_released_at,
-          array_remove(array_agg(DISTINCT vt.tag_id), NULL) AS tag_ids,
-          array_remove(array_agg(DISTINCT vp.performer_id), NULL) AS performer_ids,
-          max(ve.model_version) AS current_model_version
+        array_remove(array_agg(DISTINCT vt.tag_id) FILTER (WHERE vt.tag_id IS NOT NULL AND coalesce(tg.use_for_training, true)), NULL) AS tag_ids,
+        array_remove(array_agg(DISTINCT vp.performer_id), NULL) AS performer_ids,
+        max(ve.model_version) AS current_model_version
         FROM public.videos v
         LEFT JOIN public.video_tags vt ON vt.video_id = v.id
+        LEFT JOIN public.tags t ON t.id = vt.tag_id
+        LEFT JOIN public.tag_groups tg ON tg.id = t.tag_group_id
         LEFT JOIN public.video_performers vp ON vp.video_id = v.id
         LEFT JOIN public.video_embeddings ve ON ve.video_id = v.id
         WHERE (
