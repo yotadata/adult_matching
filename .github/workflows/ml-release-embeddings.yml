@@ -1,0 +1,121 @@
+name: "[ML] Release TwoTower Embeddings"
+
+on:
+  workflow_dispatch:
+    inputs:
+      approved:
+        description: "評価済みか。'yes' で埋め込み反映を実行"
+        required: true
+        default: no
+        type: choice
+        options:
+          - yes
+          - no
+      run_id:
+        description: "任意の識別子（省略時は UTC timestamp）"
+        required: false
+      lookback_days:
+        description: "VIDEO 埋め込み生成の遡り日数"
+        required: false
+        default: '3'
+      recent_hours:
+        description: "ユーザー埋め込みの対象となる直近何時間"
+        required: false
+        default: '8'
+
+jobs:
+  release:
+    name: Sync Embeddings & Publish
+    runs-on: ubuntu-latest
+    if: ${{ github.event.inputs.approved == 'yes' }}
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      SUPABASE_SERVICE_ROLE_JWT_AUDIENCE: authenticated
+      REMOTE_DATABASE_URL: ${{ secrets.REMOTE_DATABASE_URL }}
+      SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
+      SUPABASE_REGION: ${{ secrets.SUPABASE_REGION }}
+      FANZA_API_ID: ${{ secrets.FANZA_API_ID }}
+      FANZA_API_AFFILIATE_ID: ${{ secrets.FANZA_API_AFFILIATE_ID }}
+      FANZA_LINK_AFFILIATE_ID: ${{ secrets.FANZA_LINK_AFFILIATE_ID }}
+      SUPABASE_CA_CERT: ${{ secrets.SUPABASE_CA_CERT }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Determine release run id
+        run: |
+          if [ -n "${{ github.event.inputs.run_id }}" ]; then
+            echo "RELEASE_RUN_ID=${{ github.event.inputs.run_id }}" >> $GITHUB_ENV
+          else
+            echo "RELEASE_RUN_ID=$(date -u +'%Y%m%dT%H%M%SZ')" >> $GITHUB_ENV
+          fi
+
+      - name: Prepare runtime env
+        run: |
+          mkdir -p docker/env
+          cat <<EOF > docker/env/prd.ci.env
+          SUPABASE_URL=${SUPABASE_URL}
+          NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL:-${SUPABASE_URL}}
+          SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY:-${NEXT_PUBLIC_SUPABASE_ANON_KEY}}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY:-${SUPABASE_ANON_KEY}}
+          SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+          SUPABASE_PROJECT_ID=${SUPABASE_PROJECT_ID}
+          SUPABASE_REGION=${SUPABASE_REGION}
+          REMOTE_DATABASE_URL=${REMOTE_DATABASE_URL}
+          SUPABASE_DB_URL=${REMOTE_DATABASE_URL}
+          SUPABASE_SERVICE_ROLE_JWT_AUDIENCE=authenticated
+          FANZA_API_ID=${FANZA_API_ID}
+          FANZA_API_AFFILIATE_ID=${FANZA_API_AFFILIATE_ID}
+          FANZA_LINK_AFFILIATE_ID=${FANZA_LINK_AFFILIATE_ID}
+          PGSSLMODE=require
+          EOF
+          if [ -n "${SUPABASE_CA_CERT}" ]; then
+            echo "${SUPABASE_CA_CERT}" | base64 -d > docker/env/supabase-ca.crt
+            cat <<EOF >> docker/env/prd.ci.env
+          PGSSLROOTCERT=docker/env/supabase-ca.crt
+          sslmode=require
+          sslrootcert=docker/env/supabase-ca.crt
+          EOF
+          else
+            echo "sslmode=require" >> docker/env/prd.ci.env
+          fi
+
+      - name: Sync video embeddings
+        env:
+          SYNC_VIDEO_ENV_FILE: docker/env/prd.ci.env
+          SYNC_VIDEO_LOOKBACK_DAYS: ${{ github.event.inputs.lookback_days }}
+        run: |
+          bash scripts/sync_video_embeddings/run.sh --lookback-days "${SYNC_VIDEO_LOOKBACK_DAYS}"
+
+      - name: Sync user embeddings
+        env:
+          SYNC_USER_ENV_FILE: docker/env/prd.ci.env
+          SYNC_USER_RUN_ID: "${{ github.run_id }}-${{ github.run_attempt }}"
+        run: |
+          bash scripts/sync_user_embeddings/run.sh --run-id "$SYNC_USER_RUN_ID" --recent-hours "${{ github.event.inputs.recent_hours }}"
+
+      - name: Publish model manifest
+        env:
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          bash scripts/publish_two_tower/run.sh --run-id "$RELEASE_RUN_ID"
+
+      - name: Notify Discord (release)
+        if: always()
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: |
+          if [ -n "$DISCORD_WEBHOOK_URL" ]; then
+            STATUS="✅ Success"
+            if [ "${{ job.status }}" != "success" ]; then
+              STATUS="❌ Failed"
+            fi
+            curl -X POST -H "Content-Type: application/json" -d "
+            {
+              \"content\": \"[TwoTower Release] $STATUS\\nRun ID: $RELEASE_RUN_ID\"
+            }
+            " "$DISCORD_WEBHOOK_URL"
+          fi
