@@ -5,6 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import { X, Filter, Tag, Users, ExternalLink } from 'lucide-react';
+import { isUpcomingRelease } from '@/lib/videoMeta';
 
 export interface VideoRecord {
   id?: string;
@@ -36,8 +37,17 @@ export interface VideoRecord {
 export type TagFilterOption = { id: string; name: string; cnt?: number };
 export type TagFilterWithGroup = TagFilterOption & { tag_group_name?: string | null };
 export type PerformerFilterOption = { id: string; name: string; cnt?: number };
-export type SortKey = 'liked_at' | 'released' | 'price' | 'title';
+export type SortKey = 'liked_at' | 'released' | 'price';
 export type SortOrder = 'asc' | 'desc';
+
+const sortOptions = [
+  { id: 'liked_desc', label: '「気になる」が新しい順', sort: 'liked_at', order: 'desc' },
+  { id: 'liked_asc', label: '「気になる」が古い順', sort: 'liked_at', order: 'asc' },
+  { id: 'released_desc', label: '発売日が新しい順', sort: 'released', order: 'desc' },
+  { id: 'released_asc', label: '発売日が古い順', sort: 'released', order: 'asc' },
+  { id: 'price_asc', label: '価格が安い順', sort: 'price', order: 'asc' },
+  { id: 'price_desc', label: '価格が高い順', sort: 'price', order: 'desc' },
+] as const;
 
 const formatDate = (value?: string | null) => {
   if (!value) return '—';
@@ -245,22 +255,24 @@ export default function VideoListDrawer({
                       </div>
                       <div className="flex gap-2">
                         <select
-                          value={sort}
-                          onChange={(e) => onChangeSort(e.target.value as SortKey)}
+                          value={
+                            sortOptions.find((opt) => opt.sort === sort && opt.order === order)?.id ??
+                            sortOptions[0].id
+                          }
+                          onChange={(e) => {
+                            const selected = sortOptions.find((opt) => opt.id === e.target.value);
+                            if (selected) {
+                              onChangeSort(selected.sort);
+                              onChangeOrder(selected.order);
+                            }
+                          }}
                           className="flex-1 rounded-xl border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
                         >
-                          <option value="liked_at">気になる日時</option>
-                          <option value="released">発売日</option>
-                          <option value="price">価格</option>
-                          <option value="title">タイトル</option>
-                        </select>
-                        <select
-                          value={order}
-                          onChange={(e) => onChangeOrder(e.target.value as SortOrder)}
-                          className="w-28 rounded-xl border border-gray-200 bg-white px-2 py-1.5 text-sm text-gray-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
-                        >
-                          <option value="desc">降順</option>
-                          <option value="asc">昇順</option>
+                          {sortOptions.map((option) => (
+                            <option key={option.id} value={option.id}>
+                              {option.label}
+                            </option>
+                          ))}
                         </select>
                       </div>
                     </div>
@@ -400,6 +412,7 @@ export default function VideoListDrawer({
                     <div className="p-4 space-y-4 overflow-y-auto rounded-3xl">
                       {videos.map((video) => {
                         const previewImage = video.thumbnail_vertical_url ?? video.thumbnail_url ?? null;
+                        const isPreorder = isUpcomingRelease(video.product_released_at);
                         return (
                           <article
                             key={video.external_id}
@@ -416,7 +429,14 @@ export default function VideoListDrawer({
                               <h2 className="text-base font-semibold leading-tight line-clamp-2">{video.title}</h2>
                               <div className="text-xs text-gray-600 space-y-1">
                                 <p>{formatPrice(video.price)}</p>
-                                <p>リリース日: {formatDate(video.product_released_at)}</p>
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <p>リリース日: {formatDate(video.product_released_at)}</p>
+                                  {isPreorder ? (
+                                    <span className="inline-flex items-center gap-1 rounded-full bg-amber-100/80 border border-amber-200 px-2 py-0.5 text-[11px] text-amber-700">
+                                      予約作品
+                                    </span>
+                                  ) : null}
+                                </div>
                               </div>
                               <div className="flex flex-wrap gap-1.5 text-[11px] text-gray-600">
                                 {video.tags?.slice(0, 3).map((tag) => (
