@@ -53,6 +53,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y postgresql-client
+          sudo apt-get install -y postgresql-13-plpgsql-check
 
       - name: Prepare auth schema and roles
         run: |
