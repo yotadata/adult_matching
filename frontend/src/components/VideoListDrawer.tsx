@@ -430,7 +430,7 @@ export default function VideoListDrawer({
                               <div className="text-xs text-gray-600 space-y-1">
                                 <p>{formatPrice(video.price)}</p>
                                 <div className="flex items-center gap-2 flex-wrap">
-                                  <p>リリース日: {formatDate(video.product_released_at)}</p>
+                                  <p>発売日: {formatDate(video.product_released_at)}</p>
                                   {isPreorder ? (
                                     <span className="inline-flex items-center gap-1 rounded-full bg-amber-100/80 border border-amber-200 px-2 py-0.5 text-[11px] text-amber-700">
                                       予約作品

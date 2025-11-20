@@ -18,6 +18,9 @@ interface LoginFormProps {
   onClose: () => void;
 }
 
+const CTA_GRADIENT = 'linear-gradient(90deg, #ADB4E3 0%, #C8BAE3 33.333%, #F7BECE 66.666%, #F9B1C4 100%)';
+const CTA_GRADIENT_CLASS = 'from-[#ADB4E3] via-[#F7BECE] to-[#F9B1C4]';
+
 const LoginForm: React.FC<LoginFormProps> = ({ onClose }) => {
   const { register, handleSubmit, formState: { errors } } = useForm<LoginFormInputs>();
   const [message, setMessage] = useState<{ type: 'error'; text: string } | null>(null);
@@ -89,13 +92,17 @@ const LoginForm: React.FC<LoginFormProps> = ({ onClose }) => {
       />
       {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password.message}</p>}
 
-      <button
-        type="submit"
-        className="w-full py-3 px-4 bg-transparent border border-[#FF6B81] text-[#FF6B81] hover:bg-[#FF6B81] hover:text-white font-bold rounded-lg transition-all duration-300 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-        disabled={isLoading}
-      >
-        {isLoading ? 'ログイン中...' : 'ログイン'}
-      </button>
+      <div className={`rounded-full bg-gradient-to-r ${CTA_GRADIENT_CLASS} p-[2px]`}>
+        <button
+          type="submit"
+          className="w-full py-3 px-4 font-bold rounded-full transition-all duration-300 shadow-sm hover:shadow-md disabled:opacity-60 disabled:cursor-not-allowed bg-white hover:bg-gradient-to-r hover:from-[#ADB4E3]/15 hover:via-[#F7BECE]/15 hover:to-[#F9B1C4]/15"
+          disabled={isLoading}
+        >
+          <span className={`bg-gradient-to-r ${CTA_GRADIENT_CLASS} bg-clip-text text-transparent`}>
+            {isLoading ? 'ログイン中...' : 'ログイン'}
+          </span>
+        </button>
+      </div>
     </form>
   );
 };

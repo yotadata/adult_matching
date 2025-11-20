@@ -306,7 +306,7 @@ export default function AiRecommendPage() {
                       ) : null}
                       {item.metrics.product_released_at ? (
                         <div className="flex items-center gap-2">
-                          <p>リリース日 {formatDate(item.metrics.product_released_at)}</p>
+                          <p>発売日 {formatDate(item.metrics.product_released_at)}</p>
                           {isUpcomingRelease(item.metrics.product_released_at) ? (
                             <span className="inline-flex items-center gap-1 rounded-full bg-amber-100/80 border border-amber-200 px-1.5 py-0.5 text-[10px] text-amber-700">
                               予約作品
