@@ -20,6 +20,12 @@ export const trackEvent = (name: string, params?: GAEventParams) => {
   window.gtag('event', name, payload);
 };
 
+export const setGTagUserId = (userId?: string | null) => {
+  if (typeof window === 'undefined') return;
+  if (typeof window.gtag !== 'function') return;
+  window.gtag('set', { user_id: userId ?? null });
+};
+
 export const generateSessionId = () => {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
     return crypto.randomUUID();

@@ -8,6 +8,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { DecisionCountProvider } from '@/hooks/useDecisionCount';
+import { setGTagUserId } from '@/lib/analytics';
 
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -26,8 +27,10 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (isMounted) setIsLoggedIn(Boolean(session?.user));
+        setGTagUserId(session?.user?.id ?? null);
       } catch {
         if (isMounted) setIsLoggedIn(false);
+        setGTagUserId(null);
       } finally {
         if (isMounted) setAuthInitialized(true);
       }
@@ -37,6 +40,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
       setIsLoggedIn(Boolean(session?.user));
       setAuthInitialized(true);
+      setGTagUserId(session?.user?.id ?? null);
     });
 
     return () => {
