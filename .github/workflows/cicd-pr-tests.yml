@@ -53,7 +53,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y postgresql-client
-          sudo apt-get install -y postgresql-server-dev-13 make gcc git
+          sudo apt-get install -y postgresql-server-dev-all make gcc git
       - name: Build plpgsql_check extension
         run: |
           rm -rf /tmp/plpgsql_check
