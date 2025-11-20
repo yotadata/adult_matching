@@ -77,6 +77,8 @@ jobs:
 
       - name: Lint SQL migrations
         working-directory: supabase
+        env:
+          SUPABASE_DB_URL: postgresql://user:password@127.0.0.1:5432/test_db
         run: supabase db lint
 
       - name: Apply migrations (in order)
