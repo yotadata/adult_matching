@@ -40,6 +40,7 @@ interface GuestDecision {
   recommendation_score?: number | null;
   recommendation_model_version?: string | null;
   recommendation_params?: Record<string, unknown> | null;
+  recommendation_type?: string | null;
 }
 
 interface VideosFeedMetadata {
@@ -451,6 +452,7 @@ function SwipePageContent() {
         recommendation_score: d.recommendation_score ?? null,
         recommendation_model_version: d.recommendation_model_version ?? null,
         recommendation_params: d.recommendation_params ?? null,
+        recommendation_type: d.recommendation_type ?? 'swipe_feed',
       }));
       const { error } = await supabase
         .from('user_video_decisions')
@@ -507,6 +509,7 @@ function SwipePageContent() {
           recommendation_score: card.recommendationScore ?? null,
           recommendation_model_version: card.recommendationModelVersion ?? null,
           recommendation_params: card.recommendationParams ?? null,
+          recommendation_type: 'swipe_feed',
         });
         if (error) {
           console.error(`Error inserting ${decisionType} decision:`, error);
@@ -526,6 +529,7 @@ function SwipePageContent() {
         recommendation_score: card.recommendationScore ?? null,
         recommendation_model_version: card.recommendationModelVersion ?? null,
         recommendation_params: card.recommendationParams ?? null,
+        recommendation_type: 'swipe_feed',
       });
       setGuestDecisions(current);
     }

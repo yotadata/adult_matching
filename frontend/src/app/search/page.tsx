@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import Link from 'next/link';
-import { Sparkles, RefreshCcw, Info, Play, Loader2, Clapperboard, Search } from 'lucide-react';
+import { Sparkles, RefreshCcw, Info, Play, Loader2, Clapperboard, Search, Heart } from 'lucide-react';
 import { Combobox } from '@headlessui/react';
 import { useAiRecommend, type AiRecommendSection } from '@/hooks/useAiRecommend';
 import { useAnalysisResults } from '@/hooks/useAnalysisResults';
@@ -30,14 +30,6 @@ const SEARCH_SHORTCUTS = [
   },
 ];
 
-const formatDuration = (minutes: number | null) => {
-  if (!minutes) return '—';
-  if (minutes < 60) return `${minutes}分`;
-  const hours = Math.floor(minutes / 60);
-  const rest = minutes % 60;
-  return rest === 0 ? `${hours}時間` : `${hours}時間${rest}分`;
-};
-
 const formatDate = (value: string | null | undefined) => {
   if (!value) return '—';
   try {
@@ -62,6 +54,14 @@ export default function AiRecommendPage() {
   const [performerSearchResults, setPerformerSearchResults] = useState<Array<{ id: string; name: string }>>([]);
   const [tagLookupLoading, setTagLookupLoading] = useState(false);
   const [performerLookupLoading, setPerformerLookupLoading] = useState(false);
+  const [tagDropdownOpen, setTagDropdownOpen] = useState(false);
+  const [performerDropdownOpen, setPerformerDropdownOpen] = useState(false);
+  const tagBlurTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const performerBlurTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [likingIds, setLikingIds] = useState<Set<string>>(new Set());
+  const [likedIds, setLikedIds] = useState<Set<string>>(new Set());
+  const [infoMessage, setInfoMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const infoTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -103,14 +103,49 @@ export default function AiRecommendPage() {
   const { data: analysisData } = useAnalysisResults({
     windowDays: 90,
     includeNope: false,
-    tagLimit: 7,
-    performerLimit: 7,
+    tagLimit: 20,
+    performerLimit: 20,
     recentLimit: 0,
     enabled: isAuthenticated,
   });
 
-  const topTags = (analysisData?.top_tags ?? []).slice(0, 7);
-  const topPerformers = (analysisData?.top_performers ?? []).slice(0, 7);
+  const topTags = (analysisData?.top_tags ?? []).slice(0, 20);
+  const topPerformers = (analysisData?.top_performers ?? []).slice(0, 20);
+  const defaultTagOptions = useMemo(
+    () =>
+      topTags.map((tag) => ({
+        id: tag.tag_id,
+        name: tag.tag_name,
+      })),
+    [topTags],
+  );
+  const defaultPerformerOptions = useMemo(
+    () =>
+      topPerformers.map((perf) => ({
+        id: perf.performer_id,
+        name: perf.performer_name,
+      })),
+    [topPerformers],
+  );
+
+  const showInfoMessage = useCallback((type: 'success' | 'error', text: string) => {
+    if (infoTimeoutRef.current) {
+      clearTimeout(infoTimeoutRef.current);
+    }
+    setInfoMessage({ type, text });
+    infoTimeoutRef.current = setTimeout(() => setInfoMessage(null), 3200);
+  }, []);
+
+  useEffect(() => () => {
+    if (infoTimeoutRef.current) clearTimeout(infoTimeoutRef.current);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (tagBlurTimerRef.current) clearTimeout(tagBlurTimerRef.current);
+      if (performerBlurTimerRef.current) clearTimeout(performerBlurTimerRef.current);
+    };
+  }, []);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -233,6 +268,60 @@ export default function AiRecommendPage() {
     });
   };
 
+  const handleLike = async (item: AiRecommendSection['items'][number], sectionId: string) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      try {
+        window.dispatchEvent(new Event('open-register-modal'));
+      } catch {
+        // no-op
+      }
+      showInfoMessage('error', '「気になる」を保存するにはログインしてください。無料登録・ログイン後に再度お試しください。');
+      return;
+    }
+
+    setLikingIds((prev) => {
+      const next = new Set(prev);
+      next.add(item.id);
+      return next;
+    });
+    try {
+      const { error } = await supabase.from('user_video_decisions').upsert({
+        user_id: user.id,
+        video_id: item.id,
+        decision_type: 'like',
+        recommendation_source: item.metrics.source ?? sectionId ?? 'ai_recommend',
+        recommendation_score: typeof item.metrics.score === 'number' ? item.metrics.score : null,
+        recommendation_model_version: null,
+        recommendation_params: {
+          recommendation_section_id: sectionId,
+          recommendation_reason_summary: item.reason.summary,
+        },
+        recommendation_type: 'like_on_ai_search',
+      }, { onConflict: 'user_id,video_id' });
+      if (error) {
+        console.error('AI search like error:', error.message);
+        showInfoMessage('error', '保存に失敗しました。時間をおいて再度お試しください。');
+      } else {
+        setLikedIds((prev) => {
+          const next = new Set(prev);
+          next.add(item.id);
+          return next;
+        });
+        showInfoMessage('success', '「気になる」に追加しました。');
+      }
+    } catch (err) {
+      console.error('AI search like error:', err);
+      showInfoMessage('error', '保存に失敗しました。時間をおいて再度お試しください。');
+    } finally {
+      setLikingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(item.id);
+        return next;
+      });
+    }
+  };
+
   const renderSection = (section: AiRecommendSection) => (
     <section key={section.id} className="rounded-2xl bg-white/85 backdrop-blur border border-white/60 shadow-lg p-6 flex flex-col gap-4">
       <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -248,6 +337,8 @@ export default function AiRecommendPage() {
         {section.items.map((item) => {
           const composedId = `${section.id}:${item.id}`;
           const isExpanded = expandedItemId === composedId;
+          const isLiked = likedIds.has(item.id);
+          const isLiking = likingIds.has(item.id);
           return (
             <article
               key={item.id}
@@ -295,8 +386,13 @@ export default function AiRecommendPage() {
                   {isExpanded ? (
                     <div className="mt-1 rounded-md bg-gray-50 border border-gray-200 p-2 text-[11px] text-gray-600 space-y-1">
                       <p>{item.reason.detail}</p>
-                      {item.reason.highlights.length ? (
-                        <p className="text-gray-500">ハイライト: {item.reason.highlights.join(' ')}</p>
+                      {item.reason.highlights.filter((h) => !h.includes('シリーズ')).length ? (
+                        <p className="text-gray-500">
+                          ハイライト:{' '}
+                          {item.reason.highlights
+                            .filter((h) => !h.includes('シリーズ'))
+                            .join(' ')}
+                        </p>
                       ) : null}
                       {item.metrics.score ? (
                         <p>適合度 {Math.round((item.metrics.score ?? 0) * 100)}%</p>
@@ -317,14 +413,26 @@ export default function AiRecommendPage() {
                     </div>
                   ) : null}
                 </div>
-                <div className="mt-auto flex items-center justify-between text-[11px] text-gray-500">
-                  <span>{formatDuration(item.duration_minutes ?? null)}</span>
+                <div className="mt-auto flex items-center text-[11px] text-gray-500">
+                  <button
+                    type="button"
+                    onClick={() => handleLike(item, section.id)}
+                    disabled={isLiking}
+                    className={`inline-flex items-center gap-1 rounded-full border px-2 py-1 transition ${
+                      isLiked
+                        ? 'border-rose-300 bg-rose-50 text-rose-600'
+                        : 'border-gray-200 bg-white text-gray-700 hover:border-rose-200 hover:text-rose-600'
+                    } ${isLiking ? 'opacity-70 cursor-not-allowed' : ''}`}
+                  >
+                    <Heart size={12} fill={isLiked ? '#f43f5e' : 'none'} className={isLiked ? 'text-rose-500' : ''} />
+                    {isLiked ? '気になる済み' : '気になる'}
+                  </button>
                   <button
                     type="button"
                     onClick={() => {
                       if (item.product_url) window.open(item.product_url, '_blank', 'noopener,noreferrer');
                     }}
-                    className="inline-flex items-center gap-1 text-gray-600 hover:text-gray-800"
+                    className="inline-flex items-center gap-1 text-gray-600 hover:text-gray-800 ml-auto"
                   >
                     <Play size={14} />
                     作品ページへ
@@ -345,23 +453,83 @@ export default function AiRecommendPage() {
         return normalizedId.includes('trend') || normalizedId.includes('fresh');
       })
     : sections;
+  const keywordSections = visibleSections.filter((section) => section.id.toLowerCase().includes('prompt'));
+  const otherSections = visibleSections.filter((section) => !section.id.toLowerCase().includes('prompt'));
+  const displayedTagOptions =
+    tagSearchTerm.trim().length >= 2 ? tagSearchResults : defaultTagOptions;
+  const displayedPerformerOptions =
+    performerSearchTerm.trim().length >= 2 ? performerSearchResults : defaultPerformerOptions;
   const isEmpty = !loading && !error && visibleSections.length === 0;
 
+  const loadingSkeleton = (
+    <div className="grid gap-4">
+      {Array.from({ length: 3 }).map((_, idx) => (
+        <div key={`skeleton-${idx}`} className="h-64 rounded-2xl bg-white/10 backdrop-blur border border-white/20 animate-pulse" />
+      ))}
+    </div>
+  );
+
+  const keywordResultsContent = loading
+    ? loadingSkeleton
+    : keywordSections.length > 0 ? (
+        <div className="space-y-4">
+          {keywordSections.map(renderSection)}
+        </div>
+      ) : isAuthenticated ? (
+        <div className="rounded-2xl bg-white/80 border border-white/60 shadow-lg p-6 text-center text-gray-600">
+          キーワードやタグ・出演者を選ぶとAIセレクトが表示されます。
+        </div>
+      ) : null;
+
+  const otherResultsContent = loading
+    ? loadingSkeleton
+    : otherSections.length > 0 ? (
+        <section className="w-full rounded-2xl bg-white/20 backdrop-blur-xl border border-white/30 shadow-[0_20px_60px_rgba(0,0,0,0.25)] p-4 sm:p-8 flex flex-col gap-5">
+          <div className="flex flex-col gap-1 text-gray-900">
+            <p className="text-xs uppercase tracking-[0.35em] text-gray-500">トレンド・新着</p>
+            <h3 className="text-lg font-bold">履歴ベース＆トレンド/新着</h3>
+            <p className="text-sm text-gray-600">「みんなのトレンド」「新着」や履歴ベースのリストです（入力条件とは連動しません）。</p>
+          </div>
+          <div className="space-y-4">
+            {otherSections.map(renderSection)}
+          </div>
+        </section>
+      ) : (
+        !isEmpty && (
+          <div className="rounded-2xl bg-white/80 border border-white/60 shadow-lg p-6 text-center text-gray-600">
+            トレンド/新着の候補が見つかりませんでした。
+          </div>
+        )
+      );
+
   return (
-    <main className="w-full min-h-screen px-0 sm:px-4 py-8">
+    <main className="w-full min-h-screen px-0 sm:px-4 py-8 relative">
+      {infoMessage ? (
+        <div
+          className={`fixed bottom-4 left-1/2 -translate-x-1/2 z-[200] px-4 py-3 rounded-full shadow-lg border text-sm ${
+            infoMessage.type === 'success'
+              ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+              : 'bg-rose-50 border-rose-200 text-rose-800'
+          }`}
+          role="status"
+          aria-live="polite"
+        >
+          {infoMessage.text}
+        </div>
+      ) : null}
       <div className="max-w-7xl mx-auto flex flex-col gap-6">
         {isAuthenticated ? (
           <section className="w-full rounded-2xl bg-white/20 backdrop-blur-xl border border-white/30 shadow-[0_20px_60px_rgba(0,0,0,0.25)] p-4 sm:p-8 flex flex-col gap-8">
             <div className="flex flex-col gap-3 text-white">
             <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight">AIで探す</h1>
             <p className="text-sm text-white/80">
-              あなたの「気になる」履歴・全体トレンド・今の気分キーワードをもとに、3種類のリストを自動生成します。
+              選んだタグ/出演者と今の気分キーワードに合わせておすすめリストを切り替え、全体トレンドも織り交ぜて表示します。
             </p>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-4">
             <div className="space-y-4">
-            <div className="rounded-2xl bg-white/85 backdrop-blur border border-white/60 shadow-lg p-5 flex flex-col gap-4">
+            <div className="rounded-2xl bg-white/85 backdrop-blur border border-white/60 shadow-lg p-5 flex flex-col gap-4 relative overflow-visible z-[80]">
             <header className="space-y-1">
             <p className="text-xs uppercase tracking-[0.4em] text-rose-500/70">今の気分</p>
             <h2 className="text-xl font-bold text-gray-900 mt-1">キーワードを伝えて調整</h2>
@@ -380,24 +548,34 @@ export default function AiRecommendPage() {
             }}
             >
             <div className="relative">
-            <div className="flex items-center gap-2 rounded-2xl border border-gray-200 bg-white px-3 py-2 shadow-sm">
+            <div className="flex items-center gap-2 rounded-2xl border border-gray-200 bg-white px-3 py-2 shadow-sm relative z-20">
             <Search size={16} className="text-rose-400" />
             <Combobox.Input
             className="w-full text-sm text-gray-900 placeholder-gray-400 focus:outline-none"
             placeholder="タグ名を入力（例: 制服, OL など）"
             onChange={(event) => setTagSearchTerm(event.target.value)}
+            onFocus={() => {
+              if (tagBlurTimerRef.current) clearTimeout(tagBlurTimerRef.current);
+              setTagDropdownOpen(true);
+            }}
+            onBlur={() => {
+              tagBlurTimerRef.current = setTimeout(() => setTagDropdownOpen(false), 150);
+            }}
             displayValue={() => ''}
             />
             </div>
-            <Combobox.Options className="absolute z-20 mt-2 max-h-48 w-full overflow-auto rounded-2xl border border-gray-200 bg-white text-sm shadow-lg">
-            {tagSearchTerm.trim().length < 2 ? (
-            <div className="px-3 py-2 text-xs text-gray-400">2文字以上入力すると候補が表示されます。</div>
-            ) : tagLookupLoading ? (
+            <Combobox.Options
+            static
+            className={`absolute z-[60] mt-2 max-h-48 w-full overflow-auto rounded-2xl border border-gray-200 bg-white text-sm shadow-lg transition-opacity ${
+              tagDropdownOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+            }`}
+            >
+            {tagLookupLoading ? (
             <div className="px-3 py-2 text-xs text-gray-400">タグを検索中…</div>
-            ) : tagSearchResults.length === 0 ? (
+            ) : displayedTagOptions.length === 0 ? (
             <div className="px-3 py-2 text-xs text-gray-400">候補が見つかりません</div>
             ) : (
-            tagSearchResults.map((tag) => (
+            displayedTagOptions.map((tag) => (
             <Combobox.Option
             key={`combobox-tag-${tag.id}`}
             value={tag}
@@ -426,24 +604,34 @@ export default function AiRecommendPage() {
             }}
             >
             <div className="relative">
-            <div className="flex items-center gap-2 rounded-2xl border border-gray-200 bg-white px-3 py-2 shadow-sm">
+            <div className="flex items-center gap-2 rounded-2xl border border-gray-200 bg-white px-3 py-2 shadow-sm relative z-20">
             <Search size={16} className="text-indigo-400" />
             <Combobox.Input
             className="w-full text-sm text-gray-900 placeholder-gray-400 focus:outline-none"
             placeholder="出演者名を入力（例: ○○○）"
             onChange={(event) => setPerformerSearchTerm(event.target.value)}
+            onFocus={() => {
+              if (performerBlurTimerRef.current) clearTimeout(performerBlurTimerRef.current);
+              setPerformerDropdownOpen(true);
+            }}
+            onBlur={() => {
+              performerBlurTimerRef.current = setTimeout(() => setPerformerDropdownOpen(false), 150);
+            }}
             displayValue={() => ''}
             />
             </div>
-            <Combobox.Options className="absolute z-20 mt-2 max-h-48 w-full overflow-auto rounded-2xl border border-gray-200 bg-white text-sm shadow-lg">
-            {performerSearchTerm.trim().length < 2 ? (
-            <div className="px-3 py-2 text-xs text-gray-400">2文字以上入力すると候補が表示されます。</div>
-            ) : performerLookupLoading ? (
+            <Combobox.Options
+            static
+            className={`absolute z-[60] mt-2 max-h-48 w-full overflow-auto rounded-2xl border border-gray-200 bg-white text-sm shadow-lg transition-opacity ${
+              performerDropdownOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+            }`}
+            >
+            {performerLookupLoading ? (
             <div className="px-3 py-2 text-xs text-gray-400">出演者を検索中…</div>
-            ) : performerSearchResults.length === 0 ? (
+            ) : displayedPerformerOptions.length === 0 ? (
             <div className="px-3 py-2 text-xs text-gray-400">候補が見つかりません</div>
             ) : (
-            performerSearchResults.map((performer) => (
+            displayedPerformerOptions.map((performer) => (
             <Combobox.Option
             key={`combobox-perf-${performer.id}`}
             value={performer}
@@ -523,10 +711,10 @@ export default function AiRecommendPage() {
             <span className="text-[10px] text-gray-400">タップで条件に追加</span>
             </p>
             <div className="mt-1 flex flex-wrap gap-2">
-            {topTags.length === 0 ? (
+            {topTags.slice(0, 7).length === 0 ? (
             <span className="text-xs text-gray-400">データなし</span>
             ) : (
-            topTags.map((tag) => {
+            topTags.slice(0, 7).map((tag) => {
             const active = selectedTags.some((t) => t.id === tag.tag_id);
             return (
             <button
@@ -550,10 +738,10 @@ export default function AiRecommendPage() {
             <span className="text-[10px] text-gray-400">タップで条件に追加</span>
             </p>
             <div className="mt-1 flex flex-wrap gap-2">
-            {topPerformers.length === 0 ? (
+            {topPerformers.slice(0, 7).length === 0 ? (
             <span className="text-xs text-gray-400">データなし</span>
             ) : (
-            topPerformers.map((performer) => {
+            topPerformers.slice(0, 7).map((performer) => {
             const active = selectedPerformers.some((p) => p.id === performer.performer_id);
             return (
             <button
@@ -574,6 +762,9 @@ export default function AiRecommendPage() {
             </div>
             </aside>
             </div>
+            <div className="space-y-4">
+              {keywordResultsContent}
+            </div>
           </section>
         ) : (
           <section className="w-full rounded-2xl bg-white/15 backdrop-blur border border-white/20 shadow-lg p-5 text-white">
@@ -590,19 +781,9 @@ export default function AiRecommendPage() {
           </div>
         ) : null}
 
-        {loading ? (
-          <div className="grid gap-4">
-            {Array.from({ length: 3 }).map((_, idx) => (
-              <div key={`skeleton-${idx}`} className="h-64 rounded-2xl bg-white/10 backdrop-blur border border-white/20 animate-pulse" />
-            ))}
-          </div>
-        ) : isEmpty ? (
-          <div className="rounded-2xl bg-white/80 border border-white/60 shadow-lg p-6 text-center text-gray-600">
-            候補を取得できませんでした。キーワードを変えて再度お試しください。
-          </div>
-        ) : (
-          visibleSections.map(renderSection)
-        )}
+        {!isAuthenticated && keywordResultsContent}
+
+        {otherResultsContent}
 
         {!loading && isAuthenticated && (
           <section className="rounded-2xl bg-white/85 border border-white/60 shadow-lg p-6 flex flex-col gap-4">
