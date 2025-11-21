@@ -26,6 +26,15 @@ const LoginForm: React.FC<LoginFormProps> = ({ onClose }) => {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
+  const toFriendlyMessage = (raw?: string): string => {
+    if (!raw) return 'ログインに失敗しました。時間をおいて再度お試しください。';
+    const normalized = raw.toLowerCase();
+    if (normalized.includes('invalid login')) return 'ユーザーIDまたはパスワードが正しくありません。';
+    if (normalized.includes('email not confirmed')) return 'メール認証が完了していません。送信されたメールをご確認ください。';
+    if (normalized.includes('rate limit')) return '試行回数が多すぎます。少し時間をおいてから再度お試しください。';
+    return raw;
+  };
+
   const onSubmit: SubmitHandler<LoginFormInputs> = async (data) => {
     setMessage(null);
     setIsLoading(true);
@@ -45,16 +54,16 @@ const LoginForm: React.FC<LoginFormProps> = ({ onClose }) => {
       onClose();
       router.push('/swipe');
     } catch (error: unknown) {
-      let errorMessage = '予期せぬエラーが発生しました';
+      let errorMessage = 'ログインに失敗しました。時間をおいて再度お試しください。';
       if (error instanceof Error) {
-        errorMessage = error.message;
+        errorMessage = toFriendlyMessage(error.message);
       } else if (
         typeof error === 'object' &&
         error !== null &&
         'error' in error &&
         typeof (error as { error: string }).error === 'string'
       ) {
-        errorMessage = (error as { error: string }).error;
+        errorMessage = toFriendlyMessage((error as { error: string }).error);
       }
       setMessage({ type: 'error', text: errorMessage });
     } finally {
