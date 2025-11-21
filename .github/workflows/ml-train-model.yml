@@ -18,22 +18,25 @@ on:
         description: "positive 1件あたりの負例数"
         required: false
         default: '3'
+      runner_label:
+        description: "Runner label (例: self-hosted-ipv6, 未指定なら ubuntu-latest)"
+        required: false
   schedule:
     - cron: '0 4 * * 0'
 
 jobs:
   prepare:
     name: Prepare dataset
-    runs-on: ubuntu-latest
+    runs-on: ${{ github.event.inputs.runner_label != '' && github.event.inputs.runner_label || 'ubuntu-latest' }}
     env:
       PYTHONUNBUFFERED: '1'
       SKIP_SSL_PROBE: '1'
-      FORCE_IPV4: '1'
       SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
       SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
       NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
       NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       REMOTE_DATABASE_URL: ${{ secrets.REMOTE_DATABASE_URL }}
     outputs:
       run_id: ${{ steps.compute_run_id.outputs.run_id }}
@@ -76,7 +79,7 @@ jobs:
 
   train:
     name: Train model
-    runs-on: ubuntu-latest
+    runs-on: ${{ github.event.inputs.runner_label != '' && github.event.inputs.runner_label || 'ubuntu-latest' }}
     needs: prepare
     env:
       PYTHONUNBUFFERED: '1'
@@ -125,7 +128,7 @@ jobs:
 
   evaluate:
     name: Evaluate model
-    runs-on: ubuntu-latest
+    runs-on: ${{ github.event.inputs.runner_label != '' && github.event.inputs.runner_label || 'ubuntu-latest' }}
     needs: [prepare, train]
     env:
       PYTHONUNBUFFERED: '1'
