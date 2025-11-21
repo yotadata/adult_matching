@@ -42,7 +42,8 @@ ENV_FILE="${SUPABASE_ENV_FILE:-docker/env/prd.env}"
 PROJECT_REF="${PROJECT_REF:-}"
 FORWARD_ARGS=()
 REMOTE_DB_URL_ARG="${REMOTE_DB_URL_OVERRIDE:-}"
-USE_PROJECT_REF_DUMP="${USE_PROJECT_REF_DUMP:-1}"
+USE_POOLER_FOR_DUMP="${USE_POOLER_FOR_DUMP:-0}"
+USE_SUPABASE_LINK_DUMP="${USE_SUPABASE_LINK_DUMP:-1}"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -99,18 +100,12 @@ if [[ -z "$PROJECT_REF" ]] && [[ -n "${NEXT_PUBLIC_SUPABASE_URL:-${SUPABASE_URL:
   fi
 fi
 
-if [[ "${USE_PROJECT_REF_DUMP}" != "0" && -n "${SUPABASE_ACCESS_TOKEN:-}" && -n "$PROJECT_REF" ]]; then
-  DUMP_WITH_PROJECT_REF=1
-else
-  DUMP_WITH_PROJECT_REF=0
-fi
-
 if ! command -v supabase >/dev/null 2>&1; then
   echo "[ERROR] Supabase CLI が見つかりません。https://supabase.com/docs/guides/cli を参照してセットアップしてください。" >&2
   exit 1
 fi
 
-if [[ $DUMP_WITH_PROJECT_REF -eq 0 && -z "${REMOTE_DATABASE_URL:-}" ]]; then
+if [[ -z "${REMOTE_DATABASE_URL:-}" ]]; then
   echo "[ERROR] REMOTE_DATABASE_URL が未設定です。docker/env/prd.env などで定義してください。" >&2
   usage
   exit 1
@@ -149,11 +144,11 @@ if ! command -v "$PYTHON_BIN" >/dev/null 2>&1; then
   exit 1
 fi
 
+TEMP_CA_FILE=""
 : "${PGSSLROOTCERT:=}"
 : "${SSL_CERT_FILE:=}"
 
-if [[ $DUMP_WITH_PROJECT_REF -eq 0 ]]; then
-  eval "$("$PYTHON_BIN" - <<'PY'
+eval "$("$PYTHON_BIN" - <<'PY'
 from urllib.parse import urlparse
 import os
 import shlex
@@ -173,43 +168,66 @@ print(f"REMOTE_DB_NAME={shlex.quote(db)}")
 print(f"REMOTE_DB_USER={shlex.quote(user)}")
 print(f"REMOTE_DB_PASS={shlex.quote(password)}")
 PY
-  )"
+)"
 
-  if [[ -z "${REMOTE_DB_HOST:-}" || -z "${REMOTE_DB_USER:-}" ]]; then
-    echo "[ERROR] REMOTE_DATABASE_URL からホスト/ユーザーを特定できません。" >&2
+if [[ -z "${REMOTE_DB_HOST:-}" || -z "${REMOTE_DB_USER:-}" ]]; then
+  echo "[ERROR] REMOTE_DATABASE_URL からホスト/ユーザーを特定できません。" >&2
+  exit 1
+fi
+
+if [[ -z "${REMOTE_DB_PASS:-}" ]]; then
+  if [[ -n "${PGPASSWORD:-}" ]]; then
+    REMOTE_DB_PASS="$PGPASSWORD"
+  else
+    echo "[ERROR] REMOTE_DATABASE_URL にパスワードが含まれていません (PGPASSWORD も未設定)。" >&2
     exit 1
   fi
+fi
 
-  if [[ -z "${REMOTE_DB_PASS:-}" ]]; then
-    if [[ -n "${PGPASSWORD:-}" ]]; then
-      REMOTE_DB_PASS="$PGPASSWORD"
-    else
-      echo "[ERROR] REMOTE_DATABASE_URL にパスワードが含まれていません (PGPASSWORD も未設定)。" >&2
-      exit 1
-    fi
-  fi
-
-  SQL_DB_URL="postgresql://${REMOTE_DB_USER}:${REMOTE_DB_PASS}@${REMOTE_DB_HOST}:${REMOTE_DB_PORT}/${REMOTE_DB_NAME}"
-  if [[ "$SQL_DB_URL" != *"pgbouncer="* ]]; then
-    SQL_DB_URL="${SQL_DB_URL}?pgbouncer=false"
+SQL_DB_URL="postgresql://${REMOTE_DB_USER}:${REMOTE_DB_PASS}@${REMOTE_DB_HOST}:${REMOTE_DB_PORT}/${REMOTE_DB_NAME}"
+if [[ "$SQL_DB_URL" != *"pgbouncer="* ]]; then
+  SQL_DB_URL="${SQL_DB_URL}?pgbouncer=false"
+else
+  SQL_DB_URL="${SQL_DB_URL}"
+fi
+if [[ "$SQL_DB_URL" != *"sslmode="* ]]; then
+  if [[ "$SQL_DB_URL" == *"?"* ]]; then
+    SQL_DB_URL="${SQL_DB_URL}&sslmode=require"
   else
-    SQL_DB_URL="${SQL_DB_URL}"
+    SQL_DB_URL="${SQL_DB_URL}?sslmode=require"
   fi
-  if [[ "$SQL_DB_URL" != *"sslmode="* ]]; then
-    if [[ "$SQL_DB_URL" == *"?"* ]]; then
-      SQL_DB_URL="${SQL_DB_URL}&sslmode=require"
-    else
-      SQL_DB_URL="${SQL_DB_URL}?sslmode=require"
-    fi
-  fi
+fi
 
-  TEMP_CA_FILE=""
-  if [[ -z "${PGSSLROOTCERT:-}" ]]; then
-    if [[ "${SKIP_SSL_PROBE:-}" == "1" || "${GITHUB_ACTIONS:-}" == "true" ]]; then
-      echo "[WARN] Skipping SSL cert probe (SKIP_SSL_PROBE=1 or CI detected); relying on system CAs." >&2
-    else
-      TEMP_CA_FILE=$(mktemp)
-      if "$PYTHON_BIN" - "$REMOTE_DB_HOST" "$REMOTE_DB_PORT" > "$TEMP_CA_FILE" <<'PY'
+# Optional pooler fallback for IPv4-only environments
+if [[ "${USE_POOLER_FOR_DUMP}" == "1" ]]; then
+  if [[ -z "$PROJECT_REF" || -z "${SUPABASE_REGION:-}" ]]; then
+    echo "[WARN] USE_POOLER_FOR_DUMP=1 ですが PROJECT_REF または SUPABASE_REGION が未設定のためプーラー URL を構築できません。" >&2
+  else
+    POOLER_HOST="${SUPABASE_REGION}.pooler.supabase.com"
+    POOLER_PORT="${SUPABASE_POOLER_PORT:-6543}"
+    POOL_USER="$REMOTE_DB_USER"
+    if [[ "$POOL_USER" != *.* ]]; then
+      POOL_USER="${POOL_USER}.${PROJECT_REF}"
+    fi
+    RAW_URL="$SQL_DB_URL"
+    SQL_DB_URL="postgresql://${POOL_USER}:${REMOTE_DB_PASS}@${POOLER_HOST}:${POOLER_PORT}/${REMOTE_DB_NAME}"
+    if [[ "$SQL_DB_URL" != *"sslmode="* ]]; then
+      if [[ "$SQL_DB_URL" == *"?"* ]]; then
+        SQL_DB_URL="${SQL_DB_URL}&sslmode=require"
+      else
+        SQL_DB_URL="${SQL_DB_URL}?sslmode=require"
+      fi
+    fi
+    echo "[INFO] USE_POOLER_FOR_DUMP=1: ${RAW_URL} -> ${SQL_DB_URL}"
+  fi
+fi
+
+if [[ -z "${PGSSLROOTCERT:-}" ]]; then
+  if [[ "${SKIP_SSL_PROBE:-}" == "1" || "${GITHUB_ACTIONS:-}" == "true" ]]; then
+    echo "[WARN] Skipping SSL cert probe (SKIP_SSL_PROBE=1 or CI detected); relying on system CAs." >&2
+  else
+    TEMP_CA_FILE=$(mktemp)
+    if "$PYTHON_BIN" - "$REMOTE_DB_HOST" "$REMOTE_DB_PORT" > "$TEMP_CA_FILE" <<'PY'
 import ssl, socket, sys
 
 host = sys.argv[1]
@@ -223,15 +241,14 @@ with socket.create_connection((host, port)) as sock:
 pem = ssl.DER_cert_to_PEM_cert(der)
 sys.stdout.write(pem)
 PY
-      then
-        PGSSLROOTCERT="$TEMP_CA_FILE"
-        echo "[INFO] REMOTE_DB_HOST のサーバー証明書を取得し、PGSSLROOTCERT=$PGSSLROOTCERT に保存しました。"
-      else
-        echo "[WARN] SSL cert probe failed; continuing without PGSSLROOTCERT (sslmode=require)." >&2
-        if [[ -n "$TEMP_CA_FILE" && -f "$TEMP_CA_FILE" ]]; then
-          rm -f "$TEMP_CA_FILE"
-          TEMP_CA_FILE=""
-        fi
+    then
+      PGSSLROOTCERT="$TEMP_CA_FILE"
+      echo "[INFO] REMOTE_DB_HOST のサーバー証明書を取得し、PGSSLROOTCERT=$PGSSLROOTCERT に保存しました。"
+    else
+      echo "[WARN] SSL cert probe failed; continuing without PGSSLROOTCERT (sslmode=require)." >&2
+      if [[ -n "$TEMP_CA_FILE" && -f "$TEMP_CA_FILE" ]]; then
+        rm -f "$TEMP_CA_FILE"
+        TEMP_CA_FILE=""
       fi
     fi
   fi
@@ -266,7 +283,7 @@ cleanup() {
 trap cleanup EXIT
 
 require_ipv6() {
-  if [[ "${ALLOW_IPV4_FALLBACK:-}" == "1" ]]; then
+  if [[ "${ALLOW_IPV4_FALLBACK:-}" == "1" || "${USE_POOLER_FOR_DUMP:-0}" == "1" ]]; then
     return 0
   fi
   if "$PYTHON_BIN" - "$REMOTE_DB_HOST" "$REMOTE_DB_PORT" <<'PY'
@@ -291,31 +308,37 @@ PY
   cat >&2 <<'MSG'
 [ERROR] IPv6 で Supabase Postgres へ到達できません。GitHub Hosted Runner など IPv6 非対応環境では失敗します。
 - IPv6 が有効な Self-hosted Runner で実行する
-- もしくは ALLOW_IPV4_FALLBACK=1 を指定し、IPv4 で到達可能な環境のみで実行する
+- もしくは USE_POOLER_FOR_DUMP=1 でプーラー経由の IPv4 を使う
+- あるいは ALLOW_IPV4_FALLBACK=1 を指定し、IPv4 で到達可能な環境のみで実行する
 MSG
   exit 1
 }
 
-if [[ $DUMP_WITH_PROJECT_REF -eq 0 ]]; then
-  require_ipv6
-  echo "[INFO] ダンプモード: direct DB 接続 (IPv6 必須)"
+if [[ "${USE_SUPABASE_LINK_DUMP:-0}" == "1" && -n "${SUPABASE_ACCESS_TOKEN:-}" && -n "$PROJECT_REF" ]]; then
+  echo "[INFO] ダンプモード: supabase link + supabase db dump --linked"
 else
-  echo "[INFO] ダンプモード: supabase db dump --project-ref（管理API経由）"
+  require_ipv6
+  if [[ "${USE_POOLER_FOR_DUMP:-0}" == "1" ]]; then
+    echo "[INFO] ダンプモード: pooler 経由 (IPv4 想定)"
+  else
+    echo "[INFO] ダンプモード: direct DB 接続 (IPv6 必須)"
+  fi
 fi
 
 SCHEMAS_ARG=(--schema public)
 
 echo "[INFO] Supabase CLI で schema dump を取得します..."
-if [[ $DUMP_WITH_PROJECT_REF -eq 1 ]]; then
-  SUPABASE_ACCESS_TOKEN="$SUPABASE_ACCESS_TOKEN" supabase db dump --project-ref "$PROJECT_REF" "${SCHEMAS_ARG[@]}" -f "$SCHEMA_SQL"
+if [[ "${USE_SUPABASE_LINK_DUMP:-0}" == "1" && -n "${SUPABASE_ACCESS_TOKEN:-}" && -n "$PROJECT_REF" ]]; then
+  SUPABASE_ACCESS_TOKEN="$SUPABASE_ACCESS_TOKEN" supabase link --project-ref "$PROJECT_REF" --password "$REMOTE_DB_PASS" --workdir "$REPO_ROOT/supabase"
+  SUPABASE_ACCESS_TOKEN="$SUPABASE_ACCESS_TOKEN" supabase db dump --linked --schema public -f "$SCHEMA_SQL" --workdir "$REPO_ROOT/supabase"
 else
   PGPASSWORD="$REMOTE_DB_PASS" PGSSLROOTCERT="$PGSSLROOTCERT" SSL_CERT_FILE="$SSL_CERT_FILE" \
     supabase db dump --db-url "$SQL_DB_URL" "${SCHEMAS_ARG[@]}" -f "$SCHEMA_SQL"
 fi
 
 echo "[INFO] Supabase CLI で data dump を取得します..."
-if [[ $DUMP_WITH_PROJECT_REF -eq 1 ]]; then
-  SUPABASE_ACCESS_TOKEN="$SUPABASE_ACCESS_TOKEN" supabase db dump --project-ref "$PROJECT_REF" "${SCHEMAS_ARG[@]}" --data-only -f "$DATA_SQL"
+if [[ "${USE_SUPABASE_LINK_DUMP:-0}" == "1" && -n "${SUPABASE_ACCESS_TOKEN:-}" && -n "$PROJECT_REF" ]]; then
+  SUPABASE_ACCESS_TOKEN="$SUPABASE_ACCESS_TOKEN" supabase db dump --linked --schema public --data-only -f "$DATA_SQL" --workdir "$REPO_ROOT/supabase"
 else
   PGPASSWORD="$REMOTE_DB_PASS" PGSSLROOTCERT="$PGSSLROOTCERT" SSL_CERT_FILE="$SSL_CERT_FILE" \
     supabase db dump --db-url "$SQL_DB_URL" "${SCHEMAS_ARG[@]}" --data-only -f "$DATA_SQL"
