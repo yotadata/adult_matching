@@ -55,3 +55,29 @@
 - `ml-train-model` を週次 `schedule: '0 4 * * 0'` で自動化。  
 - `ml-release-embeddings` は Slack 通知や issue コメントで「GO」→ `workflow_dispatch` triggers へ追加。  
 - TBD: 評価結果を `doc` とは別に `ml/artifacts/latest/metrics-latest.json` などにコピーして参照しやすくする。
+
+## 7. ローカル統合テスト（Train → Release 両方）
+
+GitHub Actions 2 本立てをローカルで確認したい場合は、`scripts/ml_weekly_pipeline/run.sh` を実行すると、以下を順番に再現します。
+
+1. `scripts/prep_two_tower/run_with_remote_db.sh`
+2. `scripts/train_two_tower/run.sh`
+3. `scripts/eval_two_tower/run.sh`
+4. `scripts/sync_video_embeddings/run.sh`
+5. `scripts/sync_user_embeddings/run.sh`
+6. `scripts/publish_two_tower/run.sh upload/activate`
+
+### 使い方
+
+```bash
+cp docker/env/dev.env.example docker/env/dev.local.env  # ステージング用の接続情報に書き換え
+bash scripts/ml_weekly_pipeline/run.sh \
+  --env-file docker/env/dev.local.env \
+  --mode explicit \
+  --lookback-days 2 \
+  --recent-hours 6
+```
+
+- `--train-only` / `--release-only` で片方だけを検証可能。  
+- `--run-id` を渡さない場合は UTC タイムスタンプが自動で使用され、各ステップの出力先（`ml/artifacts/runs/<RUN_ID>` など）にも共有されます。  
+- すべて Docker 化された既存スクリプトを呼び出すだけなので、追加の依存関係は不要です。Supabase/S3/DB へ書き込みが発生するため、本番環境で試す場合は十分注意してください。
