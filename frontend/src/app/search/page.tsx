@@ -30,14 +30,6 @@ const SEARCH_SHORTCUTS = [
   },
 ];
 
-const formatDuration = (minutes: number | null) => {
-  if (!minutes) return '—';
-  if (minutes < 60) return `${minutes}分`;
-  const hours = Math.floor(minutes / 60);
-  const rest = minutes % 60;
-  return rest === 0 ? `${hours}時間` : `${hours}時間${rest}分`;
-};
-
 const formatDate = (value: string | null | undefined) => {
   if (!value) return '—';
   try {
@@ -394,8 +386,13 @@ export default function AiRecommendPage() {
                   {isExpanded ? (
                     <div className="mt-1 rounded-md bg-gray-50 border border-gray-200 p-2 text-[11px] text-gray-600 space-y-1">
                       <p>{item.reason.detail}</p>
-                      {item.reason.highlights.length ? (
-                        <p className="text-gray-500">ハイライト: {item.reason.highlights.join(' ')}</p>
+                      {item.reason.highlights.filter((h) => !h.includes('シリーズ')).length ? (
+                        <p className="text-gray-500">
+                          ハイライト:{' '}
+                          {item.reason.highlights
+                            .filter((h) => !h.includes('シリーズ'))
+                            .join(' ')}
+                        </p>
                       ) : null}
                       {item.metrics.score ? (
                         <p>適合度 {Math.round((item.metrics.score ?? 0) * 100)}%</p>
@@ -416,33 +413,30 @@ export default function AiRecommendPage() {
                     </div>
                   ) : null}
                 </div>
-                <div className="mt-auto flex items-center justify-between text-[11px] text-gray-500">
-                  <span>{formatDuration(item.duration_minutes ?? null)}</span>
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => handleLike(item, section.id)}
-                      disabled={isLiking}
-                      className={`inline-flex items-center gap-1 rounded-full border px-2 py-1 transition ${
-                        isLiked
-                          ? 'border-rose-300 bg-rose-50 text-rose-600'
-                          : 'border-gray-200 bg-white text-gray-700 hover:border-rose-200 hover:text-rose-600'
-                      } ${isLiking ? 'opacity-70 cursor-not-allowed' : ''}`}
-                    >
-                      <Heart size={12} fill={isLiked ? '#f43f5e' : 'none'} className={isLiked ? 'text-rose-500' : ''} />
-                      {isLiked ? '気になる済み' : '気になる'}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (item.product_url) window.open(item.product_url, '_blank', 'noopener,noreferrer');
-                      }}
-                      className="inline-flex items-center gap-1 text-gray-600 hover:text-gray-800"
-                    >
-                      <Play size={14} />
-                      作品ページへ
-                    </button>
-                  </div>
+                <div className="mt-auto flex items-center text-[11px] text-gray-500">
+                  <button
+                    type="button"
+                    onClick={() => handleLike(item, section.id)}
+                    disabled={isLiking}
+                    className={`inline-flex items-center gap-1 rounded-full border px-2 py-1 transition ${
+                      isLiked
+                        ? 'border-rose-300 bg-rose-50 text-rose-600'
+                        : 'border-gray-200 bg-white text-gray-700 hover:border-rose-200 hover:text-rose-600'
+                    } ${isLiking ? 'opacity-70 cursor-not-allowed' : ''}`}
+                  >
+                    <Heart size={12} fill={isLiked ? '#f43f5e' : 'none'} className={isLiked ? 'text-rose-500' : ''} />
+                    {isLiked ? '気になる済み' : '気になる'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (item.product_url) window.open(item.product_url, '_blank', 'noopener,noreferrer');
+                    }}
+                    className="inline-flex items-center gap-1 text-gray-600 hover:text-gray-800 ml-auto"
+                  >
+                    <Play size={14} />
+                    作品ページへ
+                  </button>
                 </div>
               </div>
             </article>
