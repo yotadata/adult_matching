@@ -497,7 +497,7 @@ Deno.serve(async (req) => {
       sections.push({
         id: "for-you",
         title: "あなたに合わせた提案",
-        rationale: "LIKE 履歴と埋め込み類似度から抽出した作品です。",
+        rationale: "「気になる」履歴からのあなたへのおすすめ作品です。",
         items: toSectionItems(personalizedItems, { summaryPrefix: "あなた向け" }),
       });
     }

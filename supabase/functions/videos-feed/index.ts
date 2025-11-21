@@ -229,9 +229,10 @@ Deno.serve(async (req) => {
       if (randomError) {
         console.error('get_videos_feed (exploration) error:', randomError.message)
       } else if (randomData && randomData.length > 0) {
-        const randomIds = (randomData as { id: string }[]).map((item) => item.id)
+        const randomRecords = shuffle(randomData as Record<string, unknown>[]) // 探索枠は毎回順番を変える
+        const randomIds = (randomRecords as { id: string }[]).map((item) => item.id)
         const modelMap = await fetchModelVersions(supabase, randomIds)
-        for (const item of randomData as Record<string, unknown>[]) {
+        for (const item of randomRecords) {
           const id = String(item.id)
           if (seen.has(id)) continue
           exploration.push({

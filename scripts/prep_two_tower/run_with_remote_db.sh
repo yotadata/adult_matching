@@ -458,6 +458,16 @@ if [[ ! -s "$FILTERED_DATA_SQL" ]]; then
   exit 1
 fi
 
+if ! grep -q '"public"."profiles"' "$FILTERED_SCHEMA_SQL"; then
+  cat >&2 <<'MSG'
+[ERROR] profiles テーブルがダンプに含まれていません。
+- Supabase CLI 権限/設定を見直し、ダンプ対象に public.profiles（auth.users を参照するビュー/テーブル）が含まれるようにしてください。
+- GitHub Actions から実行する場合、SUPABASE_ACCESS_TOKEN の権限（DB読み取り）を確認してください。
+- どうしても含められない場合は、prep 用に profiles の代替テーブルを用意するなど再現性が担保できる形で対応してください。
+MSG
+  exit 1
+fi
+
 echo "[INFO] Creating docker network $NETWORK_NAME (if not exists)..."
 if ! docker network inspect "$NETWORK_NAME" > /dev/null 2>&1; then
   docker network create "$NETWORK_NAME" > /dev/null
@@ -511,6 +521,18 @@ docker exec "$DB_CONTAINER" \
   env PGPASSWORD="$LOCAL_DB_PASS" \
   psql --host=127.0.0.1 --port=5432 --username "$LOCAL_DB_USER" --dbname "$LOCAL_DB_NAME" \
        -v ON_ERROR_STOP=1 -c 'CREATE EXTENSION IF NOT EXISTS pg_trgm' >/dev/null
+
+# Fallback: ensure profiles table exists when dump omits it (e.g., link/permissions filtered)
+docker exec "$DB_CONTAINER" \
+  env PGPASSWORD="$LOCAL_DB_PASS" \
+  psql --host=127.0.0.1 --port=5432 --username "$LOCAL_DB_USER" --dbname "$LOCAL_DB_NAME" \
+       -v ON_ERROR_STOP=1 <<'SQL'
+CREATE TABLE IF NOT EXISTS public.profiles (
+  user_id uuid PRIMARY KEY,
+  display_name text,
+  created_at timestamp with time zone DEFAULT now()
+);
+SQL
 
 # Ensure auxiliary functions required by downstream schema exist (some dumps may reference them even if not present)
 docker exec "$DB_CONTAINER" \
