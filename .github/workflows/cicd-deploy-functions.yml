@@ -56,6 +56,20 @@ jobs:
             supabase functions deploy "$fname" --project-ref "$SUPABASE_PROJECT_ID"
           done
 
+      - name: Notify Discord (Functions Deploy)
+        if: always()
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          JOB_STATUS: ${{ job.status }}
+        run: |
+          if [ -n "$DISCORD_WEBHOOK_URL" ]; then
+            STATUS="✅ success"
+            if [ "$JOB_STATUS" != "success" ]; then
+              STATUS="❌ $JOB_STATUS"
+            fi
+            curl -X POST -H "Content-Type: application/json" -d "{\"content\":\"[CiCd Deploy Functions] $STATUS\"}" "$DISCORD_WEBHOOK_URL"
+          fi
+
     # Notes:
     # - Configure repo secrets: SUPABASE_ACCESS_TOKEN, SUPABASE_PROJECT_ID, SUPABASE_DB_PASSWORD
     # - Uses `supabase link` with non-interactive token for CI.

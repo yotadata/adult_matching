@@ -356,6 +356,25 @@ sync パイプラインをローカル／CI で実行する際に必要となる
 
 > **補足:** 他コンポーネント（フロントエンド、Edge Functions、学習パイプライン等）で利用する環境変数も含めた網羅的な一覧は `docs/env/variables.md` を参照してください。環境変数を追加・更新した場合は同ドキュメントも忘れずに更新します。`SUPABASE_PROJECT_ID` を正として扱い、旧 `SUPABASE_PROJECT_REF` は後方互換用のみに残しています。
 
+## Streamlit での定性評価（Storage 参照）
+
+- `scripts/streamlit_qual_eval/run.sh` は Storage に保存された `models/two_tower_latest.onnx` や `ml/artifacts/runs/<run-id>/metrics.json` を用いて推論結果やタグの偏りを確認するための Streamlit アプリです。GitHub Actions ではなくローカル環境から起動し、評価者が結果を確認して `approved=yes` でリリースを進めます。
+- 実行例:
+
+```bash
+export STORAGE_BUCKET=models
+export RUN_ID=<run-id>
+export SUPABASE_URL=https://<project-ref>.supabase.co
+export SUPABASE_SERVICE_ROLE_KEY=<service-role-key>
+export SUPABASE_CA_CERT=docker/env/supabase-ca.crt
+
+bash scripts/streamlit_qual_eval/run.sh \
+  --run-id "$RUN_ID" \
+  --model-bucket "$STORAGE_BUCKET"
+```
+
+- この Streamlit は ONNX 推論と PyTorch 推論の比較、metrics.json ベースの定量指標、タグ / 出演者分布などを可視化します。評価が問題なければ `ml-release-embeddings.yml` を `approved=yes` で手動実行し、埋め込み/manifest を反映してください。
+
 ## GitHub Actions（将来移行の雛形）
 
 以下は学習 → ストレージへモデル配置 →（任意で）埋め込みをDBに反映、までの一例です。実際にはリポジトリにスクリプトを実装した後、このワークフローを `.github/workflows/train_two_tower.yml` として追加します。

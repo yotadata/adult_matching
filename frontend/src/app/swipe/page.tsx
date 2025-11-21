@@ -1,7 +1,7 @@
 'use client';
 
 import SwipeCard, { CardData, SwipeCardHandle } from "@/components/SwipeCard";
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { AnimatePresence, motion, PanInfo } from "framer-motion";
 import useMediaQuery from "@/hooks/useMediaQuery";
 import useWindowSize from "@/hooks/useWindowSize";
@@ -12,6 +12,7 @@ import { ChevronsLeft, Heart, List } from "lucide-react";
 import { useDecisionCount } from "@/hooks/useDecisionCount";
 import OnboardingSlides from "@/components/OnboardingSlides";
 import SpotlightTutorial from "@/components/SpotlightTutorial";
+import { useSearchParams } from "next/navigation";
 
 interface VideoFromApi {
   id: number;
@@ -83,6 +84,12 @@ export default function Home() {
   const likedListButtonRef = useRef<HTMLButtonElement | null>(null);
   const onboardingStartedRef = useRef(false);
   const spotlightStartedRef = useRef(false);
+  const searchParams = useSearchParams();
+  const isDebugMode = useMemo(() => {
+    const value = searchParams?.get('debug');
+    if (!value) return false;
+    return !['0', 'false', 'off'].includes(value.toLowerCase());
+  }, [searchParams]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -585,6 +592,25 @@ export default function Home() {
       style={{ background: currentGradient }}
       transition={{ duration: 0.3 }}
     >
+      {isDebugMode && (
+        <div className="pointer-events-none fixed top-4 right-4 z-50 max-w-xs rounded-md border border-white/20 bg-black/75 px-3 py-2 text-[11px] font-mono text-white shadow-lg backdrop-blur">
+          <div className="mb-1 text-[9px] font-semibold uppercase tracking-[0.2em] text-amber-300/80">
+            debug mode
+          </div>
+          {activeCard ? (
+            <div className="space-y-0.5 leading-tight">
+              <p>source: {activeCard.recommendationSource ?? 'videos_feed'}</p>
+              <p>
+                score: {typeof activeCard.recommendationScore === 'number'
+                  ? activeCard.recommendationScore.toFixed(4)
+                  : '—'}
+              </p>
+            </div>
+          ) : (
+            <p className="leading-tight">カードなし</p>
+          )}
+        </div>
+      )}
       <main
         ref={mainRef}
         className={`flex-grow flex w-full relative ${isMobile ? 'flex-col h-full' : 'items-center justify-center pt-10'}`}

@@ -141,6 +141,7 @@
 
 - Street 行き（本番）にデプロイする際は `supabase functions deploy videos-feed`。  
 - 新マイグレーション（`get_popular_videos`, `get_videos_recommendations` 更新, `model_version` 列追加）をリモート DB に適用すること。  
+- 2025-12-01 版マイグレーション（`20251201090000_fix_get_videos_recommendations_halfvec.sql`）で `halfvec(128)` 対応の `get_videos_recommendations` を再生成する。`halfvec` 化後に古い `vector(256)` の定義が残っていると `videos-feed` では常に `exploration` しか返せなくなる。
 - `video_popularity_daily` のマテビュー更新 (`refresh materialized view`) をスケジュールしておくと人気枠が機能する。
 - 回収データを使った再学習時、探索枠や人気枠の成果を評価し次期モデルに反映させる。
 - UI 側で `source` をタグ表示する、エクスプロレーション枠を説明するなどでユーザー体験を向上可能。

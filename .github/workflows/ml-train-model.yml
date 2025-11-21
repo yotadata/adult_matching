@@ -1,0 +1,115 @@
+name: "[ML] Train TwoTower Model"
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: "任意の識別子（省略時は UTC timestamp）"
+        required: false
+      mode:
+        description: "データ準備モード（explicit/reviews）"
+        required: false
+        default: explicit
+      min_stars:
+        description: "明示レビューを正例とみなす最小 star"
+        required: false
+        default: '4'
+      neg_per_pos:
+        description: "positive 1件あたりの負例数"
+        required: false
+        default: '3'
+  schedule:
+    - cron: '0 4 * * 0'
+
+jobs:
+  train:
+    name: Prepare → Train → Evaluate
+    runs-on: ubuntu-latest
+    env:
+      PYTHONUNBUFFERED: '1'
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+      REMOTE_DATABASE_URL: ${{ secrets.REMOTE_DATABASE_URL }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Determine run id
+        id: compute_run_id
+        run: |
+          if [ -n "${{ github.event.inputs.run_id }}" ]; then
+            echo "RUN_ID=${{ github.event.inputs.run_id }}" >> $GITHUB_ENV
+          else
+            echo "RUN_ID=$(date -u +'%Y%m%dT%H%M%SZ')" >> $GITHUB_ENV
+          fi
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r scripts/train_two_tower/requirements.txt
+
+      - name: Prepare dataset
+        run: |
+          bash scripts/prep_two_tower/run_with_remote_db.sh \
+            --mode ${{ github.event.inputs.mode }} \
+            --input ml/data/raw/reactions.csv \
+            --run-id "$RUN_ID" \
+            --min-stars ${{ github.event.inputs.min_stars }} \
+            --neg-per-pos ${{ github.event.inputs.neg_per_pos }}
+        env:
+          DB_URL: ${{ secrets.REMOTE_DATABASE_URL }}
+
+      - name: Train TwoTower
+        run: |
+          bash scripts/train_two_tower/run.sh \
+            --run-id "$RUN_ID" \
+            --train ml/data/processed/two_tower/latest/interactions_train.parquet \
+            --val ml/data/processed/two_tower/latest/interactions_val.parquet \
+            --user-features ml/data/processed/two_tower/latest/user_features.parquet \
+            --item-features ml/data/processed/two_tower/latest/item_features.parquet \
+            --item-key video_id \
+            --embedding-dim 128 \
+            --hidden-dim 512 \
+            --epochs 5 \
+            --batch-size 2048 \
+            --lr 1e-3
+
+      - name: Evaluate model
+        run: |
+          bash scripts/eval_two_tower/run.sh \
+            --run-id "$RUN_ID" \
+            --val ml/data/processed/two_tower/latest/interactions_val.parquet \
+            --recall-k 20
+        continue-on-error: false
+
+      - name: Upload evaluation artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: two_tower_eval
+          path: ml/artifacts/runs
+
+      - name: Notify Discord (train)
+        if: always()
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: |
+          if [ -n "$DISCORD_WEBHOOK_URL" ]; then
+            STATUS="✅ Success"
+            if [ "${{ job.status }}" != "success" ]; then
+              STATUS="❌ Failed"
+            fi
+            curl -X POST -H "Content-Type: application/json" -d "
+            {
+              \"content\": \"[TwoTower Train] $STATUS\\nRun ID: $RUN_ID\"
+            }
+            " "$DISCORD_WEBHOOK_URL"
+          fi

@@ -114,3 +114,18 @@ jobs:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+  notify:
+    name: Notify Discord (Release Pipeline)
+    needs: [db_migrate, functions_deploy, frontend_deploy]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Notify Discord
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: |
+          if [ -n "$DISCORD_WEBHOOK_URL" ]; then
+            SUMMARY="db:${{ needs.db_migrate.result }}, functions:${{ needs.functions_deploy.result }}, frontend:${{ needs.frontend_deploy.result }}"
+            curl -X POST -H "Content-Type: application/json" -d "{\"content\":\"[AppRelease] ${SUMMARY}\"}" "$DISCORD_WEBHOOK_URL"
+          fi
