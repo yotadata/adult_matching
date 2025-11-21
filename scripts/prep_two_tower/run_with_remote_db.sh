@@ -187,8 +187,11 @@ fi
 
 TEMP_CA_FILE=""
 if [[ -z "${PGSSLROOTCERT:-}" ]]; then
-  TEMP_CA_FILE=$(mktemp)
-  "$PYTHON_BIN" - "$REMOTE_DB_HOST" "$REMOTE_DB_PORT" > "$TEMP_CA_FILE" <<'PY'
+  if [[ "${SKIP_SSL_PROBE:-}" == "1" || "${GITHUB_ACTIONS:-}" == "true" ]]; then
+    echo "[WARN] Skipping SSL cert probe (SKIP_SSL_PROBE=1 or CI detected); relying on system CAs." >&2
+  else
+    TEMP_CA_FILE=$(mktemp)
+    if "$PYTHON_BIN" - "$REMOTE_DB_HOST" "$REMOTE_DB_PORT" > "$TEMP_CA_FILE" <<'PY'
 import ssl, socket, sys
 
 host = sys.argv[1]
@@ -202,8 +205,17 @@ with socket.create_connection((host, port)) as sock:
 pem = ssl.DER_cert_to_PEM_cert(der)
 sys.stdout.write(pem)
 PY
-  PGSSLROOTCERT="$TEMP_CA_FILE"
-  echo "[INFO] REMOTE_DB_HOST のサーバー証明書を取得し、PGSSLROOTCERT=$PGSSLROOTCERT に保存しました。"
+    then
+      PGSSLROOTCERT="$TEMP_CA_FILE"
+      echo "[INFO] REMOTE_DB_HOST のサーバー証明書を取得し、PGSSLROOTCERT=$PGSSLROOTCERT に保存しました。"
+    else
+      echo "[WARN] SSL cert probe failed; continuing without PGSSLROOTCERT (sslmode=require)." >&2
+      if [[ -n "$TEMP_CA_FILE" && -f "$TEMP_CA_FILE" ]]; then
+        rm -f "$TEMP_CA_FILE"
+        TEMP_CA_FILE=""
+      fi
+    fi
+  fi
 fi
 
 if [[ -n "${SSL_CERT_FILE:-}" && ! -f "$SSL_CERT_FILE" ]]; then
