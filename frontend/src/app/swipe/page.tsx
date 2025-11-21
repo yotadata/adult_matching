@@ -1,7 +1,7 @@
 'use client';
 
 import SwipeCard, { CardData, SwipeCardHandle } from "@/components/SwipeCard";
-import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import { Suspense, useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { AnimatePresence, motion, PanInfo } from "framer-motion";
 import useMediaQuery from "@/hooks/useMediaQuery";
 import useWindowSize from "@/hooks/useWindowSize";
@@ -52,7 +52,20 @@ const LEFT_SWIPE_GRADIENT = ORIGINAL_GRADIENT;
 const RIGHT_SWIPE_GRADIENT = ORIGINAL_GRADIENT;
 const ONBOARDING_STORAGE_KEY = 'seihekiLab_hasSeenOnboardingSlides';
 const SPOTLIGHT_STORAGE_KEY = 'seihekiLab_hasSeenSpotlightTutorial';
+
 export default function Home() {
+  return (
+    <Suspense fallback={
+      <div className="flex min-h-screen items-center justify-center bg-gradient-to-r from-[#C4C8E3] via-[#F7D7E0] to-[#F9C9D6]">
+        <div className="text-white/70 text-sm">Loading swipe experience…</div>
+      </div>
+    }>
+      <SwipePageContent />
+    </Suspense>
+  );
+}
+
+function SwipePageContent() {
 
   const [cards, setCards] = useState<CardData[]>([]);
   const [activeIndex, setActiveIndex] = useState(0);
