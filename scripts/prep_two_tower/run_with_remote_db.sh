@@ -227,7 +227,25 @@ if [[ -n "${SSL_CERT_FILE:-}" && ! -f "$SSL_CERT_FILE" ]]; then
 fi
 
 if [[ -z "${SSL_CERT_FILE:-}" ]]; then
-  SSL_CERT_FILE="$PGSSLROOTCERT"
+SSL_CERT_FILE="$PGSSLROOTCERT"
+fi
+
+DUMP_HOSTADDR=""
+if [[ "${FORCE_IPV4:-}" == "1" || "${GITHUB_ACTIONS:-}" == "true" ]]; then
+  if DUMP_HOSTADDR=$("$PYTHON_BIN" - "$REMOTE_DB_HOST" <<'PY'
+import socket, sys
+host = sys.argv[1]
+infos = socket.getaddrinfo(host, None, socket.AF_INET)
+if not infos:
+    raise RuntimeError("no AF_INET address found")
+print(infos[0][4][0])
+PY
+  ); then
+    echo "[INFO] Resolved IPv4 for ${REMOTE_DB_HOST}: ${DUMP_HOSTADDR}"
+  else
+    echo "[WARN] IPv4 resolution failed for ${REMOTE_DB_HOST}; continuing with default resolution." >&2
+    DUMP_HOSTADDR=""
+  fi
 fi
 
 DUMP_DIR="$REPO_ROOT/ml/data/raw/db_dumps/$RUN_ID"
@@ -249,11 +267,11 @@ trap cleanup EXIT
 SCHEMAS_ARG=(--schema public)
 
 echo "[INFO] Supabase CLI で schema dump を取得します..."
-PGPASSWORD="$REMOTE_DB_PASS" PGSSLROOTCERT="$PGSSLROOTCERT" SSL_CERT_FILE="$SSL_CERT_FILE" \
+PGPASSWORD="$REMOTE_DB_PASS" PGSSLROOTCERT="$PGSSLROOTCERT" SSL_CERT_FILE="$SSL_CERT_FILE" PGHOSTADDR="$DUMP_HOSTADDR" \
   supabase db dump --db-url "$SQL_DB_URL" "${SCHEMAS_ARG[@]}" -f "$SCHEMA_SQL"
 
 echo "[INFO] Supabase CLI で data dump を取得します..."
-PGPASSWORD="$REMOTE_DB_PASS" PGSSLROOTCERT="$PGSSLROOTCERT" SSL_CERT_FILE="$SSL_CERT_FILE" \
+PGPASSWORD="$REMOTE_DB_PASS" PGSSLROOTCERT="$PGSSLROOTCERT" SSL_CERT_FILE="$SSL_CERT_FILE" PGHOSTADDR="$DUMP_HOSTADDR" \
   supabase db dump --db-url "$SQL_DB_URL" "${SCHEMAS_ARG[@]}" --data-only -f "$DATA_SQL"
 
 echo "[INFO] Schema dump をフィルタリングしています (functions/auth/storage を除外)..."
