@@ -218,6 +218,9 @@ PY
   fi
 fi
 
+: "${PGSSLROOTCERT:=}"
+: "${SSL_CERT_FILE:=}"
+
 if [[ -n "${SSL_CERT_FILE:-}" && ! -f "$SSL_CERT_FILE" ]]; then
   echo "[WARN] SSL_CERT_FILE=$SSL_CERT_FILE が存在しません。PGSSLROOTCERT を共有します。" >&2
   SSL_CERT_FILE=""
