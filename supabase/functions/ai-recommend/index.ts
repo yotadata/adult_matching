@@ -171,7 +171,7 @@ const fetchPersonalized = async (
   if (!userId) return [];
   const { data, error } = await client.rpc("get_videos_recommendations", {
     user_uuid: userId,
-    page_limit: limit * 2,
+    page_limit: Math.max(limit * 6, 120),
   });
   if (error) {
     console.error("[ai-recommend] get_videos_recommendations error:", error.message);
@@ -209,7 +209,7 @@ const fetchTrending = async (
   lookbackDays: number,
 ): Promise<VideoCandidate[]> => {
   const { data, error } = await client.rpc("get_popular_videos", {
-    limit_count: limit * 3,
+    limit_count: limit * 5,
     lookback_days: lookbackDays,
   });
   if (error) {
@@ -249,9 +249,8 @@ const fetchFresh = async (
   const { data, error } = await client
     .from("videos")
     .select("id, title, description, external_id, thumbnail_url, sample_video_url, product_released_at, video_tags(tags(id, name)), video_performers(performers(id, name))")
-    .not("sample_video_url", "is", null)
     .order("product_released_at", { ascending: false })
-    .limit(limit * 3);
+    .limit(limit * 5);
 
   if (error) {
     console.error("[ai-recommend] latest videos fetch error:", error.message);
@@ -492,6 +491,7 @@ Deno.serve(async (req) => {
     const used = new Set<string>();
     const sections: Section[] = [];
 
+    // 1. personalized → 2. fresh → 3. trending の順に重複を避けて詰める
     const personalizedItems = pickUnique(enhancedPersonalized, used, limitPerSection);
     if (personalizedItems.length > 0) {
       sections.push({
@@ -502,16 +502,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    const trendingItems = pickUnique(enhancedTrending, used, limitPerSection);
-    if (trendingItems.length > 0) {
-      sections.push({
-        id: "trend-now",
-        title: "みんなが観ているトレンド",
-        rationale: "コミュニティ全体で人気が高まっている作品をピックアップしました。",
-        items: toSectionItems(trendingItems, { summaryPrefix: "トレンド" }),
-      });
-    }
-
     const freshItems = pickUnique(enhancedFresh, used, limitPerSection);
     if (freshItems.length > 0) {
       sections.push({
@@ -519,6 +509,16 @@ Deno.serve(async (req) => {
         title: "新着ピックアップ",
         rationale: "発売日が新しい順に、注目度の高い作品を並べています。",
         items: toSectionItems(freshItems, { summaryPrefix: "新着" }),
+      });
+    }
+
+    const trendingItems = pickUnique(enhancedTrending, used, limitPerSection);
+    if (trendingItems.length > 0) {
+      sections.push({
+        id: "trend-now",
+        title: "みんなが観ているトレンド",
+        rationale: "コミュニティ全体で人気が高まっている作品をピックアップしました。",
+        items: toSectionItems(trendingItems, { summaryPrefix: "トレンド" }),
       });
     }
 
