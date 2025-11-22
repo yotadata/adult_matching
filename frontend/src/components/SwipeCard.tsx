@@ -1,6 +1,7 @@
 'use client';
 
-import { motion, useAnimation, PanInfo } from 'framer-motion';
+import TinderCard from 'react-tinder-card';
+import { motion } from 'framer-motion';
 import { forwardRef, useImperativeHandle, useState, useEffect, useRef } from 'react';
 import { Play, User, Tag, Calendar, Share2 } from 'lucide-react'; // アイコンをインポート
 
@@ -31,16 +32,20 @@ export interface SwipeCardHandle {
 interface SwipeCardProps {
   cardData: CardData;
   onSwipe: (direction: 'left' | 'right') => void;
-  onDrag?: (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => void;
-  onDragEnd?: (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => void;
+  onDrag?: (direction: 'left' | 'right' | 'reset') => void;
+  onDragEnd?: () => void;
   cardWidth: number | undefined; // cardWidth propを追加
   canSwipe?: boolean; // 追加: ゲスト制限時にスワイプを抑制
   onSamplePlay?: (card: CardData) => void;
 }
 
+type TinderApi = {
+  swipe: (dir?: 'left' | 'right' | 'up' | 'down') => Promise<void>;
+  restoreCard: () => Promise<void>;
+};
+
 const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwipe, onDrag, onDragEnd, cardWidth, canSwipe = true, onSamplePlay }, ref) => {
-  const controls = useAnimation();
-  
+  const cardRef = useRef<TinderApi | null>(null);
   const [showVideo, setShowVideo] = useState(false);
   const [showOverlay, setShowOverlay] = useState(true);
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -60,41 +65,19 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwi
   
 
   const swipe = async (direction: 'left' | 'right') => {
-    if (!canSwipe) {
-      await controls.start({ x: 0 });
-      return;
+    if (!canSwipe) return;
+    try {
+      await cardRef.current?.swipe(direction);
+    } catch (err) {
+      if (process.env.NODE_ENV !== 'production') {
+        console.warn('TinderCard swipe failed:', err);
+      }
     }
-    const swipeWidth = cardWidth || 448; // cardWidthが未定義の場合のフォールバック
-    const x = direction === 'right' ? `calc(100vw + ${swipeWidth}px)` : `calc(-100vw - ${swipeWidth}px)`;
-    await controls.start({ x, opacity: 0, transition: { duration: 0.6 } }); 
-    onSwipe(direction);
   };
 
   useImperativeHandle(ref, () => ({
     swipe,
   }));
-
-  const handleDrag = (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
-    onDrag?.(event, info); // 親の onDrag を呼び出す
-  };
-
-  const handleDragEnd = (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
-    if (!canSwipe) {
-      controls.start({ x: 0 });
-      onDragEnd?.(event, info);
-      return;
-    }
-    if (info.offset.x > 100) {
-      swipe('right');
-    } else if (info.offset.x < -100) {
-      swipe('left');
-    } else {
-      controls.start({ x: 0 });
-    }
-    onDragEnd?.(event, info); // 親の onDragEnd を呼び出す
-  };
-
-  
 
   const toAffiliateUrl = (raw?: string) => {
     const AF_ID = 'yotadata2-001';
@@ -130,16 +113,34 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwi
     <div className="absolute h-full" style={{ width: cardWidth ? `${cardWidth}px` : 'auto' }}>
       {/* 背面のグレー“カード”：白カードより少し小さい高さで、下側だけ少しはみ出す */}
       <div className="absolute inset-x-4 top-4 -bottom-2 bg-gray-200/90 rounded-2xl shadow-md pointer-events-none z-0" />
+      <TinderCard
+        ref={cardRef as unknown as React.RefObject<TinderApi>}
+        className="relative z-10 h-full w-full"
+        preventSwipe={canSwipe ? ['up', 'down'] : ['left', 'right', 'up', 'down']}
+        swipeRequirementType="position"
+        swipeThreshold={(() => {
+          const base = cardWidth ?? 360;
+          const computed = base * 0.35;
+          return Math.max(120, Math.min(200, computed));
+        })()}
+        onSwipe={(dir) => {
+          if (dir === 'left' || dir === 'right') onSwipe(dir);
+        }}
+        onSwipeRequirementFulfilled={(dir) => {
+          if (dir === 'left' || dir === 'right') onDrag?.(dir);
+        }}
+        onSwipeRequirementUnfulfilled={() => {
+          onDrag?.('reset');
+          onDragEnd?.();
+        }}
+        onCardLeftScreen={() => {
+          onDrag?.('reset');
+          onDragEnd?.();
+        }}
+      >
       <motion.div 
-        className="relative z-10 h-full rounded-2xl bg-white border border-gray-200 shadow-xl flex flex-col p-4 cursor-grab overflow-hidden"
-        drag="x"
-        dragConstraints={{ left: 0, right: 0 }}
-        onDragStart={(event, info) => onDrag?.(event, info)} // onDragStart も追加
-        onDrag={handleDrag}
-        onDragEnd={handleDragEnd}
-        animate={controls}
-        initial={false}
-        whileTap={{ cursor: "grabbing" }}
+        className="h-full rounded-2xl bg-white border border-gray-200 shadow-xl flex flex-col p-4 cursor-grab overflow-hidden"
+        whileTap={{ scale: 0.995 }}
       >
       {/* 上部: 動画エリア（PC版は4:3のアスペクト比） */}
       <div className="relative w-full aspect-[4/3] bg-black/90 flex items-center justify-center rounded-xl overflow-hidden">
@@ -248,7 +249,8 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwi
           </div>
         )}
       </div>
-      </motion.div>
+        </motion.div>
+      </TinderCard>
     </div>
   );
 });

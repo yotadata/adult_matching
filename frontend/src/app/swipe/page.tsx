@@ -2,7 +2,7 @@
 
 import SwipeCard, { CardData, SwipeCardHandle } from "@/components/SwipeCard";
 import { Suspense, useState, useRef, useEffect, useCallback, useMemo } from "react";
-import { AnimatePresence, motion, PanInfo } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import useMediaQuery from "@/hooks/useMediaQuery";
 import useWindowSize from "@/hooks/useWindowSize";
 import MobileVideoLayout from "@/components/MobileVideoLayout";
@@ -581,20 +581,14 @@ function SwipePageContent() {
     cardRef.current?.swipe(direction);
   };
 
-  const handleDrag = (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
-    if (info.offset.x > 50) {
-      setCurrentGradient(RIGHT_SWIPE_GRADIENT);
-    } else if (info.offset.x < -50) {
-      setCurrentGradient(LEFT_SWIPE_GRADIENT);
-    } else {
-      setCurrentGradient(ORIGINAL_GRADIENT);
-    }
+  const handleDrag = (dir: 'left' | 'right' | 'reset') => {
+    if (dir === 'right') setCurrentGradient(RIGHT_SWIPE_GRADIENT);
+    else if (dir === 'left') setCurrentGradient(LEFT_SWIPE_GRADIENT);
+    else setCurrentGradient(ORIGINAL_GRADIENT);
   };
 
-  const handleDragEnd = (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
-    if (Math.abs(info.offset.x) <= 100) {
-      setCurrentGradient(ORIGINAL_GRADIENT);
-    }
+  const handleDragEnd = () => {
+    setCurrentGradient(ORIGINAL_GRADIENT);
   };
 
   useEffect(() => {

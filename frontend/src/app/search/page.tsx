@@ -344,14 +344,14 @@ export default function AiRecommendPage() {
               key={item.id}
               className="min-w-[220px] max-w-[220px] rounded-xl bg-white border border-gray-100 shadow-sm flex flex-col overflow-hidden text-sm snap-start"
             >
-              <div className="relative w-full aspect-[16/9] bg-gray-200">
+              <div className="relative w-full aspect-[3/2] bg-gray-200">
                 {item.thumbnail_url ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={item.thumbnail_url} alt={item.title ?? 'thumbnail'} className="absolute inset-0 w-full h-full object-cover" />
                 ) : (
                   <div className="absolute inset-0 flex items-center justify-center text-gray-400 text-sm">No Image</div>
                 )}
-                <div className="absolute top-2 right-2 bg-white/90 text-[11px] px-1.5 py-0.5 rounded-full text-gray-700 capitalize">
+                <div className="absolute bottom-2 left-2 bg-white/90 text-[11px] px-1.5 py-0.5 rounded-full text-gray-700 capitalize">
                   {item.metrics.source}
                 </div>
                 {isUpcomingRelease(item.metrics.product_released_at) ? (

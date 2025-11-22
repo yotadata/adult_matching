@@ -19,6 +19,7 @@ Secrets 名はリポジトリ設定（Settings → Secrets and variables → Act
 | `SUPABASE_REGION` | Supabase リージョン名（例: `aws-1-ap-northeast-1`） |
 | `SUPABASE_DB_PASSWORD` | `supabase db remote connect` 等で利用するデータベースパスワード |
 | `SUPABASE_ACCESS_TOKEN` | Supabase CLI で `supabase login` する際の Personal Access Token |
+| `GOTRUE_JWT_EXP` | Supabase Auth (GoTrue) のアクセストークン有効期限（秒）。例: `86400` (24h)。マネージド Supabase ではプロジェクトの Config Variables にも同値を設定してください。 |
 
 ## ワークフロー別の追加要素
 
