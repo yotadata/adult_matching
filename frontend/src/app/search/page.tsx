@@ -62,6 +62,7 @@ export default function AiRecommendPage() {
   const [likedIds, setLikedIds] = useState<Set<string>>(new Set());
   const [infoMessage, setInfoMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const infoTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [debugMode, setDebugMode] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -93,8 +94,13 @@ export default function AiRecommendPage() {
   const isGuest = authStatus === 'guest';
 
   const aiRecommendEnabled = authStatus !== 'checking';
+  const [applying, setApplying] = useState(false);
+  const sectionLimit = useMemo(() => {
+    const hasFilters = appliedTagIds.length > 0 || appliedPerformerIds.length > 0;
+    return hasFilters && isAuthenticated ? 24 : 12;
+  }, [appliedTagIds.length, appliedPerformerIds.length, isAuthenticated]);
   const { data, loading, error } = useAiRecommend({
-    limitPerSection: 12,
+    limitPerSection: sectionLimit,
     tagIds: isAuthenticated ? appliedTagIds : undefined,
     performerIds: isAuthenticated ? appliedPerformerIds : undefined,
     enabled: aiRecommendEnabled,
@@ -223,21 +229,28 @@ export default function AiRecommendPage() {
     };
   }, [isAuthenticated, performerSearchTerm]);
 
-  if (authStatus === 'checking') {
-    return (
-      <main className="min-h-screen w-full bg-gradient-to-br from-slate-950 via-indigo-950 to-slate-900 text-white flex items-center justify-center px-4">
-        <div className="flex flex-col items-center gap-3 text-center">
-          <Loader2 className="h-6 w-6 animate-spin text-white/80" />
-          <p className="text-sm text-white/70">閲覧可能か確認しています…</p>
-        </div>
-      </main>
-    );
-  }
+  useEffect(() => {
+    if (!loading && applying) {
+      setApplying(false);
+    }
+  }, [loading, applying]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    const debugParam = params.get('debug');
+    if (debugParam && !['0', 'false', 'off'].includes(debugParam.toLowerCase())) {
+      setDebugMode(true);
+    } else {
+      setDebugMode(false);
+    }
+  }, []);
 
   const handleApplyFilters = () => {
     setAppliedTagIds(selectedTags.map((tag) => tag.id));
     setAppliedPerformerIds(selectedPerformers.map((perf) => perf.id));
     setExpandedItemId(null);
+    setApplying(true);
   };
 
   const handleClearFilters = () => {
@@ -339,6 +352,13 @@ export default function AiRecommendPage() {
           const isExpanded = expandedItemId === composedId;
           const isLiked = likedIds.has(item.id);
           const isLiking = likingIds.has(item.id);
+          const debugInfo = debugMode
+            ? {
+                source: item.metrics.source,
+                summary: item.reason.summary,
+                selectionSummary: item.reason.detail || null,
+              }
+            : null;
           return (
             <article
               key={item.id}
@@ -410,6 +430,13 @@ export default function AiRecommendPage() {
                           ) : null}
                         </div>
                       ) : null}
+                      {debugInfo ? (
+                        <div className="mt-1 rounded bg-white border border-dashed border-gray-300 p-1.5 text-[10px] text-gray-500 space-y-0.5">
+                          <div>debug source: {debugInfo.source}</div>
+                          <div>debug summary: {debugInfo.summary}</div>
+                          {debugInfo.selectionSummary ? <div>debug detail: {debugInfo.selectionSummary}</div> : null}
+                        </div>
+                      ) : null}
                     </div>
                   ) : null}
                 </div>
@@ -460,6 +487,16 @@ export default function AiRecommendPage() {
   const displayedPerformerOptions =
     performerSearchTerm.trim().length >= 2 ? performerSearchResults : defaultPerformerOptions;
   const isEmpty = !loading && !error && visibleSections.length === 0;
+  if (authStatus === 'checking') {
+    return (
+      <main className="min-h-screen w-full bg-gradient-to-br from-slate-950 via-indigo-950 to-slate-900 text-white flex items-center justify-center px-4">
+        <div className="flex flex-col items-center gap-3 text-center">
+          <Loader2 className="h-6 w-6 animate-spin text-white/80" />
+          <p className="text-sm text-white/70">閲覧可能か確認しています…</p>
+        </div>
+      </main>
+    );
+  }
 
   const loadingSkeleton = (
     <div className="grid gap-4">
@@ -676,11 +713,16 @@ export default function AiRecommendPage() {
             <div className="flex flex-col sm:flex-row sm:items-center gap-2">
             <div className="flex gap-2">
             <button
-            type="button"
-            onClick={handleApplyFilters}
-            className="inline-flex items-center gap-2 rounded-md bg-rose-500 text-white px-3 py-2 text-sm font-semibold hover:bg-rose-600"
+              type="button"
+              onClick={handleApplyFilters}
+              disabled={applying || loading}
+              className={`inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm font-semibold ${
+                applying || loading
+                  ? 'bg-rose-300 text-white cursor-not-allowed'
+                  : 'bg-rose-500 text-white hover:bg-rose-600'
+              }`}
             >
-            条件を適用
+              {applying || loading ? '適用中…' : '条件を適用'}
             </button>
             <button
             type="button"
