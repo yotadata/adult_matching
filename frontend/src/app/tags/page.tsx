@@ -28,15 +28,22 @@ type TagWithCount = {
 async function getTagsWithCount(): Promise<TagWithCount[]> {
   const { data, error } = await supabase.rpc('get_tags_with_count');
   if (error || !data) {
-    // フォールバック: 件数なしで全件取得
     const { data: tags } = await supabase.from('tags').select('id, name').order('name');
     return (tags ?? []).map((t) => ({ ...t, video_count: 0 }));
   }
   return data as TagWithCount[];
 }
 
+// 動画数でタグを3段階に分類してフォントサイズに反映
+function tagSize(count: number, max: number): string {
+  if (count >= max * 0.5) return 'text-base font-semibold';
+  if (count >= max * 0.1) return 'text-sm font-medium';
+  return 'text-xs font-normal';
+}
+
 export default async function TagsPage() {
   const tags = await getTagsWithCount();
+  const maxCount = tags[0]?.video_count ?? 1;
 
   const jsonLd = {
     '@context': 'https://schema.org',
@@ -55,44 +62,48 @@ export default async function TagsPage() {
 
       <div className="max-w-5xl mx-auto px-4 py-6">
         {/* パンくず */}
-        <nav className="text-xs text-gray-400 mb-4 flex flex-wrap gap-1">
-          <Link href="/" className="hover:text-gray-600">ホーム</Link>
+        <nav className="text-xs text-gray-500 mb-4 flex flex-wrap gap-1">
+          <Link href="/" className="hover:text-gray-700">ホーム</Link>
           <span>/</span>
           <span className="text-gray-700">ジャンル一覧</span>
         </nav>
 
+        {/* ヘッダー */}
         <div className="mb-6">
           <h1 className="text-xl font-bold text-gray-900 mb-1">
             AV動画 ジャンル一覧
           </h1>
-          <p className="text-sm text-gray-500">全 {tags.length} ジャンル</p>
+          <p className="text-sm text-gray-600">全 {tags.length} ジャンル</p>
         </div>
 
-        <div className="flex flex-wrap gap-2 mb-10">
-          {tags.map((tag) => (
-            <Link
-              key={tag.id}
-              href={`/tags/${tag.id}`}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-purple-50 hover:bg-purple-100 border border-purple-200 text-purple-800 text-sm transition-colors"
-            >
-              {tag.name}
-              {tag.video_count > 0 && (
-                <span className="text-xs text-purple-500 font-medium">
-                  {tag.video_count.toLocaleString()}
-                </span>
-              )}
-            </Link>
-          ))}
+        {/* タグクラウド */}
+        <div className="bg-white/70 backdrop-blur-sm rounded-2xl border border-white/60 shadow-sm p-5 mb-8">
+          <div className="flex flex-wrap gap-2">
+            {tags.map((tag) => (
+              <Link
+                key={tag.id}
+                href={`/tags/${tag.id}`}
+                className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-purple-50 hover:bg-purple-100 border border-purple-200 text-purple-800 hover:text-purple-900 transition-colors ${tagSize(tag.video_count, maxCount)}`}
+              >
+                {tag.name}
+                {tag.video_count > 0 && (
+                  <span className="text-purple-400 font-normal text-xs">
+                    {tag.video_count.toLocaleString()}
+                  </span>
+                )}
+              </Link>
+            ))}
+          </div>
         </div>
 
         {/* CTA */}
-        <div className="py-6 border-t text-center space-y-2">
-          <p className="text-sm text-gray-500">
+        <div className="py-6 border-t border-white/40 text-center space-y-2">
+          <p className="text-sm text-gray-600">
             スワイプするだけで、あなた好みの作品を AI が発掘します
           </p>
           <Link
             href="/swipe"
-            className="inline-block bg-purple-500 hover:bg-purple-600 text-white font-bold rounded-full px-8 py-3 text-sm transition-colors"
+            className="inline-block bg-purple-500 hover:bg-purple-600 text-white font-bold rounded-full px-8 py-3 text-sm transition-colors shadow"
           >
             無料で試してみる
           </Link>

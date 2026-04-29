@@ -66,6 +66,15 @@ export default async function PerformersPage(
     url: `${SITE_URL}/performers`,
   };
 
+  // ページ番号リスト（省略あり）
+  const pageNumbers = Array.from({ length: totalPages }, (_, i) => i + 1)
+    .filter((p) => p === 1 || p === totalPages || Math.abs(p - page) <= 2)
+    .reduce<(number | '...')[]>((acc, p, idx, arr) => {
+      if (idx > 0 && p - (arr[idx - 1] as number) > 1) acc.push('...');
+      acc.push(p);
+      return acc;
+    }, []);
+
   return (
     <>
       <script
@@ -75,8 +84,8 @@ export default async function PerformersPage(
 
       <div className="max-w-5xl mx-auto px-4 py-6">
         {/* パンくず */}
-        <nav className="text-xs text-gray-400 mb-4 flex flex-wrap gap-1">
-          <Link href="/" className="hover:text-gray-600">ホーム</Link>
+        <nav className="text-xs text-gray-500 mb-4 flex flex-wrap gap-1">
+          <Link href="/" className="hover:text-gray-700">ホーム</Link>
           <span>/</span>
           <span className="text-gray-700">出演者一覧</span>
           {page > 1 && (
@@ -87,29 +96,30 @@ export default async function PerformersPage(
           )}
         </nav>
 
+        {/* ヘッダー */}
         <div className="mb-6">
           <h1 className="text-xl font-bold text-gray-900 mb-1">
             AV女優・出演者 一覧
           </h1>
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-gray-600">
             全 {total.toLocaleString()} 人
             {totalPages > 1 && `（${page} / ${totalPages} ページ）`}
           </p>
         </div>
 
         {/* 出演者グリッド */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 mb-10">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 mb-8">
           {performers.map((p) => (
             <Link
               key={p.id}
               href={`/performers/${p.id}`}
-              className="group flex flex-col items-center justify-center border rounded-xl p-3 bg-white hover:bg-pink-50 hover:border-pink-200 transition-colors text-center"
+              className="group flex flex-col items-center justify-center rounded-xl p-3 bg-white/80 backdrop-blur-sm border border-white/60 hover:bg-pink-50 hover:border-pink-300 transition-colors text-center shadow-sm"
             >
               <span className="text-sm font-medium text-gray-800 group-hover:text-pink-700 leading-snug">
                 {p.name}
               </span>
               {p.video_count > 0 && (
-                <span className="mt-1 text-xs text-gray-400">
+                <span className="mt-1 text-xs text-gray-500">
                   {p.video_count} 作品
                 </span>
               )}
@@ -119,61 +129,53 @@ export default async function PerformersPage(
 
         {/* ページネーション */}
         {totalPages > 1 && (
-          <nav className="flex justify-center items-center gap-2 mb-10 flex-wrap">
+          <nav className="flex justify-center items-center gap-1.5 mb-10 flex-wrap">
             {page > 1 && (
               <Link
                 href={page - 1 === 1 ? '/performers' : `/performers?page=${page - 1}`}
-                className="px-4 py-2 rounded-lg border bg-white text-sm hover:bg-gray-50 transition-colors"
+                className="px-3 py-2 rounded-lg bg-white/80 border border-gray-300 text-gray-700 text-sm font-medium hover:bg-white transition-colors shadow-sm"
               >
-                ← 前のページ
+                ← 前へ
               </Link>
             )}
 
-            {/* ページ番号（前後2ページ + 最初/最後） */}
-            {Array.from({ length: totalPages }, (_, i) => i + 1)
-              .filter((p) => p === 1 || p === totalPages || Math.abs(p - page) <= 2)
-              .reduce<(number | '...')[]>((acc, p, idx, arr) => {
-                if (idx > 0 && p - (arr[idx - 1] as number) > 1) acc.push('...');
-                acc.push(p);
-                return acc;
-              }, [])
-              .map((item, idx) =>
-                item === '...' ? (
-                  <span key={`ellipsis-${idx}`} className="px-2 text-gray-400">…</span>
-                ) : (
-                  <Link
-                    key={item}
-                    href={item === 1 ? '/performers' : `/performers?page=${item}`}
-                    className={`px-3 py-2 rounded-lg border text-sm transition-colors ${
-                      item === page
-                        ? 'bg-pink-500 text-white border-pink-500'
-                        : 'bg-white hover:bg-gray-50'
-                    }`}
-                  >
-                    {item}
-                  </Link>
-                )
-              )}
+            {pageNumbers.map((item, idx) =>
+              item === '...' ? (
+                <span key={`ellipsis-${idx}`} className="px-2 py-2 text-gray-500 text-sm">…</span>
+              ) : (
+                <Link
+                  key={item}
+                  href={item === 1 ? '/performers' : `/performers?page=${item}`}
+                  className={`min-w-[2.25rem] px-3 py-2 rounded-lg border text-sm font-medium text-center transition-colors shadow-sm ${
+                    item === page
+                      ? 'bg-pink-500 text-white border-pink-500'
+                      : 'bg-white/80 border-gray-300 text-gray-700 hover:bg-white'
+                  }`}
+                >
+                  {item}
+                </Link>
+              )
+            )}
 
             {page < totalPages && (
               <Link
                 href={`/performers?page=${page + 1}`}
-                className="px-4 py-2 rounded-lg border bg-white text-sm hover:bg-gray-50 transition-colors"
+                className="px-3 py-2 rounded-lg bg-white/80 border border-gray-300 text-gray-700 text-sm font-medium hover:bg-white transition-colors shadow-sm"
               >
-                次のページ →
+                次へ →
               </Link>
             )}
           </nav>
         )}
 
         {/* CTA */}
-        <div className="py-6 border-t text-center space-y-2">
-          <p className="text-sm text-gray-500">
+        <div className="py-6 border-t border-white/40 text-center space-y-2">
+          <p className="text-sm text-gray-600">
             スワイプするだけで、あなた好みの作品を AI が発掘します
           </p>
           <Link
             href="/swipe"
-            className="inline-block bg-purple-500 hover:bg-purple-600 text-white font-bold rounded-full px-8 py-3 text-sm transition-colors"
+            className="inline-block bg-purple-500 hover:bg-purple-600 text-white font-bold rounded-full px-8 py-3 text-sm transition-colors shadow"
           >
             無料で試してみる
           </Link>
