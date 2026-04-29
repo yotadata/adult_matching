@@ -55,8 +55,8 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
     const isAboutPage = pathname === '/about';
     const isSearchPage = pathname === '/search';
     const isVideoPage = pathname.startsWith('/videos/');
-    const isPerformerPage = pathname.startsWith('/performers/');
-    const isTagPage = pathname.startsWith('/tags/');
+    const isPerformerPage = pathname.startsWith('/performers');
+    const isTagPage = pathname.startsWith('/tags');
     const requiresLogin = !(isSwipePath || isAboutPage || isSearchPage || isVideoPage || isPerformerPage || isTagPage);
 
     if (requiresLogin && isLoggedIn === false) {
