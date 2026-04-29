@@ -243,12 +243,13 @@ export default async function VideoDetailPage(
                 <div className="text-gray-500 mb-1.5">出演者</div>
                 <div className="flex flex-wrap gap-2">
                   {video.performers.map((p) => (
-                    <span
+                    <Link
                       key={p.id}
-                      className="px-2.5 py-1 rounded-full bg-pink-100 text-pink-700 text-xs font-medium"
+                      href={`/performers/${p.id}`}
+                      className="px-2.5 py-1 rounded-full bg-pink-100 text-pink-700 text-xs font-medium hover:bg-pink-200 transition-colors"
                     >
                       {p.name}
-                    </span>
+                    </Link>
                   ))}
                 </div>
               </div>
@@ -260,12 +261,13 @@ export default async function VideoDetailPage(
                 <div className="text-gray-500 mb-1.5">ジャンル</div>
                 <div className="flex flex-wrap gap-2">
                   {video.tags.map((t) => (
-                    <span
+                    <Link
                       key={t.id}
-                      className="px-2.5 py-1 rounded-full bg-purple-100 text-purple-700 text-xs font-medium"
+                      href={`/tags/${t.id}`}
+                      className="px-2.5 py-1 rounded-full bg-purple-100 text-purple-700 text-xs font-medium hover:bg-purple-200 transition-colors"
                     >
                       {t.name}
-                    </span>
+                    </Link>
                   ))}
                 </div>
               </div>

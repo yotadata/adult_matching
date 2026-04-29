@@ -41,5 +41,31 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     page++;
   }
 
+  // 出演者 LP を全件追加
+  const { data: performers } = await supabase
+    .from('performers')
+    .select('id');
+  for (const p of performers ?? []) {
+    entries.push({
+      url: `${SITE_URL}/performers/${p.id}`,
+      lastModified: new Date(),
+      changeFrequency: 'weekly',
+      priority: 0.8,
+    });
+  }
+
+  // ジャンル LP を全件追加
+  const { data: tags } = await supabase
+    .from('tags')
+    .select('id');
+  for (const t of tags ?? []) {
+    entries.push({
+      url: `${SITE_URL}/tags/${t.id}`,
+      lastModified: new Date(),
+      changeFrequency: 'weekly',
+      priority: 0.8,
+    });
+  }
+
   return entries;
 }
