@@ -34,7 +34,7 @@ fi
 exec docker run "${DOCKER_FLAGS[@]}" \
   --env-file "$ENV_FILE" \
   --env INGEST_FANZA_ENV_FILE="$ENV_FILE" \
-  "${DOCKER_ENV_ARGS[@]}" \
+  ${DOCKER_ENV_ARGS[@]+"${DOCKER_ENV_ARGS[@]}"} \
   -v "$(pwd)":/workspace \
   -w /workspace \
   "$IMAGE" "$@"
