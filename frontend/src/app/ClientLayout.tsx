@@ -54,7 +54,10 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
     const isSwipePath = pathname.startsWith('/swipe');
     const isAboutPage = pathname === '/about';
     const isSearchPage = pathname === '/search';
-    const requiresLogin = !(isSwipePath || isAboutPage || isSearchPage);
+    const isVideoPage = pathname.startsWith('/videos/');
+    const isPerformerPage = pathname.startsWith('/performers/');
+    const isTagPage = pathname.startsWith('/tags/');
+    const requiresLogin = !(isSwipePath || isAboutPage || isSearchPage || isVideoPage || isPerformerPage || isTagPage);
 
     if (requiresLogin && isLoggedIn === false) {
       router.replace('/swipe');
