@@ -88,12 +88,29 @@ export default async function PerformerPage(
 
   if (!performer) notFound();
 
-  const jsonLd = {
-    '@context': 'https://schema.org',
-    '@type': 'Person',
-    name: performer.name,
-    url: `${SITE_URL}/performers/${id}`,
-  };
+  const performerUrl = `${SITE_URL}/performers/${id}`;
+  const fanzaUrl = performer.fanza_actress_id
+    ? `https://www.dmm.co.jp/digital/videoa/-/list/=/article=actress/id=${performer.fanza_actress_id}/`
+    : null;
+
+  const jsonLd = [
+    {
+      '@context': 'https://schema.org',
+      '@type': 'Person',
+      name: performer.name,
+      url: performerUrl,
+      ...(fanzaUrl && { sameAs: [fanzaUrl] }),
+    },
+    {
+      '@context': 'https://schema.org',
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        { '@type': 'ListItem', position: 1, name: 'ホーム', item: SITE_URL },
+        { '@type': 'ListItem', position: 2, name: '出演者一覧', item: `${SITE_URL}/performers` },
+        { '@type': 'ListItem', position: 3, name: performer.name, item: performerUrl },
+      ],
+    },
+  ];
 
   return (
     <>

@@ -144,21 +144,33 @@ export default async function VideoDetailPage(
     ? video.description.slice(0, 120)
     : `${performers ? performers + '出演。' : ''}${tags ? 'ジャンル: ' + tags : ''}`;
 
-  const jsonLd = {
-    '@context': 'https://schema.org',
-    '@type': 'Movie',
-    name: video.title,
-    description,
-    image: video.thumbnail_url ?? video.thumbnail_vertical_url,
-    url: `${SITE_URL}/videos/${id}`,
-    ...(video.product_released_at && {
-      datePublished: video.product_released_at.slice(0, 10),
-    }),
-    ...(video.maker && { productionCompany: { '@type': 'Organization', name: video.maker } }),
-    ...(video.performers.length > 0 && {
-      actor: video.performers.map((p) => ({ '@type': 'Person', name: p.name })),
-    }),
-  };
+  const videoUrl = `${SITE_URL}/videos/${id}`;
+  const jsonLd = [
+    {
+      '@context': 'https://schema.org',
+      '@type': 'Movie',
+      name: video.title,
+      description,
+      image: video.thumbnail_url ?? video.thumbnail_vertical_url,
+      url: videoUrl,
+      ...(video.product_released_at && {
+        datePublished: video.product_released_at.slice(0, 10),
+      }),
+      ...(video.maker && { productionCompany: { '@type': 'Organization', name: video.maker } }),
+      ...(video.performers.length > 0 && {
+        actor: video.performers.map((p) => ({ '@type': 'Person', name: p.name })),
+      }),
+    },
+    {
+      '@context': 'https://schema.org',
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        { '@type': 'ListItem', position: 1, name: 'ホーム', item: SITE_URL },
+        { '@type': 'ListItem', position: 2, name: '作品', item: `${SITE_URL}/videos` },
+        { '@type': 'ListItem', position: 3, name: video.title, item: videoUrl },
+      ],
+    },
+  ];
 
   const isUpcoming = video.product_released_at
     ? new Date(video.product_released_at) > new Date()
