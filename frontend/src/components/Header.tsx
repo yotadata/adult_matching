@@ -9,7 +9,7 @@ import useMediaQuery from '@/hooks/useMediaQuery';
 import { supabase } from '@/lib/supabase';
 import { User as SupabaseUser } from '@supabase/supabase-js';
 import { Dialog, Transition } from '@headlessui/react';
-import { UserPlus, Menu as MenuIcon, X, Home as HomeIcon, Sparkles, BarChart2, List } from 'lucide-react';
+import { UserPlus, Menu as MenuIcon, X, Home as HomeIcon, Sparkles, BarChart2, List, Mail, Settings, Info } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import LikedVideosDrawer from './LikedVideosDrawer'; // ドロワーコンポーネントをインポート
 
@@ -47,9 +47,9 @@ const Header = ({ cardWidth, mobileGauge }: { cardWidth: number | undefined; mob
   ];
 
   const secondaryNavItems: NavItem[] = [
-    { label: 'お問い合わせ', href: '/contact', icon: Sparkles, requiresLogin: true },
-    { label: 'アカウント設定', href: '/account-management', icon: UserPlus, requiresLogin: true },
-    { label: 'このサイトについて', href: '/about', icon: BarChart2, requiresLogin: false },
+    { label: 'お問い合わせ', href: '/contact', icon: Mail, requiresLogin: true },
+    { label: 'アカウント設定', href: '/account-management', icon: Settings, requiresLogin: true },
+    { label: 'このサイトについて', href: '/about', icon: Info, requiresLogin: false },
   ];
 
   useEffect(() => {

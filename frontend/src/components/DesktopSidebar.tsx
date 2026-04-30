@@ -4,7 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import { Home as HomeIcon, Sparkles, BarChart2, List, UserPlus } from 'lucide-react';
+import { Home as HomeIcon, Sparkles, BarChart2, List, UserPlus, Settings, Info, Mail } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useDecisionCount } from '@/hooks/useDecisionCount';
 
@@ -127,9 +127,9 @@ export default function DesktopSidebar() {
         <div className="px-3 pt-2 pb-10">
           <div className="border-t border-gray-100 my-2" />
           <div className="space-y-1 text-sm text-gray-600">
-            <NavButton label="お問い合わせ" icon={Sparkles} href="/contact" disabled={!isLoggedIn} />
-            <NavButton label="アカウント設定" icon={UserPlus} href="/account-management" disabled={!isLoggedIn} />
-            <NavButton label="このサイトについて" icon={BarChart2} href="/about" disabled={false} />
+            <NavButton label="お問い合わせ" icon={Mail} href="/contact" disabled={!isLoggedIn} />
+            <NavButton label="アカウント設定" icon={Settings} href="/account-management" disabled={!isLoggedIn} />
+            <NavButton label="このサイトについて" icon={Info} href="/about" disabled={false} />
           </div>
         </div>
       </div>

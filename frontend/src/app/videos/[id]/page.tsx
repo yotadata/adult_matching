@@ -188,7 +188,7 @@ export default async function VideoDetailPage(
           <span className="text-gray-700 line-clamp-1">{video.title}</span>
         </nav>
 
-        <h1 className="text-lg font-bold mb-3 leading-snug">{video.title}</h1>
+        <h1 className="text-lg font-bold mb-3 leading-snug text-gray-900">{video.title}</h1>
 
         {/* 動画プレイヤー */}
         {fanzaEmbedUrl && (
