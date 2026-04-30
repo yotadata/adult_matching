@@ -605,25 +605,57 @@ function SwipePageContent() {
       style={{ background: currentGradient }}
       transition={{ duration: 0.3 }}
     >
-      {isDebugMode && (
-        <div className="pointer-events-none fixed top-4 right-4 z-50 max-w-xs rounded-md border border-white/20 bg-black/75 px-3 py-2 text-[11px] font-mono text-white shadow-lg backdrop-blur">
-          <div className="mb-1 text-[9px] font-semibold uppercase tracking-[0.2em] text-amber-300/80">
-            debug mode
-          </div>
-          {activeCard ? (
-            <div className="space-y-0.5 leading-tight">
-              <p>source: {activeCard.recommendationSource ?? 'videos_feed'}</p>
-              <p>
-                score: {typeof activeCard.recommendationScore === 'number'
-                  ? activeCard.recommendationScore.toFixed(4)
-                  : '—'}
-              </p>
+      {isDebugMode && (() => {
+        const score = typeof activeCard?.recommendationScore === 'number' ? activeCard.recommendationScore : null;
+        const scoreColor = score === null ? 'text-gray-400' : score >= 0.7 ? 'text-green-300' : score >= 0.5 ? 'text-yellow-300' : 'text-red-400';
+        const scoreLabel = score === null ? '—' : score >= 0.7 ? '高' : score >= 0.5 ? '中' : '低';
+        const params = activeCard?.recommendationParams ?? cards[activeIndex]?.recommendationParams ?? null;
+        const exploit = typeof params?.exploitation_returned === 'number' ? params.exploitation_returned : null;
+        const pop = typeof params?.popularity_returned === 'number' ? params.popularity_returned : null;
+        const explore = typeof params?.exploration_returned === 'number' ? params.exploration_returned : null;
+        const deckSources = exploit !== null ? `E${exploit}/P${pop}/X${explore}` : null;
+        return (
+          <div className="pointer-events-none fixed top-4 right-4 z-50 max-w-[210px] rounded-md border border-white/20 bg-black/75 px-3 py-2 text-[11px] font-mono text-white shadow-lg backdrop-blur">
+            <div className="mb-1.5 text-[9px] font-semibold uppercase tracking-[0.2em] text-amber-300/80">
+              debug mode
             </div>
-          ) : (
-            <p className="leading-tight">カードなし</p>
-          )}
-        </div>
-      )}
+            <div className="space-y-0.5 leading-tight">
+              {activeCard ? (
+                <>
+                  <p>source: <span className="text-cyan-300">{activeCard.recommendationSource ?? 'videos_feed'}</span></p>
+                  <div>
+                    <span>score: </span>
+                    <span className={scoreColor}>{score !== null ? score.toFixed(4) : '—'}</span>
+                    <span className={`ml-1.5 text-[10px] ${scoreColor}`}>[{scoreLabel}]</span>
+                    {score !== null && (
+                      <div className="mt-0.5 h-1.5 w-full rounded-full bg-white/10">
+                        <div
+                          className={`h-full rounded-full ${score >= 0.7 ? 'bg-green-400' : score >= 0.5 ? 'bg-yellow-400' : 'bg-red-400'}`}
+                          style={{ width: `${Math.min(100, Math.max(0, (score - 0.3) / 0.7 * 100))}%` }}
+                        />
+                      </div>
+                    )}
+                  </div>
+                  <p>model: <span className="text-cyan-300">{activeCard.recommendationModelVersion ?? '—'}</span></p>
+                </>
+              ) : (
+                <p className="text-red-400">カードなし</p>
+              )}
+              <div className="mt-1.5 border-t border-white/10 pt-1.5 space-y-0.5">
+                <p>deck: <span className="text-green-300">{cards.length - activeIndex}</span> / {cards.length}</p>
+                {deckSources && (
+                  <p className="text-[10px]">
+                    <span className="text-violet-300">個人</span>={exploit} <span className="text-yellow-300">人気</span>={pop} <span className="text-gray-400">探索</span>={explore}
+                  </p>
+                )}
+                <p>decisions: <span className="text-green-300">{decisionCount}</span></p>
+                <p>embed in: <span className="text-green-300">{swipesUntilNextEmbed ?? '—'}</span></p>
+                <p>auth: <span className={isLoggedIn ? 'text-green-300' : 'text-red-400'}>{isLoggedIn ? 'in' : 'guest'}</span></p>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
       <main
         ref={mainRef}
         className={`flex-grow flex w-full relative ${isMobile ? 'flex-col h-full' : 'items-center justify-center pt-10'}`}
