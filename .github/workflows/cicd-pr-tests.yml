@@ -88,11 +88,11 @@ jobs:
           -- get_videos_recommendations が存在し呼び出せることを確認
           SELECT count(*) FROM public.get_videos_recommendations('00000000-0000-0000-0000-000000000000'::uuid, 10);
 
-          -- get_popular_videos が存在し呼び出せることを確認
-          SELECT count(*) FROM public.get_popular_videos(10, 7);
+          -- get_popular_videos が存在し呼び出せることを確認（user_uuid, limit_count, lookback_days）
+          SELECT count(*) FROM public.get_popular_videos(null::uuid, 10, 7);
 
-          -- search_videos が存在し呼び出せることを確認
-          SELECT count(*) FROM public.search_videos(null, null, null, 10);
+          -- search_videos が存在し呼び出せることを確認（p_prompt, p_tag_ids, p_performer_ids, p_limit）
+          SELECT count(*) FROM public.search_videos(null::text, null::uuid[], null::uuid[], 10);
           SQL
 
   function_tests:
