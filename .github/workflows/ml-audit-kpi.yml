@@ -1,0 +1,61 @@
+name: "[ML] Ops - Audit KPI"
+
+on:
+  workflow_dispatch:
+    inputs:
+      window_days:
+        description: '集計対象の日数'
+        required: false
+        default: '7'
+      min_like_rate:
+        description: 'like率の最低閾値 (例: 0.30)'
+        required: false
+        default: '0.30'
+  schedule:
+    - cron: '0 1 * * 1' # 毎週月曜 01:00 UTC
+
+jobs:
+  audit:
+    name: KPI Audit
+    runs-on: ubuntu-latest
+    env:
+      REMOTE_DATABASE_URL: ${{ secrets.REMOTE_DATABASE_URL }}
+      DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r scripts/audit_kpi/requirements.txt
+
+      - name: Run KPI audit
+        env:
+          WINDOW_DAYS: ${{ github.event.inputs.window_days || '7' }}
+          MIN_LIKE_RATE: ${{ github.event.inputs.min_like_rate || '0.30' }}
+        run: |
+          python scripts/audit_kpi/audit_kpi.py \
+            --db-url "$REMOTE_DATABASE_URL" \
+            --discord-url "$DISCORD_WEBHOOK_URL" \
+            --window-days "$WINDOW_DAYS" \
+            --min-like-rate "$MIN_LIKE_RATE" \
+            --output-json docs/ml/kpi_latest.json \
+          && echo "KPI_EXIT=0" >> "$GITHUB_ENV" \
+          || { code=$?; echo "KPI_EXIT=$code" >> "$GITHUB_ENV"; true; }
+
+      - name: Upload KPI report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kpi-report-${{ github.run_id }}
+          path: docs/ml/kpi_latest.json
+
+      - name: Flag alerts
+        if: always()
+        run: |
+          if [[ "${KPI_EXIT:-0}" == "1" ]]; then
+            echo "::warning::KPI アラートが発生しています。Discord 通知を確認してください。"
+          fi
