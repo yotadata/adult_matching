@@ -163,6 +163,11 @@ const extractKeywords = (prompt: string): string[] =>
 
 type EdgeSupabaseClient = SupabaseClient<any, "public", any>;
 
+const buildProductUrlFallback = (externalId: string | null): string | null => {
+  if (!externalId) return null;
+  return `https://www.dmm.co.jp/digital/videoa/-/detail/=/cid_${externalId}`;
+};
+
 const fetchPersonalized = async (
   client: EdgeSupabaseClient,
   userId: string | null,
@@ -574,9 +579,11 @@ Deno.serve(async (req) => {
     const detailMap = await hydrateVideoDetails(supabase, [...personalized, ...trending, ...fresh, ...searchCandidates, ...embedCandidates]);
     const enhance = (video: VideoCandidate): VideoCandidate => {
       const extra = detailMap.get(video.id);
+      const fallbackUrl = buildProductUrlFallback(video.external_id ?? null);
+      const productUrl = extra?.product_url ?? video.product_url ?? fallbackUrl;
       return {
         ...video,
-        product_url: extra?.product_url ?? video.product_url ?? null,
+        product_url: productUrl,
         preview_video_url: extra?.preview_video_url ?? video.preview_video_url ?? null,
         duration_minutes: extra?.duration_minutes ?? video.duration_minutes ?? null,
       };
@@ -676,7 +683,7 @@ Deno.serve(async (req) => {
       summaryPrefix = hasSelections ? "プリセット" : promptKeywords.length > 0 ? "気分マッチ" : "AIセレクト";
     }
 
-    const promptItems = pickUnique(promptCandidates, used, limitPerSection);
+    const promptItems = pickUnique(promptCandidates, new Set<string>(), limitPerSection); // promptは他セクションと重複を許容
     if (promptItems.length > 0) {
       sections.push({
         id: "prompt-match",
@@ -709,6 +716,8 @@ Deno.serve(async (req) => {
         personalized_candidates: personalized.length,
         trending_candidates: trending.length,
         fresh_candidates: fresh.length,
+        search_candidates: searchCandidates.length,
+        embed_candidates: embedCandidates.length,
         prompt_keywords: promptKeywords,
         has_user_context: Boolean(userId),
         limit_per_section: limitPerSection,

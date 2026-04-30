@@ -4,7 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import { Home as HomeIcon, Sparkles, BarChart2, List, UserPlus } from 'lucide-react';
+import { Home as HomeIcon, Sparkles, BarChart2, List, UserPlus, Settings, Info, Mail } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useDecisionCount } from '@/hooks/useDecisionCount';
 
@@ -15,7 +15,7 @@ export default function DesktopSidebar() {
   const { decisionCount } = useDecisionCount();
   const personalizeTarget = Number(process.env.NEXT_PUBLIC_PERSONALIZE_TARGET || 20);
   
-  const nonHomeGradient = 'linear-gradient(90deg, #ADB4E3 0%, #C8BAE3 33.333%, #F7BECE 66.666%, #F9B1C4 100%)';
+  const accentGradient = 'linear-gradient(135deg, #7c3aed 0%, #8b5cf6 100%)';
 
   useEffect(() => {
     const loadAuth = async () => {
@@ -43,7 +43,7 @@ export default function DesktopSidebar() {
   }: { label: string; icon: React.ComponentType<{ size?: number; className?: string }>; href: string; disabled?: boolean }) => (
     <button
       disabled={disabled}
-      className={`w-full min-w-0 flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors ${disabled ? 'opacity-50 cursor-not-allowed text-gray-400' : pathname === href ? 'bg-gray-100 text-gray-900' : 'text-gray-800 hover:bg-gray-100'}`}
+      className={`w-full min-w-0 flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors ${disabled ? 'opacity-40 cursor-not-allowed text-[#656d76]' : pathname === href ? 'bg-[#21262d] text-[#e6edf3]' : 'text-[#8b949e] hover:bg-[#21262d] hover:text-[#e6edf3]'}`}
       onClick={() => { if (!disabled) router.push(href); }}
       title={label}
     >
@@ -69,7 +69,7 @@ export default function DesktopSidebar() {
   }) => (
     <button
       disabled={disabled}
-      className={`w-full text-left min-w-0 px-3 py-2 rounded-md text-sm transition-colors ${disabled ? 'opacity-50 cursor-not-allowed text-gray-400' : pathname === href ? 'bg-gray-100 text-gray-900' : 'text-gray-800 hover:bg-gray-100'}`}
+      className={`w-full text-left min-w-0 px-3 py-2 rounded-md text-sm transition-colors ${disabled ? 'opacity-40 cursor-not-allowed text-[#656d76]' : pathname === href ? 'bg-[#21262d] text-[#e6edf3]' : 'text-[#8b949e] hover:bg-[#21262d] hover:text-[#e6edf3]'}`}
       onClick={() => { if (!disabled) router.push(href); }}
       title={label}
     >
@@ -78,10 +78,10 @@ export default function DesktopSidebar() {
         <span className="truncate">{label}</span>
       </div>
       <div className="mt-2 pr-1">
-        <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
-          <div className="h-full rounded-full" style={{ width: `${Math.min(Math.max(progress, 0), 1) * 100}%`, background: 'linear-gradient(90deg, #ADB4E3 0%, #C8BAE3 33.333%, #F7BECE 66.666%, #F9B1C4 100%)' }} />
+        <div className="w-full h-2 bg-[#30363d] rounded-full overflow-hidden">
+          <div className="h-full rounded-full" style={{ width: `${Math.min(Math.max(progress, 0), 1) * 100}%`, background: 'linear-gradient(90deg, #7c3aed 0%, #8b5cf6 50%, #a78bfa 100%)' }} />
         </div>
-        <div className="mt-1 text-[10px] text-gray-600 text-right">{caption}</div>
+        <div className="mt-1 text-[10px] text-[#656d76] text-right">{caption}</div>
       </div>
     </button>
   );
@@ -90,9 +90,9 @@ export default function DesktopSidebar() {
   const caption = remainingSwipes === 0 ? 'パーソナライズ完了' : `パーソナライズまであと${remainingSwipes}枚`;
 
   return (
-    <aside className="hidden sm:block fixed left-0 top-0 h-screen w-56 bg-white border-r border-gray-100 shadow-md text-gray-800 z-40">
+    <aside className="hidden sm:block fixed left-0 top-0 h-screen w-56 bg-[#161b22] border-r border-[#30363d] z-40">
       <div className="h-full flex flex-col">
-        <div className="px-4 py-4 border-b border-gray-100">
+        <div className="px-4 py-4 border-b border-[#30363d]">
           <div className="flex items-center gap-2">
             <Link href="/swipe" aria-label="スワイプへ移動" className="inline-flex">
               <Image src="/seiheki_lab.png" alt="Seiheki Lab Logo" width={120} height={40} priority draggable="false" className="cursor-pointer" />
@@ -103,7 +103,7 @@ export default function DesktopSidebar() {
               <button
                 onClick={openLogin}
                 className="w-full flex items-center gap-2 px-3 py-2 text-left rounded-md text-sm font-bold text-white shadow-md hover:shadow-lg transition-shadow"
-                style={{ background: nonHomeGradient }}
+                style={{ background: accentGradient }}
               >
                 <UserPlus size={18} />
                 <span className="truncate">ログイン / 新規登録</span>
@@ -125,11 +125,11 @@ export default function DesktopSidebar() {
           <NavButton label="あなたの性癖" icon={BarChart2} href="/insights" disabled={!isLoggedIn} />
         </nav>
         <div className="px-3 pt-2 pb-10">
-          <div className="border-t border-gray-100 my-2" />
-          <div className="space-y-1 text-sm text-gray-600">
-            <NavButton label="お問い合わせ" icon={Sparkles} href="/contact" disabled={!isLoggedIn} />
-            <NavButton label="アカウント設定" icon={UserPlus} href="/account-management" disabled={!isLoggedIn} />
-            <NavButton label="このサイトについて" icon={BarChart2} href="/about" disabled={false} />
+          <div className="border-t border-[#30363d] my-2" />
+          <div className="space-y-1 text-sm">
+            <NavButton label="お問い合わせ" icon={Mail} href="/contact" disabled={!isLoggedIn} />
+            <NavButton label="アカウント設定" icon={Settings} href="/account-management" disabled={!isLoggedIn} />
+            <NavButton label="このサイトについて" icon={Info} href="/about" disabled={false} />
           </div>
         </div>
       </div>

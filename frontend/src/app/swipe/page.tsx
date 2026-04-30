@@ -20,6 +20,7 @@ interface VideoFromApi {
   description: string;
   external_id: string;
   thumbnail_url: string;
+  thumbnail_vertical_url?: string;
   sample_video_url?: string;
   preview_video_url?: string;
   product_url?: string;
@@ -48,7 +49,7 @@ interface VideosFeedMetadata {
   decision_count: number;
 }
 
-const ORIGINAL_GRADIENT = 'linear-gradient(90deg, #C4C8E3 0%, #D7D1E3 33.333%, #F7D7E0 66.666%, #F9C9D6 100%)';
+const ORIGINAL_GRADIENT = 'linear-gradient(135deg, #1a0d2e 0%, #160d25 33%, #2a1020 66%, #1e0d1a 100%)';
 const LEFT_SWIPE_GRADIENT = ORIGINAL_GRADIENT;
 const RIGHT_SWIPE_GRADIENT = ORIGINAL_GRADIENT;
 const ONBOARDING_STORAGE_KEY = 'seihekiLab_hasSeenOnboardingSlides';
@@ -341,6 +342,7 @@ function SwipePageContent() {
           sampleVideoUrl: normalizedSampleUrl || normalizedPreviewUrl,
           embedUrl: fanzaEmbedUrl,
           thumbnail_url: video.thumbnail_url,
+          thumbnailVerticalUrl: video.thumbnail_vertical_url,
           product_released_at: video.product_released_at,
           performers: video.performers,
           tags: video.tags,
@@ -656,7 +658,7 @@ function SwipePageContent() {
             isFetchingVideos ? (
               <div className="flex items-center justify-center w-full h-full">
                 <div
-                  className="w-12 h-12 rounded-full border-4 border-gray-300 border-t-violet-500 animate-spin"
+                  className="w-12 h-12 rounded-full border-4 border-white/10 border-t-violet-400 animate-spin"
                   role="status"
                   aria-label="Loading videos"
                 />

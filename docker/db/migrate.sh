@@ -43,13 +43,13 @@ psql <<'SQL'
 CREATE OR REPLACE FUNCTION public.uuid_v4()
 RETURNS uuid
 LANGUAGE SQL
-IMMUTABLE
+VOLATILE
 AS $$
   SELECT (
-    lpad(to_hex((random()*4294967295)::int),8,'0') || '-' ||
-    lpad(to_hex((random()*65535)::int),4,'0') || '-' ||
-    lpad(to_hex((random()*65535)::int),4,'0') || '-' ||
-    lpad(to_hex((random()*65535)::int),4,'0') || '-' ||
+    lpad(to_hex((random()*4294967295)::bigint),8,'0') || '-' ||
+    lpad(to_hex((random()*65535)::bigint),4,'0') || '-' ||
+    lpad(to_hex((random()*65535)::bigint),4,'0') || '-' ||
+    lpad(to_hex((random()*65535)::bigint),4,'0') || '-' ||
     lpad(to_hex((random()*281474976710655)::bigint),12,'0')
   )::uuid;
 $$;
