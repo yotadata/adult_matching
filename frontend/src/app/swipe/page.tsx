@@ -644,8 +644,8 @@ function SwipePageContent() {
               <div className="mt-1.5 border-t border-white/10 pt-1.5 space-y-0.5">
                 <p>deck: <span className="text-green-300">{cards.length - activeIndex}</span> / {cards.length}</p>
                 {deckSources && (
-                  <p className="text-[10px] text-white/60">
-                    <span title="exploitation">E</span>={exploit} <span title="popularity">P</span>={pop} <span title="exploration">X</span>={explore}
+                  <p className="text-[10px]">
+                    <span className="text-violet-300">個人</span>={exploit} <span className="text-yellow-300">人気</span>={pop} <span className="text-gray-400">探索</span>={explore}
                   </p>
                 )}
                 <p>decisions: <span className="text-green-300">{decisionCount}</span></p>
