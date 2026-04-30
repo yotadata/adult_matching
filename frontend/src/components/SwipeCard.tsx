@@ -113,7 +113,7 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwi
   return (
     <div className="absolute h-full" style={{ width: cardWidth ? `${cardWidth}px` : 'auto' }}>
       {/* 背面カード */}
-      <div className=”absolute inset-x-4 top-4 -bottom-2 bg-[#1c2128] rounded-2xl shadow-md pointer-events-none z-0” />
+      <div className="absolute inset-x-4 top-4 -bottom-2 bg-[#1c2128] rounded-2xl shadow-md pointer-events-none z-0" />
       <TinderCard
         ref={cardRef as unknown as React.RefObject<TinderApi>}
         className="relative z-10 h-full w-full"
