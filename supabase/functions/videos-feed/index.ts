@@ -292,6 +292,57 @@ Deno.serve(async (req) => {
     const remainder = decisionCount % EMBED_INTERVAL
     const swipes_until_next_embed = EMBED_INTERVAL - remainder || EMBED_INTERVAL
 
+    // 個人の嗜好適合度統計（直近 N 件の回数窓）
+    type UserStats = {
+      window: number
+      like_rate: number
+      by_source: Record<string, { likes: number; total: number; like_rate: number }>
+      by_score: Record<string, { likes: number; total: number; like_rate: number }>
+    }
+    let userStats: UserStats | null = null
+    if (userId) {
+      const STATS_WINDOW = 50
+      const { data: recentDecisions, error: statsError } = await supabase
+        .from('user_video_decisions')
+        .select('decision_type, recommendation_source, recommendation_score')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(STATS_WINDOW)
+      if (statsError) {
+        console.error('user stats query error:', statsError.message)
+      } else if (recentDecisions && recentDecisions.length > 0) {
+        const rows = recentDecisions as { decision_type: string; recommendation_source: string | null; recommendation_score: number | null }[]
+        const totalLikes = rows.filter(r => r.decision_type === 'like').length
+        const likeRate = (n: number, d: number) => d > 0 ? Math.round(n / d * 1000) / 1000 : 0
+
+        const bySource: UserStats['by_source'] = {}
+        for (const src of ['exploitation', 'popularity', 'exploration']) {
+          const subset = rows.filter(r => r.recommendation_source === src)
+          const likes = subset.filter(r => r.decision_type === 'like').length
+          if (subset.length > 0) bySource[src] = { likes, total: subset.length, like_rate: likeRate(likes, subset.length) }
+        }
+
+        const scoreBuckets: [string, (s: number) => boolean][] = [
+          ['low',  s => s < 0.3],
+          ['mid',  s => s >= 0.3 && s < 0.6],
+          ['high', s => s >= 0.6],
+        ]
+        const byScore: UserStats['by_score'] = {}
+        for (const [label, pred] of scoreBuckets) {
+          const subset = rows.filter(r => r.recommendation_score !== null && pred(r.recommendation_score!))
+          const likes = subset.filter(r => r.decision_type === 'like').length
+          if (subset.length > 0) byScore[label] = { likes, total: subset.length, like_rate: likeRate(likes, subset.length) }
+        }
+
+        userStats = {
+          window: rows.length,
+          like_rate: likeRate(totalLikes, rows.length),
+          by_source: bySource,
+          by_score: byScore,
+        }
+      }
+    }
+
     const payload = {
       videos: final.slice(0, adjustedPageLimit).map((item) => ({
         ...item,
@@ -309,6 +360,7 @@ Deno.serve(async (req) => {
       metadata: {
         swipes_until_next_embed: swipes_until_next_embed,
         decision_count: decisionCount,
+        user_stats: userStats,
       },
     }
 
