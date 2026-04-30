@@ -80,6 +80,7 @@ function SwipePageContent() {
   const [swipesUntilNextEmbed, setSwipesUntilNextEmbed] = useState<number | null>(null);
   const { decisionCount, incrementDecisionCount } = useDecisionCount();
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
+  const isLoggedInRef = useRef<boolean>(false);
   const [authReady, setAuthReady] = useState<boolean>(false);
   const guestLimit = Number(process.env.NEXT_PUBLIC_GUEST_DECISIONS_LIMIT || 20);
   const mainRef = useRef<HTMLDivElement | null>(null);
@@ -314,7 +315,7 @@ function SwipePageContent() {
           status: 'error',
           source: 'videos_feed',
           response_ms: Date.now() - requestStartedAt,
-          has_session: isLoggedIn,
+          has_session: isLoggedInRef.current,
           error_message: error.message,
         });
         return;
@@ -360,7 +361,7 @@ function SwipePageContent() {
         status: 'success',
         source: 'videos_feed',
         response_ms: Date.now() - requestStartedAt,
-        has_session: isLoggedIn,
+        has_session: isLoggedInRef.current,
         videos_count: fetchedCards.length,
         swipes_until_next_embed: metadata?.swipes_until_next_embed,
         decision_count: metadata?.decision_count,
@@ -372,13 +373,13 @@ function SwipePageContent() {
         status: 'error',
         source: 'videos_feed',
         response_ms: Date.now() - requestStartedAt,
-        has_session: isLoggedIn,
+        has_session: isLoggedInRef.current,
         error_message: message,
       });
     } finally {
       setIsFetchingVideos(false);
     }
-  }, [isLoggedIn]);
+  }, []);
 
   useEffect(() => {
     const recalc = () => {
@@ -469,6 +470,7 @@ function SwipePageContent() {
 
   useEffect(() => {
     const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+      isLoggedInRef.current = !!session?.user;
       setIsLoggedIn(!!session?.user);
       setAuthReady(true);
       if (!!session?.user) {
@@ -570,8 +572,6 @@ function SwipePageContent() {
               console.error("Error calling embed-user:", error.message);
             } else {
               console.log("embed-user API call successful.");
-              // Optionally, refetch videos to get the new countdown
-              refetchVideos();
             }
           });
         }
