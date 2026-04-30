@@ -606,22 +606,27 @@ function SwipePageContent() {
       transition={{ duration: 0.3 }}
     >
       {isDebugMode && (
-        <div className="pointer-events-none fixed top-4 right-4 z-50 max-w-xs rounded-md border border-white/20 bg-black/75 px-3 py-2 text-[11px] font-mono text-white shadow-lg backdrop-blur">
-          <div className="mb-1 text-[9px] font-semibold uppercase tracking-[0.2em] text-amber-300/80">
+        <div className="pointer-events-none fixed top-4 right-4 z-50 max-w-[200px] rounded-md border border-white/20 bg-black/75 px-3 py-2 text-[11px] font-mono text-white shadow-lg backdrop-blur">
+          <div className="mb-1.5 text-[9px] font-semibold uppercase tracking-[0.2em] text-amber-300/80">
             debug mode
           </div>
-          {activeCard ? (
-            <div className="space-y-0.5 leading-tight">
-              <p>source: {activeCard.recommendationSource ?? 'videos_feed'}</p>
-              <p>
-                score: {typeof activeCard.recommendationScore === 'number'
-                  ? activeCard.recommendationScore.toFixed(4)
-                  : '—'}
-              </p>
+          <div className="space-y-0.5 leading-tight">
+            {activeCard ? (
+              <>
+                <p>source: <span className="text-cyan-300">{activeCard.recommendationSource ?? 'videos_feed'}</span></p>
+                <p>score: <span className="text-cyan-300">{typeof activeCard.recommendationScore === 'number' ? activeCard.recommendationScore.toFixed(4) : '—'}</span></p>
+                <p>model: <span className="text-cyan-300">{activeCard.recommendationModelVersion ?? '—'}</span></p>
+              </>
+            ) : (
+              <p className="text-red-400">カードなし</p>
+            )}
+            <div className="mt-1.5 border-t border-white/10 pt-1.5 space-y-0.5">
+              <p>deck: <span className="text-green-300">{cards.length - activeIndex}</span> / {cards.length}</p>
+              <p>decisions: <span className="text-green-300">{decisionCount}</span></p>
+              <p>embed in: <span className="text-green-300">{swipesUntilNextEmbed ?? '—'}</span></p>
+              <p>auth: <span className={isLoggedIn ? 'text-green-300' : 'text-red-400'}>{isLoggedIn ? 'in' : 'guest'}</span></p>
             </div>
-          ) : (
-            <p className="leading-tight">カードなし</p>
-          )}
+          </div>
         </div>
       )}
       <main
