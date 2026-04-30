@@ -15,7 +15,9 @@ export default withSentryConfig(nextConfig, {
   authToken: process.env.SENTRY_AUTH_TOKEN,
   // ビルド時のソースマップをサーバーに送信後、本番バンドルから除去
   widenClientFileUpload: true,
-  hideSourceMaps: true,
+  sourcemaps: {
+    deleteSourcemapsAfterUpload: true,
+  },
   disableLogger: true,
   automaticVercelMonitors: false,
 });
