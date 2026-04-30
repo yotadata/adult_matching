@@ -259,15 +259,15 @@ Deno.serve(async (req) => {
     let exploitIdx = 0
     let popIdx = 0
     let exploreIdx = 0
-    while (final.length < pageLimit) {
+    while (final.length < adjustedPageLimit) {
       if (exploitIdx < exploitation.length) {
         final.push(exploitation[exploitIdx++])
       }
-      if (final.length >= pageLimit) break
+      if (final.length >= adjustedPageLimit) break
       if (popIdx < popularity.length) {
         final.push(popularity[popIdx++])
       }
-      if (final.length >= pageLimit) break
+      if (final.length >= adjustedPageLimit) break
       if (exploreIdx < exploration.length) {
         final.push(exploration[exploreIdx++])
       }
@@ -276,13 +276,17 @@ Deno.serve(async (req) => {
       }
     }
 
-    if (final.length < pageLimit) {
+    if (final.length < adjustedPageLimit) {
       const remaining = [...exploitation.slice(exploitIdx), ...popularity.slice(popIdx), ...exploration.slice(exploreIdx)]
       for (const item of remaining) {
-        if (final.length >= pageLimit) break
+        if (final.length >= adjustedPageLimit) break
         final.push(item)
       }
     }
+
+    const finalExploitCount = final.filter(v => v.source === 'exploitation').length
+    const finalPopularityCount = final.filter(v => v.source === 'popularity').length
+    const finalExplorationCount = final.filter(v => v.source === 'exploration').length
 
     const EMBED_INTERVAL = 10
     const remainder = decisionCount % EMBED_INTERVAL
@@ -297,9 +301,9 @@ Deno.serve(async (req) => {
           popularity_ratio: adjustedPopularityRatio,
           exploration_ratio: Math.max(0, 1 - adjustedExploitationRatio - adjustedPopularityRatio),
           popularity_lookback_days: popularLookbackDays,
-          exploitation_returned: exploitation.length,
-          popularity_returned: popularity.length,
-          exploration_returned: exploration.length,
+          exploitation_returned: finalExploitCount,
+          popularity_returned: finalPopularityCount,
+          exploration_returned: finalExplorationCount,
         },
       })),
       metadata: {
