@@ -51,6 +51,34 @@ order by 1 desc
 limit 7
 """
 
+SOURCE_LIKE_RATE_QUERY = """
+select
+    recommendation_source,
+    count(*) filter (where decision_type = 'like') as likes,
+    count(*)                                        as total
+from public.user_video_decisions
+where created_at >= now() - interval '{days} days'
+  and recommendation_source is not null
+group by 1
+order by 1
+"""
+
+SCORE_CALIBRATION_QUERY = """
+select
+    case
+        when recommendation_score < 0.3 then '低 (0.0-0.3)'
+        when recommendation_score < 0.6 then '中 (0.3-0.6)'
+        else                                  '高 (0.6-1.0)'
+    end as score_bucket,
+    count(*) filter (where decision_type = 'like') as likes,
+    count(*)                                        as total
+from public.user_video_decisions
+where created_at >= now() - interval '{days} days'
+  and recommendation_score is not null
+group by 1
+order by 1
+"""
+
 
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(description="Audit recommendation KPIs")
@@ -76,6 +104,14 @@ def fetch_metrics(conn, window_days: int) -> dict:
         cur.execute(DAILY_QUERY.format(days=window_days))
         daily = [dict(r) for r in cur.fetchall()]
 
+    with conn.cursor() as cur:
+        cur.execute(SOURCE_LIKE_RATE_QUERY.format(days=window_days))
+        source_rows = [dict(r) for r in cur.fetchall()]
+
+    with conn.cursor() as cur:
+        cur.execute(SCORE_CALIBRATION_QUERY.format(days=window_days))
+        score_rows = [dict(r) for r in cur.fetchall()]
+
     likes = int(row.get("likes") or 0)
     nopes = int(row.get("nopes") or 0)
     total = int(row.get("total_decisions") or 0)
@@ -87,6 +123,24 @@ def fetch_metrics(conn, window_days: int) -> dict:
 
     avg_dau = sum(int(d.get("dau") or 0) for d in daily) / len(daily) if daily else 0.0
 
+    source_like_rates = {
+        r["recommendation_source"]: {
+            "likes": int(r["likes"] or 0),
+            "total": int(r["total"] or 0),
+            "like_rate": round(int(r["likes"] or 0) / int(r["total"]) if int(r["total"]) > 0 else 0.0, 4),
+        }
+        for r in source_rows
+    }
+
+    score_calibration = {
+        r["score_bucket"]: {
+            "likes": int(r["likes"] or 0),
+            "total": int(r["total"] or 0),
+            "like_rate": round(int(r["likes"] or 0) / int(r["total"]) if int(r["total"]) > 0 else 0.0, 4),
+        }
+        for r in score_rows
+    }
+
     return {
         "window_days": window_days,
         "likes": likes,
@@ -96,6 +150,8 @@ def fetch_metrics(conn, window_days: int) -> dict:
         "active_users": int(row.get("active_users") or 0),
         "recommended_like_rate": round(rec_like_rate, 4),
         "avg_dau": round(avg_dau, 1),
+        "source_like_rates": source_like_rates,
+        "score_calibration": score_calibration,
         "daily": [
             {
                 "day": str(d["day"]),
@@ -106,6 +162,31 @@ def fetch_metrics(conn, window_days: int) -> dict:
             for d in daily
         ],
     }
+
+
+def _fmt_source_lines(source_like_rates: dict) -> str:
+    source_labels = {
+        "exploitation": "個人推薦",
+        "popularity":   "人気",
+        "exploration":  "探索",
+    }
+    lines = []
+    for src, label in source_labels.items():
+        if src not in source_like_rates:
+            continue
+        d = source_like_rates[src]
+        lines.append(f"{label}: {d['like_rate']:.1%} ({d['likes']}/{d['total']}件)")
+    return "\n".join(lines) or "データなし"
+
+
+def _fmt_score_lines(score_calibration: dict) -> str:
+    lines = []
+    for bucket in ["低 (0.0-0.3)", "中 (0.3-0.6)", "高 (0.6-1.0)"]:
+        if bucket not in score_calibration:
+            continue
+        d = score_calibration[bucket]
+        lines.append(f"{bucket}: {d['like_rate']:.1%} ({d['total']}件)")
+    return "\n".join(lines) or "データなし"
 
 
 def build_discord_message(metrics: dict, alerts: list[str], args: argparse.Namespace) -> dict:
@@ -128,6 +209,8 @@ def build_discord_message(metrics: dict, alerts: list[str], args: argparse.Names
             {"name": "📊 全体 like 率", "value": like_rate_pct, "inline": True},
             {"name": "🤖 推薦 like 率", "value": rec_like_rate_pct, "inline": True},
             {"name": "👥 平均 DAU", "value": str(metrics["avg_dau"]), "inline": True},
+            {"name": "🎯 ソース別 like 率", "value": _fmt_source_lines(metrics["source_like_rates"]), "inline": False},
+            {"name": "📈 スコアキャリブレーション", "value": _fmt_score_lines(metrics["score_calibration"]), "inline": False},
             {"name": "📅 日別（直近5日）", "value": "\n".join(daily_lines) or "データなし", "inline": False},
             {"name": "⚠️ アラート", "value": alert_text, "inline": False},
         ],
@@ -180,6 +263,24 @@ def main() -> None:
     print(f"  推薦like率:  {metrics['recommended_like_rate']:.1%}")
     print(f"  平均DAU:     {metrics['avg_dau']}")
     print(f"  総判断数:    {metrics['total_decisions']:,}")
+
+    print("\n  [ソース別 like 率]")
+    source_labels = {"exploitation": "個人推薦", "popularity": "人気", "exploration": "探索"}
+    for src, label in source_labels.items():
+        d = metrics["source_like_rates"].get(src)
+        if d:
+            print(f"    {label}: {d['like_rate']:.1%} ({d['likes']}/{d['total']}件)")
+        else:
+            print(f"    {label}: データなし")
+
+    print("\n  [スコアキャリブレーション]")
+    for bucket in ["低 (0.0-0.3)", "中 (0.3-0.6)", "高 (0.6-1.0)"]:
+        d = metrics["score_calibration"].get(bucket)
+        if d:
+            print(f"    {bucket}: {d['like_rate']:.1%} ({d['total']}件)")
+        else:
+            print(f"    {bucket}: データなし")
+
     if alerts:
         print("\n⚠️ アラート:")
         for a in alerts:
