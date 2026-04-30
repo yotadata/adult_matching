@@ -84,13 +84,37 @@ export default async function TagPage(
 
   if (!tag) notFound();
 
-  const jsonLd = {
-    '@context': 'https://schema.org',
-    '@type': 'CollectionPage',
-    name: `${tag.name} 動画一覧`,
-    description: `「${tag.name}」ジャンルの動画一覧`,
-    url: `${SITE_URL}/tags/${id}`,
-  };
+  const tagUrl = `${SITE_URL}/tags/${id}`;
+
+  const jsonLd = [
+    {
+      '@context': 'https://schema.org',
+      '@type': 'CollectionPage',
+      name: `${tag.name} 動画一覧`,
+      description: `「${tag.name}」ジャンルの動画一覧`,
+      url: tagUrl,
+      ...(videos.length > 0 && {
+        mainEntity: {
+          '@type': 'ItemList',
+          itemListElement: videos.slice(0, 10).map((v, i) => ({
+            '@type': 'ListItem',
+            position: i + 1,
+            url: `${SITE_URL}/videos/${v.id}`,
+            name: v.title,
+          })),
+        },
+      }),
+    },
+    {
+      '@context': 'https://schema.org',
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        { '@type': 'ListItem', position: 1, name: 'ホーム', item: SITE_URL },
+        { '@type': 'ListItem', position: 2, name: 'ジャンル一覧', item: `${SITE_URL}/tags` },
+        { '@type': 'ListItem', position: 3, name: tag.name, item: tagUrl },
+      ],
+    },
+  ];
 
   return (
     <>
