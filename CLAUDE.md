@@ -7,6 +7,19 @@
 - `.env` ファイル（`docker/env/*.env`）は読み取り可能だが、Git にコミットしてはならない。
 - `ml/data/`, `ml/artifacts/` 配下の大容量ファイルは Git にコミットしない。
 
+## ブランチ・PR 運用
+
+作業を始める前に **必ず専用ブランチを切る**。`feature-kamiura` などの長命ブランチを使い回さない。
+
+```bash
+git checkout main && git pull
+git checkout -b fix/内容   # バグ修正
+git checkout -b feature/内容  # 新機能
+```
+
+- 1ブランチ = 1テーマ。完了したらすぐ PR を作成して main にマージする。
+- PR はマージ後にブランチを削除する。
+
 ## タスク完了時のコミット
 
 **各タスクが完了するたびに**コミットを行う（複数タスクをまとめてコミットしない）。
