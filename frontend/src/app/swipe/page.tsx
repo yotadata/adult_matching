@@ -20,6 +20,7 @@ interface VideoFromApi {
   description: string;
   external_id: string;
   thumbnail_url: string;
+  thumbnail_vertical_url?: string;
   sample_video_url?: string;
   preview_video_url?: string;
   product_url?: string;
@@ -341,6 +342,7 @@ function SwipePageContent() {
           sampleVideoUrl: normalizedSampleUrl || normalizedPreviewUrl,
           embedUrl: fanzaEmbedUrl,
           thumbnail_url: video.thumbnail_url,
+          thumbnailVerticalUrl: video.thumbnail_vertical_url,
           product_released_at: video.product_released_at,
           performers: video.performers,
           tags: video.tags,
