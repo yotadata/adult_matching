@@ -1,0 +1,63 @@
+name: "[ML] Ops - Audit Maker Bias"
+
+on:
+  workflow_dispatch:
+    inputs:
+      window_days:
+        description: '集計対象の日数'
+        required: false
+        default: '30'
+      threshold:
+        description: '偏り警告閾値（0.0〜1.0）'
+        required: false
+        default: '0.20'
+  schedule:
+    - cron: '0 3 1 * *' # 毎月1日 03:00 UTC
+
+jobs:
+  audit:
+    name: Maker Bias Audit
+    runs-on: ubuntu-latest
+    env:
+      REMOTE_DATABASE_URL: ${{ secrets.REMOTE_DATABASE_URL }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r scripts/audit_maker_bias/requirements.txt
+
+      - name: Run audit
+        env:
+          WINDOW_DAYS: ${{ github.event.inputs.window_days || '30' }}
+          THRESHOLD: ${{ github.event.inputs.threshold || '0.20' }}
+        run: |
+          python scripts/audit_maker_bias/audit_maker_bias.py \
+            --db-url "$REMOTE_DATABASE_URL" \
+            --window-days "$WINDOW_DAYS" \
+            --threshold "$THRESHOLD" \
+            --log-csv docs/ml/maker_bias_log.csv \
+            --summary-json docs/ml/maker_bias_latest.json \
+          && echo "BIAS_EXIT=0" >> "$GITHUB_ENV" \
+          || { code=$?; echo "BIAS_EXIT=$code" >> "$GITHUB_ENV"; }
+
+      - name: Upload bias log as artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: maker-bias-log-${{ github.run_id }}
+          path: |
+            docs/ml/maker_bias_log.csv
+            docs/ml/maker_bias_latest.json
+
+      - name: Report bias status
+        if: always()
+        run: |
+          if [[ "${BIAS_EXIT:-0}" == "2" ]]; then
+            echo "::warning::maker 偏りが閾値を超えています。docs/ml/maker_bias_latest.json を確認してください。"
+          fi
+          echo "Exit code: ${BIAS_EXIT:-0}"

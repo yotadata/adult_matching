@@ -161,4 +161,9 @@ if [[ "$RUN_RELEASE" == "true" ]]; then
     --run-id "$RUN_ID"
 fi
 
+echo "[ml-weekly] Audit: maker 偏り集計"
+AUDIT_MAKER_ENV_FILE="$ENV_FILE" \
+AUDIT_MAKER_LOG_CSV="docs/ml/maker_bias_log.csv" \
+  bash "$REPO_ROOT/scripts/audit_maker_bias/run.sh" || true
+
 echo "[ml-weekly] Completed."
