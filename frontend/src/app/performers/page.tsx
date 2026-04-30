@@ -27,14 +27,7 @@ export async function generateMetadata(
     title,
     description,
     alternates: { canonical: canonicalUrl },
-    openGraph: {
-      title,
-      description,
-      url: canonicalUrl,
-      siteName: SITE_NAME,
-      type: 'website',
-      locale: 'ja_JP',
-    },
+    openGraph: { title, description, url: canonicalUrl, siteName: SITE_NAME, type: 'website', locale: 'ja_JP' },
   };
 }
 
@@ -66,7 +59,6 @@ export default async function PerformersPage(
     url: `${SITE_URL}/performers`,
   };
 
-  // ページ番号リスト（省略あり）
   const pageNumbers = Array.from({ length: totalPages }, (_, i) => i + 1)
     .filter((p) => p === 1 || p === totalPages || Math.abs(p - page) <= 2)
     .reduce<(number | '...')[]>((acc, p, idx, arr) => {
@@ -83,43 +75,38 @@ export default async function PerformersPage(
       />
 
       <div className="max-w-5xl mx-auto px-4 py-6">
-        {/* パンくず */}
-        <nav className="text-xs text-gray-500 mb-4 flex flex-wrap gap-1">
-          <Link href="/" className="hover:text-gray-700">ホーム</Link>
+        <nav className="text-xs text-[#656d76] mb-4 flex flex-wrap gap-1">
+          <Link href="/" className="hover:text-[#8b949e]">ホーム</Link>
           <span>/</span>
-          <span className="text-gray-700">出演者一覧</span>
+          <span className="text-[#8b949e]">出演者一覧</span>
           {page > 1 && (
             <>
               <span>/</span>
-              <span className="text-gray-700">{page}ページ目</span>
+              <span className="text-[#8b949e]">{page}ページ目</span>
             </>
           )}
         </nav>
 
-        {/* ヘッダー */}
         <div className="mb-6">
-          <h1 className="text-xl font-bold text-gray-900 mb-1">
-            AV女優・出演者 一覧
-          </h1>
-          <p className="text-sm text-gray-600">
+          <h1 className="text-xl font-bold text-[#e6edf3] mb-1">AV女優・出演者 一覧</h1>
+          <p className="text-sm text-[#8b949e]">
             全 {total.toLocaleString()} 人
             {totalPages > 1 && `（${page} / ${totalPages} ページ）`}
           </p>
         </div>
 
-        {/* 出演者グリッド */}
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 mb-8">
           {performers.map((p) => (
             <Link
               key={p.id}
               href={`/performers/${p.id}`}
-              className="group flex flex-col items-center justify-center rounded-xl p-3 bg-white/80 backdrop-blur-sm border border-white/60 hover:bg-pink-50 hover:border-pink-300 transition-colors text-center shadow-sm"
+              className="group flex flex-col items-center justify-center rounded-xl p-3 bg-[#161b22] border border-[#30363d] hover:bg-[#21262d] hover:border-violet-700/50 transition-colors text-center"
             >
-              <span className="text-sm font-medium text-gray-800 group-hover:text-pink-700 leading-snug">
+              <span className="text-sm font-medium text-[#c9d1d9] group-hover:text-violet-300 leading-snug">
                 {p.name}
               </span>
               {p.video_count > 0 && (
-                <span className="mt-1 text-xs text-gray-500">
+                <span className="mt-1 text-xs text-[#656d76]">
                   {p.video_count} 作品
                 </span>
               )}
@@ -127,13 +114,12 @@ export default async function PerformersPage(
           ))}
         </div>
 
-        {/* ページネーション */}
         {totalPages > 1 && (
           <nav className="flex justify-center items-center gap-1.5 mb-10 flex-wrap">
             {page > 1 && (
               <Link
                 href={page - 1 === 1 ? '/performers' : `/performers?page=${page - 1}`}
-                className="px-3 py-2 rounded-lg bg-white/80 border border-gray-300 text-gray-700 text-sm font-medium hover:bg-white transition-colors shadow-sm"
+                className="px-3 py-2 rounded-lg bg-[#161b22] border border-[#30363d] text-[#c9d1d9] text-sm font-medium hover:bg-[#21262d] transition-colors"
               >
                 ← 前へ
               </Link>
@@ -141,15 +127,15 @@ export default async function PerformersPage(
 
             {pageNumbers.map((item, idx) =>
               item === '...' ? (
-                <span key={`ellipsis-${idx}`} className="px-2 py-2 text-gray-500 text-sm">…</span>
+                <span key={`ellipsis-${idx}`} className="px-2 py-2 text-[#656d76] text-sm">…</span>
               ) : (
                 <Link
                   key={item}
                   href={item === 1 ? '/performers' : `/performers?page=${item}`}
-                  className={`min-w-[2.25rem] px-3 py-2 rounded-lg border text-sm font-medium text-center transition-colors shadow-sm ${
+                  className={`min-w-[2.25rem] px-3 py-2 rounded-lg border text-sm font-medium text-center transition-colors ${
                     item === page
-                      ? 'bg-pink-500 text-white border-pink-500'
-                      : 'bg-white/80 border-gray-300 text-gray-700 hover:bg-white'
+                      ? 'bg-violet-600 text-white border-violet-600'
+                      : 'bg-[#161b22] border-[#30363d] text-[#c9d1d9] hover:bg-[#21262d]'
                   }`}
                 >
                   {item}
@@ -160,7 +146,7 @@ export default async function PerformersPage(
             {page < totalPages && (
               <Link
                 href={`/performers?page=${page + 1}`}
-                className="px-3 py-2 rounded-lg bg-white/80 border border-gray-300 text-gray-700 text-sm font-medium hover:bg-white transition-colors shadow-sm"
+                className="px-3 py-2 rounded-lg bg-[#161b22] border border-[#30363d] text-[#c9d1d9] text-sm font-medium hover:bg-[#21262d] transition-colors"
               >
                 次へ →
               </Link>
@@ -168,14 +154,13 @@ export default async function PerformersPage(
           </nav>
         )}
 
-        {/* CTA */}
-        <div className="py-6 border-t border-white/40 text-center space-y-2">
-          <p className="text-sm text-gray-600">
+        <div className="py-6 border-t border-[#30363d] text-center space-y-2">
+          <p className="text-sm text-[#8b949e]">
             スワイプするだけで、あなた好みの作品を AI が発掘します
           </p>
           <Link
             href="/swipe"
-            className="inline-block bg-purple-500 hover:bg-purple-600 text-white font-bold rounded-full px-8 py-3 text-sm transition-colors shadow"
+            className="inline-block bg-violet-600 hover:bg-violet-500 text-white font-bold rounded-full px-8 py-3 text-sm transition-colors"
           >
             無料で試してみる
           </Link>

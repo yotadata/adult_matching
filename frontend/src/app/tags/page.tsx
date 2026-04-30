@@ -19,11 +19,7 @@ export const metadata: Metadata = {
   },
 };
 
-type TagWithCount = {
-  id: string;
-  name: string;
-  video_count: number;
-};
+type TagWithCount = { id: string; name: string; video_count: number };
 
 async function getTagsWithCount(): Promise<TagWithCount[]> {
   const { data, error } = await supabase.rpc('get_tags_with_count');
@@ -34,7 +30,6 @@ async function getTagsWithCount(): Promise<TagWithCount[]> {
   return data as TagWithCount[];
 }
 
-// 動画数でタグを3段階に分類してフォントサイズに反映
 function tagSize(count: number, max: number): string {
   if (count >= max * 0.5) return 'text-base font-semibold';
   if (count >= max * 0.1) return 'text-sm font-medium';
@@ -61,33 +56,28 @@ export default async function TagsPage() {
       />
 
       <div className="max-w-5xl mx-auto px-4 py-6">
-        {/* パンくず */}
-        <nav className="text-xs text-gray-500 mb-4 flex flex-wrap gap-1">
-          <Link href="/" className="hover:text-gray-700">ホーム</Link>
+        <nav className="text-xs text-[#656d76] mb-4 flex flex-wrap gap-1">
+          <Link href="/" className="hover:text-[#8b949e]">ホーム</Link>
           <span>/</span>
-          <span className="text-gray-700">ジャンル一覧</span>
+          <span className="text-[#8b949e]">ジャンル一覧</span>
         </nav>
 
-        {/* ヘッダー */}
         <div className="mb-6">
-          <h1 className="text-xl font-bold text-gray-900 mb-1">
-            AV動画 ジャンル一覧
-          </h1>
-          <p className="text-sm text-gray-600">全 {tags.length} ジャンル</p>
+          <h1 className="text-xl font-bold text-[#e6edf3] mb-1">AV動画 ジャンル一覧</h1>
+          <p className="text-sm text-[#8b949e]">全 {tags.length} ジャンル</p>
         </div>
 
-        {/* タグクラウド */}
-        <div className="bg-white/70 backdrop-blur-sm rounded-2xl border border-white/60 shadow-sm p-5 mb-8">
+        <div className="bg-[#161b22] rounded-2xl border border-[#30363d] p-5 mb-8">
           <div className="flex flex-wrap gap-2">
             {tags.map((tag) => (
               <Link
                 key={tag.id}
                 href={`/tags/${tag.id}`}
-                className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-purple-50 hover:bg-purple-100 border border-purple-200 text-purple-800 hover:text-purple-900 transition-colors ${tagSize(tag.video_count, maxCount)}`}
+                className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-violet-900/20 hover:bg-violet-900/40 border border-violet-700/30 hover:border-violet-600/60 text-violet-300 hover:text-violet-200 transition-colors ${tagSize(tag.video_count, maxCount)}`}
               >
                 {tag.name}
                 {tag.video_count > 0 && (
-                  <span className="text-purple-400 font-normal text-xs">
+                  <span className="text-violet-500 font-normal text-xs">
                     {tag.video_count.toLocaleString()}
                   </span>
                 )}
@@ -96,14 +86,13 @@ export default async function TagsPage() {
           </div>
         </div>
 
-        {/* CTA */}
-        <div className="py-6 border-t border-white/40 text-center space-y-2">
-          <p className="text-sm text-gray-600">
+        <div className="py-6 border-t border-[#30363d] text-center space-y-2">
+          <p className="text-sm text-[#8b949e]">
             スワイプするだけで、あなた好みの作品を AI が発掘します
           </p>
           <Link
             href="/swipe"
-            className="inline-block bg-purple-500 hover:bg-purple-600 text-white font-bold rounded-full px-8 py-3 text-sm transition-colors shadow"
+            className="inline-block bg-violet-600 hover:bg-violet-500 text-white font-bold rounded-full px-8 py-3 text-sm transition-colors"
           >
             無料で試してみる
           </Link>

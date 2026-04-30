@@ -18,10 +18,7 @@ type TagVideo = {
   external_id: string;
 };
 
-type Tag = {
-  id: string;
-  name: string;
-};
+type Tag = { id: string; name: string };
 
 async function getTag(id: string): Promise<Tag | null> {
   const { data, error } = await supabase
@@ -72,11 +69,7 @@ export async function generateMetadata(
       type: 'website',
       locale: 'ja_JP',
     },
-    twitter: {
-      card: 'summary',
-      title,
-      description,
-    },
+    twitter: { card: 'summary', title, description },
   };
 }
 
@@ -108,30 +101,30 @@ export default async function TagPage(
 
       <div className="max-w-5xl mx-auto px-4 py-6">
         {/* パンくず */}
-        <nav className="text-xs text-gray-400 mb-4 flex flex-wrap gap-1">
-          <Link href="/" className="hover:text-gray-600">ホーム</Link>
+        <nav className="text-xs text-[#656d76] mb-4 flex flex-wrap gap-1">
+          <Link href="/" className="hover:text-[#8b949e]">ホーム</Link>
           <span>/</span>
-          <span className="text-gray-700">{tag.name}</span>
+          <Link href="/tags" className="hover:text-[#8b949e]">ジャンル一覧</Link>
+          <span>/</span>
+          <span className="text-[#8b949e]">{tag.name}</span>
         </nav>
 
-        {/* 見出し */}
         <div className="mb-6">
-          <h1 className="text-xl font-bold text-gray-900 mb-1">
+          <h1 className="text-xl font-bold text-[#e6edf3] mb-1">
             {tag.name} の動画一覧
           </h1>
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-[#8b949e]">
             全 {total.toLocaleString()} 作品
             {total > PAGE_SIZE && `（最新 ${PAGE_SIZE} 件を表示）`}
           </p>
         </div>
 
-        {/* 動画グリッド */}
         {videos.length > 0 ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 mb-10">
             {videos.map((v) => (
               <Link key={v.id} href={`/videos/${v.id}`} className="group block">
                 <div
-                  className="relative w-full rounded-lg overflow-hidden bg-gray-100"
+                  className="relative w-full rounded-lg overflow-hidden bg-[#21262d]"
                   style={{ paddingBottom: '65%' }}
                 >
                   {v.thumbnail_url ? (
@@ -143,16 +136,16 @@ export default async function TagPage(
                       className="object-cover group-hover:scale-105 transition-transform duration-200"
                     />
                   ) : (
-                    <div className="absolute inset-0 flex items-center justify-center text-gray-300 text-xs">
+                    <div className="absolute inset-0 flex items-center justify-center text-[#656d76] text-xs">
                       No image
                     </div>
                   )}
                 </div>
-                <p className="mt-1.5 text-xs text-gray-700 line-clamp-2 leading-snug group-hover:text-purple-600 transition-colors">
+                <p className="mt-1.5 text-xs text-[#8b949e] line-clamp-2 leading-snug group-hover:text-violet-400 transition-colors">
                   {v.title}
                 </p>
                 {v.product_released_at && (
-                  <p className="text-xs text-gray-400 mt-0.5">
+                  <p className="text-xs text-[#656d76] mt-0.5">
                     {new Date(v.product_released_at).toLocaleDateString('ja-JP')}
                   </p>
                 )}
@@ -160,17 +153,16 @@ export default async function TagPage(
             ))}
           </div>
         ) : (
-          <p className="text-sm text-gray-500 my-10">作品が見つかりませんでした。</p>
+          <p className="text-sm text-[#8b949e] my-10">作品が見つかりませんでした。</p>
         )}
 
-        {/* CTA */}
-        <div className="py-6 border-t text-center space-y-2">
-          <p className="text-sm text-gray-500">
+        <div className="py-6 border-t border-[#30363d] text-center space-y-2">
+          <p className="text-sm text-[#8b949e]">
             スワイプするだけで、あなた好みの作品を AI が発掘します
           </p>
           <Link
             href="/swipe"
-            className="inline-block bg-purple-500 hover:bg-purple-600 text-white font-bold rounded-full px-8 py-3 text-sm transition-colors"
+            className="inline-block bg-violet-600 hover:bg-violet-500 text-white font-bold rounded-full px-8 py-3 text-sm transition-colors"
           >
             無料で試してみる
           </Link>

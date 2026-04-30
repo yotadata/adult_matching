@@ -14,8 +14,8 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
   const router = useRouter();
   const pathname = usePathname();
   const isHome = pathname === '/';
-  const nonHomeGradient = 'linear-gradient(90deg, #ADB4E3 0%, #C8BAE3 33.333%, #F7BECE 66.666%, #F9B1C4 100%)';
-  const homeGradient = 'linear-gradient(90deg, #C4C8E3 0%, #D7D1E3 33.333%, #F7D7E0 66.666%, #F9C9D6 100%)';
+  const nonHomeGradient = '#0d1117';
+  const homeGradient = 'linear-gradient(135deg, #1a0d2e 0%, #160d25 33%, #2a1020 66%, #1e0d1a 100%)';
   const isMobile = useMediaQuery('(max-width: 639px)');
   const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
   const [authInitialized, setAuthInitialized] = useState(false);

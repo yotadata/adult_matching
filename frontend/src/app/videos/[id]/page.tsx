@@ -84,7 +84,6 @@ function resolveUrl(video: { affiliate_url?: string | null; product_url?: string
   return video.affiliate_url ?? video.product_url ?? '#';
 }
 
-// ── メタデータ ────────────────────────────────────────────────
 export async function generateMetadata(
   { params }: { params: Promise<{ id: string }> }
 ): Promise<Metadata> {
@@ -123,7 +122,6 @@ export async function generateMetadata(
   };
 }
 
-// ── ページ本体 ────────────────────────────────────────────────
 export default async function VideoDetailPage(
   { params }: { params: Promise<{ id: string }> }
 ) {
@@ -146,7 +144,6 @@ export default async function VideoDetailPage(
     ? video.description.slice(0, 120)
     : `${performers ? performers + '出演。' : ''}${tags ? 'ジャンル: ' + tags : ''}`;
 
-  // JSON-LD 構造化データ
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'Movie',
@@ -176,19 +173,19 @@ export default async function VideoDetailPage(
 
       <div className="max-w-4xl mx-auto px-4 py-6">
         {/* パンくず */}
-        <nav className="text-xs text-gray-400 mb-3 flex flex-wrap gap-1">
-          <Link href="/" className="hover:text-gray-600">ホーム</Link>
+        <nav className="text-xs text-[#656d76] mb-3 flex flex-wrap gap-1">
+          <Link href="/" className="hover:text-[#8b949e]">ホーム</Link>
           <span>/</span>
           {video.maker && (
             <>
-              <span className="text-gray-600">{video.maker}</span>
+              <span className="text-[#8b949e]">{video.maker}</span>
               <span>/</span>
             </>
           )}
-          <span className="text-gray-700 line-clamp-1">{video.title}</span>
+          <span className="text-[#8b949e] line-clamp-1">{video.title}</span>
         </nav>
 
-        <h1 className="text-lg font-bold mb-3 leading-snug text-gray-900">{video.title}</h1>
+        <h1 className="text-lg font-bold mb-3 leading-snug text-[#e6edf3]">{video.title}</h1>
 
         {/* 動画プレイヤー */}
         {fanzaEmbedUrl && (
@@ -208,12 +205,12 @@ export default async function VideoDetailPage(
           {/* 作品情報 */}
           <div className="sm:col-span-2 space-y-3">
             {/* メタ情報 */}
-            <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-gray-500">
+            <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-[#8b949e]">
               {video.product_released_at && (
                 <span className="flex items-center gap-1">
                   発売日: {new Date(video.product_released_at).toLocaleDateString('ja-JP')}
                   {isUpcoming && (
-                    <span className="ml-1 inline-flex rounded-full bg-amber-100 border border-amber-200 px-2 py-0.5 text-xs text-amber-700">
+                    <span className="ml-1 inline-flex rounded-full bg-amber-900/40 border border-amber-700/50 px-2 py-0.5 text-xs text-amber-400">
                       予約作品
                     </span>
                   )}
@@ -232,7 +229,7 @@ export default async function VideoDetailPage(
 
             {/* 説明文 */}
             {video.description && (
-              <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
+              <p className="text-sm text-[#c9d1d9] whitespace-pre-wrap leading-relaxed">
                 {video.description}
               </p>
             )}
@@ -240,13 +237,13 @@ export default async function VideoDetailPage(
             {/* 出演者 */}
             {video.performers.length > 0 && (
               <div className="text-sm">
-                <div className="text-gray-500 mb-1.5">出演者</div>
+                <div className="text-[#8b949e] mb-1.5">出演者</div>
                 <div className="flex flex-wrap gap-2">
                   {video.performers.map((p) => (
                     <Link
                       key={p.id}
                       href={`/performers/${p.id}`}
-                      className="px-2.5 py-1 rounded-full bg-pink-100 text-pink-700 text-xs font-medium hover:bg-pink-200 transition-colors"
+                      className="px-2.5 py-1 rounded-full bg-pink-900/30 border border-pink-700/40 text-pink-300 text-xs font-medium hover:bg-pink-900/50 hover:border-pink-600/60 transition-colors"
                     >
                       {p.name}
                     </Link>
@@ -258,13 +255,13 @@ export default async function VideoDetailPage(
             {/* タグ */}
             {video.tags.length > 0 && (
               <div className="text-sm">
-                <div className="text-gray-500 mb-1.5">ジャンル</div>
+                <div className="text-[#8b949e] mb-1.5">ジャンル</div>
                 <div className="flex flex-wrap gap-2">
                   {video.tags.map((t) => (
                     <Link
                       key={t.id}
                       href={`/tags/${t.id}`}
-                      className="px-2.5 py-1 rounded-full bg-purple-100 text-purple-700 text-xs font-medium hover:bg-purple-200 transition-colors"
+                      className="px-2.5 py-1 rounded-full bg-violet-900/30 border border-violet-700/40 text-violet-300 text-xs font-medium hover:bg-violet-900/50 hover:border-violet-600/60 transition-colors"
                     >
                       {t.name}
                     </Link>
@@ -276,7 +273,7 @@ export default async function VideoDetailPage(
 
           {/* CTA サイドバー */}
           <div className="space-y-3">
-            <div className="border rounded-xl p-4 bg-gray-50 sticky top-4">
+            <div className="border border-[#30363d] rounded-xl p-4 bg-[#161b22] sticky top-4">
               {video.thumbnail_url && (
                 <div className="relative w-full mb-3 rounded-lg overflow-hidden" style={{ paddingBottom: '56.25%' }}>
                   <Image
@@ -292,21 +289,20 @@ export default async function VideoDetailPage(
                 href={productUrl}
                 target="_blank"
                 rel="noopener noreferrer nofollow"
-                className="block w-full text-center bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-lg py-3 text-sm transition-colors"
+                className="block w-full text-center bg-amber-500 hover:bg-amber-400 text-white font-bold rounded-lg py-3 text-sm transition-colors"
               >
                 FANZA で視聴する
               </Link>
-              <p className="text-xs text-gray-400 mt-2 text-center">外部サイトに移動します</p>
+              <p className="text-xs text-[#656d76] mt-2 text-center">外部サイトに移動します</p>
             </div>
 
-            {/* 性癖ラボで探す CTA */}
-            <div className="border rounded-xl p-4 bg-purple-50">
-              <p className="text-xs text-gray-600 mb-2">
+            <div className="border border-[#30363d] rounded-xl p-4 bg-[#161b22]">
+              <p className="text-xs text-[#8b949e] mb-2">
                 この作品が好きなら、あなたの好みに合った作品を AI が提案します。
               </p>
               <Link
                 href="/swipe"
-                className="block w-full text-center bg-purple-500 hover:bg-purple-600 text-white font-bold rounded-lg py-2.5 text-sm transition-colors"
+                className="block w-full text-center bg-violet-600 hover:bg-violet-500 text-white font-bold rounded-lg py-2.5 text-sm transition-colors"
               >
                 好みの作品を探す →
               </Link>
@@ -317,7 +313,7 @@ export default async function VideoDetailPage(
         {/* 類似作品 */}
         {similar.length > 0 && (
           <section className="mt-10">
-            <h2 className="text-base font-bold mb-4 text-gray-800">
+            <h2 className="text-base font-bold mb-4 text-[#e6edf3]">
               この作品に似た作品
             </h2>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -327,7 +323,7 @@ export default async function VideoDetailPage(
                   href={`/videos/${s.id}`}
                   className="group block"
                 >
-                  <div className="relative w-full rounded-lg overflow-hidden bg-gray-100" style={{ paddingBottom: '65%' }}>
+                  <div className="relative w-full rounded-lg overflow-hidden bg-[#21262d]" style={{ paddingBottom: '65%' }}>
                     {s.thumbnail_url ? (
                       <Image
                         src={s.thumbnail_url}
@@ -337,12 +333,12 @@ export default async function VideoDetailPage(
                         className="object-cover group-hover:scale-105 transition-transform duration-200"
                       />
                     ) : (
-                      <div className="absolute inset-0 flex items-center justify-center text-gray-300 text-xs">
+                      <div className="absolute inset-0 flex items-center justify-center text-[#656d76] text-xs">
                         No image
                       </div>
                     )}
                   </div>
-                  <p className="mt-1.5 text-xs text-gray-700 line-clamp-2 leading-snug group-hover:text-purple-600 transition-colors">
+                  <p className="mt-1.5 text-xs text-[#8b949e] line-clamp-2 leading-snug group-hover:text-violet-400 transition-colors">
                     {s.title}
                   </p>
                 </Link>
@@ -352,13 +348,13 @@ export default async function VideoDetailPage(
         )}
 
         {/* 内部誘導フッター */}
-        <div className="mt-10 py-6 border-t text-center space-y-2">
-          <p className="text-sm text-gray-500">
+        <div className="mt-10 py-6 border-t border-[#30363d] text-center space-y-2">
+          <p className="text-sm text-[#8b949e]">
             スワイプするだけで、あなた好みの作品を AI が発掘します
           </p>
           <Link
             href="/swipe"
-            className="inline-block bg-purple-500 hover:bg-purple-600 text-white font-bold rounded-full px-8 py-3 text-sm transition-colors"
+            className="inline-block bg-violet-600 hover:bg-violet-500 text-white font-bold rounded-full px-8 py-3 text-sm transition-colors"
           >
             無料で試してみる
           </Link>
