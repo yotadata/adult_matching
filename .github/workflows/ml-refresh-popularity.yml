@@ -1,0 +1,22 @@
+name: "[ML] Ops - Refresh Popularity Matview"
+
+on:
+  workflow_dispatch: {}
+  schedule:
+    - cron: '30 0 * * *' # 毎日 00:30 UTC（JST 09:30）
+
+jobs:
+  refresh:
+    name: Refresh video_popularity_daily
+    runs-on: ubuntu-latest
+    env:
+      REMOTE_DATABASE_URL: ${{ secrets.REMOTE_DATABASE_URL }}
+    steps:
+      - name: Install psql client
+        run: sudo apt-get install -y postgresql-client
+
+      - name: Refresh materialized view
+        run: |
+          psql "$REMOTE_DATABASE_URL" \
+            -c "refresh materialized view concurrently public.video_popularity_daily;" \
+            -c "select count(*), min(d), max(d) from public.video_popularity_daily;"
