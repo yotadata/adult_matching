@@ -6,8 +6,6 @@
 --   推薦に最新の好みが反映される。
 --   user_embeddings はいいねがゼロの場合のフォールバックとして残す。
 
-drop function if exists public.get_videos_recommendations(uuid, int);
-
 create or replace function public.get_videos_recommendations(user_uuid uuid, page_limit int default 20)
 returns table (
   id uuid,
