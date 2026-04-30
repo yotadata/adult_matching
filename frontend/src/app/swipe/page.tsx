@@ -44,9 +44,23 @@ interface GuestDecision {
   recommendation_type?: string | null;
 }
 
+interface UserStatsBucket {
+  likes: number;
+  total: number;
+  like_rate: number;
+}
+
+interface UserStats {
+  window: number;
+  like_rate: number;
+  by_source: Partial<Record<'exploitation' | 'popularity' | 'exploration', UserStatsBucket>>;
+  by_score: Partial<Record<'low' | 'mid' | 'high', UserStatsBucket>>;
+}
+
 interface VideosFeedMetadata {
   swipes_until_next_embed: number;
   decision_count: number;
+  user_stats: UserStats | null;
 }
 
 const ORIGINAL_GRADIENT = 'linear-gradient(135deg, #1a0d2e 0%, #160d25 33%, #2a1020 66%, #1e0d1a 100%)';
@@ -78,6 +92,7 @@ function SwipePageContent() {
   const { height: windowHeight } = useWindowSize();
   const [cardWidth, setCardWidth] = useState<number | undefined>(400);
   const [swipesUntilNextEmbed, setSwipesUntilNextEmbed] = useState<number | null>(null);
+  const [userStats, setUserStats] = useState<UserStats | null>(null);
   const { decisionCount, incrementDecisionCount } = useDecisionCount();
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
   const isLoggedInRef = useRef<boolean>(false);
@@ -327,6 +342,7 @@ function SwipePageContent() {
 
       if (metadata) {
         setSwipesUntilNextEmbed(metadata.swipes_until_next_embed);
+        setUserStats(metadata.user_stats ?? null);
       }
 
       const normalizeHttps = (u?: string) => u?.startsWith('http://') ? u.replace('http://', 'https://') : u;
@@ -652,6 +668,34 @@ function SwipePageContent() {
                 <p>embed in: <span className="text-green-300">{swipesUntilNextEmbed ?? '—'}</span></p>
                 <p>auth: <span className={isLoggedIn ? 'text-green-300' : 'text-red-400'}>{isLoggedIn ? 'in' : 'guest'}</span></p>
               </div>
+              {userStats && (
+                <div className="mt-1.5 border-t border-white/10 pt-1.5 space-y-0.5">
+                  <p className="text-[9px] uppercase tracking-widest text-amber-300/60">好み適合度 (直近{userStats.window}件)</p>
+                  <p>like率: <span className={userStats.like_rate >= 0.4 ? 'text-green-300' : userStats.like_rate >= 0.25 ? 'text-yellow-300' : 'text-red-400'}>{(userStats.like_rate * 100).toFixed(0)}%</span></p>
+                  <div className="text-[10px] space-y-0.5">
+                    {(['exploitation', 'popularity', 'exploration'] as const).map(src => {
+                      const d = userStats.by_source[src];
+                      if (!d) return null;
+                      const label = src === 'exploitation' ? '個人' : src === 'popularity' ? '人気' : '探索';
+                      const color = src === 'exploitation' ? 'text-violet-300' : src === 'popularity' ? 'text-yellow-300' : 'text-gray-400';
+                      return (
+                        <p key={src}><span className={color}>{label}</span>: {(d.like_rate * 100).toFixed(0)}% <span className="text-white/40">({d.likes}/{d.total})</span></p>
+                      );
+                    })}
+                  </div>
+                  <div className="text-[10px] space-y-0.5 mt-0.5">
+                    {(['low', 'mid', 'high'] as const).map(bucket => {
+                      const d = userStats.by_score[bucket];
+                      if (!d) return null;
+                      const label = bucket === 'low' ? '低' : bucket === 'mid' ? '中' : '高';
+                      const color = bucket === 'high' ? 'text-green-300' : bucket === 'mid' ? 'text-yellow-300' : 'text-red-400';
+                      return (
+                        <p key={bucket}>スコア<span className={color}>{label}</span>: {(d.like_rate * 100).toFixed(0)}% <span className="text-white/40">({d.total}件)</span></p>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         );
