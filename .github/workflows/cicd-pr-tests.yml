@@ -2,11 +2,13 @@ name: "[CiCd] Ops - PR Test Suite"
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened, labeled]
+    types: [labeled]
     branches:
       - main
       - develop
   workflow_dispatch: {}
+
+# ci:run-tests ラベルが付いた場合のみ実行する
 
 permissions:
   contents: read
@@ -18,6 +20,7 @@ concurrency:
 jobs:
   migration_tests:
     name: Migration Tests
+    if: github.event_name == 'workflow_dispatch' || github.event.label.name == 'ci:run-tests'
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -97,6 +100,7 @@ jobs:
 
   function_tests:
     name: Supabase Function Tests
+    if: github.event_name == 'workflow_dispatch' || github.event.label.name == 'ci:run-tests'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -121,6 +125,7 @@ jobs:
 
   frontend_tests:
     name: Frontend Tests
+    if: github.event_name == 'workflow_dispatch' || github.event.label.name == 'ci:run-tests'
     runs-on: ubuntu-latest
     env:
       NEXT_TELEMETRY_DISABLED: 1
@@ -157,7 +162,7 @@ jobs:
   discord_notify:
     name: Notify Discord (CI/CD)
     needs: [migration_tests, function_tests, frontend_tests]
-    if: ${{ always() }}
+    if: always() && (github.event_name == 'workflow_dispatch' || github.event.label.name == 'ci:run-tests')
     runs-on: ubuntu-latest
     steps:
       - name: Notify Discord
