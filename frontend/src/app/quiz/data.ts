@@ -152,7 +152,7 @@ export const QUIZ_TYPES: Record<QuizTypeKey, QuizType> = {
     color: '#FF6B6B', accent: '#C0392B',
   },
   snpl: {
-    key: 'snpl', name: 'じわ攻め職人', emoji: '🧊',
+    key: 'snpl', name: '確実に落とす職人', emoji: '🧊',
     tagline: '急がない、でも確実に相手を落とす',
     description: '自分がコントロールする側でいたいけど、焦らない。じっくりペースを作って、気づいたら相手が夢中になってる。日常の中でさりげなく主導権を握るのが得意。',
     color: '#4ECDC4', accent: '#1A9B8C',
@@ -194,7 +194,7 @@ export const QUIZ_TYPES: Record<QuizTypeKey, QuizType> = {
     color: '#6C5CE7', accent: '#4A3AB5',
   },
   mnph: {
-    key: 'mnph', name: '尽くしすぎ注意報', emoji: '🌿',
+    key: 'mnph', name: '献身体質の沼らせ屋', emoji: '🌿',
     tagline: '相手が喜ぶことが、自分の快感になる',
     description: '相手の反応を見るのが何より好き。日常的な場面で、相手の身体的な満足を引き出すことに強い充実感を覚える。欲求の頻度も高く、尽くす回数も多い。気づいたらやりすぎてる。',
     color: '#55EFC4', accent: '#00B894',
