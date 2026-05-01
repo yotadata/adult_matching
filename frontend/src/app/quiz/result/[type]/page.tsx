@@ -35,7 +35,7 @@ function ResultContent({ typeKey }: { typeKey: QuizTypeKey }) {
   const quizType = QUIZ_TYPES[typeKey] ?? QUIZ_TYPES['sneh'];
   const shareText = `私の性癖16タイプは「${quizType.name}」でした！${quizType.tagline}\n\nあなたは？👇`;
   const scoresParam = searchParams.get('scores') ?? '';
-  const shareUrl = `https://seihekilab.com/quiz/result/${typeKey}?gender=${gender}&scores=${scoresParam}`;
+  const shareUrl = `https://seihekilab.com/quiz/result/${typeKey}?scores=${scoresParam}`;
 
   const axes: { axis: Axis; pct: number }[] = (['ds', 'nx', 'pe', 'hl'] as Axis[]).map((axis) => ({
     axis,
@@ -69,7 +69,7 @@ function ResultContent({ typeKey }: { typeKey: QuizTypeKey }) {
         }}
       >
         {/* カラーヘッダー */}
-        <div className="relative h-64 flex items-center justify-center" style={{ background: quizType.color }}>
+        <div className="relative h-72 flex items-end justify-center pb-4" style={{ background: quizType.color }}>
           <div className="absolute inset-0 rounded-t-3xl" style={{ background: 'rgba(255,255,255,0.25)' }} />
           <div className="absolute inset-2 rounded-2xl" style={{ background: `${quizType.accent}10`, boxShadow: `inset 0 2px 8px ${quizType.accent}22` }} />
           <div className="absolute bottom-0 left-0 right-0 h-8" style={{ background: '#fffdf8', clipPath: 'ellipse(60% 100% at 50% 100%)' }} />
