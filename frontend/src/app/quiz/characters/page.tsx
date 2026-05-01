@@ -69,8 +69,8 @@ export default function CharactersPage() {
                       <Image
                         src={`/quiz/${key}.png`}
                         alt={t.name}
-                        width={128}
-                        height={128}
+                        width={152}
+                        height={152}
                         className="relative object-contain"
                       />
                     </div>
