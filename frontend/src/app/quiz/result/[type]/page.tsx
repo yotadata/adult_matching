@@ -4,6 +4,7 @@ import { useSearchParams } from 'next/navigation';
 import { useRouter } from 'next/navigation';
 import { Suspense } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { QUIZ_TYPES, AXIS_META, QuizTypeKey, Axis } from '../../data';
 
 export default async function ResultPage({ params }: { params: Promise<{ type: string }> }) {
@@ -67,10 +68,16 @@ function ResultContent({ typeKey }: { typeKey: QuizTypeKey }) {
         }}
       >
         {/* カラーヘッダー */}
-        <div className="relative h-40 flex items-center justify-center" style={{ background: quizType.color }}>
+        <div className="relative h-48 flex items-center justify-center" style={{ background: quizType.color }}>
           <div className="absolute inset-2 rounded-2xl" style={{ background: `${quizType.accent}20`, boxShadow: `inset 0 2px 8px ${quizType.accent}44` }} />
           <div className="absolute bottom-0 left-0 right-0 h-8" style={{ background: '#fffdf8', clipPath: 'ellipse(60% 100% at 50% 100%)' }} />
-          <span className="relative text-6xl drop-shadow-lg">{quizType.emoji}</span>
+          <Image
+            src={`/quiz/${typeKey}.png`}
+            alt={quizType.name}
+            width={140}
+            height={140}
+            className="relative drop-shadow-lg object-contain"
+          />
         </div>
 
         <div className="px-6 pt-4 pb-6">

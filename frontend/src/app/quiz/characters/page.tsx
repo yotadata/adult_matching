@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import type { Metadata } from 'next';
 import { QUIZ_TYPES, QuizTypeKey } from '../data';
 
@@ -55,7 +56,7 @@ export default function CharactersPage() {
                   >
                     {/* カラーヘッダー */}
                     <div
-                      className="h-16 flex items-center justify-center relative"
+                      className="h-24 flex items-center justify-center relative"
                       style={{ background: t.color }}
                     >
                       <div
@@ -65,7 +66,13 @@ export default function CharactersPage() {
                           clipPath: 'ellipse(60% 100% at 50% 100%)',
                         }}
                       />
-                      <span className="text-3xl relative">{t.emoji}</span>
+                      <Image
+                        src={`/quiz/${key}.png`}
+                        alt={t.name}
+                        width={72}
+                        height={72}
+                        className="relative object-contain drop-shadow"
+                      />
                     </div>
 
                     {/* テキスト */}
