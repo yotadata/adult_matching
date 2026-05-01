@@ -39,7 +39,7 @@ export default function QuizPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-4 py-12"
+    <div className="min-h-[calc(100vh-56px)] flex flex-col items-center justify-center px-4 py-12"
       style={{ background: 'linear-gradient(135deg, #ffecd2 0%, #fcb69f 50%, #ffd1dc 100%)' }}>
 
       {/* ヘッダー */}

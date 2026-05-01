@@ -42,7 +42,7 @@ function ResultContent({ typeKey }: { typeKey: QuizTypeKey }) {
 
   return (
     <div
-      className="min-h-screen flex flex-col items-center justify-center px-4 py-12"
+      className="min-h-[calc(100vh-56px)] flex flex-col items-center justify-center px-4 py-12"
       style={{ background: `linear-gradient(135deg, ${quizType.color}33 0%, ${quizType.color}22 50%, #ffd1dc33 100%)` }}
     >
       <p className="text-xs font-bold tracking-[0.3em] text-gray-500 uppercase mb-4">診断結果</p>

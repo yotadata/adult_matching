@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import QuizHeader from './QuizHeader';
 
 export const metadata: Metadata = {
   title: '性癖パーソナリティ診断 | 性癖ラボ',
@@ -18,5 +19,10 @@ export const metadata: Metadata = {
 };
 
 export default function QuizLayout({ children }: { children: React.ReactNode }) {
-  return children;
+  return (
+    <div className="min-h-screen" style={{ background: '#fff8f0' }}>
+      <QuizHeader />
+      {children}
+    </div>
+  );
 }
