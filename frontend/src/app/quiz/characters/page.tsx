@@ -59,6 +59,7 @@ export default function CharactersPage() {
                       className="h-44 flex items-center justify-center relative"
                       style={{ background: t.color }}
                     >
+                      <div className="absolute inset-0" style={{ background: 'rgba(255,255,255,0.3)' }} />
                       <div
                         className="absolute bottom-0 left-0 right-0 h-4"
                         style={{
@@ -72,6 +73,7 @@ export default function CharactersPage() {
                         width={152}
                         height={152}
                         className="relative object-contain"
+                        style={{ filter: 'drop-shadow(0 4px 10px rgba(0,0,0,0.18))' }}
                       />
                     </div>
 

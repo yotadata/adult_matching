@@ -69,7 +69,8 @@ function ResultContent({ typeKey }: { typeKey: QuizTypeKey }) {
       >
         {/* カラーヘッダー */}
         <div className="relative h-64 flex items-center justify-center" style={{ background: quizType.color }}>
-          <div className="absolute inset-2 rounded-2xl" style={{ background: `${quizType.accent}20`, boxShadow: `inset 0 2px 8px ${quizType.accent}44` }} />
+          <div className="absolute inset-0 rounded-t-3xl" style={{ background: 'rgba(255,255,255,0.25)' }} />
+          <div className="absolute inset-2 rounded-2xl" style={{ background: `${quizType.accent}10`, boxShadow: `inset 0 2px 8px ${quizType.accent}22` }} />
           <div className="absolute bottom-0 left-0 right-0 h-8" style={{ background: '#fffdf8', clipPath: 'ellipse(60% 100% at 50% 100%)' }} />
           <Image
             src={`/quiz/${typeKey}.png`}
@@ -77,6 +78,7 @@ function ResultContent({ typeKey }: { typeKey: QuizTypeKey }) {
             width={260}
             height={260}
             className="relative object-contain"
+            style={{ filter: 'drop-shadow(0 6px 16px rgba(0,0,0,0.2))' }}
           />
         </div>
 
