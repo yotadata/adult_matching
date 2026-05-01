@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 
 const AXES = [
   {
-    label: '支配（S） ⇄ 奉仕（M）',
+    label: '支配 ⇄ 奉仕',
     keys: ['S', 'M'],
     colors: ['#FF6B6B', '#55EFC4'],
     desc: '性的な場面でリードしコントロールしたいか、相手に委ねて従うことに快感を感じるか。',
@@ -61,7 +61,7 @@ export default function AboutPage() {
                 boxShadow: '0 2px 0 #e8c9a0, 0 4px 12px rgba(100,50,0,0.06)',
               }}
             >
-              <div className="flex items-center gap-2 mb-2">
+              <div className="flex items-center justify-center gap-2 mb-2">
                 <span
                   className="text-[11px] font-black px-2 py-0.5 rounded-full text-white"
                   style={{ background: axis.colors[0] }}
@@ -70,7 +70,7 @@ export default function AboutPage() {
                 </span>
                 <span className="text-[13px] font-black text-[#5c2e00]">{axis.label}</span>
                 <span
-                  className="text-[11px] font-black px-2 py-0.5 rounded-full text-white ml-auto"
+                  className="text-[11px] font-black px-2 py-0.5 rounded-full text-white"
                   style={{ background: axis.colors[1] }}
                 >
                   {axis.keys[1]}
