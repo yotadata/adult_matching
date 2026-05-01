@@ -27,8 +27,8 @@ export default function CharactersPage() {
     <div className="max-w-lg mx-auto px-4 py-10">
 
       <div className="text-center mb-8">
-        <h1 className="text-2xl font-black text-[#5c2e00] mb-2">キャラクター一覧</h1>
-        <p className="text-sm text-[#7a4a1a]">全16タイプを紹介します。あなたはどれ？</p>
+        <h1 className="text-3xl font-black text-[#5c2e00] mb-2">キャラクター一覧</h1>
+        <p className="text-base text-[#7a4a1a]">全16タイプを紹介します。あなたはどれ？</p>
       </div>
 
       {GROUP_LABELS.map((group) => {
@@ -37,7 +37,7 @@ export default function CharactersPage() {
           <div key={group.label} className="mb-8">
             <div className="flex items-center gap-2 mb-3">
               <div className="h-3 w-3 rounded-full" style={{ background: group.color }} />
-              <h2 className="text-[11px] font-black tracking-[0.25em] uppercase" style={{ color: group.color }}>
+              <h2 className="text-[13px] font-black tracking-[0.25em] uppercase" style={{ color: group.color }}>
                 {group.label}
               </h2>
             </div>
@@ -90,10 +90,10 @@ export default function CharactersPage() {
                           </span>
                         ))}
                       </div>
-                      <p className="text-[13px] font-black text-[#3d1a00] leading-tight mb-1">
+                      <p className="text-[15px] font-black text-[#3d1a00] leading-tight mb-1">
                         {t.name}
                       </p>
-                      <p className="text-[11px] text-[#7a4a1a] leading-snug line-clamp-2">
+                      <p className="text-[12px] text-[#7a4a1a] leading-snug line-clamp-2">
                         {t.tagline}
                       </p>
                     </div>
