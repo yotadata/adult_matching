@@ -34,7 +34,8 @@ function ResultContent({ typeKey }: { typeKey: QuizTypeKey }) {
 
   const quizType = QUIZ_TYPES[typeKey] ?? QUIZ_TYPES['sneh'];
   const shareText = `私の性癖パーソナリティは「${quizType.name}」でした！${quizType.tagline}\n\nあなたは？👇`;
-  const shareUrl = `https://seihekilab.com/quiz/result/${typeKey}`;
+  const scoresParam = searchParams.get('scores') ?? '';
+  const shareUrl = `https://seihekilab.com/quiz/result/${typeKey}?gender=${gender}&scores=${scoresParam}`;
 
   const axes: { axis: Axis; pct: number }[] = (['ds', 'nx', 'pe', 'hl'] as Axis[]).map((axis) => ({
     axis,
