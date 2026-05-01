@@ -2,8 +2,8 @@ import Link from 'next/link';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'この診断とは | 性癖パーソナリティ診断',
-  description: '性癖パーソナリティ診断の4つの軸と16タイプについて解説します。',
+  title: 'この診断とは | 性癖16タイプ診断',
+  description: '性癖16タイプ診断の4つの軸と16タイプについて解説します。',
 };
 
 const AXES = [
@@ -42,7 +42,7 @@ export default function AboutPage() {
         <p className="text-4xl mb-4">🧬</p>
         <h1 className="text-3xl font-black text-[#5c2e00] mb-3">この診断とは？</h1>
         <p className="text-base text-[#7a4a1a] leading-relaxed">
-          性癖パーソナリティ診断は、あなたの欲求・興奮のパターンを<br />
+          性癖16タイプ診断は、あなたの欲求・興奮のパターンを<br />
           4つの軸から分析する16タイプ診断です。<br />
           8つの質問に答えるだけで、自分のタイプがわかります。
         </p>

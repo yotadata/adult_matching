@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 
 export default function QuizHeader() {
@@ -17,9 +18,9 @@ export default function QuizHeader() {
       <div className="max-w-lg mx-auto px-4 h-14 flex items-center justify-between">
         {/* ロゴ */}
         <Link href="/quiz" className="flex items-center gap-2">
-          <span className="text-xl">🧬</span>
-          <span className="font-black text-[15px] text-[#5c2e00] leading-tight">
-            性癖パーソナリティ診断
+          <Image src="/seiheki_lab_header.png" alt="性癖ラボ" width={100} height={28} className="object-contain" />
+          <span className="font-black text-[13px] text-[#5c2e00] leading-tight border-l border-[#e8c9a0] pl-2">
+            16タイプ診断
           </span>
         </Link>
 

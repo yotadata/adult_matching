@@ -33,7 +33,7 @@ function ResultContent({ typeKey }: { typeKey: QuizTypeKey }) {
   })();
 
   const quizType = QUIZ_TYPES[typeKey] ?? QUIZ_TYPES['sneh'];
-  const shareText = `私の性癖パーソナリティは「${quizType.name}」でした！${quizType.tagline}\n\nあなたは？👇`;
+  const shareText = `私の性癖16タイプは「${quizType.name}」でした！${quizType.tagline}\n\nあなたは？👇`;
   const scoresParam = searchParams.get('scores') ?? '';
   const shareUrl = `https://seihekilab.com/quiz/result/${typeKey}?gender=${gender}&scores=${scoresParam}`;
 
@@ -44,7 +44,7 @@ function ResultContent({ typeKey }: { typeKey: QuizTypeKey }) {
 
   const shareToX = () => {
     window.open(
-      `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}&hashtags=性癖パーソナリティ診断`,
+      `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}&hashtags=性癖16タイプ診断`,
       '_blank', 'noopener'
     );
   };
@@ -138,7 +138,7 @@ function ResultContent({ typeKey }: { typeKey: QuizTypeKey }) {
             })}
           </div>
 
-          <p className="text-[10px] text-gray-200 font-bold tracking-widest mt-5 text-right">性癖パーソナリティ診断</p>
+          <p className="text-[10px] text-gray-200 font-bold tracking-widest mt-5 text-right">性癖16タイプ診断</p>
         </div>
       </div>
 
