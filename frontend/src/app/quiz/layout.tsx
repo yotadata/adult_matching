@@ -1,6 +1,5 @@
 import type { Metadata } from 'next';
 import Image from 'next/image';
-import Link from 'next/link';
 import QuizHeader from './QuizHeader';
 
 export const metadata: Metadata = {
@@ -26,9 +25,7 @@ export default function QuizLayout({ children }: { children: React.ReactNode }) 
       <QuizHeader />
       <div className="flex-1">{children}</div>
       <footer className="flex flex-col items-center py-8 gap-3 border-t border-[#e8c9a0]/40">
-        <Link href="/">
-          <Image src="/seiheki_lab_header.png" alt="性癖ラボ" width={160} height={44} className="object-contain opacity-80" />
-        </Link>
+        <Image src="/seiheki_lab_header.png" alt="性癖ラボ" width={160} height={44} className="object-contain opacity-80" />
         <p className="text-[11px] text-[#b5541a]/50 font-bold">© 性癖ラボ</p>
       </footer>
     </div>
