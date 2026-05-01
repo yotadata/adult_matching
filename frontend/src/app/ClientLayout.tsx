@@ -49,8 +49,11 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
     };
   }, []);
 
+  const isQuizPath = pathname?.startsWith('/quiz') ?? false;
+
   useEffect(() => {
     if (!authInitialized || isLoggedIn === null || !pathname) return;
+    if (pathname.startsWith('/quiz')) return; // 診断ページは認証不要・リダイレクトなし
     const isSwipePath = pathname.startsWith('/swipe');
     const isAboutPage = pathname === '/about';
     const isSearchPage = pathname === '/search';
@@ -63,6 +66,11 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
       router.replace('/swipe');
     }
   }, [authInitialized, isLoggedIn, pathname, router]);
+
+  // 診断ページは完全独立レイアウト（サイドバー・ヘッダーなし）
+  if (isQuizPath) {
+    return <>{children}</>;
+  }
 
   return (
     <DecisionCountProvider>
