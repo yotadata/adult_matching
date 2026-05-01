@@ -22,10 +22,31 @@ export default function QuizHeader() {
             性癖16タイプ診断
           </Link>
 
+          {/* PC: 通常ナビ */}
+          <nav className="hidden sm:flex items-center gap-1">
+            {links.map((link) => {
+              const isActive = pathname === link.href;
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className={`px-3 py-1.5 rounded-full text-[12px] font-bold transition-colors ${
+                    isActive
+                      ? 'bg-[#ffb347] text-white'
+                      : 'text-[#b5541a] hover:bg-[#ffb347]/20'
+                  }`}
+                >
+                  {link.label}
+                </Link>
+              );
+            })}
+          </nav>
+
+          {/* スマホ: ハンバーガー */}
           <button
             onClick={() => setOpen((v) => !v)}
             aria-label="メニューを開く"
-            className="flex flex-col justify-center items-center w-10 h-10 gap-1.5"
+            className="flex sm:hidden flex-col justify-center items-center w-10 h-10 gap-1.5"
           >
             <span className={`block w-6 h-0.5 bg-[#b5541a] transition-transform duration-200 ${open ? 'translate-y-2 rotate-45' : ''}`} />
             <span className={`block w-6 h-0.5 bg-[#b5541a] transition-opacity duration-200 ${open ? 'opacity-0' : ''}`} />
@@ -34,14 +55,14 @@ export default function QuizHeader() {
         </div>
       </header>
 
-      {/* ドロワー */}
+      {/* スマホ用ドロワー */}
       {open && (
         <>
           <div
-            className="fixed inset-0 z-40"
+            className="fixed inset-0 z-40 sm:hidden"
             onClick={() => setOpen(false)}
           />
-          <nav className="fixed top-14 right-0 z-50 w-48 bg-[#fff8f0] border border-[#e8c9a0]/60 rounded-bl-2xl shadow-lg py-2">
+          <nav className="fixed top-14 right-0 z-50 w-48 bg-[#fff8f0] border border-[#e8c9a0]/60 rounded-bl-2xl shadow-lg py-2 sm:hidden">
             {links.map((link) => {
               const isActive = pathname === link.href;
               return (
