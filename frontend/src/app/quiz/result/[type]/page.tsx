@@ -68,14 +68,14 @@ function ResultContent({ typeKey }: { typeKey: QuizTypeKey }) {
         }}
       >
         {/* カラーヘッダー */}
-        <div className="relative h-56 flex items-center justify-center" style={{ background: quizType.color }}>
+        <div className="relative h-64 flex items-center justify-center" style={{ background: quizType.color }}>
           <div className="absolute inset-2 rounded-2xl" style={{ background: `${quizType.accent}20`, boxShadow: `inset 0 2px 8px ${quizType.accent}44` }} />
           <div className="absolute bottom-0 left-0 right-0 h-8" style={{ background: '#fffdf8', clipPath: 'ellipse(60% 100% at 50% 100%)' }} />
           <Image
             src={`/quiz/${typeKey}.png`}
             alt={quizType.name}
-            width={220}
-            height={220}
+            width={260}
+            height={260}
             className="relative object-contain"
           />
         </div>

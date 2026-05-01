@@ -56,7 +56,7 @@ export default function CharactersPage() {
                   >
                     {/* カラーヘッダー */}
                     <div
-                      className="h-32 flex items-center justify-center relative"
+                      className="h-36 flex items-center justify-center relative"
                       style={{ background: t.color }}
                     >
                       <div
@@ -69,8 +69,8 @@ export default function CharactersPage() {
                       <Image
                         src={`/quiz/${key}.png`}
                         alt={t.name}
-                        width={112}
-                        height={112}
+                        width={128}
+                        height={128}
                         className="relative object-contain"
                       />
                     </div>
