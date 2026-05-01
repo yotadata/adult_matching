@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Suspense } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { QUIZ_TYPES, AXIS_META, QuizTypeKey, Axis } from '../../data';
+import { QUIZ_TYPES, AXIS_META, QuizTypeKey, Axis, displayTypeKey } from '../../data';
 
 export default async function ResultPage({ params }: { params: Promise<{ type: string }> }) {
   const { type } = await params;
@@ -85,7 +85,7 @@ function ResultContent({ typeKey }: { typeKey: QuizTypeKey }) {
         <div className="px-6 pt-4 pb-6">
           {/* タイプキー */}
           <div className="flex items-center gap-1.5 mb-3">
-            {typeKey.toUpperCase().split('').map((c, i) => (
+            {displayTypeKey(typeKey).map((c, i) => (
               <span key={i} className="text-[10px] font-black px-2 py-0.5 rounded-full" style={{ background: quizType.color, color: quizType.accent }}>{c}</span>
             ))}
           </div>

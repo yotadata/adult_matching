@@ -1,4 +1,9 @@
 export type Axis = 'ds' | 'nx' | 'pe' | 'hl';
+
+const TYPE_KEY_DISPLAY: Record<string, string> = { D: 'S', S: 'M' };
+export function displayTypeKey(key: string): string[] {
+  return key.toUpperCase().split('').map((c) => TYPE_KEY_DISPLAY[c] ?? c);
+}
 export type QuizTypeKey =
   | 'dnph' | 'dnpl' | 'dneh' | 'dnel'
   | 'dxph' | 'dxpl' | 'dxeh' | 'dxel'
