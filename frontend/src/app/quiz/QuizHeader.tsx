@@ -15,11 +15,11 @@ export default function QuizHeader() {
 
   return (
     <header className="w-full border-b border-[#e8c9a0]/40 bg-[#fff8f0]/80 backdrop-blur-sm sticky top-0 z-50">
-      <div className="max-w-lg mx-auto px-4 h-14 flex items-center justify-between">
+      <div className="max-w-lg mx-auto px-4 h-16 flex items-center justify-between">
         {/* ロゴ */}
-        <Link href="/quiz" className="flex items-center gap-2">
-          <Image src="/seiheki_lab_header.png" alt="性癖ラボ" width={100} height={28} className="object-contain" />
-          <span className="font-black text-[13px] text-[#5c2e00] leading-tight border-l border-[#e8c9a0] pl-2">
+        <Link href="/quiz" className="flex flex-col items-start">
+          <Image src="/seiheki_lab_header.png" alt="性癖ラボ" width={120} height={32} className="object-contain" />
+          <span className="font-black text-[11px] text-[#b5541a] tracking-widest -mt-1 pl-0.5">
             16タイプ診断
           </span>
         </Link>
