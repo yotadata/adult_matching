@@ -74,9 +74,10 @@ function ResultContent({ typeKey }: { typeKey: QuizTypeKey }) {
           <Image
             src={`/quiz/${typeKey}.png`}
             alt={quizType.name}
-            width={140}
-            height={140}
-            className="relative drop-shadow-lg object-contain"
+            width={180}
+            height={180}
+            className="relative object-contain"
+            style={{ mixBlendMode: 'multiply' }}
           />
         </div>
 
