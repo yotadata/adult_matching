@@ -56,7 +56,7 @@ export default function CharactersPage() {
                   >
                     {/* カラーヘッダー */}
                     <div
-                      className="h-36 flex items-center justify-center relative"
+                      className="h-44 flex items-center justify-center relative"
                       style={{ background: t.color }}
                     >
                       <div
