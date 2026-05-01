@@ -168,11 +168,56 @@ jobs:
       - name: Notify Discord
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          MIG_RESULT: ${{ needs.migration_tests.result }}
+          FUN_RESULT: ${{ needs.function_tests.result }}
+          FRT_RESULT: ${{ needs.frontend_tests.result }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          REF_NAME: ${{ github.ref_name }}
+          ACTOR: ${{ github.actor }}
+          SHA: ${{ github.sha }}
+          PR_TITLE: ${{ github.event.pull_request.title || github.ref_name }}
         run: |
-          if [ -n "$DISCORD_WEBHOOK_URL" ]; then
-            MIG_STATUS=${{ needs.migration_tests.result }}
-            FUN_STATUS=${{ needs.function_tests.result }}
-            FRT_STATUS=${{ needs.frontend_tests.result }}
-            MSG="[CiCd PR Tests] migration=${MIG_STATUS}, functions=${FUN_STATUS}, frontend=${FRT_STATUS}"
-            curl -X POST -H "Content-Type: application/json" -d "{\"content\":\"$MSG\"}" "$DISCORD_WEBHOOK_URL"
-          fi
+          [ -z "$DISCORD_WEBHOOK_URL" ] && exit 0
+          status_icon() {
+            case "$1" in
+              success)  echo "✅" ;;
+              failure)  echo "❌" ;;
+              skipped)  echo "⏭️" ;;
+              *)        echo "⚠️" ;;
+            esac
+          }
+          # 全体ステータスは failure > cancelled > success の優先順位
+          OVERALL="success"
+          for s in "$MIG_RESULT" "$FUN_RESULT" "$FRT_RESULT"; do
+            [ "$s" = "failure"   ] && OVERALL="failure"   && break
+            [ "$s" = "cancelled" ] && [ "$OVERALL" != "failure" ] && OVERALL="cancelled"
+          done
+          if   [ "$OVERALL" = "success"   ]; then COLOR=2278246;  OVERALL_ICON="✅"
+          elif [ "$OVERALL" = "failure"   ]; then COLOR=15682074; OVERALL_ICON="❌"
+          else                                    COLOR=16032867; OVERALL_ICON="⚠️"; fi
+          SHORT_SHA="${SHA:0:7}"
+          MIG_VAL="$(status_icon "$MIG_RESULT") ${MIG_RESULT}"
+          FUN_VAL="$(status_icon "$FUN_RESULT") ${FUN_RESULT}"
+          FRT_VAL="$(status_icon "$FRT_RESULT") ${FRT_RESULT}"
+          jq -n \
+            --arg title   "PR Test Suite" \
+            --arg url     "$RUN_URL" \
+            --argjson color "$COLOR" \
+            --arg overall "${OVERALL_ICON} ${OVERALL}" \
+            --arg branch  "$REF_NAME" \
+            --arg actor   "$ACTOR" \
+            --arg commit  "$SHORT_SHA" \
+            --arg pr      "$PR_TITLE" \
+            --arg mig     "$MIG_VAL" \
+            --arg fun     "$FUN_VAL" \
+            --arg frt     "$FRT_VAL" \
+            '{embeds:[{title:$title,url:$url,color:$color,fields:[
+              {name:"Overall",    value:$overall, inline:true},
+              {name:"Branch",     value:$branch,  inline:true},
+              {name:"Actor",      value:$actor,   inline:true},
+              {name:"PR",         value:$pr,      inline:false},
+              {name:"Migration",  value:$mig,     inline:true},
+              {name:"Functions",  value:$fun,     inline:true},
+              {name:"Frontend",   value:$frt,     inline:true}
+            ],timestamp:(now|todate)}]}' \
+          | curl -fsSL -X POST -H "Content-Type: application/json" -d @- "$DISCORD_WEBHOOK_URL"

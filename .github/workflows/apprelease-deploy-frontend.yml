@@ -100,14 +100,34 @@ jobs:
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
           JOB_STATUS: ${{ job.status }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          REF_NAME: ${{ github.ref_name }}
+          ACTOR: ${{ github.actor }}
+          SHA: ${{ github.sha }}
+          ENVIRONMENT: ${{ inputs.environment || 'production' }}
         run: |
-          if [ -n "$DISCORD_WEBHOOK_URL" ]; then
-            STATUS="✅ success"
-            if [ "$JOB_STATUS" != "success" ]; then
-              STATUS="❌ $JOB_STATUS"
-            fi
-            curl -X POST -H "Content-Type: application/json" -d "{\"content\":\"[AppRelease Frontend] $STATUS\"}" "$DISCORD_WEBHOOK_URL"
-          fi
+          [ -z "$DISCORD_WEBHOOK_URL" ] && exit 0
+          if   [ "$JOB_STATUS" = "success" ]; then COLOR=2278246;  ICON="✅"
+          elif [ "$JOB_STATUS" = "failure" ]; then COLOR=15682074; ICON="❌"
+          else                                     COLOR=16032867; ICON="⚠️"; fi
+          SHORT_SHA="${SHA:0:7}"
+          jq -n \
+            --arg title  "Frontend Deploy" \
+            --arg url    "$RUN_URL" \
+            --argjson color "$COLOR" \
+            --arg status "${ICON} ${JOB_STATUS}" \
+            --arg env    "$ENVIRONMENT" \
+            --arg branch "$REF_NAME" \
+            --arg actor  "$ACTOR" \
+            --arg commit "$SHORT_SHA" \
+            '{embeds:[{title:$title,url:$url,color:$color,fields:[
+              {name:"Status",      value:$status, inline:true},
+              {name:"Environment", value:$env,    inline:true},
+              {name:"Branch",      value:$branch, inline:true},
+              {name:"Actor",       value:$actor,  inline:true},
+              {name:"Commit",      value:$commit, inline:true}
+            ],timestamp:(now|todate)}]}' \
+          | curl -fsSL -X POST -H "Content-Type: application/json" -d @- "$DISCORD_WEBHOOK_URL"
 
     # Notes:
     # - Configure repo secrets: VERCEL_TOKEN, VERCEL_ORG_ID, VERCEL_PROJECT_ID
