@@ -5,8 +5,12 @@ import { Toaster } from 'react-hot-toast';
 import Script from 'next/script'; // ★ 追加
 
 export const metadata: Metadata = {
-  title: "性癖ラボ",
-  description: "アダルト動画とのマッチング",
+  title: {
+    default: "性癖ラボ | AIがあなたの好みを学ぶアダルト動画サービス",
+    template: "%s | 性癖ラボ",
+  },
+  description: "スワイプするほどAIがあなたの性癖を学習し、好みにぴったりのアダルト動画を提案します。無料・登録不要で今すぐ利用できます。",
+  metadataBase: new URL('https://seihekilab.com'),
   icons: {
     icon: [
       { url: '/seiheki_icon.png' },
@@ -16,14 +20,18 @@ export const metadata: Metadata = {
     apple: ['/apple-icon.png'],
   },
   openGraph: {
-    title: "性癖ラボ",
-    description: "アダルト動画とのマッチング",
+    title: "性癖ラボ | AIがあなたの好みを学ぶアダルト動画サービス",
+    description: "スワイプするほどAIがあなたの性癖を学習し、好みにぴったりのアダルト動画を提案します。",
+    url: 'https://seihekilab.com',
+    siteName: '性癖ラボ',
+    locale: 'ja_JP',
+    type: 'website',
     images: ['/opengraph-image.png'],
   },
   twitter: {
     card: 'summary_large_image',
-    title: "性癖ラボ",
-    description: "アダルト動画とのマッチング",
+    title: "性癖ラボ | AIがあなたの好みを学ぶアダルト動画サービス",
+    description: "スワイプするほどAIがあなたの性癖を学習し、好みにぴったりのアダルト動画を提案します。",
     images: ['/twitter-image.png'],
   },
 };
@@ -34,7 +42,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="ja">
       <body className="antialiased">
         <ClientLayout>
           {children}
