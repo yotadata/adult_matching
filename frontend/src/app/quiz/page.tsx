@@ -2,153 +2,216 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { QUESTIONS, calcType } from './data';
+import { QUESTIONS, calcResult } from './data';
 
 type Gender = 'male' | 'female' | 'other';
 
-const TOTAL_STEPS = QUESTIONS.length + 1; // 設問8 + 性別1
+const SCALE_LABELS = ['全然違う', 'あまり違う', 'どちらでも', 'やや当てはまる', 'まさにそう'];
+const TOTAL_STEPS = QUESTIONS.length + 1; // 28問 + 性別
 
 export default function QuizPage() {
   const router = useRouter();
-  const [step, setStep] = useState(0); // 0〜7: 設問, 8: 性別
-  const [answers, setAnswers] = useState<Record<number, 'a' | 'b'>>({});
+  const [step, setStep] = useState(0);
+  const [answers, setAnswers] = useState<Record<number, number>>({});
+  const [selected, setSelected] = useState<number | null>(null);
   const [animating, setAnimating] = useState(false);
 
-  const progress = ((step) / TOTAL_STEPS) * 100;
+  const progress = (step / TOTAL_STEPS) * 100;
   const isGenderStep = step === QUESTIONS.length;
   const currentQ = QUESTIONS[step];
 
-  const handleAnswer = (value: 'a' | 'b') => {
+  const handleSelect = (value: number) => {
     if (animating) return;
+    setSelected(value);
+  };
+
+  const handleNext = () => {
+    if (selected === null || animating) return;
     setAnimating(true);
-    const newAnswers = { ...answers, [currentQ.id]: value };
+    const newAnswers = { ...answers, [currentQ.id]: selected };
     setAnswers(newAnswers);
+    setSelected(null);
     setTimeout(() => {
       setStep((s) => s + 1);
       setAnimating(false);
-    }, 250);
+    }, 220);
   };
 
   const handleGender = (gender: Gender) => {
     if (animating) return;
     setAnimating(true);
-    const type = calcType(answers);
+    const result = calcResult(answers);
     setTimeout(() => {
-      router.push(`/quiz/result/${type}?gender=${gender}`);
-    }, 300);
+      const scoresParam = encodeURIComponent(JSON.stringify(
+        Object.fromEntries(
+          Object.entries(result.scores).map(([k, v]) => [k, (v as { pct: number }).pct])
+        )
+      ));
+      router.push(`/quiz/result/${result.typeKey}?gender=${gender}&scores=${scoresParam}`);
+    }, 280);
+  };
+
+  const handleBack = () => {
+    if (step === 0) return;
+    setStep((s) => s - 1);
+    setSelected(null);
   };
 
   return (
-    <div className="min-h-[calc(100vh-56px)] flex flex-col items-center justify-center px-4 py-12"
-      style={{ background: 'linear-gradient(135deg, #ffecd2 0%, #fcb69f 50%, #ffd1dc 100%)' }}>
-
-      {/* ヘッダー */}
-      <div className="w-full max-w-sm mb-8 text-center">
-        <p className="text-xs font-bold tracking-[0.3em] text-[#b5541a]/70 uppercase mb-1">性癖パーソナリティ診断</p>
-        <h1 className="text-2xl font-black text-[#5c2e00]">あなたのタイプは？</h1>
-      </div>
-
-      {/* プログレスバー */}
-      <div className="w-full max-w-sm mb-8">
-        <div className="flex justify-between text-xs text-[#b5541a]/60 mb-1.5">
-          <span>Q{Math.min(step + 1, TOTAL_STEPS)}/{TOTAL_STEPS}</span>
+    <div
+      className="min-h-[calc(100vh-56px)] flex flex-col items-center px-4 py-8"
+      style={{ background: 'linear-gradient(160deg, #fff5e6 0%, #ffecd2 50%, #ffd1dc 100%)' }}
+    >
+      {/* プログレス */}
+      <div className="w-full max-w-sm mb-6">
+        <div className="flex justify-between text-xs text-[#b5541a]/60 mb-1.5 font-bold">
+          <span>{isGenderStep ? '最後の質問' : `Q${step + 1} / ${QUESTIONS.length}`}</span>
           <span>{Math.round(progress)}%</span>
         </div>
-        <div className="h-3 rounded-full bg-white/40 overflow-hidden shadow-inner">
+        <div className="h-2.5 rounded-full bg-white/50 overflow-hidden shadow-inner">
           <div
             className="h-full rounded-full transition-all duration-500"
-            style={{
-              width: `${progress}%`,
-              background: 'linear-gradient(90deg, #ff6b6b, #ffd93d)',
-            }}
+            style={{ width: `${progress}%`, background: 'linear-gradient(90deg, #ff6b6b, #ffd93d)' }}
           />
         </div>
       </div>
 
       {/* カード */}
       <div
-        className="w-full max-w-sm transition-opacity duration-200"
+        className="w-full max-w-sm transition-opacity duration-200 flex-1 flex flex-col"
         style={{ opacity: animating ? 0 : 1 }}
       >
         {!isGenderStep ? (
-          /* 設問カード */
-          <div className="felt-card rounded-3xl p-7 mb-6">
-            <p className="text-[11px] font-bold tracking-widest text-[#b5541a]/50 uppercase mb-3">
-              Question {step + 1}
-            </p>
-            <p className="text-xl font-black text-[#3d1a00] leading-snug mb-8">
-              {currentQ.text}
-            </p>
-            <div className="space-y-3">
-              <ChoiceButton label={currentQ.choiceA.label} onClick={() => handleAnswer('a')} colorClass="btn-a" />
-              <ChoiceButton label={currentQ.choiceB.label} onClick={() => handleAnswer('b')} colorClass="btn-b" />
+          <div
+            className="rounded-3xl p-6 flex flex-col gap-6"
+            style={{
+              background: '#fffdf8',
+              boxShadow: '0 2px 0 #e8c9a0, 0 5px 0 #d4a574, 0 8px 24px rgba(100,50,0,0.12)',
+            }}
+          >
+            {/* 軸タグ */}
+            <div>
+              <AxisBadge axis={currentQ.axis} />
+              <p className="text-[18px] font-black text-[#3d1a00] leading-snug mt-3">
+                {currentQ.text}
+              </p>
             </div>
+
+            {/* 5段階スケール */}
+            <div>
+              {/* エンドラベル */}
+              <div className="flex justify-between text-[11px] font-bold text-[#b5541a]/60 mb-2 px-1">
+                <span>全然違う</span>
+                <span>まさにそう</span>
+              </div>
+              {/* 5つのボタン */}
+              <div className="flex gap-2 justify-between">
+                {[1, 2, 3, 4, 5].map((v) => (
+                  <button
+                    key={v}
+                    onClick={() => handleSelect(v)}
+                    className="flex-1 aspect-square rounded-2xl flex items-center justify-center font-black text-[15px] transition-all duration-150"
+                    style={
+                      selected === v
+                        ? {
+                            background: `hsl(${20 + v * 20}, 90%, 60%)`,
+                            color: '#fff',
+                            boxShadow: `0 3px 0 hsl(${20 + v * 20}, 90%, 40%)`,
+                            transform: 'translateY(-2px)',
+                          }
+                        : {
+                            background: '#fff0e6',
+                            color: '#c8956a',
+                            boxShadow: '0 2px 0 #e8c9a0',
+                          }
+                    }
+                  >
+                    {v}
+                  </button>
+                ))}
+              </div>
+              {/* 選択肢ラベル */}
+              {selected !== null && (
+                <p className="text-center text-[12px] font-bold mt-2.5" style={{ color: `hsl(${20 + selected * 20}, 70%, 45%)` }}>
+                  {SCALE_LABELS[selected - 1]}
+                </p>
+              )}
+            </div>
+
+            {/* 次へボタン */}
+            <button
+              onClick={handleNext}
+              disabled={selected === null}
+              className="w-full rounded-2xl py-4 font-black text-[15px] transition-all"
+              style={
+                selected !== null
+                  ? { background: 'linear-gradient(90deg, #ff6b6b, #ffd93d)', color: '#fff', boxShadow: '0 4px 0 #e08020' }
+                  : { background: '#e8c9a0', color: '#c8a080', cursor: 'not-allowed' }
+              }
+            >
+              次の質問へ →
+            </button>
+
+            {/* 戻るボタン */}
+            {step > 0 && (
+              <button onClick={handleBack} className="text-[12px] text-[#b5541a]/50 font-bold text-center">
+                ← 前の質問に戻る
+              </button>
+            )}
           </div>
         ) : (
           /* 性別カード */
-          <div className="felt-card rounded-3xl p-7 mb-6">
-            <p className="text-[11px] font-bold tracking-widest text-[#b5541a]/50 uppercase mb-3">
-              Last Question
-            </p>
-            <p className="text-xl font-black text-[#3d1a00] leading-snug mb-8">
+          <div
+            className="rounded-3xl p-6"
+            style={{
+              background: '#fffdf8',
+              boxShadow: '0 2px 0 #e8c9a0, 0 5px 0 #d4a574, 0 8px 24px rgba(100,50,0,0.12)',
+            }}
+          >
+            <p className="text-[11px] font-black tracking-widest text-[#b5541a]/50 uppercase mb-3">Last Question</p>
+            <p className="text-[18px] font-black text-[#3d1a00] leading-snug mb-6">
               最後に、あなたの性別を教えてください🙌
             </p>
             <div className="space-y-3">
-              <GenderButton label="男性" emoji="🙋‍♂️" onClick={() => handleGender('male')} />
-              <GenderButton label="女性" emoji="🙋‍♀️" onClick={() => handleGender('female')} />
-              <GenderButton label="その他・答えたくない" emoji="✨" onClick={() => handleGender('other')} />
+              {([
+                { label: '男性', emoji: '🙋‍♂️', value: 'male' as Gender },
+                { label: '女性', emoji: '🙋‍♀️', value: 'female' as Gender },
+                { label: 'その他・答えたくない', emoji: '✨', value: 'other' as Gender },
+              ]).map(({ label, emoji, value }) => (
+                <button
+                  key={value}
+                  onClick={() => handleGender(value)}
+                  className="w-full rounded-2xl px-5 py-4 text-left text-[15px] font-bold text-[#3d1a00] active:translate-y-[2px] transition-transform"
+                  style={{ background: '#fff0e6', border: '2.5px solid #ffb347', boxShadow: '0 3px 0 #e08020' }}
+                >
+                  {emoji} {label}
+                </button>
+              ))}
             </div>
+            <button onClick={handleBack} className="text-[12px] text-[#b5541a]/50 font-bold text-center w-full mt-4">
+              ← 前の質問に戻る
+            </button>
           </div>
         )}
       </div>
-
-      <style jsx>{`
-        .felt-card {
-          background: #fff8f0;
-          box-shadow:
-            0 2px 0 #e8c9a0,
-            0 4px 0 #d4a574,
-            0 6px 0 #c4956a,
-            0 8px 20px rgba(100, 50, 0, 0.15);
-        }
-        .btn-a {
-          background: #fff0e6;
-          border: 2.5px solid #ffb347;
-          box-shadow: 0 3px 0 #e08020;
-        }
-        .btn-b {
-          background: #f0f4ff;
-          border: 2.5px solid #7eb8f7;
-          box-shadow: 0 3px 0 #4a90d9;
-        }
-      `}</style>
     </div>
   );
 }
 
-function ChoiceButton({ label, onClick, colorClass }: { label: string; onClick: () => void; colorClass: string }) {
+function AxisBadge({ axis }: { axis: string }) {
+  const map: Record<string, { label: string; color: string }> = {
+    ds: { label: '支配 ⇄ 奉仕', color: '#FF6B6B' },
+    nx: { label: '日常 ⇄ 非日常', color: '#74B9FF' },
+    pe: { label: '快楽 ⇄ 感情', color: '#FDCB6E' },
+    hl: { label: '頻度', color: '#FF8E53' },
+  };
+  const m = map[axis] ?? { label: axis, color: '#ccc' };
   return (
-    <button
-      onClick={onClick}
-      className={`w-full rounded-2xl px-5 py-4 text-left text-[15px] font-bold text-[#3d1a00] leading-snug active:translate-y-[2px] active:shadow-none transition-transform ${colorClass}`}
+    <span
+      className="text-[10px] font-black px-2.5 py-1 rounded-full text-white"
+      style={{ background: m.color }}
     >
-      {label}
-    </button>
-  );
-}
-
-function GenderButton({ label, emoji, onClick }: { label: string; emoji: string; onClick: () => void }) {
-  return (
-    <button
-      onClick={onClick}
-      className="w-full rounded-2xl px-5 py-4 text-left text-[15px] font-bold text-[#3d1a00] leading-snug active:translate-y-[2px] transition-transform"
-      style={{
-        background: '#fff0e6',
-        border: '2.5px solid #ffb347',
-        boxShadow: '0 3px 0 #e08020',
-      }}
-    >
-      {emoji} {label}
-    </button>
+      {m.label}
+    </span>
   );
 }
