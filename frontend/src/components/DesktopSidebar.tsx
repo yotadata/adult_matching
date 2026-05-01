@@ -127,10 +127,13 @@ export default function DesktopSidebar() {
         <div className="px-3 pt-2 pb-10">
           <div className="border-t border-[#30363d] my-2" />
           <div className="space-y-1 text-sm">
+            <NavButton label="性癖16タイプ診断" icon={FlaskConical} href="/quiz" disabled={false} />
+          </div>
+          <div className="border-t border-[#30363d] my-2" />
+          <div className="space-y-1 text-sm">
             <NavButton label="お問い合わせ" icon={Mail} href="/contact" disabled={!isLoggedIn} />
             <NavButton label="アカウント設定" icon={Settings} href="/account-management" disabled={!isLoggedIn} />
             <NavButton label="このサイトについて" icon={Info} href="/about" disabled={false} />
-            <NavButton label="性癖16タイプ診断" icon={FlaskConical} href="/quiz" disabled={false} />
           </div>
         </div>
       </div>

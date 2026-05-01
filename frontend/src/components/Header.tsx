@@ -50,8 +50,9 @@ const Header = ({ cardWidth, mobileGauge }: { cardWidth: number | undefined; mob
     { label: 'お問い合わせ', href: '/contact', icon: Mail, requiresLogin: true },
     { label: 'アカウント設定', href: '/account-management', icon: Settings, requiresLogin: true },
     { label: 'このサイトについて', href: '/about', icon: Info, requiresLogin: false },
-    { label: '性癖16タイプ診断', href: '/quiz', icon: FlaskConical, requiresLogin: false },
   ];
+
+  const quizNavItem: NavItem = { label: '性癖16タイプ診断', href: '/quiz', icon: FlaskConical, requiresLogin: false };
 
   useEffect(() => {
     const getSession = async () => {
@@ -249,6 +250,17 @@ const Header = ({ cardWidth, mobileGauge }: { cardWidth: number | undefined; mob
                                     </button>
                                   );
                                 })}
+                              </div>
+                              <div className="py-0.5">
+                                {(() => { const Icon = quizNavItem.icon; return (
+                                  <button
+                                    onClick={() => { setIsMenuDrawerOpen(false); router.push(quizNavItem.href); }}
+                                    className="w-full flex items-center gap-2 text-left px-4 py-3 hover:bg-[#21262d] transition"
+                                  >
+                                    <Icon size={18} />
+                                    <span className="text-sm font-medium">{quizNavItem.label}</span>
+                                  </button>
+                                ); })()}
                               </div>
                               <div className="py-0.5">
                                 {secondaryNavItems.map((item) => {
