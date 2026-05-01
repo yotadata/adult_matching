@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
 import QuizHeader from './QuizHeader';
+import AgeGate from './AgeGate';
 
 export const metadata: Metadata = {
   title: '性癖16タイプ診断 | 性癖ラボ',
@@ -23,6 +24,7 @@ export const metadata: Metadata = {
 export default function QuizLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen flex flex-col" style={{ background: '#fff8f0' }}>
+      <AgeGate />
       <QuizHeader />
       <div className="flex-1">{children}</div>
       <footer className="flex flex-col items-center py-8 gap-3 border-t border-[#e8c9a0]/40">
