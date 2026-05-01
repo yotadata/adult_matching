@@ -29,7 +29,7 @@ export default function QuizPage() {
   const [answers, setAnswers] = useState<Record<number, number>>({});
   const [selected, setSelected] = useState<number | null>(null);
   const [animating, setAnimating] = useState(false);
-  const [prevResult, setPrevResult] = useState<{ typeKey: QuizTypeKey; name: string } | null>(null);
+  const [prevResult, setPrevResult] = useState<{ typeKey: QuizTypeKey; name: string; scores: string; gender: string } | null>(null);
 
   // 保存済みの進捗・結果をロード
   useEffect(() => {
@@ -38,7 +38,12 @@ export default function QuizPage() {
       if (savedResult) {
         const r = JSON.parse(savedResult);
         const type = QUIZ_TYPES[r.typeKey as QuizTypeKey];
-        if (type) setPrevResult({ typeKey: r.typeKey, name: type.name });
+        if (type) setPrevResult({
+          typeKey: r.typeKey,
+          name: type.name,
+          scores: encodeURIComponent(JSON.stringify(r.scores ?? {})),
+          gender: r.gender ?? 'other',
+        });
       }
 
       const savedProgress = localStorage.getItem(STORAGE_KEY_PROGRESS);
@@ -145,7 +150,7 @@ export default function QuizPage() {
         <div className="w-full max-w-sm mb-4 rounded-2xl px-4 py-3 flex items-center justify-between gap-2"
           style={{ background: '#fff8f0', border: '1.5px solid #ffb347' }}>
           <p className="text-[12px] text-[#7a4a1a] font-bold">前回の結果: <span className="text-[#c05a00]">{prevResult.name}</span></p>
-          <Link href={`/quiz/result/${prevResult.typeKey}`}
+          <Link href={`/quiz/result/${prevResult.typeKey}?gender=${prevResult.gender}&scores=${prevResult.scores}`}
             className="text-[11px] font-black px-3 py-1 rounded-full text-white shrink-0"
             style={{ background: '#ffb347' }}>
             見る
