@@ -1,13 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { QUESTIONS, calcResult } from './data';
 
 type Gender = 'male' | 'female' | 'other';
 
 const SCALE_LABELS = ['全然違う', 'あまり違う', 'どちらでも', 'やや当てはまる', 'まさにそう'];
-const TOTAL_STEPS = QUESTIONS.length + 1; // 28問 + 性別
+const TOTAL_STEPS = QUESTIONS.length + 1;
 
 export default function QuizPage() {
   const router = useRouter();
@@ -16,9 +16,18 @@ export default function QuizPage() {
   const [selected, setSelected] = useState<number | null>(null);
   const [animating, setAnimating] = useState(false);
 
+  const shuffled = useMemo(() => {
+    const arr = [...QUESTIONS];
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  }, []);
+
   const progress = (step / TOTAL_STEPS) * 100;
-  const isGenderStep = step === QUESTIONS.length;
-  const currentQ = QUESTIONS[step];
+  const isGenderStep = step === shuffled.length;
+  const currentQ = shuffled[step];
 
   const handleSelect = (value: number) => {
     if (animating) return;
@@ -26,7 +35,7 @@ export default function QuizPage() {
   };
 
   const handleNext = () => {
-    if (selected === null || animating) return;
+    if (selected === null || animating || !currentQ) return;
     setAnimating(true);
     const newAnswers = { ...answers, [currentQ.id]: selected };
     setAnswers(newAnswers);
@@ -91,8 +100,7 @@ export default function QuizPage() {
           >
             {/* 軸タグ */}
             <div>
-              <AxisBadge axis={currentQ.axis} />
-              <p className="text-[18px] font-black text-[#3d1a00] leading-snug mt-3">
+              <p className="text-[18px] font-black text-[#3d1a00] leading-snug">
                 {currentQ.text}
               </p>
             </div>

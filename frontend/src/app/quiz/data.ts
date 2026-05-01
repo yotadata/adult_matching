@@ -34,10 +34,10 @@ export const AXIS_META: Record<Axis, {
   colorLow: string;
 }> = {
   ds: {
-    labelHigh: '支配',
-    labelLow: '奉仕',
-    degreesHigh: ['ドS（支配）', 'S（支配）寄り'],
-    degreesLow: ['ドM（奉仕）', 'M（奉仕）寄り'],
+    labelHigh: 'S',
+    labelLow: 'M',
+    degreesHigh: ['ドS', 'S寄り'],
+    degreesLow: ['ドM', 'M寄り'],
     colorHigh: '#FF6B6B',
     colorLow: '#55EFC4',
   },
@@ -68,41 +68,41 @@ export const AXIS_META: Record<Axis, {
 };
 
 export const QUESTIONS: Question[] = [
-  // ── 支配(D) ⇄ 奉仕(S) 軸 ── high=D, reverse=true → S寄り ──
-  { id: 1,  axis: 'ds', text: '気になる相手には、こちらからアプローチしたい',         reverse: false },
-  { id: 2,  axis: 'ds', text: '場の流れは自分でコントロールしたい',                    reverse: false },
-  { id: 3,  axis: 'ds', text: '相手をリードしているときに安心感がある',                reverse: false },
-  { id: 4,  axis: 'ds', text: '相手に従うよりも、従わせるほうが性に合っている',        reverse: false },
-  { id: 5,  axis: 'ds', text: '相手の欲求に応えることに強い充実感を覚える',            reverse: true  },
-  { id: 6,  axis: 'ds', text: '相手に委ねられると、むしろ力が湧いてくる',              reverse: true  },
-  { id: 7,  axis: 'ds', text: '相手が求めてくることへの対応が得意だ',                  reverse: true  },
+  // ── S(サディスト) ⇄ M(マゾヒスト) 軸 ── high=S側, reverse=true → M寄り ──
+  { id: 1,  axis: 'ds', text: '性的な場面では、自分がリードする側にいるほうが自然だ',           reverse: false },
+  { id: 2,  axis: 'ds', text: '相手を言葉や行動でコントロールできると、興奮が高まる',           reverse: false },
+  { id: 3,  axis: 'ds', text: '相手が自分に従ってくれるとき、快感を強く感じる',                 reverse: false },
+  { id: 4,  axis: 'ds', text: '「もっとして」と相手に言わせる側でいたい',                       reverse: false },
+  { id: 5,  axis: 'ds', text: '相手にコントロールされることで、むしろ解放感がある',              reverse: true  },
+  { id: 6,  axis: 'ds', text: 'リードされる立場にいるとき、最も気持ちよくなれる',               reverse: true  },
+  { id: 7,  axis: 'ds', text: '相手の指示や要求に応えることに、強い喜びを感じる',               reverse: true  },
 
   // ── 日常(N) ⇄ 非日常(X) 軸 ── high=N, reverse=true → X寄り ──
-  { id: 8,  axis: 'nx', text: '現実にありそうな日常的なシーンに反応しやすい',          reverse: false },
-  { id: 9,  axis: 'nx', text: 'リアルな設定のほうが、特殊な設定より刺さる',            reverse: false },
-  { id: 10, axis: 'nx', text: '日常の延長線上にある場面でドキッとすることが多い',      reverse: false },
-  { id: 11, axis: 'nx', text: 'ありきたりな状況でも十分に盛り上がれる',                reverse: false },
-  { id: 12, axis: 'nx', text: 'ファンタジー的・非現実的な設定に強く惹かれる',          reverse: true  },
-  { id: 13, axis: 'nx', text: '特殊なシチュエーションや設定のほうが興奮する',          reverse: true  },
-  { id: 14, axis: 'nx', text: '非日常的な場面を頭の中で妄想することが多い',            reverse: true  },
+  { id: 8,  axis: 'nx', text: '現実にあるような日常的なシーン（職場・自宅・電車など）で興奮しやすい', reverse: false },
+  { id: 9,  axis: 'nx', text: 'コスプレや役割設定より、リアルな状況のほうが刺さる',             reverse: false },
+  { id: 10, axis: 'nx', text: '日常の延長線上のシーンで、強くドキッとすることがある',           reverse: false },
+  { id: 11, axis: 'nx', text: '特別な演出がなくても、ふとしたシチュエーションで欲求が生まれる', reverse: false },
+  { id: 12, axis: 'nx', text: 'コスプレ・役割設定など、非日常の演出があると盛り上がる',        reverse: true  },
+  { id: 13, axis: 'nx', text: '支配・被支配のような特殊な設定に、強く惹かれる',                 reverse: true  },
+  { id: 14, axis: 'nx', text: '現実離れした妄想のシチュエーションで興奮することが多い',         reverse: true  },
 
   // ── 快楽(P) ⇄ 感情(E) 軸 ── high=P, reverse=true → E寄り ──
-  { id: 15, axis: 'pe', text: '身体的な刺激や感覚で興奮することが多い',                reverse: false },
-  { id: 16, axis: 'pe', text: '視覚や触覚など、感覚への刺激に敏感だ',                  reverse: false },
-  { id: 17, axis: 'pe', text: '心のつながりより身体的な充実感を重視する',              reverse: false },
-  { id: 18, axis: 'pe', text: '雰囲気や関係性より、身体的な相性を大切にしたい',        reverse: false },
-  { id: 19, axis: 'pe', text: '気持ちが盛り上がらないと身体も動かない',                reverse: true  },
-  { id: 20, axis: 'pe', text: '精神的なつながりがないと物足りなさを感じる',            reverse: true  },
-  { id: 21, axis: 'pe', text: '感情が動いたとき、欲求も同時に高まる',                  reverse: true  },
+  { id: 15, axis: 'pe', text: '身体的な刺激や感覚への反応が強い',                               reverse: false },
+  { id: 16, axis: 'pe', text: '視覚・触覚など感覚的な刺激だけで、十分に興奮できる',             reverse: false },
+  { id: 17, axis: 'pe', text: '精神的なつながりより、身体の相性を重視することが多い',           reverse: false },
+  { id: 18, axis: 'pe', text: '気持ちの盛り上がりがなくても、身体的な刺激があれば十分だ',       reverse: false },
+  { id: 19, axis: 'pe', text: '精神的なつながりを感じないと、身体が動かない',                   reverse: true  },
+  { id: 20, axis: 'pe', text: '気持ちが盛り上がって初めて、欲求が生まれる',                     reverse: true  },
+  { id: 21, axis: 'pe', text: '感情的な盛り上がりがないと、どんな刺激があっても物足りない',     reverse: true  },
 
   // ── 頻度高(H) ⇄ 頻度低(L) 軸 ── high=H, reverse=true → L寄り ──
-  { id: 22, axis: 'hl', text: '欲求は頻繁にある方だと思う',                            reverse: false },
-  { id: 23, axis: 'hl', text: '間を空けるより、できるだけ多く楽しみたい',              reverse: false },
-  { id: 24, axis: 'hl', text: '衝動が来たら、なかなか抑えられない',                    reverse: false },
-  { id: 25, axis: 'hl', text: '毎日でも物足りないと感じることがある',                  reverse: false },
-  { id: 26, axis: 'hl', text: '少ない回数でも、深い体験を重視する',                    reverse: true  },
-  { id: 27, axis: 'hl', text: '特別な機会として大切にしたいと思う',                    reverse: true  },
-  { id: 28, axis: 'hl', text: '頻度より質にこだわりたい',                              reverse: true  },
+  { id: 22, axis: 'hl', text: '性的な欲求は頻繁にある方だと思う',                               reverse: false },
+  { id: 23, axis: 'hl', text: '間を空けるより、できるだけ多く楽しみたい',                       reverse: false },
+  { id: 24, axis: 'hl', text: '欲求が来たらなかなか抑えられない',                               reverse: false },
+  { id: 25, axis: 'hl', text: '毎日でも物足りないと感じることがある',                           reverse: false },
+  { id: 26, axis: 'hl', text: '回数より、一度の深さや濃さを大切にしたい',                       reverse: true  },
+  { id: 27, axis: 'hl', text: '性的な行為は特別な機会として、じっくり楽しみたい',               reverse: true  },
+  { id: 28, axis: 'hl', text: '頻度より質にこだわりたい',                                       reverse: true  },
 ];
 
 export interface AxisScore {

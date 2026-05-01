@@ -15,10 +15,10 @@ const TYPE_ORDER: QuizTypeKey[] = [
 ];
 
 const GROUP_LABELS = [
-  { label: '支配 × 日常', range: [0, 4], color: '#FF6B6B' },
-  { label: '支配 × 非日常', range: [4, 8], color: '#FD79A8' },
-  { label: '奉仕 × 日常', range: [8, 12], color: '#55EFC4' },
-  { label: '奉仕 × 非日常', range: [12, 16], color: '#A29BFE' },
+  { label: 'S × 日常', range: [0, 4], color: '#FF6B6B' },
+  { label: 'S × 非日常', range: [4, 8], color: '#FD79A8' },
+  { label: 'M × 日常', range: [8, 12], color: '#55EFC4' },
+  { label: 'M × 非日常', range: [12, 16], color: '#A29BFE' },
 ];
 
 export default function CharactersPage() {

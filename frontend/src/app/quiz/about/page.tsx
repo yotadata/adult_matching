@@ -8,10 +8,10 @@ export const metadata: Metadata = {
 
 const AXES = [
   {
-    label: '支配 ⇄ 奉仕',
-    keys: ['D', 'S'],
+    label: 'S（サディスト） ⇄ M（マゾヒスト）',
+    keys: ['S', 'M'],
     colors: ['#FF6B6B', '#55EFC4'],
-    desc: '場の主導権をとりたいか、相手に応えることに喜びを感じるか。',
+    desc: '性的な場面でリードしコントロールしたいか、相手に委ねて従うことに快感を感じるか。',
   },
   {
     label: '日常 ⇄ 非日常',
