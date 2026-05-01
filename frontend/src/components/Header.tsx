@@ -50,6 +50,7 @@ const Header = ({ cardWidth, mobileGauge }: { cardWidth: number | undefined; mob
     { label: 'お問い合わせ', href: '/contact', icon: Mail, requiresLogin: true },
     { label: 'アカウント設定', href: '/account-management', icon: Settings, requiresLogin: true },
     { label: 'このサイトについて', href: '/about', icon: Info, requiresLogin: false },
+    { label: '性癖16タイプ診断', href: '/quiz', icon: Sparkles, requiresLogin: false },
   ];
 
   useEffect(() => {
