@@ -84,11 +84,11 @@ export const QUESTIONS: Question[] = [
   { id: 10, axis: 'nx', text: 'コスプレや異世界・特殊な役割など、現実にはない設定に強く惹かれる',  reverse: true  },
 
   // ── 快楽(P) ⇄ 感情(E) 軸 ── high=P, reverse=true → E寄り ──
-  { id: 11, axis: 'pe', text: '身体的な刺激や感覚への反応が強い',                               reverse: false },
-  { id: 12, axis: 'pe', text: '精神的なつながりより、身体の相性を重視することが多い',           reverse: false },
-  { id: 13, axis: 'pe', text: '気持ちの盛り上がりがなくても、身体的な刺激があれば十分だ',       reverse: false },
-  { id: 14, axis: 'pe', text: 'どれだけ刺激があっても、相手への気持ちがなければ欲求は生まれない', reverse: true  },
-  { id: 15, axis: 'pe', text: '感情的な盛り上がりがないと、どんな刺激があっても物足りない',     reverse: true  },
+  { id: 11, axis: 'pe', text: '外見や雰囲気が好みなら、深く知らなくても欲求が生まれる',         reverse: false },
+  { id: 12, axis: 'pe', text: '身体的な相性が合う相手なら、気持ちが深くなくても満足できる',     reverse: false },
+  { id: 13, axis: 'pe', text: '気持ちより身体の感覚への反応のほうが、欲求に直結している',       reverse: false },
+  { id: 14, axis: 'pe', text: '気持ちが伴わない相手との行為は、どれだけ良くても虚しさが残る',   reverse: true  },
+  { id: 15, axis: 'pe', text: '好みの外見でも、感情が動かなければ欲求はほとんど生まれない',     reverse: true  },
 
   // ── 頻度高(H) ⇄ 頻度低(L) 軸 ── high=H, reverse=true → L寄り ──
   { id: 16, axis: 'hl', text: '性的な欲求は頻繁にある方だと思う',                               reverse: false },
