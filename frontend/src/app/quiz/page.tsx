@@ -1,29 +1,76 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { QUESTIONS, calcResult } from './data';
+import Link from 'next/link';
+import { QUESTIONS, QUIZ_TYPES, QuizTypeKey, calcResult } from './data';
 
 type Gender = 'male' | 'female' | 'other';
 
 const SCALE_LABELS = ['全然違う', 'あまり違う', 'どちらでも', 'やや当てはまる', 'まさにそう'];
 const TOTAL_STEPS = QUESTIONS.length + 1;
+const STORAGE_KEY_PROGRESS = 'quiz_progress';
+const STORAGE_KEY_RESULT = 'quiz_result';
+
+function shuffle<T>(arr: T[]): T[] {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
 
 export default function QuizPage() {
   const router = useRouter();
+  const [ready, setReady] = useState(false);
+  const [shuffled, setShuffled] = useState(QUESTIONS);
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState<Record<number, number>>({});
   const [selected, setSelected] = useState<number | null>(null);
   const [animating, setAnimating] = useState(false);
+  const [prevResult, setPrevResult] = useState<{ typeKey: QuizTypeKey; name: string } | null>(null);
 
-  const shuffled = useMemo(() => {
-    const arr = [...QUESTIONS];
-    for (let i = arr.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [arr[i], arr[j]] = [arr[j], arr[i]];
-    }
-    return arr;
+  // 保存済みの進捗・結果をロード
+  useEffect(() => {
+    try {
+      const savedResult = localStorage.getItem(STORAGE_KEY_RESULT);
+      if (savedResult) {
+        const r = JSON.parse(savedResult);
+        const type = QUIZ_TYPES[r.typeKey as QuizTypeKey];
+        if (type) setPrevResult({ typeKey: r.typeKey, name: type.name });
+      }
+
+      const savedProgress = localStorage.getItem(STORAGE_KEY_PROGRESS);
+      if (savedProgress) {
+        const { order, answers: savedAnswers, step: savedStep } = JSON.parse(savedProgress);
+        const ordered = (order as number[])
+          .map((id) => QUESTIONS.find((q) => q.id === id))
+          .filter(Boolean) as typeof QUESTIONS;
+        if (ordered.length === QUESTIONS.length) {
+          setShuffled(ordered);
+          setAnswers(savedAnswers);
+          setStep(savedStep);
+          setReady(true);
+          return;
+        }
+      }
+    } catch {}
+    setShuffled(shuffle(QUESTIONS));
+    setReady(true);
   }, []);
+
+  // 進捗を保存
+  useEffect(() => {
+    if (!ready) return;
+    try {
+      localStorage.setItem(STORAGE_KEY_PROGRESS, JSON.stringify({
+        order: shuffled.map((q) => q.id),
+        answers,
+        step,
+      }));
+    } catch {}
+  }, [ready, shuffled, answers, step]);
 
   const progress = (step / TOTAL_STEPS) * 100;
   const isGenderStep = step === shuffled.length;
@@ -50,12 +97,24 @@ export default function QuizPage() {
     if (animating) return;
     setAnimating(true);
     const result = calcResult(answers);
-    setTimeout(() => {
-      const scoresParam = encodeURIComponent(JSON.stringify(
-        Object.fromEntries(
+    const scoresParam = encodeURIComponent(JSON.stringify(
+      Object.fromEntries(
+        Object.entries(result.scores).map(([k, v]) => [k, (v as { pct: number }).pct])
+      )
+    ));
+    // 結果を保存・進捗をクリア
+    try {
+      localStorage.setItem(STORAGE_KEY_RESULT, JSON.stringify({
+        typeKey: result.typeKey,
+        scores: Object.fromEntries(
           Object.entries(result.scores).map(([k, v]) => [k, (v as { pct: number }).pct])
-        )
-      ));
+        ),
+        gender,
+        completedAt: new Date().toISOString(),
+      }));
+      localStorage.removeItem(STORAGE_KEY_PROGRESS);
+    } catch {}
+    setTimeout(() => {
       router.push(`/quiz/result/${result.typeKey}?gender=${gender}&scores=${scoresParam}`);
     }, 280);
   };
@@ -66,16 +125,46 @@ export default function QuizPage() {
     setSelected(null);
   };
 
+  const handleReset = () => {
+    try { localStorage.removeItem(STORAGE_KEY_PROGRESS); } catch {}
+    setShuffled(shuffle(QUESTIONS));
+    setAnswers({});
+    setStep(0);
+    setSelected(null);
+  };
+
+  if (!ready) return null;
+
   return (
     <div
       className="min-h-[calc(100vh-56px)] flex flex-col items-center px-4 py-8"
       style={{ background: 'linear-gradient(160deg, #fff5e6 0%, #ffecd2 50%, #ffd1dc 100%)' }}
     >
+      {/* 前回の結果バナー */}
+      {prevResult && step === 0 && (
+        <div className="w-full max-w-sm mb-4 rounded-2xl px-4 py-3 flex items-center justify-between gap-2"
+          style={{ background: '#fff8f0', border: '1.5px solid #ffb347' }}>
+          <p className="text-[12px] text-[#7a4a1a] font-bold">前回の結果: <span className="text-[#c05a00]">{prevResult.name}</span></p>
+          <Link href={`/quiz/result/${prevResult.typeKey}`}
+            className="text-[11px] font-black px-3 py-1 rounded-full text-white shrink-0"
+            style={{ background: '#ffb347' }}>
+            見る
+          </Link>
+        </div>
+      )}
+
       {/* プログレス */}
       <div className="w-full max-w-sm mb-6">
         <div className="flex justify-between text-xs text-[#b5541a]/60 mb-1.5 font-bold">
           <span>{isGenderStep ? '最後の質問' : `Q${step + 1} / ${QUESTIONS.length}`}</span>
-          <span>{Math.round(progress)}%</span>
+          <div className="flex items-center gap-3">
+            <span>{Math.round(progress)}%</span>
+            {step > 0 && (
+              <button onClick={handleReset} className="text-[10px] text-[#b5541a]/40 underline underline-offset-2">
+                最初から
+              </button>
+            )}
+          </div>
         </div>
         <div className="h-2.5 rounded-full bg-white/50 overflow-hidden shadow-inner">
           <div
@@ -98,7 +187,6 @@ export default function QuizPage() {
               boxShadow: '0 2px 0 #e8c9a0, 0 5px 0 #d4a574, 0 8px 24px rgba(100,50,0,0.12)',
             }}
           >
-            {/* 軸タグ */}
             <div>
               <p className="text-[18px] font-black text-[#3d1a00] leading-snug">
                 {currentQ.text}
@@ -107,12 +195,10 @@ export default function QuizPage() {
 
             {/* 5段階スケール */}
             <div>
-              {/* エンドラベル */}
               <div className="flex justify-between text-[11px] font-bold text-[#b5541a]/60 mb-2 px-1">
                 <span>全然違う</span>
                 <span>まさにそう</span>
               </div>
-              {/* 5つのボタン */}
               <div className="flex gap-2 justify-between">
                 {[1, 2, 3, 4, 5].map((v) => (
                   <button
@@ -138,7 +224,6 @@ export default function QuizPage() {
                   </button>
                 ))}
               </div>
-              {/* 選択肢ラベル */}
               {selected !== null && (
                 <p className="text-center text-[12px] font-bold mt-2.5" style={{ color: `hsl(${20 + selected * 20}, 70%, 45%)` }}>
                   {SCALE_LABELS[selected - 1]}
@@ -146,7 +231,6 @@ export default function QuizPage() {
               )}
             </div>
 
-            {/* 次へボタン */}
             <button
               onClick={handleNext}
               disabled={selected === null}
@@ -160,7 +244,6 @@ export default function QuizPage() {
               次の質問へ →
             </button>
 
-            {/* 戻るボタン */}
             {step > 0 && (
               <button onClick={handleBack} className="text-[12px] text-[#b5541a]/50 font-bold text-center">
                 ← 前の質問に戻る
@@ -168,7 +251,6 @@ export default function QuizPage() {
             )}
           </div>
         ) : (
-          /* 性別カード */
           <div
             className="rounded-3xl p-6"
             style={{
@@ -203,23 +285,5 @@ export default function QuizPage() {
         )}
       </div>
     </div>
-  );
-}
-
-function AxisBadge({ axis }: { axis: string }) {
-  const map: Record<string, { label: string; color: string }> = {
-    ds: { label: '支配 ⇄ 奉仕', color: '#FF6B6B' },
-    nx: { label: '日常 ⇄ 非日常', color: '#74B9FF' },
-    pe: { label: '快楽 ⇄ 感情', color: '#FDCB6E' },
-    hl: { label: '頻度', color: '#FF8E53' },
-  };
-  const m = map[axis] ?? { label: axis, color: '#ccc' };
-  return (
-    <span
-      className="text-[10px] font-black px-2.5 py-1 rounded-full text-white"
-      style={{ background: m.color }}
-    >
-      {m.label}
-    </span>
   );
 }
