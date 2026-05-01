@@ -4,7 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import { Home as HomeIcon, Sparkles, BarChart2, List, UserPlus, Settings, Info, Mail } from 'lucide-react';
+import { Home as HomeIcon, Sparkles, BarChart2, List, UserPlus, Settings, Info, Mail, FlaskConical } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useDecisionCount } from '@/hooks/useDecisionCount';
 
@@ -125,6 +125,10 @@ export default function DesktopSidebar() {
           <NavButton label="あなたの性癖" icon={BarChart2} href="/insights" disabled={!isLoggedIn} />
         </nav>
         <div className="px-3 pt-2 pb-10">
+          <div className="border-t border-[#30363d] my-2" />
+          <div className="space-y-1 text-sm">
+            <NavButton label="性癖16タイプ診断" icon={FlaskConical} href="/quiz" disabled={false} />
+          </div>
           <div className="border-t border-[#30363d] my-2" />
           <div className="space-y-1 text-sm">
             <NavButton label="お問い合わせ" icon={Mail} href="/contact" disabled={!isLoggedIn} />
