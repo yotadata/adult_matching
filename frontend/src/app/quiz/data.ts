@@ -1,14 +1,10 @@
 export type Axis = 'ds' | 'nx' | 'pe' | 'hl';
 
-const TYPE_KEY_DISPLAY: Record<string, string> = { D: 'S', S: 'M' };
-export function displayTypeKey(key: string): string[] {
-  return key.toUpperCase().split('').map((c) => TYPE_KEY_DISPLAY[c] ?? c);
-}
 export type QuizTypeKey =
-  | 'dnph' | 'dnpl' | 'dneh' | 'dnel'
-  | 'dxph' | 'dxpl' | 'dxeh' | 'dxel'
   | 'snph' | 'snpl' | 'sneh' | 'snel'
-  | 'sxph' | 'sxpl' | 'sxeh' | 'sxel';
+  | 'sxph' | 'sxpl' | 'sxeh' | 'sxel'
+  | 'mnph' | 'mnpl' | 'mneh' | 'mnel'
+  | 'mxph' | 'mxpl' | 'mxeh' | 'mxel';
 
 // 5段階スコア: 1=全然違う 〜 5=まさにそう
 // reverse=true のとき、スコアは反転（S/X/E/L 寄りを示す質問）
@@ -147,7 +143,7 @@ export function calcResult(answers: Record<number, number>): QuizResult {
     scores[axis] = { pct, label, isHigh };
   }
 
-  const d = scores.ds.isHigh ? 'd' : 's';
+  const d = scores.ds.isHigh ? 's' : 'm';
   const n = scores.nx.isHigh ? 'n' : 'x';
   const p = scores.pe.isHigh ? 'p' : 'e';
   const h = scores.hl.isHigh ? 'h' : 'l';
@@ -157,98 +153,98 @@ export function calcResult(answers: Record<number, number>): QuizResult {
 }
 
 export const QUIZ_TYPES: Record<QuizTypeKey, QuizType> = {
-  dnph: {
-    key: 'dnph', name: '肉食系番長', emoji: '🔥',
+  snph: {
+    key: 'snph', name: '肉食系番長', emoji: '🔥',
     tagline: '欲求に素直、ぐいぐい主導権を握るタイプ',
     description: '衝動が来たら止まらない。相手より先に動いて、流れを自分で作る。「もっと」が口癖で、物足りなさを感じると自分からアクションを起こす。リードする側にいると本領発揮するタイプ。',
     color: '#FF6B6B', accent: '#C0392B',
   },
-  dnpl: {
-    key: 'dnpl', name: 'クールなぐいぐい系', emoji: '🧊',
+  snpl: {
+    key: 'snpl', name: 'クールなぐいぐい系', emoji: '🧊',
     tagline: '主導権は渡さない、でも急がない',
     description: '自分がコントロールする側でいたいけど、焦らない。じっくりペースを作って、気づいたら相手が夢中になってる。日常の中でさりげなく主導権を握るのが得意。',
     color: '#4ECDC4', accent: '#1A9B8C',
   },
-  dneh: {
-    key: 'dneh', name: '情熱系まとめ役', emoji: '❤️‍🔥',
+  sneh: {
+    key: 'sneh', name: '情熱系まとめ役', emoji: '❤️‍🔥',
     tagline: '気持ちが高まると、抑えられない',
     description: '感情と欲求がリンクしている。気持ちが盛り上がると行動も加速する。日常の中の積み重ねで興奮するタイプで、「好き」と「もっと」が同時に来る。リードしながらも感情豊か。',
     color: '#FF8E53', accent: '#E74C3C',
   },
-  dnel: {
-    key: 'dnel', name: 'じわじわくるカリスマ', emoji: '🌙',
+  snel: {
+    key: 'snel', name: 'じわじわくるカリスマ', emoji: '🌙',
     tagline: '寡黙だけど、気づいたら支配されてる',
     description: '多くを語らず、でも確実に場の空気を掌握している。感情的になることは少ないが、その静けさ自体が圧になる。日常のリアルな場面で、じわじわと相手を引き込む。',
     color: '#A29BFE', accent: '#6C5CE7',
   },
-  dxph: {
-    key: 'dxph', name: '刺激中毒の冒険家', emoji: '⚡',
+  sxph: {
+    key: 'sxph', name: '刺激中毒の冒険家', emoji: '⚡',
     tagline: '普通じゃ物足りない、いつも上を求めてる',
     description: '日常の刺激では満足できない。特殊なシチュエーションや非日常的な体験に強く反応する。身体的な刺激への感度が高く、「こんなことしてみたい」リストが尽きない。',
     color: '#FD79A8', accent: '#E84393',
   },
-  dxpl: {
-    key: 'dxpl', name: '謎多き一匹狼', emoji: '🐺',
+  sxpl: {
+    key: 'sxpl', name: '謎多き一匹狼', emoji: '🐺',
     tagline: '自分のペースで、自分だけの世界を持つ',
     description: '欲求はあるが、頻繁には動かない。独自のファンタジーや世界観を持っていて、日常にはない特別な状況にしか本気で反応しない。ミステリアスな雰囲気が自然と出るタイプ。',
     color: '#636E72', accent: '#2D3436',
   },
-  dxeh: {
-    key: 'dxeh', name: '主役体質のドラマー', emoji: '🎭',
+  sxeh: {
+    key: 'sxeh', name: '主役体質のドラマー', emoji: '🎭',
     tagline: '気持ちが動かないと、身体も動かない',
     description: '非日常的なシチュエーションに感情が乗ると、スイッチが入る。頻度よりも「盛り上がり」を重視。特定の設定やシナリオで感情が爆発する、感情トリガー型の欲求持ち。',
     color: '#FDCB6E', accent: '#E17055',
   },
-  dxel: {
-    key: 'dxel', name: '孤高のロマンチスト', emoji: '🌌',
+  sxel: {
+    key: 'sxel', name: '孤高のロマンチスト', emoji: '🌌',
     tagline: '頻度より深度、滅多に来ないが来たら本物',
     description: 'めったに動かないが、動くときは全力。非日常的な感情体験を重視していて、その瞬間の「深さ」がすべて。ファンタジーな設定で感情が動くと、誰より激しくなる。',
     color: '#6C5CE7', accent: '#4A3AB5',
   },
-  snph: {
-    key: 'snph', name: '尽くしすぎ注意報', emoji: '🌿',
+  mnph: {
+    key: 'mnph', name: '尽くしすぎ注意報', emoji: '🌿',
     tagline: '相手が喜ぶことが、自分の快感になる',
     description: '相手の反応を見るのが何より好き。日常的な場面で、相手の身体的な満足を引き出すことに強い充実感を覚える。欲求の頻度も高く、尽くす回数も多い。気づいたらやりすぎてる。',
     color: '#55EFC4', accent: '#00B894',
   },
-  snpl: {
-    key: 'snpl', name: '気まぐれ世話焼き', emoji: '🌸',
+  mnpl: {
+    key: 'mnpl', name: '気まぐれ世話焼き', emoji: '🌸',
     tagline: '気が向いたとき、とことん尽くす',
     description: '欲求もサービス精神も、波がある。でもやると決めたら手加減しない。日常の中で相手の身体的な反応を引き出すことに喜びを感じるが、ペースは完全に自分で決める。',
     color: '#81ECEC', accent: '#00CEC9',
   },
-  sneh: {
-    key: 'sneh', name: '全力おせっかい愛情家', emoji: '💝',
+  mneh: {
+    key: 'mneh', name: '全力おせっかい愛情家', emoji: '💝',
     tagline: '感情と欲求が一体化してる',
     description: '気持ちが動くと欲求も動く。相手の感情状態に敏感で、心のつながりを感じることで火がつく。日常の中で頻繁に感情が揺れ動き、その都度ちゃんと反応してしまう正直な人。',
     color: '#FF7675', accent: '#D63031',
   },
-  snel: {
-    key: 'snel', name: '縁の下の天使', emoji: '🕊️',
+  mnel: {
+    key: 'mnel', name: '縁の下の天使', emoji: '🕊️',
     tagline: '深い感情の共鳴を、静かに待てる人',
     description: '心がつながったと感じるときにだけ、スイッチが入る。頻度より質派で、日常の延長で相手の感情に寄り添うことに快感がある。派手な刺激より、静かな充足を好む。',
     color: '#DFE6E9', accent: '#B2BEC3',
   },
-  sxph: {
-    key: 'sxph', name: '妄想族の甘やかし屋', emoji: '🍬',
+  mxph: {
+    key: 'mxph', name: '妄想族の甘やかし屋', emoji: '🍬',
     tagline: '頭の中はファンタジー、でも行動は尽くし型',
     description: '妄想の中に非日常的な設定がたくさんある。でも実際には相手の身体的な満足を引き出すことに全力で、頻繁に動く。ギャップがすごい。「実はこんなこと考えてた」と言われるタイプ。',
     color: '#FAB1A0', accent: '#E17055',
   },
-  sxpl: {
-    key: 'sxpl', name: '夢見るロマンチスト', emoji: '✨',
+  mxpl: {
+    key: 'mxpl', name: '夢見るロマンチスト', emoji: '✨',
     tagline: '特別な場面でしか、本気にならない',
     description: '日常じゃない。特殊なシチュエーションや非現実的な設定に、身体が正直に反応する。頻度は少ないが、その分「理想の場面」へのこだわりが強い。妄想の解像度が異常に高い。',
     color: '#FFF4E6', accent: '#FDCB6E',
   },
-  sxeh: {
-    key: 'sxeh', name: '愛に生きる感情家', emoji: '💫',
+  mxeh: {
+    key: 'mxeh', name: '愛に生きる感情家', emoji: '💫',
     tagline: '感情の爆発が、欲求のスイッチになる',
     description: '非日常的な状況や特殊な関係性の中で感情が動いたとき、欲求が最大化する。心が揺れるほど欲しくなる、感情連動型。頻度も高く、感情的な盛り上がりを何度も求めてしまう。',
     color: '#FD79A8', accent: '#E84393',
   },
-  sxel: {
-    key: 'sxel', name: '一途すぎる月の人', emoji: '🌕',
+  mxel: {
+    key: 'mxel', name: '一途すぎる月の人', emoji: '🌕',
     tagline: '深い感情が動いたとき、唯一スイッチが入る',
     description: 'めったに欲求が来ないが、来たときは深い。非日常的な感情体験との組み合わせでしか本気にならない。心が完全に動いた相手には全力で応じる、一生に数回型の本気タイプ。',
     color: '#C7ECEE', accent: '#74B9FF',

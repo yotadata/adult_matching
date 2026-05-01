@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import type { Metadata } from 'next';
-import { QUIZ_TYPES, QuizTypeKey, displayTypeKey } from '../data';
+import { QUIZ_TYPES, QuizTypeKey } from '../data';
 
 export const metadata: Metadata = {
   title: 'キャラクター一覧 | 性癖パーソナリティ診断',
@@ -9,10 +9,10 @@ export const metadata: Metadata = {
 };
 
 const TYPE_ORDER: QuizTypeKey[] = [
-  'dnph', 'dnpl', 'dneh', 'dnel',
-  'dxph', 'dxpl', 'dxeh', 'dxel',
   'snph', 'snpl', 'sneh', 'snel',
   'sxph', 'sxpl', 'sxeh', 'sxel',
+  'mnph', 'mnpl', 'mneh', 'mnel',
+  'mxph', 'mxpl', 'mxeh', 'mxel',
 ];
 
 const GROUP_LABELS = [
@@ -80,7 +80,7 @@ export default function CharactersPage() {
                     {/* テキスト */}
                     <div className="px-3 pt-2 pb-3">
                       <div className="flex gap-1 mb-1.5">
-                        {displayTypeKey(key).map((c, i) => (
+                        {key.toUpperCase().split('').map((c, i) => (
                           <span
                             key={i}
                             className="text-[9px] font-black px-1.5 py-0.5 rounded-full"
