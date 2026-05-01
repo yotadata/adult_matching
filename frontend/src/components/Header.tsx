@@ -9,7 +9,7 @@ import useMediaQuery from '@/hooks/useMediaQuery';
 import { supabase } from '@/lib/supabase';
 import { User as SupabaseUser } from '@supabase/supabase-js';
 import { Dialog, Transition } from '@headlessui/react';
-import { UserPlus, Menu as MenuIcon, X, Home as HomeIcon, Sparkles, BarChart2, List, Mail, Settings, Info } from 'lucide-react';
+import { UserPlus, Menu as MenuIcon, X, Home as HomeIcon, Sparkles, BarChart2, List, Mail, Settings, Info, FlaskConical } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import LikedVideosDrawer from './LikedVideosDrawer'; // ドロワーコンポーネントをインポート
 
@@ -50,7 +50,7 @@ const Header = ({ cardWidth, mobileGauge }: { cardWidth: number | undefined; mob
     { label: 'お問い合わせ', href: '/contact', icon: Mail, requiresLogin: true },
     { label: 'アカウント設定', href: '/account-management', icon: Settings, requiresLogin: true },
     { label: 'このサイトについて', href: '/about', icon: Info, requiresLogin: false },
-    { label: '性癖16タイプ診断', href: '/quiz', icon: Sparkles, requiresLogin: false },
+    { label: '性癖16タイプ診断', href: '/quiz', icon: FlaskConical, requiresLogin: false },
   ];
 
   useEffect(() => {
@@ -300,7 +300,15 @@ const Header = ({ cardWidth, mobileGauge }: { cardWidth: number | undefined; mob
                 />
               </Link>
             </div>
-            <div className="flex justify-end">
+            <div className="flex items-center justify-end gap-2">
+              <Link
+                href="/quiz"
+                className="flex items-center gap-1.5 px-4 py-2 text-sm font-bold text-white rounded-full backdrop-blur-md bg-white/10 border border-white/30 hover:bg-white/20 transition-all duration-300"
+                style={{ filter: 'drop-shadow(0 0 0.5rem rgba(0, 0, 0, 0.1))' }}
+              >
+                <FlaskConical size={16} className="opacity-90" />
+                <span>性癖診断</span>
+              </Link>
               {user ? (
                 null
               ) : (
