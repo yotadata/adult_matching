@@ -72,7 +72,6 @@ export default function CharactersPage() {
                         width={96}
                         height={96}
                         className="relative object-contain"
-                        style={{ mixBlendMode: 'multiply' }}
                       />
                     </div>
 

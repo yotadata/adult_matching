@@ -77,7 +77,6 @@ function ResultContent({ typeKey }: { typeKey: QuizTypeKey }) {
             width={180}
             height={180}
             className="relative object-contain"
-            style={{ mixBlendMode: 'multiply' }}
           />
         </div>
 
