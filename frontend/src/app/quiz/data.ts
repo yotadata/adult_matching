@@ -73,21 +73,21 @@ export const QUESTIONS: Question[] = [
   { id: 1,  axis: 'ds', text: '性的な場面では、自分がリードする側にいるほうが自然だ',           reverse: false },
   { id: 2,  axis: 'ds', text: '相手を言葉や行動でコントロールできると、興奮が高まる',           reverse: false },
   { id: 3,  axis: 'ds', text: '「もっとして」と相手に言わせる側でいたい',                       reverse: false },
-  { id: 4,  axis: 'ds', text: '相手にコントロールされることで、むしろ解放感がある',              reverse: true  },
+  { id: 4,  axis: 'ds', text: '相手に思い通りにされることで、気持ちが高まる',                    reverse: true  },
   { id: 5,  axis: 'ds', text: '相手の指示や要求に応えることに、強い喜びを感じる',               reverse: true  },
 
   // ── 日常(N) ⇄ 非日常(X) 軸 ── high=N, reverse=true → X寄り ──
-  { id: 6,  axis: 'nx', text: '現実にあるような日常的なシーン（職場・自宅・電車など）で興奮しやすい', reverse: false },
+  { id: 6,  axis: 'nx', text: 'コスプレや特殊な役割設定がなくても、現実にありそうな場面で十分に興奮できる', reverse: false },
   { id: 7,  axis: 'nx', text: 'コスプレや役割設定より、リアルな状況のほうが刺さる',             reverse: false },
-  { id: 8,  axis: 'nx', text: '特別な演出がなくても、ふとしたシチュエーションで欲求が生まれる', reverse: false },
+  { id: 8,  axis: 'nx', text: '特別な場所や雰囲気がなくても、普段の何気ない場面で欲求が生まれる', reverse: false },
   { id: 9,  axis: 'nx', text: 'コスプレ・役割設定など、非日常の演出があると盛り上がる',         reverse: true  },
-  { id: 10, axis: 'nx', text: '現実離れした妄想のシチュエーションで興奮することが多い',         reverse: true  },
+  { id: 10, axis: 'nx', text: 'コスプレや異世界・特殊な役割など、現実にはない設定に強く惹かれる',  reverse: true  },
 
   // ── 快楽(P) ⇄ 感情(E) 軸 ── high=P, reverse=true → E寄り ──
   { id: 11, axis: 'pe', text: '身体的な刺激や感覚への反応が強い',                               reverse: false },
   { id: 12, axis: 'pe', text: '精神的なつながりより、身体の相性を重視することが多い',           reverse: false },
   { id: 13, axis: 'pe', text: '気持ちの盛り上がりがなくても、身体的な刺激があれば十分だ',       reverse: false },
-  { id: 14, axis: 'pe', text: '気持ちが盛り上がって初めて、欲求が生まれる',                     reverse: true  },
+  { id: 14, axis: 'pe', text: 'どれだけ刺激があっても、相手への気持ちがなければ欲求は生まれない', reverse: true  },
   { id: 15, axis: 'pe', text: '感情的な盛り上がりがないと、どんな刺激があっても物足りない',     reverse: true  },
 
   // ── 頻度高(H) ⇄ 頻度低(L) 軸 ── high=H, reverse=true → L寄り ──
