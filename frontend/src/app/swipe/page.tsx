@@ -116,6 +116,9 @@ function SwipePageContent() {
   const onboardingStartedRef = useRef(false);
   const spotlightStartedRef = useRef(false);
   const postSignupTrackedRef = useRef(false);
+  // デッキに含まれる（または過去に提示した）動画IDを追跡し、append時の重複を防ぐ
+  const seenVideoIdsRef = useRef<Set<string>>(new Set());
+  const PREFETCH_THRESHOLD = 5; // 残り枚数がこの値以下になったらバックグラウンド取得開始
   const searchParams = useSearchParams();
   const isDebugMode = useMemo(() => {
     const value = searchParams?.get('debug');
@@ -317,7 +320,7 @@ function SwipePageContent() {
     });
   }, [isLoggedIn, toIsoString]);
  
-  const refetchVideos = useCallback(async () => {
+  const refetchVideos = useCallback(async (mode: 'replace' | 'append' = 'replace') => {
     const requestStartedAt = Date.now();
     try {
       setIsFetchingVideos(true);
@@ -334,6 +337,7 @@ function SwipePageContent() {
         trackEvent('recommend_fetch', {
           status: 'error',
           source: 'videos_feed',
+          fetch_mode: mode,
           response_ms: Date.now() - requestStartedAt,
           has_session: isLoggedInRef.current,
           error_message: error.message,
@@ -375,12 +379,24 @@ function SwipePageContent() {
           recommendationParams: video.params ?? null,
         };
       });
-      setCards(fetchedCards);
-      setActiveIndex(0);
+
+      if (mode === 'append') {
+        // フロントでも重複排除（SQLのNOT EXISTSと二重防御）
+        const newCards = fetchedCards.filter(c => !seenVideoIdsRef.current.has(String(c.id)));
+        newCards.forEach(c => seenVideoIdsRef.current.add(String(c.id)));
+        if (newCards.length > 0) {
+          setCards(prev => [...prev, ...newCards]);
+        }
+      } else {
+        seenVideoIdsRef.current = new Set(fetchedCards.map(c => String(c.id)));
+        setCards(fetchedCards);
+        setActiveIndex(0);
+      }
 
       trackEvent('recommend_fetch', {
         status: 'success',
         source: 'videos_feed',
+        fetch_mode: mode,
         response_ms: Date.now() - requestStartedAt,
         has_session: isLoggedInRef.current,
         videos_count: fetchedCards.length,
@@ -393,6 +409,7 @@ function SwipePageContent() {
       trackEvent('recommend_fetch', {
         status: 'error',
         source: 'videos_feed',
+        fetch_mode: mode,
         response_ms: Date.now() - requestStartedAt,
         has_session: isLoggedInRef.current,
         error_message: message,
@@ -623,9 +640,23 @@ function SwipePageContent() {
     setCurrentGradient(ORIGINAL_GRADIENT);
   };
 
+  // 残り PREFETCH_THRESHOLD 枚でバックグラウンドプリフェッチ（appendモード）
+  useEffect(() => {
+    const remaining = cards.length - activeIndex;
+    if (
+      cards.length > 0 &&
+      remaining > 0 &&
+      remaining <= PREFETCH_THRESHOLD &&
+      !isFetchingVideos
+    ) {
+      refetchVideos('append');
+    }
+  }, [activeIndex, cards.length, isFetchingVideos, refetchVideos]);
+
+  // デッキが完全に枯渇したときのフォールバック（プリフェッチが間に合わなかった場合）
   useEffect(() => {
     if (cards.length > 0 && activeIndex >= cards.length && !isFetchingVideos) {
-      refetchVideos();
+      refetchVideos('replace');
     }
   }, [activeIndex, cards.length, isFetchingVideos, refetchVideos]);
 
@@ -757,7 +788,7 @@ function SwipePageContent() {
               <div className="flex flex-col items-center justify-center w-full h-full text-white/90">
                 <p className="mb-3">おすすめ候補は以上です。</p>
                 <button
-                  onClick={refetchVideos}
+                  onClick={() => refetchVideos('replace')}
                   className="px-4 py-2 rounded-md bg-white/20 hover:bg-white/30 backdrop-blur border border-white/40"
                 >
                   おすすめを再取得
