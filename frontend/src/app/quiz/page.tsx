@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { QUESTIONS, QUIZ_TYPES, QuizTypeKey, calcResult } from './data';
+import { trackEvent } from '@/lib/analytics';
 
 type Gender = 'male' | 'female' | 'other';
 
@@ -30,6 +31,7 @@ export default function QuizPage() {
   const [selected, setSelected] = useState<number | null>(null);
   const [animating, setAnimating] = useState(false);
   const [prevResult, setPrevResult] = useState<{ typeKey: QuizTypeKey; name: string; scores: string; gender: string } | null>(null);
+  const startTrackedRef = useRef(false);
 
   // 保存済みの進捗・結果をロード
   useEffect(() => {
@@ -64,6 +66,13 @@ export default function QuizPage() {
     setShuffled(shuffle(QUESTIONS));
     setReady(true);
   }, []);
+
+  // quiz_start を一度だけ発火
+  useEffect(() => {
+    if (!ready || startTrackedRef.current) return;
+    startTrackedRef.current = true;
+    trackEvent('quiz_start');
+  }, [ready]);
 
   // 進捗を保存
   useEffect(() => {
@@ -102,6 +111,7 @@ export default function QuizPage() {
     if (animating) return;
     setAnimating(true);
     const result = calcResult(answers);
+    trackEvent('quiz_complete', { type: result.typeKey, gender });
     const scoresParam = encodeURIComponent(JSON.stringify(
       Object.fromEntries(
         Object.entries(result.scores).map(([k, v]) => [k, (v as { pct: number }).pct])

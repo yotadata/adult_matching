@@ -115,6 +115,7 @@ function SwipePageContent() {
   const likedListButtonRef = useRef<HTMLButtonElement | null>(null);
   const onboardingStartedRef = useRef(false);
   const spotlightStartedRef = useRef(false);
+  const postSignupTrackedRef = useRef(false);
   const searchParams = useSearchParams();
   const isDebugMode = useMemo(() => {
     const value = searchParams?.get('debug');
@@ -220,7 +221,11 @@ function SwipePageContent() {
       recommendation_score: typeof card.recommendationScore === 'number' ? card.recommendationScore : undefined,
       recommendation_model_version: card.recommendationModelVersion ?? undefined,
     });
-  }, [isLoggedIn, toIsoString]);
+    if (isLoggedIn && !postSignupTrackedRef.current) {
+      postSignupTrackedRef.current = true;
+      trackEvent('post_signup_first_swipe', { decision_count: decisionCount });
+    }
+  }, [isLoggedIn, toIsoString, decisionCount]);
 
   const abandonInteractionSession = useCallback((card: CardData) => {
     if (!sessionIdRef.current || sessionStartRef.current === null || sessionCompletedRef.current) {

@@ -2,10 +2,11 @@
 
 import { useSearchParams } from 'next/navigation';
 import { useRouter } from 'next/navigation';
-import { Suspense } from 'react';
+import { Suspense, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { QUIZ_TYPES, AXIS_META, QuizTypeKey, Axis } from '../../data';
+import { trackEvent } from '@/lib/analytics';
 
 export default async function ResultPage({ params }: { params: Promise<{ type: string }> }) {
   const { type } = await params;
@@ -42,16 +43,25 @@ function ResultContent({ typeKey }: { typeKey: QuizTypeKey }) {
     pct: typeof rawScores[axis] === 'number' ? rawScores[axis] : 50,
   }));
 
+  useEffect(() => {
+    trackEvent('quiz_result_view', { type: typeKey, gender });
+  }, [typeKey, gender]);
+
   const shareToX = () => {
+    trackEvent('quiz_share', { method: 'x', type: typeKey });
     window.open(
       `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}&hashtags=性癖16タイプ診断`,
       '_blank', 'noopener'
     );
   };
   const shareToLine = () => {
+    trackEvent('quiz_share', { method: 'line', type: typeKey });
     window.open(`https://line.me/R/msg/text/?${encodeURIComponent(`${shareText}\n${shareUrl}`)}`, '_blank', 'noopener');
   };
-  const copyLink = async () => { await navigator.clipboard.writeText(shareUrl); };
+  const copyLink = async () => {
+    trackEvent('quiz_share', { method: 'copy_link', type: typeKey });
+    await navigator.clipboard.writeText(shareUrl);
+  };
 
   return (
     <div
@@ -161,7 +171,12 @@ function ResultContent({ typeKey }: { typeKey: QuizTypeKey }) {
           <p className="text-xs font-bold tracking-widest text-purple-300/70 uppercase mb-2">あなたへのおすすめ</p>
           <p className="text-xl font-black text-white mb-2">あなたの性癖に合う動画、見つかるかも</p>
           <p className="text-sm text-white/60 mb-4">AIがあなたの好みを学習して、刺さる動画だけをおすすめ。スワイプして探してみよう。</p>
-          <Link href="/" className="block w-full rounded-2xl py-4 text-center font-black text-white text-[15px]" style={{ background: 'linear-gradient(90deg, #9333ea, #ec4899)', boxShadow: '0 4px 0 #6b21a8' }}>
+          <Link
+            href="/"
+            className="block w-full rounded-2xl py-4 text-center font-black text-white text-[15px]"
+            style={{ background: 'linear-gradient(90deg, #9333ea, #ec4899)', boxShadow: '0 4px 0 #6b21a8' }}
+            onClick={() => trackEvent('quiz_swipe_cta_click', { type: typeKey })}
+          >
             性癖ラボを試してみる 🔥
           </Link>
         </div>
