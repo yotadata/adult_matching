@@ -2,11 +2,13 @@
 
 import { useSearchParams } from 'next/navigation';
 import { useRouter } from 'next/navigation';
-import { Suspense, useEffect } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { QUIZ_TYPES, AXIS_META, QuizTypeKey, Axis } from '../../data';
 import { trackEvent } from '@/lib/analytics';
+
+const CTA_SHOWN_KEY = 'quiz_male_cta_shown';
 
 export default async function ResultPage({ params }: { params: Promise<{ type: string }> }) {
   const { type } = await params;
@@ -20,14 +22,60 @@ export default async function ResultPage({ params }: { params: Promise<{ type: s
   );
 }
 
+function MaleCTAModal({ typeKey, onClose }: { typeKey: QuizTypeKey; onClose: () => void }) {
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-end justify-center pb-6 px-4"
+      style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-sm rounded-3xl p-6"
+        style={{
+          background: 'linear-gradient(135deg, #1a0d2e, #2a1020)',
+          boxShadow: '0 4px 0 #0d0616, 0 8px 40px rgba(0,0,0,0.5)',
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex justify-between items-start mb-4">
+          <p className="text-xs font-bold tracking-widest text-purple-300/70 uppercase">あなたへのおすすめ</p>
+          <button
+            onClick={onClose}
+            className="text-white/40 hover:text-white/80 transition-colors text-lg leading-none -mt-0.5"
+            aria-label="閉じる"
+          >
+            ✕
+          </button>
+        </div>
+        <p className="text-xl font-black text-white mb-2">あなたの性癖に合う動画、見つかるかも</p>
+        <p className="text-sm text-white/60 mb-5">AIがあなたの好みを学習して、刺さる動画だけをおすすめ。スワイプして探してみよう。</p>
+        <Link
+          href="/"
+          className="block w-full rounded-2xl py-4 text-center font-black text-white text-[15px] active:translate-y-[1px] transition-transform"
+          style={{ background: 'linear-gradient(90deg, #9333ea, #ec4899)', boxShadow: '0 4px 0 #6b21a8' }}
+          onClick={() => trackEvent('quiz_swipe_cta_click', { type: typeKey })}
+        >
+          性癖ラボを試してみる 🔥
+        </Link>
+        <button
+          onClick={onClose}
+          className="w-full mt-3 text-sm font-bold text-white/30 hover:text-white/60 transition-colors"
+        >
+          今はいい
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function ResultContent({ typeKey }: { typeKey: QuizTypeKey }) {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const [showCTA, setShowCTA] = useState(false);
 
   const gender = searchParams.get('gender') ?? 'other';
   const isMale = gender === 'male';
 
-  // scores パラメータ（URLから）: { ds: 73, nx: 52, pe: 87, hl: 71 }
   const rawScores = (() => {
     try { return JSON.parse(decodeURIComponent(searchParams.get('scores') ?? '{}')); }
     catch { return {}; }
@@ -46,6 +94,24 @@ function ResultContent({ typeKey }: { typeKey: QuizTypeKey }) {
   useEffect(() => {
     trackEvent('quiz_result_view', { type: typeKey, gender });
   }, [typeKey, gender]);
+
+  useEffect(() => {
+    if (!isMale) return;
+    try {
+      if (localStorage.getItem(CTA_SHOWN_KEY)) return;
+    } catch {}
+    const timer = setTimeout(() => {
+      setShowCTA(true);
+      trackEvent('quiz_male_cta_shown', { type: typeKey });
+      try { localStorage.setItem(CTA_SHOWN_KEY, '1'); } catch {}
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, [isMale, typeKey]);
+
+  const closeCTA = () => {
+    setShowCTA(false);
+    trackEvent('quiz_male_cta_dismissed', { type: typeKey });
+  };
 
   const shareToX = () => {
     trackEvent('quiz_share', { method: 'x', type: typeKey });
@@ -68,6 +134,8 @@ function ResultContent({ typeKey }: { typeKey: QuizTypeKey }) {
       className="min-h-[calc(100vh-56px)] flex flex-col items-center px-4 py-8"
       style={{ background: `linear-gradient(135deg, ${quizType.color}22 0%, #ffd1dc22 100%)` }}
     >
+      {showCTA && <MaleCTAModal typeKey={typeKey} onClose={closeCTA} />}
+
       <p className="text-xs font-bold tracking-[0.3em] text-gray-400 uppercase mb-4">診断結果</p>
 
       {/* メインカード */}
@@ -164,23 +232,6 @@ function ResultContent({ typeKey }: { typeKey: QuizTypeKey }) {
           🔗 リンクをコピー
         </button>
       </div>
-
-      {/* 男性向けCTA */}
-      {isMale && (
-        <div className="w-full max-w-sm rounded-3xl p-6 mb-5" style={{ background: 'linear-gradient(135deg, #1a0d2e, #2a1020)', boxShadow: '0 4px 0 #0d0616, 0 8px 24px rgba(0,0,0,0.3)' }}>
-          <p className="text-xs font-bold tracking-widest text-purple-300/70 uppercase mb-2">あなたへのおすすめ</p>
-          <p className="text-xl font-black text-white mb-2">あなたの性癖に合う動画、見つかるかも</p>
-          <p className="text-sm text-white/60 mb-4">AIがあなたの好みを学習して、刺さる動画だけをおすすめ。スワイプして探してみよう。</p>
-          <Link
-            href="/"
-            className="block w-full rounded-2xl py-4 text-center font-black text-white text-[15px]"
-            style={{ background: 'linear-gradient(90deg, #9333ea, #ec4899)', boxShadow: '0 4px 0 #6b21a8' }}
-            onClick={() => trackEvent('quiz_swipe_cta_click', { type: typeKey })}
-          >
-            性癖ラボを試してみる 🔥
-          </Link>
-        </div>
-      )}
 
       <button onClick={() => router.push('/quiz')} className="text-sm font-bold text-gray-400 underline underline-offset-4">
         もう一度診断する
