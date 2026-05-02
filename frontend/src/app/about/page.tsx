@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
-import { Sparkles, Shuffle, ListChecks, BarChart3, Zap, Brain, BookMarked, FlaskConical, ChevronRight } from 'lucide-react';
+import { Sparkles, Shuffle, ListChecks, BarChart3, Zap, Brain, BookMarked, FlaskConical } from 'lucide-react';
+import LpCtaButton from '@/components/LpCtaButton';
 
 export const metadata: Metadata = {
   title: '性癖ラボとは',
@@ -128,14 +128,13 @@ export default function AboutPage() {
               スワイプするほど精度が上がる。<br className="sm:hidden" />
               探す時間をゼロに近づける、あなた専用のレコメンドエンジン。
             </p>
-            <Link
+            <LpCtaButton
               href="/swipe"
+              label="今すぐ無料で試す"
+              eventName="lp_hero_cta_click"
               className="inline-flex items-center gap-2 px-8 py-4 rounded-full font-black text-white text-base shadow-lg hover:opacity-90 transition-opacity"
               style={{ background: 'linear-gradient(90deg, #7c3aed, #ec4899)', boxShadow: '0 4px 24px rgba(124,58,237,0.4)' }}
-            >
-              今すぐ無料で試す
-              <ChevronRight size={18} />
-            </Link>
+            />
           </div>
         </section>
 
@@ -220,14 +219,14 @@ export default function AboutPage() {
                 <FlaskConical size={32} className="text-orange-400 mx-auto mb-3" />
                 <h2 className="text-xl font-black text-white mb-2">まずは自分の性癖タイプを知る</h2>
                 <p className="text-sm text-white/60 mb-5">8つの質問に答えるだけで、あなたの性癖パーソナリティが16タイプに分類されます。</p>
-                <Link
+                <LpCtaButton
                   href="/quiz"
+                  label="性癖16タイプ診断を試す"
+                  eventName="lp_quiz_cta_click"
                   className="inline-flex items-center gap-2 px-6 py-3 rounded-full font-black text-[#5c2e00] text-sm hover:opacity-90 transition-opacity"
                   style={{ background: 'linear-gradient(90deg, #ffb347, #ff8c00)' }}
-                >
-                  性癖16タイプ診断を試す
-                  <ChevronRight size={16} />
-                </Link>
+                  iconSize={16}
+                />
               </div>
             </div>
           </div>
@@ -257,14 +256,13 @@ export default function AboutPage() {
               あなたの性癖、<br />AIに学ばせてみませんか？
             </h2>
             <p className="text-white/60 text-sm mb-8">登録不要・無料・今すぐ開始</p>
-            <Link
+            <LpCtaButton
               href="/swipe"
+              label="今すぐ無料で始める"
+              eventName="lp_footer_cta_click"
               className="inline-flex items-center gap-2 px-10 py-4 rounded-full font-black text-white text-base hover:opacity-90 transition-opacity"
               style={{ background: 'linear-gradient(90deg, #7c3aed, #ec4899)', boxShadow: '0 4px 32px rgba(124,58,237,0.5)' }}
-            >
-              今すぐ無料で始める
-              <ChevronRight size={18} />
-            </Link>
+            />
           </div>
         </section>
 

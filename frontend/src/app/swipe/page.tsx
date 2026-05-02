@@ -61,6 +61,13 @@ interface VideosFeedMetadata {
   swipes_until_next_embed: number;
   decision_count: number;
   user_stats: UserStats | null;
+  _debug?: {
+    exploit_raw: number;
+    exploit_err: string | null;
+    popularity_raw: number;
+    popularity_err: string | null;
+    decision_count: number;
+  } | null;
 }
 
 const ORIGINAL_GRADIENT = 'linear-gradient(135deg, #1a0d2e 0%, #160d25 33%, #2a1020 66%, #1e0d1a 100%)';
@@ -93,6 +100,7 @@ function SwipePageContent() {
   const [cardWidth, setCardWidth] = useState<number | undefined>(400);
   const [swipesUntilNextEmbed, setSwipesUntilNextEmbed] = useState<number | null>(null);
   const [userStats, setUserStats] = useState<UserStats | null>(null);
+  const [feedDebug, setFeedDebug] = useState<VideosFeedMetadata['_debug']>(null);
   const { decisionCount, incrementDecisionCount } = useDecisionCount();
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
   const isLoggedInRef = useRef<boolean>(false);
@@ -115,6 +123,11 @@ function SwipePageContent() {
   const likedListButtonRef = useRef<HTMLButtonElement | null>(null);
   const onboardingStartedRef = useRef(false);
   const spotlightStartedRef = useRef(false);
+  const postSignupTrackedRef = useRef(false);
+  // デッキに含まれる（または過去に提示した）動画IDを追跡し、append時の重複を防ぐ
+  const seenVideoIdsRef = useRef<Set<string>>(new Set());
+  const activeIndexRef = useRef(0); // append時にスワイプ済み先頭を切り捨てるためのref
+  const PREFETCH_THRESHOLD = 5; // 残り枚数がこの値以下になったらバックグラウンド取得開始
   const searchParams = useSearchParams();
   const isDebugMode = useMemo(() => {
     const value = searchParams?.get('debug');
@@ -220,7 +233,11 @@ function SwipePageContent() {
       recommendation_score: typeof card.recommendationScore === 'number' ? card.recommendationScore : undefined,
       recommendation_model_version: card.recommendationModelVersion ?? undefined,
     });
-  }, [isLoggedIn, toIsoString]);
+    if (isLoggedIn && !postSignupTrackedRef.current) {
+      postSignupTrackedRef.current = true;
+      trackEvent('post_signup_first_swipe', { decision_count: decisionCount });
+    }
+  }, [isLoggedIn, toIsoString, decisionCount]);
 
   const abandonInteractionSession = useCallback((card: CardData) => {
     if (!sessionIdRef.current || sessionStartRef.current === null || sessionCompletedRef.current) {
@@ -312,7 +329,7 @@ function SwipePageContent() {
     });
   }, [isLoggedIn, toIsoString]);
  
-  const refetchVideos = useCallback(async () => {
+  const refetchVideos = useCallback(async (mode: 'replace' | 'append' = 'replace') => {
     const requestStartedAt = Date.now();
     try {
       setIsFetchingVideos(true);
@@ -329,6 +346,7 @@ function SwipePageContent() {
         trackEvent('recommend_fetch', {
           status: 'error',
           source: 'videos_feed',
+          fetch_mode: mode,
           response_ms: Date.now() - requestStartedAt,
           has_session: isLoggedInRef.current,
           error_message: error.message,
@@ -343,6 +361,7 @@ function SwipePageContent() {
       if (metadata) {
         setSwipesUntilNextEmbed(metadata.swipes_until_next_embed);
         setUserStats(metadata.user_stats ?? null);
+        setFeedDebug(metadata._debug ?? null);
       }
 
       const normalizeHttps = (u?: string) => u?.startsWith('http://') ? u.replace('http://', 'https://') : u;
@@ -370,12 +389,27 @@ function SwipePageContent() {
           recommendationParams: video.params ?? null,
         };
       });
-      setCards(fetchedCards);
-      setActiveIndex(0);
+
+      if (mode === 'append') {
+        // フロントでも重複排除（SQLのNOT EXISTSと二重防御）
+        const newCards = fetchedCards.filter(c => !seenVideoIdsRef.current.has(String(c.id)));
+        newCards.forEach(c => seenVideoIdsRef.current.add(String(c.id)));
+        if (newCards.length > 0) {
+          // スワイプ済み先頭を切り捨ててデッキサイズを一定に保つ
+          const trimAt = activeIndexRef.current;
+          setCards(prev => [...prev.slice(trimAt), ...newCards]);
+          setActiveIndex(0);
+        }
+      } else {
+        seenVideoIdsRef.current = new Set(fetchedCards.map(c => String(c.id)));
+        setCards(fetchedCards);
+        setActiveIndex(0);
+      }
 
       trackEvent('recommend_fetch', {
         status: 'success',
         source: 'videos_feed',
+        fetch_mode: mode,
         response_ms: Date.now() - requestStartedAt,
         has_session: isLoggedInRef.current,
         videos_count: fetchedCards.length,
@@ -388,6 +422,7 @@ function SwipePageContent() {
       trackEvent('recommend_fetch', {
         status: 'error',
         source: 'videos_feed',
+        fetch_mode: mode,
         response_ms: Date.now() - requestStartedAt,
         has_session: isLoggedInRef.current,
         error_message: message,
@@ -396,6 +431,8 @@ function SwipePageContent() {
       setIsFetchingVideos(false);
     }
   }, []);
+
+  useEffect(() => { activeIndexRef.current = activeIndex; }, [activeIndex]);
 
   useEffect(() => {
     const recalc = () => {
@@ -564,10 +601,19 @@ function SwipePageContent() {
     });
     setActiveIndex((prev) => prev + 1);
     setCurrentGradient(ORIGINAL_GRADIENT);
+    const nextCount = decisionCount + 1;
     incrementDecisionCount();
+    const MILESTONES = [5, 10, 15, 20, 30, 50];
+    if (MILESTONES.includes(nextCount)) {
+      trackEvent('swipe_milestone', {
+        count: nextCount,
+        has_session: isLoggedIn ? 1 : 0,
+      });
+    }
     if (!isLoggedIn) {
       const current = getGuestDecisions();
       if (current.length >= guestLimit) {
+        trackEvent('guest_limit_reached', { count: nextCount });
         try { window.dispatchEvent(new Event('open-register-modal')); } catch {}
       }
     }
@@ -609,9 +655,23 @@ function SwipePageContent() {
     setCurrentGradient(ORIGINAL_GRADIENT);
   };
 
+  // 残り PREFETCH_THRESHOLD 枚でバックグラウンドプリフェッチ（appendモード）
+  useEffect(() => {
+    const remaining = cards.length - activeIndex;
+    if (
+      cards.length > 0 &&
+      remaining > 0 &&
+      remaining <= PREFETCH_THRESHOLD &&
+      !isFetchingVideos
+    ) {
+      refetchVideos('append');
+    }
+  }, [activeIndex, cards.length, isFetchingVideos, refetchVideos]);
+
+  // デッキが完全に枯渇したときのフォールバック（プリフェッチが間に合わなかった場合）
   useEffect(() => {
     if (cards.length > 0 && activeIndex >= cards.length && !isFetchingVideos) {
-      refetchVideos();
+      refetchVideos('replace');
     }
   }, [activeIndex, cards.length, isFetchingVideos, refetchVideos]);
 
@@ -667,6 +727,19 @@ function SwipePageContent() {
                 <p>decisions: <span className="text-green-300">{decisionCount}</span></p>
                 <p>embed in: <span className="text-green-300">{swipesUntilNextEmbed ?? '—'}</span></p>
                 <p>auth: <span className={isLoggedIn ? 'text-green-300' : 'text-red-400'}>{isLoggedIn ? 'in' : 'guest'}</span></p>
+              </div>
+              <div className="mt-1.5 border-t border-white/10 pt-1.5 space-y-0.5 text-[10px]">
+                <p className="text-[9px] uppercase tracking-widest text-amber-300/60">feed診断</p>
+                {feedDebug ? (
+                  <>
+                    <p>exploit_raw: <span className={feedDebug.exploit_raw > 0 ? 'text-green-300' : 'text-red-400'}>{feedDebug.exploit_raw}</span></p>
+                    {feedDebug.exploit_err && <p className="text-red-400 break-all">err: {feedDebug.exploit_err}</p>}
+                    <p>pop_raw: <span className={feedDebug.popularity_raw > 0 ? 'text-green-300' : 'text-red-400'}>{feedDebug.popularity_raw}</span></p>
+                    {feedDebug.popularity_err && <p className="text-red-400 break-all">err: {feedDebug.popularity_err}</p>}
+                  </>
+                ) : (
+                  <p className="text-gray-500">no data</p>
+                )}
               </div>
               {userStats && (
                 <div className="mt-1.5 border-t border-white/10 pt-1.5 space-y-0.5">
@@ -743,7 +816,7 @@ function SwipePageContent() {
               <div className="flex flex-col items-center justify-center w-full h-full text-white/90">
                 <p className="mb-3">おすすめ候補は以上です。</p>
                 <button
-                  onClick={refetchVideos}
+                  onClick={() => refetchVideos('replace')}
                   className="px-4 py-2 rounded-md bg-white/20 hover:bg-white/30 backdrop-blur border border-white/40"
                 >
                   おすすめを再取得

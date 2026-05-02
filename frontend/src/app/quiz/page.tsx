@@ -1,9 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { QUESTIONS, QUIZ_TYPES, QuizTypeKey, calcResult } from './data';
+import { generateSessionId, trackEvent } from '@/lib/analytics';
+import { supabase } from '@/lib/supabase';
 
 type Gender = 'male' | 'female' | 'other';
 
@@ -11,6 +13,45 @@ const SCALE_LABELS = ['全然違う', 'あまり違う', 'どちらでも', 'や
 const TOTAL_STEPS = QUESTIONS.length + 1;
 const STORAGE_KEY_PROGRESS = 'quiz_progress';
 const STORAGE_KEY_RESULT = 'quiz_result';
+const STORAGE_KEY_ANONYMOUS_SESSION_ID = 'quiz_anonymous_session_id';
+
+function getAnonymousQuizSessionId() {
+  try {
+    const existing = localStorage.getItem(STORAGE_KEY_ANONYMOUS_SESSION_ID);
+    if (existing) return existing;
+    const created = generateSessionId();
+    localStorage.setItem(STORAGE_KEY_ANONYMOUS_SESSION_ID, created);
+    return created;
+  } catch {
+    return generateSessionId();
+  }
+}
+
+async function persistQuizResult(params: {
+  typeKey: QuizTypeKey;
+  gender: Gender;
+  answers: Record<number, number>;
+  scores: Record<string, number>;
+  anonymousSessionId: string;
+}) {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    const payload = {
+      user_id: user?.id ?? null,
+      anonymous_session_id: params.anonymousSessionId,
+      result_type: params.typeKey,
+      gender: params.gender,
+      axis_scores: params.scores,
+      answers: params.answers,
+    };
+    const { error } = await supabase.from('quiz_diagnosis_results').insert(payload);
+    if (error) {
+      console.error('Failed to persist quiz diagnosis result:', error.message);
+    }
+  } catch (error) {
+    console.error('Unexpected error persisting quiz diagnosis result:', error);
+  }
+}
 
 function shuffle<T>(arr: T[]): T[] {
   const a = [...arr];
@@ -30,6 +71,7 @@ export default function QuizPage() {
   const [selected, setSelected] = useState<number | null>(null);
   const [animating, setAnimating] = useState(false);
   const [prevResult, setPrevResult] = useState<{ typeKey: QuizTypeKey; name: string; scores: string; gender: string } | null>(null);
+  const startTrackedRef = useRef(false);
 
   // 保存済みの進捗・結果をロード
   useEffect(() => {
@@ -65,6 +107,13 @@ export default function QuizPage() {
     setReady(true);
   }, []);
 
+  // quiz_start を一度だけ発火
+  useEffect(() => {
+    if (!ready || startTrackedRef.current) return;
+    startTrackedRef.current = true;
+    trackEvent('quiz_start');
+  }, [ready]);
+
   // 進捗を保存
   useEffect(() => {
     if (!ready) return;
@@ -98,27 +147,33 @@ export default function QuizPage() {
     }, 220);
   };
 
-  const handleGender = (gender: Gender) => {
+  const handleGender = async (gender: Gender) => {
     if (animating) return;
     setAnimating(true);
     const result = calcResult(answers);
-    const scoresParam = encodeURIComponent(JSON.stringify(
-      Object.fromEntries(
-        Object.entries(result.scores).map(([k, v]) => [k, (v as { pct: number }).pct])
-      )
-    ));
+    const anonymousSessionId = getAnonymousQuizSessionId();
+    const normalizedScores = Object.fromEntries(
+      Object.entries(result.scores).map(([k, v]) => [k, (v as { pct: number }).pct])
+    );
+    trackEvent('quiz_complete', { type: result.typeKey, gender });
+    const scoresParam = encodeURIComponent(JSON.stringify(normalizedScores));
     // 結果を保存・進捗をクリア
     try {
       localStorage.setItem(STORAGE_KEY_RESULT, JSON.stringify({
         typeKey: result.typeKey,
-        scores: Object.fromEntries(
-          Object.entries(result.scores).map(([k, v]) => [k, (v as { pct: number }).pct])
-        ),
+        scores: normalizedScores,
         gender,
         completedAt: new Date().toISOString(),
       }));
       localStorage.removeItem(STORAGE_KEY_PROGRESS);
     } catch {}
+    await persistQuizResult({
+      typeKey: result.typeKey,
+      gender,
+      answers,
+      scores: normalizedScores,
+      anonymousSessionId,
+    });
     setTimeout(() => {
       router.push(`/quiz/result/${result.typeKey}?gender=${gender}&scores=${scoresParam}`);
     }, 280);

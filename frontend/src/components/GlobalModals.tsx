@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import AuthModal from './auth/AuthModal';
 import LikedVideosDrawer from './LikedVideosDrawer';
 import { supabase } from '@/lib/supabase';
+import { trackEvent } from '@/lib/analytics';
 
 export default function GlobalModals() {
   const [isAuthOpen, setIsAuthOpen] = useState(false);
@@ -22,6 +23,7 @@ export default function GlobalModals() {
       setAuthInitialTab('register');
       setShowRegisterNotice(true);
       setIsAuthOpen(true);
+      trackEvent('signup_modal_shown');
     };
     const likedHandler = () => setIsLikedOpen(true);
 
@@ -45,7 +47,10 @@ export default function GlobalModals() {
     <>
       <AuthModal
         isOpen={isAuthOpen}
-        onClose={() => setIsAuthOpen(false)}
+        onClose={() => {
+          trackEvent('signup_modal_dismissed', { tab: authInitialTab });
+          setIsAuthOpen(false);
+        }}
         initialTab={authInitialTab}
         registerNotice={showRegisterNotice ? (
           <>
