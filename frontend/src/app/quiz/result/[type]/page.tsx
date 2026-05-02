@@ -2,13 +2,15 @@
 
 import { useSearchParams } from 'next/navigation';
 import { useRouter } from 'next/navigation';
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { QUIZ_TYPES, AXIS_META, QuizTypeKey, Axis } from '../../data';
+import { toPng } from 'html-to-image';
+import { QUIZ_TYPES, AXIS_META, QuizTypeKey, QuizType, Axis } from '../../data';
 import { trackEvent } from '@/lib/analytics';
 
 const CTA_SHOWN_KEY = 'quiz_male_cta_shown';
+const AXES: Axis[] = ['ds', 'nx', 'pe', 'hl'];
 
 export default async function ResultPage({ params }: { params: Promise<{ type: string }> }) {
   const { type } = await params;
@@ -22,6 +24,160 @@ export default async function ResultPage({ params }: { params: Promise<{ type: s
   );
 }
 
+// ─── シェアカード（html-to-image でキャプチャ用） ────────────────────────────
+function ShareCard({
+  typeKey,
+  quizType,
+  axes,
+  cardRef,
+}: {
+  typeKey: QuizTypeKey;
+  quizType: QuizType;
+  axes: { axis: Axis; pct: number }[];
+  cardRef: React.RefObject<HTMLDivElement | null>;
+}) {
+  return (
+    <div
+      ref={cardRef}
+      style={{
+        position: 'absolute',
+        left: '-9999px',
+        top: 0,
+        width: '750px',
+        background: 'linear-gradient(135deg, #1a0d2e 0%, #2a1020 60%, #1e0d1a 100%)',
+        padding: '48px',
+        fontFamily: 'sans-serif',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+      }}
+    >
+      <p style={{ color: 'rgba(216,180,254,0.6)', fontSize: '13px', letterSpacing: '0.3em', textTransform: 'uppercase', marginBottom: '20px' }}>
+        性癖16タイプ診断
+      </p>
+
+      {/* キャラクター画像 */}
+      <div style={{ width: '240px', height: '240px', marginBottom: '20px', position: 'relative' }}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={`/quiz/${typeKey}.png`}
+          alt={quizType.name}
+          style={{ width: '100%', height: '100%', objectFit: 'contain', filter: 'drop-shadow(0 6px 20px rgba(0,0,0,0.5))' }}
+          crossOrigin="anonymous"
+        />
+      </div>
+
+      {/* タイプキーバッジ */}
+      <div style={{ display: 'flex', gap: '6px', marginBottom: '12px' }}>
+        {typeKey.toUpperCase().split('').map((c, i) => (
+          <span
+            key={i}
+            style={{
+              background: quizType.color,
+              color: quizType.accent,
+              fontSize: '13px',
+              fontWeight: 900,
+              padding: '3px 12px',
+              borderRadius: '100px',
+            }}
+          >
+            {c}
+          </span>
+        ))}
+      </div>
+
+      {/* タイプ名 */}
+      <h2 style={{ color: 'white', fontSize: '48px', fontWeight: 900, margin: '0 0 6px', textAlign: 'center', lineHeight: 1.1 }}>
+        {quizType.name}
+      </h2>
+      <p style={{ color: quizType.color, fontSize: '18px', fontWeight: 700, margin: '0 0 28px', textAlign: 'center' }}>
+        {quizType.tagline}
+      </p>
+
+      {/* スコアバー */}
+      <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '28px' }}>
+        {axes.map(({ axis, pct }) => {
+          const meta = AXIS_META[axis];
+          const color = pct >= 50 ? meta.colorHigh : meta.colorLow;
+          return (
+            <div key={axis} style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: 'rgba(255,255,255,0.55)', fontSize: '13px', fontWeight: 700 }}>{meta.labelHigh}</span>
+                <span style={{ color: 'rgba(255,255,255,0.55)', fontSize: '13px', fontWeight: 700 }}>{meta.labelLow}</span>
+              </div>
+              <div style={{ background: 'rgba(255,255,255,0.1)', borderRadius: '100px', height: '10px', overflow: 'hidden' }}>
+                <div style={{ width: `${pct}%`, height: '100%', background: color, borderRadius: '100px' }} />
+              </div>
+              <p style={{ color, fontSize: '12px', fontWeight: 700, textAlign: 'right', margin: 0 }}>{pct}%</p>
+            </div>
+          );
+        })}
+      </div>
+
+      <p style={{ color: 'rgba(255,255,255,0.25)', fontSize: '13px', margin: 0 }}>seihekilab.com</p>
+    </div>
+  );
+}
+
+// ─── 「画像で保存/シェア」ボタン ────────────────────────────────────────────
+function SaveImageButton({
+  cardRef,
+  typeKey,
+  quizType,
+}: {
+  cardRef: React.RefObject<HTMLDivElement | null>;
+  typeKey: QuizTypeKey;
+  quizType: QuizType;
+}) {
+  const [loading, setLoading] = useState(false);
+
+  const handleSave = async () => {
+    if (!cardRef.current || loading) return;
+    setLoading(true);
+    trackEvent('quiz_save_image', { type: typeKey });
+    try {
+      const dataUrl = await toPng(cardRef.current, { pixelRatio: 2, cacheBust: true });
+      const blob = await (await fetch(dataUrl)).blob();
+      const file = new File([blob], `quiz_${typeKey}.png`, { type: 'image/png' });
+
+      if (navigator.share && navigator.canShare?.({ files: [file] })) {
+        await navigator.share({
+          files: [file],
+          title: `私の性癖16タイプは「${quizType.name}」でした！`,
+          text: quizType.tagline,
+        });
+        trackEvent('quiz_image_shared', { type: typeKey, method: 'webshare' });
+      } else {
+        const a = document.createElement('a');
+        a.href = dataUrl;
+        a.download = `seiheki_${typeKey}.png`;
+        a.click();
+        trackEvent('quiz_image_shared', { type: typeKey, method: 'download' });
+      }
+    } catch (e) {
+      console.error('画像生成失敗:', e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <button
+      onClick={handleSave}
+      disabled={loading}
+      className="w-full rounded-2xl py-4 font-black flex items-center justify-center gap-2 text-[15px] active:translate-y-[1px] transition-all"
+      style={
+        loading
+          ? { background: '#e8c9a0', color: '#c8a080', cursor: 'not-allowed' }
+          : { background: 'linear-gradient(90deg, #6c3483, #e84393)', color: '#fff', boxShadow: '0 4px 0 #4a235a' }
+      }
+    >
+      {loading ? '生成中…' : '🖼️ 画像を保存してシェア'}
+    </button>
+  );
+}
+
+// ─── ポップアップ ────────────────────────────────────────────────────────────
 function MaleCTAModal({ typeKey, onClose }: { typeKey: QuizTypeKey; onClose: () => void }) {
   return (
     <div
@@ -68,9 +224,11 @@ function MaleCTAModal({ typeKey, onClose }: { typeKey: QuizTypeKey; onClose: () 
   );
 }
 
+// ─── メインコンテンツ ─────────────────────────────────────────────────────────
 function ResultContent({ typeKey }: { typeKey: QuizTypeKey }) {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const shareCardRef = useRef<HTMLDivElement>(null);
   const [showCTA, setShowCTA] = useState(false);
 
   const gender = searchParams.get('gender') ?? 'other';
@@ -86,7 +244,7 @@ function ResultContent({ typeKey }: { typeKey: QuizTypeKey }) {
   const scoresParam = searchParams.get('scores') ?? '';
   const shareUrl = `https://seihekilab.com/quiz/result/${typeKey}?scores=${scoresParam}`;
 
-  const axes: { axis: Axis; pct: number }[] = (['ds', 'nx', 'pe', 'hl'] as Axis[]).map((axis) => ({
+  const axes: { axis: Axis; pct: number }[] = AXES.map((axis) => ({
     axis,
     pct: typeof rawScores[axis] === 'number' ? rawScores[axis] : 50,
   }));
@@ -97,9 +255,7 @@ function ResultContent({ typeKey }: { typeKey: QuizTypeKey }) {
 
   useEffect(() => {
     if (!isMale) return;
-    try {
-      if (localStorage.getItem(CTA_SHOWN_KEY)) return;
-    } catch {}
+    try { if (localStorage.getItem(CTA_SHOWN_KEY)) return; } catch {}
     const timer = setTimeout(() => {
       setShowCTA(true);
       trackEvent('quiz_male_cta_shown', { type: typeKey });
@@ -135,6 +291,9 @@ function ResultContent({ typeKey }: { typeKey: QuizTypeKey }) {
       style={{ background: `linear-gradient(135deg, ${quizType.color}22 0%, #ffd1dc22 100%)` }}
     >
       {showCTA && <MaleCTAModal typeKey={typeKey} onClose={closeCTA} />}
+
+      {/* キャプチャ用シェアカード（画面外） */}
+      <ShareCard typeKey={typeKey} quizType={quizType} axes={axes} cardRef={shareCardRef} />
 
       <p className="text-xs font-bold tracking-[0.3em] text-gray-400 uppercase mb-4">診断結果</p>
 
@@ -199,7 +358,6 @@ function ResultContent({ typeKey }: { typeKey: QuizTypeKey }) {
                   </div>
                   {/* バー */}
                   <div className="relative h-3 rounded-full bg-gray-100 overflow-hidden">
-                    {/* 中央線 */}
                     <div className="absolute left-1/2 top-0 bottom-0 w-px bg-gray-300 z-10" />
                     <div
                       className="absolute left-0 top-0 bottom-0 rounded-full transition-all"
@@ -222,6 +380,7 @@ function ResultContent({ typeKey }: { typeKey: QuizTypeKey }) {
 
       {/* シェアボタン */}
       <div className="w-full max-w-sm space-y-3 mb-5">
+        <SaveImageButton cardRef={shareCardRef} typeKey={typeKey} quizType={quizType} />
         <button onClick={shareToX} className="w-full rounded-2xl py-4 font-black text-white flex items-center justify-center gap-2 text-[15px] active:translate-y-[1px] transition-transform" style={{ background: '#000', boxShadow: '0 4px 0 #333' }}>
           <span className="text-lg">𝕏</span> ポストして友だちに教える
         </button>
