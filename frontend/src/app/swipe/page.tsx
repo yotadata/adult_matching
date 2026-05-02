@@ -61,6 +61,13 @@ interface VideosFeedMetadata {
   swipes_until_next_embed: number;
   decision_count: number;
   user_stats: UserStats | null;
+  _debug?: {
+    exploit_raw: number;
+    exploit_err: string | null;
+    popularity_raw: number;
+    popularity_err: string | null;
+    decision_count: number;
+  } | null;
 }
 
 const ORIGINAL_GRADIENT = 'linear-gradient(135deg, #1a0d2e 0%, #160d25 33%, #2a1020 66%, #1e0d1a 100%)';
@@ -93,6 +100,7 @@ function SwipePageContent() {
   const [cardWidth, setCardWidth] = useState<number | undefined>(400);
   const [swipesUntilNextEmbed, setSwipesUntilNextEmbed] = useState<number | null>(null);
   const [userStats, setUserStats] = useState<UserStats | null>(null);
+  const [feedDebug, setFeedDebug] = useState<VideosFeedMetadata['_debug']>(null);
   const { decisionCount, incrementDecisionCount } = useDecisionCount();
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
   const isLoggedInRef = useRef<boolean>(false);
@@ -353,6 +361,7 @@ function SwipePageContent() {
       if (metadata) {
         setSwipesUntilNextEmbed(metadata.swipes_until_next_embed);
         setUserStats(metadata.user_stats ?? null);
+        setFeedDebug(metadata._debug ?? null);
       }
 
       const normalizeHttps = (u?: string) => u?.startsWith('http://') ? u.replace('http://', 'https://') : u;
@@ -718,6 +727,19 @@ function SwipePageContent() {
                 <p>decisions: <span className="text-green-300">{decisionCount}</span></p>
                 <p>embed in: <span className="text-green-300">{swipesUntilNextEmbed ?? '—'}</span></p>
                 <p>auth: <span className={isLoggedIn ? 'text-green-300' : 'text-red-400'}>{isLoggedIn ? 'in' : 'guest'}</span></p>
+              </div>
+              <div className="mt-1.5 border-t border-white/10 pt-1.5 space-y-0.5 text-[10px]">
+                <p className="text-[9px] uppercase tracking-widest text-amber-300/60">feed診断</p>
+                {feedDebug ? (
+                  <>
+                    <p>exploit_raw: <span className={feedDebug.exploit_raw > 0 ? 'text-green-300' : 'text-red-400'}>{feedDebug.exploit_raw}</span></p>
+                    {feedDebug.exploit_err && <p className="text-red-400 break-all">err: {feedDebug.exploit_err}</p>}
+                    <p>pop_raw: <span className={feedDebug.popularity_raw > 0 ? 'text-green-300' : 'text-red-400'}>{feedDebug.popularity_raw}</span></p>
+                    {feedDebug.popularity_err && <p className="text-red-400 break-all">err: {feedDebug.popularity_err}</p>}
+                  </>
+                ) : (
+                  <p className="text-gray-500">no data</p>
+                )}
               </div>
               {userStats && (
                 <div className="mt-1.5 border-t border-white/10 pt-1.5 space-y-0.5">

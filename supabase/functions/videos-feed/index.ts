@@ -152,14 +152,18 @@ Deno.serve(async (req) => {
     const popularity: VideoEntry[] = []
     const exploration: VideoEntry[] = []
 
+    let exploitRawCount = 0
+    let exploitError: string | null = null
     if (userId && adjustedExploitationRatio > 0) {
       const { data: recs, error: recError } = await supabase.rpc('get_videos_recommendations', {
         user_uuid: userId,
         page_limit: Math.max(adjustedPageLimit * CANDIDATE_MULTIPLIER, 100),
       })
       if (recError) {
+        exploitError = recError.message
         console.error('get_videos_recommendations error:', recError.message)
       } else if (recs && recs.length > 0) {
+        exploitRawCount = recs.length
         const shuffled = shuffle(recs as Record<string, unknown>[]) 
         for (const item of shuffled) {
           const id = String(item.id)
@@ -184,6 +188,8 @@ Deno.serve(async (req) => {
       }
     }
 
+    let popularityRawCount = 0
+    let popularityError: string | null = null
     if (popularityTarget > 0) {
       const { data: popData, error: popError } = await supabase.rpc('get_popular_videos', {
         user_uuid: userId,
@@ -191,8 +197,10 @@ Deno.serve(async (req) => {
         lookback_days: popularLookbackDays,
       })
       if (popError) {
+        popularityError = popError.message
         console.error('get_popular_videos error:', popError.message)
       } else if (popData && popData.length > 0) {
+        popularityRawCount = popData.length
         const popIds = (popData as { id: string }[]).map((item) => item.id)
         const modelMap = await fetchModelVersions(supabase, popIds)
         for (const item of popData as Record<string, unknown>[]) {
@@ -361,6 +369,13 @@ Deno.serve(async (req) => {
         swipes_until_next_embed: swipes_until_next_embed,
         decision_count: decisionCount,
         user_stats: userStats,
+        _debug: {
+          exploit_raw: exploitRawCount,
+          exploit_err: exploitError,
+          popularity_raw: popularityRawCount,
+          popularity_err: popularityError,
+          decision_count: decisionCount,
+        },
       },
     }
 
