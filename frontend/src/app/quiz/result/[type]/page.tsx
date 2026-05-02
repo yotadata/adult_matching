@@ -233,6 +233,23 @@ function ResultContent({ typeKey }: { typeKey: QuizTypeKey }) {
         </button>
       </div>
 
+      {/* 男性向けCTA（インライン） */}
+      {isMale && (
+        <div className="w-full max-w-sm rounded-3xl p-6 mb-5" style={{ background: 'linear-gradient(135deg, #1a0d2e, #2a1020)', boxShadow: '0 4px 0 #0d0616, 0 8px 24px rgba(0,0,0,0.3)' }}>
+          <p className="text-xs font-bold tracking-widest text-purple-300/70 uppercase mb-2">あなたへのおすすめ</p>
+          <p className="text-xl font-black text-white mb-2">あなたの性癖に合う動画、見つかるかも</p>
+          <p className="text-sm text-white/60 mb-4">AIがあなたの好みを学習して、刺さる動画だけをおすすめ。スワイプして探してみよう。</p>
+          <Link
+            href="/"
+            className="block w-full rounded-2xl py-4 text-center font-black text-white text-[15px] active:translate-y-[1px] transition-transform"
+            style={{ background: 'linear-gradient(90deg, #9333ea, #ec4899)', boxShadow: '0 4px 0 #6b21a8' }}
+            onClick={() => trackEvent('quiz_swipe_cta_click', { type: typeKey })}
+          >
+            性癖ラボを試してみる 🔥
+          </Link>
+        </div>
+      )}
+
       <button onClick={() => router.push('/quiz')} className="text-sm font-bold text-gray-400 underline underline-offset-4">
         もう一度診断する
       </button>
