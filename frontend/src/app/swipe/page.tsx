@@ -564,10 +564,19 @@ function SwipePageContent() {
     });
     setActiveIndex((prev) => prev + 1);
     setCurrentGradient(ORIGINAL_GRADIENT);
+    const nextCount = decisionCount + 1;
     incrementDecisionCount();
+    const MILESTONES = [5, 10, 15, 20, 30, 50];
+    if (MILESTONES.includes(nextCount)) {
+      trackEvent('swipe_milestone', {
+        count: nextCount,
+        has_session: isLoggedIn ? 1 : 0,
+      });
+    }
     if (!isLoggedIn) {
       const current = getGuestDecisions();
       if (current.length >= guestLimit) {
+        trackEvent('guest_limit_reached', { count: nextCount });
         try { window.dispatchEvent(new Event('open-register-modal')); } catch {}
       }
     }
