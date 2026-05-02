@@ -118,6 +118,7 @@ function SwipePageContent() {
   const postSignupTrackedRef = useRef(false);
   // デッキに含まれる（または過去に提示した）動画IDを追跡し、append時の重複を防ぐ
   const seenVideoIdsRef = useRef<Set<string>>(new Set());
+  const activeIndexRef = useRef(0); // append時にスワイプ済み先頭を切り捨てるためのref
   const PREFETCH_THRESHOLD = 5; // 残り枚数がこの値以下になったらバックグラウンド取得開始
   const searchParams = useSearchParams();
   const isDebugMode = useMemo(() => {
@@ -385,7 +386,10 @@ function SwipePageContent() {
         const newCards = fetchedCards.filter(c => !seenVideoIdsRef.current.has(String(c.id)));
         newCards.forEach(c => seenVideoIdsRef.current.add(String(c.id)));
         if (newCards.length > 0) {
-          setCards(prev => [...prev, ...newCards]);
+          // スワイプ済み先頭を切り捨ててデッキサイズを一定に保つ
+          const trimAt = activeIndexRef.current;
+          setCards(prev => [...prev.slice(trimAt), ...newCards]);
+          setActiveIndex(0);
         }
       } else {
         seenVideoIdsRef.current = new Set(fetchedCards.map(c => String(c.id)));
@@ -418,6 +422,8 @@ function SwipePageContent() {
       setIsFetchingVideos(false);
     }
   }, []);
+
+  useEffect(() => { activeIndexRef.current = activeIndex; }, [activeIndex]);
 
   useEffect(() => {
     const recalc = () => {
