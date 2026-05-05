@@ -70,32 +70,32 @@ export const AXIS_META: Record<Axis, {
 
 export const QUESTIONS: Question[] = [
   // ── 支配(S) ⇄ 奉仕(M) 軸 ── high=S側, reverse=true → M寄り ──
-  { id: 1,  axis: 'ds', text: 'AV観るとき、自然とリードしてる側の目線になってる',                             reverse: false },
-  { id: 2,  axis: 'ds', text: '相手の反応をコントロールしてる感覚が、一番の興奮源になってる',               reverse: false },
-  { id: 3,  axis: 'ds', text: '「もっとして」って言わせたい側か言いたい側か、と問われたら迷わず言わせたい側', reverse: false },
-  { id: 4,  axis: 'ds', text: '相手に好き勝手にされると、むしろ気持ちよくなってしまう',                     reverse: true  },
-  { id: 5,  axis: 'ds', text: '尽くしすぎて後で我に返ることが、定期的にある',                               reverse: true  },
+  { id: 1,  axis: 'ds', text: 'セクシーな場面を想像するとき、自分はたいてい主導権を持ってる側にいる',         reverse: false },
+  { id: 2,  axis: 'ds', text: '相手の反応を引き出せたときの達成感が、欲求の中でかなり大きな割合を占める',     reverse: false },
+  { id: 3,  axis: 'ds', text: '相手が我慢できなくなる瞬間を自分が演出したい、という欲求がある',               reverse: false },
+  { id: 4,  axis: 'ds', text: '相手のペースに身を任せる方が、自分でリードするより気持ちいいと感じることが多い', reverse: true  },
+  { id: 5,  axis: 'ds', text: '相手にいろいろしてもらう側の方が、何倍も気持ちよさそうだと思う',               reverse: true  },
 
   // ── 日常(N) ⇄ 非日常(X) 軸 ── high=N, reverse=true → X寄り ──
-  { id: 6,  axis: 'nx', text: 'コスプレや設定より、普段着のままの流れの方が逆に興奮する',                   reverse: false },
-  { id: 7,  axis: 'nx', text: 'スーパーや職場で偶然二人になった流れから、という妄想がふと来ることがある',   reverse: false },
-  { id: 8,  axis: 'nx', text: 'エロい漫画や動画より、現実にありそうなリアルな設定の方が断然刺さる',         reverse: false },
-  { id: 9,  axis: 'nx', text: '制服や特殊な設定を入れると、目の前の人が別の存在になる感覚がある',           reverse: true  },
-  { id: 10, axis: 'nx', text: '現実にはあり得ない設定・世界観の方が、欲求の最大要因になってる',             reverse: true  },
+  { id: 6,  axis: 'nx', text: 'エロい動画や漫画を選ぶとき、現実にありそうなシーンの方を選ぶことが多い',       reverse: false },
+  { id: 7,  axis: 'nx', text: '一人で妄想するとき、舞台は職場・家・街中など日常の場面が多い',                 reverse: false },
+  { id: 8,  axis: 'nx', text: 'コスプレや特殊な設定がなくても、普通の状況で十分すぎるくらい興奮できる',       reverse: false },
+  { id: 9,  axis: 'nx', text: 'コスプレや役割設定など現実にはない演出があると、テンションが別次元に上がる',   reverse: true  },
+  { id: 10, axis: 'nx', text: 'エロいコンテンツは、現実にはあり得ない設定やファンタジー系の方が断然刺さる',   reverse: true  },
 
   // ── 快楽(P) ⇄ 感情(E) 軸 ── high=P, reverse=true → E寄り ──
-  { id: 11, axis: 'pe', text: 'タイプの外見の人に会って3秒で「あ、来た」ってなることがある',               reverse: false },
-  { id: 12, axis: 'pe', text: '感情とか関係なく、身体的に合う相手ならそれなりに満足できる',                 reverse: false },
-  { id: 13, axis: 'pe', text: '妄想するとき、顔や感情より身体のパーツや動きに焦点が当たりがち',             reverse: false },
-  { id: 14, axis: 'pe', text: 'どれだけ外見がタイプでも、気持ちが動かないと途中で冷めてしまう',             reverse: true  },
-  { id: 15, axis: 'pe', text: '感情のつながりがないと、終わった後にじわじわ虚しくなる',                     reverse: true  },
+  { id: 11, axis: 'pe', text: '好みの見た目・体型の人を見ると、気持ちとか関係なく欲求スイッチが入ることがある', reverse: false },
+  { id: 12, axis: 'pe', text: 'エロい場面を想像するとき、二人の関係性より身体の動きや感覚に焦点が当たりがち', reverse: false },
+  { id: 13, axis: 'pe', text: '身体的な相性が合えば、気持ちがそんなに深くなくても満足できると思う',           reverse: false },
+  { id: 14, axis: 'pe', text: '気持ちが伴わない相手との行為は、どれだけ身体的に相性が良くても虚しくなる',     reverse: true  },
+  { id: 15, axis: 'pe', text: '「好き」という感情がスイッチになって、欲求が来る構造になっている',             reverse: true  },
 
   // ── 偏食(H) ⇄ 雑食(L) 軸 ── high=H（こだわり強）, reverse=true → L（雑食）寄り ──
-  { id: 16, axis: 'hl', text: '興奮するシチュや条件が細かすぎて、人に説明すると引かれることがある',         reverse: false },
-  { id: 17, axis: 'hl', text: '理想の展開が頭の中にあって、そこからズレると一気に冷める',                   reverse: false },
-  { id: 18, axis: 'hl', text: '刺さるシチュが絞られすぎていて、「また同じやつだ」と自分でも思う',           reverse: false },
-  { id: 19, axis: 'hl', text: 'シチュや条件より雰囲気さえ合えば全然楽しめる、こだわりがほぼない',           reverse: true  },
-  { id: 20, axis: 'hl', text: '「何でもいい」が本音で、特定の設定にこだわる感覚がよくわからない',           reverse: true  },
+  { id: 16, axis: 'hl', text: 'エロいものを検索するとき、検索ワードがいつも大体同じになる',                   reverse: false },
+  { id: 17, axis: 'hl', text: '頭に浮かぶシーンや設定が、気づいたらいつも似たパターンに落ち着く',             reverse: false },
+  { id: 18, axis: 'hl', text: 'ストライクゾーンが狭い、と自分では思っている',                                 reverse: false },
+  { id: 19, axis: 'hl', text: 'エロいコンテンツは幅広く楽しめる方で、ジャンルやシチュへのこだわりがほぼない', reverse: true  },
+  { id: 20, axis: 'hl', text: '「なんでもいい」が本音で、シチュや条件を選り好みする感覚があまりない',         reverse: true  },
 ];
 
 export interface AxisScore {
