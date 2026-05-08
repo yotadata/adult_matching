@@ -32,7 +32,7 @@ function ShareCard({
       style={{
         position: 'relative',
         width: '750px',
-        height: '950px',
+        height: '750px',
         background: 'linear-gradient(170deg, #0d0b08 0%, #1a1510 100%)',
         fontFamily: 'sans-serif',
         display: 'flex',
@@ -42,70 +42,60 @@ function ShareCard({
     >
       {/* キャラクター画像エリア */}
       <div style={{ height: '420px', background: `${quizType.color}38`, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', flexShrink: 0 }}>
-        <div style={{ position: 'absolute', inset: 0, background: `radial-gradient(ellipse at center bottom, ${quizType.color}20 0%, transparent 65%)` }} />
+        <div style={{ position: 'absolute', inset: 0, background: `radial-gradient(ellipse at center, ${quizType.color}22 0%, transparent 70%)` }} />
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={`/quiz/${typeKey}.png`}
           alt={quizType.name}
-          style={{ width: '360px', height: '360px', objectFit: 'contain', filter: 'drop-shadow(0 10px 28px rgba(0,0,0,0.8))', position: 'relative' }}
+          style={{ width: '380px', height: '380px', objectFit: 'contain', filter: 'drop-shadow(0 12px 32px rgba(0,0,0,0.85))', position: 'relative' }}
           crossOrigin="anonymous"
         />
         {/* ヘッダーバー */}
-        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, padding: '10px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <p style={{ color: 'rgba(180,150,80,0.65)', fontSize: '10px', letterSpacing: '0.22em', textTransform: 'uppercase', margin: 0 }}>性癖16タイプ診断</p>
-          <div style={{ display: 'flex', gap: '4px' }}>
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, padding: '12px 22px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <p style={{ color: 'rgba(180,150,80,0.65)', fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', margin: 0 }}>性癖16タイプ診断</p>
+          <div style={{ display: 'flex', gap: '5px' }}>
             {typeKey.toUpperCase().split('').map((c, i) => (
-              <span key={i} style={{ background: `${quizType.color}30`, color: quizType.color, fontSize: '10px', fontWeight: 900, padding: '2px 8px', borderRadius: '100px', border: `1px solid ${quizType.color}55` }}>{c}</span>
+              <span key={i} style={{ background: `${quizType.color}30`, color: quizType.color, fontSize: '11px', fontWeight: 900, padding: '3px 10px', borderRadius: '100px', border: `1px solid ${quizType.color}55` }}>{c}</span>
             ))}
           </div>
         </div>
-        {/* グラデーションで下と繋ぐ */}
-        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '60px', background: 'linear-gradient(to bottom, transparent, #0d0b08)' }} />
+        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '80px', background: 'linear-gradient(to bottom, transparent, #0d0b08)' }} />
+        {/* QRコード（画像エリア右下） */}
+        {qrDataUrl && (
+          <div style={{ position: 'absolute', bottom: '14px', right: '16px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={qrDataUrl} alt="QR" style={{ width: '64px', height: '64px', borderRadius: '6px', background: 'white', padding: '4px', display: 'block' }} />
+            <p style={{ color: 'rgba(180,150,80,0.55)', fontSize: '9px', margin: 0, letterSpacing: '0.05em' }}>seihekilab.com</p>
+          </div>
+        )}
       </div>
 
       {/* テキストエリア */}
-      <div style={{ flex: 1, padding: '12px 24px 16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+      <div style={{ padding: '18px 28px 20px', display: 'flex', flexDirection: 'column', gap: '12px', flex: 1 }}>
         {/* 名前・タグライン */}
         <div>
-          <h2 style={{ color: '#f0e6d3', fontSize: '40px', fontWeight: 900, margin: '0 0 4px', lineHeight: 1.1 }}>{quizType.name}</h2>
-          <p style={{ color: quizType.color, fontSize: '15px', fontWeight: 700, margin: 0, lineHeight: 1.35 }}>{quizType.tagline}</p>
+          <h2 style={{ color: '#f0e6d3', fontSize: '42px', fontWeight: 900, margin: '0 0 5px', lineHeight: 1.1 }}>{quizType.name}</h2>
+          <p style={{ color: quizType.color, fontSize: '16px', fontWeight: 700, margin: 0, lineHeight: 1.4 }}>{quizType.tagline}</p>
         </div>
 
-        {/* 説明文 */}
-        <p style={{ color: 'rgba(200,180,140,0.65)', fontSize: '12px', lineHeight: 1.7, margin: 0 }}>
-          {quizType.description}
-        </p>
-
         {/* 軸バー */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '7px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '9px' }}>
           {axes.map(({ axis, pct }) => {
             const meta = AXIS_META[axis];
             const color = pct >= 50 ? meta.colorHigh : meta.colorLow;
             const label = pct >= 50 ? meta.labelHigh : meta.labelLow;
             return (
-              <div key={axis} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ color: 'rgba(200,180,140,0.45)', fontSize: '10px', fontWeight: 700, width: '30px', textAlign: 'right', flexShrink: 0 }}>{meta.labelHigh}</span>
-                <div style={{ flex: 1, background: 'rgba(180,150,80,0.1)', borderRadius: '100px', height: '5px', overflow: 'hidden', position: 'relative' }}>
-                  <div style={{ position: 'absolute', left: '50%', top: 0, bottom: 0, width: '1px', background: 'rgba(180,150,80,0.2)' }} />
+              <div key={axis} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <span style={{ color: 'rgba(200,180,140,0.5)', fontSize: '11px', fontWeight: 700, width: '34px', textAlign: 'right', flexShrink: 0 }}>{meta.labelHigh}</span>
+                <div style={{ flex: 1, background: 'rgba(180,150,80,0.1)', borderRadius: '100px', height: '7px', overflow: 'hidden', position: 'relative' }}>
+                  <div style={{ position: 'absolute', left: '50%', top: 0, bottom: 0, width: '1px', background: 'rgba(180,150,80,0.25)' }} />
                   <div style={{ width: `${pct}%`, height: '100%', background: color, borderRadius: '100px' }} />
                 </div>
-                <span style={{ color: 'rgba(200,180,140,0.45)', fontSize: '10px', fontWeight: 700, width: '30px', flexShrink: 0 }}>{meta.labelLow}</span>
-                <span style={{ color, fontSize: '10px', fontWeight: 900, width: '42px', textAlign: 'right', flexShrink: 0 }}>{label}</span>
+                <span style={{ color: 'rgba(200,180,140,0.5)', fontSize: '11px', fontWeight: 700, width: '34px', flexShrink: 0 }}>{meta.labelLow}</span>
+                <span style={{ color, fontSize: '11px', fontWeight: 900, width: '44px', textAlign: 'right', flexShrink: 0 }}>{label}</span>
               </div>
             );
           })}
-        </div>
-
-        {/* QRコード + サイトURL */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '10px', borderTop: '1px solid rgba(180,150,80,0.15)', paddingTop: '10px' }}>
-          <div style={{ textAlign: 'right' }}>
-            <p style={{ color: 'rgba(180,150,80,0.6)', fontSize: '10px', fontWeight: 700, letterSpacing: '0.1em', margin: '0 0 2px' }}>あなたのタイプは？</p>
-            <p style={{ color: 'rgba(180,150,80,0.35)', fontSize: '10px', margin: 0 }}>seihekilab.com/quiz</p>
-          </div>
-          {qrDataUrl && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={qrDataUrl} alt="QR" style={{ width: '64px', height: '64px', borderRadius: '6px', background: 'white', padding: '4px' }} />
-          )}
         </div>
       </div>
     </div>
