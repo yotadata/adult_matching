@@ -218,7 +218,7 @@ export const QUIZ_TYPES: Record<QuizTypeKey, QuizType> = {
     color: '#FAB1A0', accent: '#E17055',
   },
   mpxw: {
-    key: 'mpxw', name: '愛情スキンシップ魔', emoji: '✨',
+    key: 'mpxw', name: 'スキンシップ魔人', emoji: '✨',
     tagline: 'いつもと違う場所さえあれば、なんでも尽くせる',
     description: '日常では物足りない。ホテルでも旅先でも、非日常の空気さえあれば相手の身体的な満足を引き出すことに全力になれる。細かいこだわりは薄く、「非日常さえあれば何でもいける」という柔軟な刺激追求型の尽くし屋。',
     color: '#FFF4E6', accent: '#FDCB6E',
