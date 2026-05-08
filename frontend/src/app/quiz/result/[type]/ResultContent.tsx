@@ -29,61 +29,92 @@ function ShareCard({
       style={{
         position: 'relative',
         width: '750px',
-        background: 'linear-gradient(135deg, #1a0d2e 0%, #2a1020 60%, #1e0d1a 100%)',
-        padding: '48px',
+        height: '750px',
+        background: 'linear-gradient(150deg, #0d0b08 0%, #1a1510 60%, #0e0c08 100%)',
         fontFamily: 'sans-serif',
         display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
+        flexDirection: 'row',
+        overflow: 'hidden',
       }}
     >
-      <p style={{ color: 'rgba(216,180,254,0.6)', fontSize: '13px', letterSpacing: '0.3em', textTransform: 'uppercase', marginBottom: '20px' }}>
-        性癖16タイプ診断
-      </p>
+      {/* ゴールドの飾り枠 */}
+      <div style={{ position: 'absolute', inset: '12px', border: '1px solid rgba(180,150,80,0.3)', borderRadius: '16px', pointerEvents: 'none' }} />
 
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={`/quiz/${typeKey}.png`}
-        alt={quizType.name}
-        style={{ width: '240px', height: '240px', objectFit: 'contain', filter: 'drop-shadow(0 6px 20px rgba(0,0,0,0.5))', marginBottom: '20px' }}
-        crossOrigin="anonymous"
-      />
-
-      <div style={{ display: 'flex', gap: '6px', marginBottom: '12px' }}>
-        {typeKey.toUpperCase().split('').map((c, i) => (
-          <span key={i} style={{ background: quizType.color, color: quizType.accent, fontSize: '13px', fontWeight: 900, padding: '3px 12px', borderRadius: '100px' }}>
-            {c}
-          </span>
-        ))}
+      {/* 左：キャラクター画像エリア */}
+      <div style={{
+        width: '340px',
+        height: '750px',
+        flexShrink: 0,
+        background: `${quizType.color}30`,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        position: 'relative',
+      }}>
+        <div style={{ position: 'absolute', inset: '20px', border: `1px solid ${quizType.color}50`, borderRadius: '12px' }} />
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={`/quiz/${typeKey}.png`}
+          alt={quizType.name}
+          style={{ width: '280px', height: '280px', objectFit: 'contain', filter: 'drop-shadow(0 8px 24px rgba(0,0,0,0.7))' }}
+          crossOrigin="anonymous"
+        />
       </div>
 
-      <h2 style={{ color: 'white', fontSize: '48px', fontWeight: 900, margin: '0 0 6px', textAlign: 'center', lineHeight: 1.1 }}>
-        {quizType.name}
-      </h2>
-      <p style={{ color: quizType.color, fontSize: '18px', fontWeight: 700, margin: '0 0 28px', textAlign: 'center' }}>
-        {quizType.tagline}
-      </p>
+      {/* 右：テキストエリア */}
+      <div style={{
+        flex: 1,
+        padding: '44px 36px 44px 32px',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'space-between',
+      }}>
+        {/* 上部 */}
+        <div>
+          <p style={{ color: 'rgba(180,150,80,0.6)', fontSize: '11px', letterSpacing: '0.25em', textTransform: 'uppercase', margin: '0 0 20px' }}>
+            性癖16タイプ診断
+          </p>
+          <div style={{ display: 'flex', gap: '5px', marginBottom: '16px' }}>
+            {typeKey.toUpperCase().split('').map((c, i) => (
+              <span key={i} style={{ background: `${quizType.color}30`, color: quizType.color, fontSize: '11px', fontWeight: 900, padding: '3px 10px', borderRadius: '100px', border: `1px solid ${quizType.color}60` }}>
+                {c}
+              </span>
+            ))}
+          </div>
+          <h2 style={{ color: '#f0e6d3', fontSize: '38px', fontWeight: 900, margin: '0 0 10px', lineHeight: 1.15 }}>
+            {quizType.name}
+          </h2>
+          <p style={{ color: quizType.color, fontSize: '15px', fontWeight: 700, margin: '0 0 28px', lineHeight: 1.5 }}>
+            {quizType.tagline}
+          </p>
+        </div>
 
-      <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '28px' }}>
-        {axes.map(({ axis, pct }) => {
-          const meta = AXIS_META[axis];
-          const color = pct >= 50 ? meta.colorHigh : meta.colorLow;
-          return (
-            <div key={axis} style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ color: 'rgba(255,255,255,0.55)', fontSize: '13px', fontWeight: 700 }}>{meta.labelHigh}</span>
-                <span style={{ color: 'rgba(255,255,255,0.55)', fontSize: '13px', fontWeight: 700 }}>{meta.labelLow}</span>
+        {/* 軸バー */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+          {axes.map(({ axis, pct }) => {
+            const meta = AXIS_META[axis];
+            const color = pct >= 50 ? meta.colorHigh : meta.colorLow;
+            return (
+              <div key={axis}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
+                  <span style={{ color: 'rgba(200,180,140,0.6)', fontSize: '11px', fontWeight: 700 }}>{meta.labelHigh}</span>
+                  <span style={{ color, fontSize: '11px', fontWeight: 900 }}>{pct}%</span>
+                  <span style={{ color: 'rgba(200,180,140,0.6)', fontSize: '11px', fontWeight: 700 }}>{meta.labelLow}</span>
+                </div>
+                <div style={{ background: 'rgba(180,150,80,0.12)', borderRadius: '100px', height: '7px', overflow: 'hidden', position: 'relative' }}>
+                  <div style={{ position: 'absolute', left: '50%', top: 0, bottom: 0, width: '1px', background: 'rgba(180,150,80,0.3)' }} />
+                  <div style={{ width: `${pct}%`, height: '100%', background: color, borderRadius: '100px' }} />
+                </div>
               </div>
-              <div style={{ background: 'rgba(255,255,255,0.1)', borderRadius: '100px', height: '10px', overflow: 'hidden' }}>
-                <div style={{ width: `${pct}%`, height: '100%', background: color, borderRadius: '100px' }} />
-              </div>
-              <p style={{ color, fontSize: '12px', fontWeight: 700, textAlign: 'right', margin: 0 }}>{pct}%</p>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
+
+        {/* 下部 */}
+        <p style={{ color: 'rgba(180,150,80,0.35)', fontSize: '11px', fontWeight: 700, letterSpacing: '0.15em', margin: 0 }}>
+          seihekilab.com
+        </p>
       </div>
-
-      <p style={{ color: 'rgba(255,255,255,0.25)', fontSize: '13px', margin: 0 }}>seihekilab.com</p>
     </div>
   );
 }
