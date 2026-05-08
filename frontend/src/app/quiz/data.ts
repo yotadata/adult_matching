@@ -152,7 +152,7 @@ export const QUIZ_TYPES: Record<QuizTypeKey, QuizType> = {
     color: '#4ECDC4', accent: '#1A9B8C',
   },
   senc: {
-    key: 'senc', name: 'こじらせドS', emoji: '❤️‍🔥',
+    key: 'senc', name: 'むっつりドS', emoji: '❤️‍🔥',
     tagline: '感情のスイッチが入ると、誰より熱い',
     description: '感情が動いた相手をリードしたくなる。慣れ親しんだ日常の中でもしっかり燃えるが、感情のトリガーが細かい。「この人のこういうところ」が揃わないと本気になれず、条件が揃った瞬間は誰より熱くなる。',
     color: '#FF8E53', accent: '#E74C3C',
@@ -200,7 +200,7 @@ export const QUIZ_TYPES: Record<QuizTypeKey, QuizType> = {
     color: '#81ECEC', accent: '#00CEC9',
   },
   menc: {
-    key: 'menc', name: 'こじらせ溺愛体質', emoji: '💝',
+    key: 'menc', name: 'むっつり溺愛体質', emoji: '💝',
     tagline: 'この感情、この人だけに全部渡す',
     description: '心がつながった相手に尽くしたくなるが、感情のトリガーが細かい。「この人のこういうところが好き」が揃って初めてスイッチが入る。慣れ親しんだ関係の中で愛情が深まるタイプで、刺さると溺愛モードに入る。',
     color: '#FF7675', accent: '#D63031',
