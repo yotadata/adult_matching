@@ -251,31 +251,26 @@ export function ResultContent({ typeKey }: { typeKey: QuizTypeKey }) {
       {/* キャプチャ用シェアカード（画面外） */}
       <ShareCard typeKey={typeKey} quizType={quizType} axes={axes} cardRef={shareCardRef} />
 
-      <p className="text-[11px] font-black tracking-[0.3em] text-[#b5541a]/50 uppercase mb-5">✦ 診断結果 ✦</p>
+      <p className="text-[11px] font-black tracking-[0.3em] uppercase mb-5" style={{ color: 'rgba(180,150,80,0.5)' }}>✦ 診断結果 ✦</p>
 
       {/* メインカード */}
       <div
         className="w-full max-w-sm rounded-3xl overflow-hidden mb-6"
         style={{
-          background: '#fffdf5',
-          border: '2px solid #e0c090',
-          outline: '2px dashed rgba(180,120,60,0.35)',
-          outlineOffset: '-8px',
-          boxShadow: '0 4px 0 #c8946a, 0 8px 28px rgba(100,50,0,0.12)',
+          background: 'rgba(26,16,48,0.9)',
+          border: '1px solid rgba(180,150,80,0.35)',
+          boxShadow: '0 4px 0 rgba(0,0,0,0.5), 0 8px 32px rgba(0,0,0,0.6), inset 0 1px 0 rgba(180,150,80,0.15)',
+          backdropFilter: 'blur(8px)',
         }}
       >
         {/* キャラクターヘッダー */}
         <div
           className="relative h-72 flex items-end justify-center pb-4 overflow-hidden"
-          style={{ background: `${quizType.color}28` }}
+          style={{ background: `${quizType.color}20` }}
         >
           <div
             className="absolute inset-3 rounded-2xl"
-            style={{ border: `2px dashed ${quizType.color}70`, background: `${quizType.color}10` }}
-          />
-          <div
-            className="absolute bottom-0 left-0 right-0 h-10"
-            style={{ background: '#fffdf5', clipPath: 'ellipse(65% 100% at 50% 100%)' }}
+            style={{ border: `1px solid ${quizType.color}50` }}
           />
           <Image
             src={`/quiz/${typeKey}.png`}
@@ -283,7 +278,7 @@ export function ResultContent({ typeKey }: { typeKey: QuizTypeKey }) {
             width={260}
             height={260}
             className="relative object-contain"
-            style={{ filter: 'drop-shadow(0 6px 18px rgba(0,0,0,0.18))' }}
+            style={{ filter: 'drop-shadow(0 6px 24px rgba(0,0,0,0.6))' }}
           />
         </div>
 
@@ -293,19 +288,19 @@ export function ResultContent({ typeKey }: { typeKey: QuizTypeKey }) {
               <span
                 key={i}
                 className="text-[10px] font-black px-2 py-0.5 rounded-full"
-                style={{ background: `${quizType.color}28`, color: quizType.accent, border: `1px solid ${quizType.color}60` }}
+                style={{ background: `${quizType.color}25`, color: quizType.color, border: `1px solid ${quizType.color}60` }}
               >
                 {c}
               </span>
             ))}
           </div>
 
-          <h2 className="text-[28px] font-black text-[#3d1a00] leading-tight mb-1">{quizType.name}</h2>
-          <p className="text-sm font-bold mb-4" style={{ color: quizType.accent }}>{quizType.tagline}</p>
-          <p className="text-sm leading-relaxed text-[#8b5e3c] mb-6">{quizType.description}</p>
+          <h2 className="text-[28px] font-black leading-tight mb-1" style={{ color: '#f0e6d3' }}>{quizType.name}</h2>
+          <p className="text-sm font-bold mb-4" style={{ color: quizType.color }}>{quizType.tagline}</p>
+          <p className="text-sm leading-relaxed mb-6" style={{ color: 'rgba(200,180,140,0.7)' }}>{quizType.description}</p>
 
-          <div className="space-y-4 pt-5" style={{ borderTop: '2px dashed rgba(180,120,60,0.28)' }}>
-            <p className="text-[10px] font-black tracking-widest text-[#b5541a]/50 uppercase">✦ あなたの傾向 ✦</p>
+          <div className="space-y-4 pt-5" style={{ borderTop: '1px solid rgba(180,150,80,0.2)' }}>
+            <p className="text-[10px] font-black tracking-widest uppercase" style={{ color: 'rgba(180,150,80,0.5)' }}>✦ あなたの傾向 ✦</p>
             {axes.map(({ axis, pct }) => {
               const meta = AXIS_META[axis];
               const isHigh = pct >= 50;
@@ -321,17 +316,17 @@ export function ResultContent({ typeKey }: { typeKey: QuizTypeKey }) {
                 <div key={axis}>
                   <div className="flex justify-between items-center mb-1.5">
                     <div className="flex items-center gap-1.5">
-                      <span className="text-[11px] font-black text-[#8b5e3c]">{meta.labelHigh}</span>
-                      <span className="text-[10px] text-[#c8a880]">⇄</span>
-                      <span className="text-[11px] font-black text-[#8b5e3c]">{meta.labelLow}</span>
+                      <span className="text-[11px] font-black" style={{ color: 'rgba(200,180,140,0.7)' }}>{meta.labelHigh}</span>
+                      <span className="text-[10px]" style={{ color: 'rgba(180,150,80,0.5)' }}>⇄</span>
+                      <span className="text-[11px] font-black" style={{ color: 'rgba(200,180,140,0.7)' }}>{meta.labelLow}</span>
                     </div>
                     <span className="text-[11px] font-black" style={{ color }}>{degreeLabel}</span>
                   </div>
-                  <div className="relative h-3 rounded-full overflow-hidden" style={{ background: 'rgba(180,120,60,0.12)' }}>
-                    <div className="absolute left-1/2 top-0 bottom-0 w-px z-10" style={{ background: 'rgba(180,120,60,0.35)' }} />
+                  <div className="relative h-3 rounded-full overflow-hidden" style={{ background: 'rgba(180,150,80,0.1)' }}>
+                    <div className="absolute left-1/2 top-0 bottom-0 w-px z-10" style={{ background: 'rgba(180,150,80,0.3)' }} />
                     <div className="absolute left-0 top-0 bottom-0 rounded-full transition-all" style={{ width: `${pct}%`, background: color }} />
                   </div>
-                  <div className="flex justify-between text-[10px] text-[#b5541a]/40 mt-0.5 font-bold">
+                  <div className="flex justify-between text-[10px] mt-0.5 font-bold" style={{ color: 'rgba(180,150,80,0.35)' }}>
                     <span>{meta.labelHigh}</span>
                     <span>{pct}%</span>
                     <span>{meta.labelLow}</span>
@@ -341,7 +336,7 @@ export function ResultContent({ typeKey }: { typeKey: QuizTypeKey }) {
             })}
           </div>
 
-          <p className="text-[10px] text-[#d4a574]/50 font-bold tracking-widest mt-5 text-right">✦ 性癖16タイプ診断 ✦</p>
+          <p className="text-[10px] font-bold tracking-widest mt-5 text-right" style={{ color: 'rgba(180,150,80,0.35)' }}>✦ 性癖16タイプ診断 ✦</p>
         </div>
       </div>
 
@@ -351,21 +346,21 @@ export function ResultContent({ typeKey }: { typeKey: QuizTypeKey }) {
         <button
           onClick={shareToX}
           className="w-full rounded-2xl py-4 font-black text-white flex items-center justify-center gap-2 text-[15px] active:translate-y-[1px] transition-transform"
-          style={{ background: '#1a1a1a', boxShadow: '0 4px 0 #000', border: '2px solid #333' }}
+          style={{ background: 'rgba(255,255,255,0.08)', boxShadow: '0 4px 0 rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.2)', color: '#f0e6d3' }}
         >
           <span className="text-lg">𝕏</span> ポストして友だちに教える
         </button>
         <button
           onClick={shareToLine}
           className="w-full rounded-2xl py-4 font-black text-white flex items-center justify-center gap-2 text-[15px] active:translate-y-[1px] transition-transform"
-          style={{ background: '#06C755', boxShadow: '0 4px 0 #04a344', border: '2px solid #08e060' }}
+          style={{ background: '#06C755', boxShadow: '0 4px 0 #04a344', border: '1px solid #08e060' }}
         >
           <span className="text-lg">💬</span> LINEで送る
         </button>
         <button
           onClick={copyLink}
           className="w-full rounded-2xl py-4 font-black flex items-center justify-center gap-2 text-[15px] active:translate-y-[1px] transition-transform"
-          style={{ background: '#fffdf5', border: '2px dashed rgba(180,120,60,0.4)', boxShadow: '0 3px 0 #c8946a', color: '#3d1a00' }}
+          style={{ background: 'rgba(180,150,80,0.1)', border: '1px solid rgba(180,150,80,0.35)', color: '#e8d5a0' }}
         >
           🔗 リンクをコピー
         </button>
@@ -391,7 +386,7 @@ export function ResultContent({ typeKey }: { typeKey: QuizTypeKey }) {
         </div>
       )}
 
-      <button onClick={() => router.push('/quiz')} className="text-sm font-bold text-[#b5541a]/50 underline underline-offset-4">
+      <button onClick={() => router.push('/quiz')} className="text-sm font-bold underline underline-offset-4" style={{ color: 'rgba(180,150,80,0.5)' }}>
         もう一度診断する
       </button>
     </div>

@@ -22,14 +22,22 @@ const GROUP_LABELS = [
   { label: '奉仕 × 非日常', range: [12, 16], color: '#7D3C98' },
 ];
 
+const DARK_CARD = {
+  background: 'rgba(26,16,48,0.85)',
+  borderRadius: '20px',
+  border: '1px solid rgba(180,150,80,0.35)',
+  boxShadow: '0 4px 0 rgba(0,0,0,0.4), 0 8px 24px rgba(0,0,0,0.5), inset 0 1px 0 rgba(180,150,80,0.15)',
+  backdropFilter: 'blur(8px)',
+};
+
 export default function CharactersPage() {
   return (
     <div className="max-w-lg mx-auto px-4 py-10">
 
       <div className="text-center mb-10">
-        <p className="text-[11px] font-black tracking-[0.3em] text-[#b5541a]/50 uppercase mb-2">✦ Characters ✦</p>
-        <h1 className="text-3xl font-black text-[#3d1a00] mb-2">キャラクター一覧</h1>
-        <p className="text-[14px] text-[#8b5e3c]">全16タイプを紹介します。あなたはどれ？</p>
+        <p className="text-[11px] font-black tracking-[0.3em] uppercase mb-2" style={{ color: 'rgba(180,150,80,0.5)' }}>✦ Characters ✦</p>
+        <h1 className="text-3xl font-black mb-2" style={{ color: '#f0e6d3' }}>キャラクター一覧</h1>
+        <p className="text-[14px]" style={{ color: 'rgba(200,180,140,0.6)' }}>全16タイプを紹介します。あなたはどれ？</p>
       </div>
 
       {GROUP_LABELS.map((group) => {
@@ -37,11 +45,11 @@ export default function CharactersPage() {
         return (
           <div key={group.label} className="mb-10">
             <div className="flex items-center gap-2 mb-4">
-              <div className="flex-1 h-px" style={{ background: `${group.color}40` }} />
+              <div className="flex-1 h-px" style={{ background: 'rgba(180,150,80,0.2)' }} />
               <h2 className="text-[12px] font-black tracking-[0.2em]" style={{ color: group.color }}>
                 {group.label}
               </h2>
-              <div className="flex-1 h-px" style={{ background: `${group.color}40` }} />
+              <div className="flex-1 h-px" style={{ background: 'rgba(180,150,80,0.2)' }} />
             </div>
             <div className="grid grid-cols-2 gap-4">
               {types.map((key) => {
@@ -51,26 +59,16 @@ export default function CharactersPage() {
                     key={key}
                     href={`/quiz/result/${key}`}
                     className="rounded-3xl overflow-hidden transition-transform active:scale-95"
-                    style={{
-                      background: '#fffdf5',
-                      border: '2px solid #e0c090',
-                      outline: '2px dashed rgba(180,120,60,0.28)',
-                      outlineOffset: '-7px',
-                      boxShadow: '0 3px 0 #c8946a, 0 6px 16px rgba(100,50,0,0.10)',
-                    }}
+                    style={DARK_CARD}
                   >
                     {/* カラーヘッダー */}
                     <div
-                      className="h-44 flex items-center justify-center relative overflow-hidden"
-                      style={{ background: `${t.color}22` }}
+                      className="h-44 flex items-center justify-center relative overflow-hidden rounded-t-3xl"
+                      style={{ background: `${t.color}18` }}
                     >
                       <div
                         className="absolute inset-2 rounded-2xl"
-                        style={{ background: `${t.color}18`, border: `1.5px dashed ${t.color}60` }}
-                      />
-                      <div
-                        className="absolute bottom-0 left-0 right-0 h-5"
-                        style={{ background: '#fffdf5', clipPath: 'ellipse(65% 100% at 50% 100%)' }}
+                        style={{ border: `1px solid ${t.color}50` }}
                       />
                       <Image
                         src={`/quiz/${key}.png`}
@@ -78,7 +76,7 @@ export default function CharactersPage() {
                         width={148}
                         height={148}
                         className="relative object-contain"
-                        style={{ filter: 'drop-shadow(0 4px 10px rgba(0,0,0,0.15))' }}
+                        style={{ filter: 'drop-shadow(0 4px 16px rgba(0,0,0,0.5))' }}
                       />
                     </div>
 
@@ -89,16 +87,16 @@ export default function CharactersPage() {
                           <span
                             key={i}
                             className="text-[9px] font-black px-1.5 py-0.5 rounded-full"
-                            style={{ background: `${t.color}22`, color: t.accent, border: `1px solid ${t.color}50` }}
+                            style={{ background: `${t.color}25`, color: t.color, border: `1px solid ${t.color}50` }}
                           >
                             {c}
                           </span>
                         ))}
                       </div>
-                      <p className="text-[15px] font-black text-[#3d1a00] leading-tight mb-1">
+                      <p className="text-[15px] font-black leading-tight mb-1" style={{ color: '#f0e6d3' }}>
                         {t.name}
                       </p>
-                      <p className="text-[11px] text-[#8b5e3c] leading-snug line-clamp-2">
+                      <p className="text-[11px] leading-snug line-clamp-2" style={{ color: 'rgba(200,180,140,0.55)' }}>
                         {t.tagline}
                       </p>
                     </div>
@@ -113,8 +111,8 @@ export default function CharactersPage() {
       {/* CTA */}
       <Link
         href="/quiz"
-        className="block w-full rounded-2xl py-4 text-center font-black text-white text-[15px] mt-2 active:translate-y-[1px] transition-transform"
-        style={{ background: '#c87941', boxShadow: '0 4px 0 #9e5a28', border: '2px solid #e8a060' }}
+        className="block w-full rounded-2xl py-4 text-center font-black text-[15px] mt-2 active:translate-y-[1px] transition-transform"
+        style={{ background: 'rgba(180,150,80,0.2)', color: '#e8d5a0', border: '1px solid rgba(180,150,80,0.5)', boxShadow: '0 4px 0 rgba(0,0,0,0.4)' }}
       >
         自分のタイプを診断する ✦
       </Link>
