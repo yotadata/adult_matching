@@ -1,18 +1,18 @@
-export type Axis = 'ds' | 'nx' | 'pe' | 'hl';
+export type Axis = 'ds' | 'nx' | 'pe' | 'cw';
 
 export type QuizTypeKey =
-  | 'snph' | 'snpl' | 'sneh' | 'snel'
-  | 'sxph' | 'sxpl' | 'sxeh' | 'sxel'
-  | 'mnph' | 'mnpl' | 'mneh' | 'mnel'
-  | 'mxph' | 'mxpl' | 'mxeh' | 'mxel';
+  | 'spnc' | 'spnw' | 'senc' | 'senw'
+  | 'spxc' | 'spxw' | 'sexc' | 'sexw'
+  | 'mpnc' | 'mpnw' | 'menc' | 'menw'
+  | 'mpxc' | 'mpxw' | 'mexc' | 'mexw';
 
-// 5段階スコア: 1=全然違う 〜 5=まさにそう
-// reverse=true のとき、スコアは反転（S/X/E/L 寄りを示す質問）
+// optionA = high側（S/N/P/C）, optionB = low側（M/X/E/W）
+// 回答: 1=完全にA 〜 5=完全にB
 export interface Question {
   id: number;
   axis: Axis;
-  text: string;
-  reverse: boolean;
+  optionA: string;
+  optionB: string;
 }
 
 export interface QuizType {
@@ -37,8 +37,8 @@ export const AXIS_META: Record<Axis, {
   ds: {
     labelHigh: '支配',
     labelLow: '奉仕',
-    degreesHigh: ['ドS（支配）', 'S（支配）寄り'],
-    degreesLow: ['ドM（奉仕）', 'M（奉仕）寄り'],
+    degreesHigh: ['ドS', 'S寄り'],
+    degreesLow: ['ドM', 'M寄り'],
     colorHigh: '#FF6B6B',
     colorLow: '#55EFC4',
   },
@@ -46,7 +46,7 @@ export const AXIS_META: Record<Axis, {
     labelHigh: '日常',
     labelLow: '非日常',
     degreesHigh: ['超日常派', '日常寄り'],
-    degreesLow: ['超ファンタジー派', 'ファンタジー寄り'],
+    degreesLow: ['刺激派', '非日常寄り'],
     colorHigh: '#74B9FF',
     colorLow: '#FD79A8',
   },
@@ -58,50 +58,42 @@ export const AXIS_META: Record<Axis, {
     colorHigh: '#FDCB6E',
     colorLow: '#A29BFE',
   },
-  hl: {
-    labelHigh: '頻度高',
-    labelLow: '頻度低',
-    degreesHigh: ['ド頻度高', '頻度高め'],
-    degreesLow: ['ド頻度低', '頻度低め'],
+  cw: {
+    labelHigh: '偏食',
+    labelLow: '雑食',
+    degreesHigh: ['ガチ偏食', '偏食寄り'],
+    degreesLow: ['なんでもいける', '雑食寄り'],
     colorHigh: '#FF8E53',
     colorLow: '#DFE6E9',
   },
 };
 
 export const QUESTIONS: Question[] = [
-  // ── 支配(S) ⇄ 奉仕(M) 軸 ── high=S側, reverse=true → M寄り ──
-  { id: 1,  axis: 'ds', text: '性的な場面では、自分がリードする側にいるほうが自然だ',           reverse: false },
-  { id: 2,  axis: 'ds', text: '相手を言葉や行動でコントロールできると、興奮が高まる',           reverse: false },
-  { id: 3,  axis: 'ds', text: '「もっとして」と相手に言わせる側でいたい',                       reverse: false },
-  { id: 4,  axis: 'ds', text: '相手に思い通りにされることで、気持ちが高まる',                    reverse: true  },
-  { id: 5,  axis: 'ds', text: '相手の指示や要求に応えることに、強い喜びを感じる',               reverse: true  },
+  // ── 支配(S) ⇄ 奉仕(M) 軸 ── A=S側, B=M側 ──
+  { id: 1,  axis: 'ds', optionA: '相手を押さえつけて「やめて」と言わせたい', optionB: '押さえつけられて「やめて」と言いたい' },
+  { id: 2,  axis: 'ds', optionA: '相手を泣かせるくらい追い詰めたい',         optionB: '泣かされるくらい追い詰められたい' },
+  { id: 3,  axis: 'ds', optionA: '「もっとして」と相手に言わせたい',          optionB: '「もっとして」と自分が言いたい' },
 
-  // ── 日常(N) ⇄ 非日常(X) 軸 ── high=N, reverse=true → X寄り ──
-  { id: 6,  axis: 'nx', text: 'コスプレや特殊な役割設定がなくても、現実にありそうな場面で十分に興奮できる', reverse: false },
-  { id: 7,  axis: 'nx', text: 'コスプレや役割設定より、リアルな状況のほうが刺さる',             reverse: false },
-  { id: 8,  axis: 'nx', text: '特別な場所や雰囲気がなくても、普段の何気ない場面で欲求が生まれる', reverse: false },
-  { id: 9,  axis: 'nx', text: 'コスプレ・役割設定など、非日常の演出があると盛り上がる',         reverse: true  },
-  { id: 10, axis: 'nx', text: 'コスプレや異世界・特殊な役割など、現実にはない設定に強く惹かれる',  reverse: true  },
+  // ── 快楽(P) ⇄ 感情(E) 軸 ── A=P側, B=E側 ──
+  { id: 4,  axis: 'pe', optionA: '顔とスタイルが好みなら、性格や関係性は関係なく惹かれる', optionB: 'どれだけ好みでも、気持ちが入らない相手とは無理' },
+  { id: 5,  axis: 'pe', optionA: '気持ちよければ相手への感情は関係ない',                  optionB: '好きじゃない相手だと気持ちよくても虚しい' },
+  { id: 6,  axis: 'pe', optionA: '会って数分で「この人とやりたい」と思うことがある',       optionB: 'ある程度仲良くなった相手じゃないと欲求が生まれない' },
 
-  // ── 快楽(P) ⇄ 感情(E) 軸 ── high=P, reverse=true → E寄り ──
-  { id: 11, axis: 'pe', text: '外見や雰囲気が好みなら、深く知らなくても欲求が生まれる',         reverse: false },
-  { id: 12, axis: 'pe', text: '身体的な相性が合う相手なら、気持ちが深くなくても満足できる',     reverse: false },
-  { id: 13, axis: 'pe', text: '気持ちより身体の感覚への反応のほうが、欲求に直結している',       reverse: false },
-  { id: 14, axis: 'pe', text: '気持ちが伴わない相手との行為は、どれだけ良くても虚しさが残る',   reverse: true  },
-  { id: 15, axis: 'pe', text: '好みの外見でも、感情が動かなければ欲求はほとんど生まれない',     reverse: true  },
+  // ── 日常(N) ⇄ 非日常(X) 軸 ── A=N側, B=X側 ──
+  { id: 7,  axis: 'nx', optionA: '毎日会う相手でも欲求は普通に続く',                    optionB: '旅行先やホテルなど、いつもと違う場所だと明らかに興奮が上がる' },
+  { id: 8,  axis: 'nx', optionA: '慣れ親しんだ相手の方が安心して本気になれる',          optionB: '初対面に近い緊張感のある相手の方が燃える' },
+  { id: 9,  axis: 'nx', optionA: 'いつもの部屋・いつもの雰囲気で十分テンションが上がる', optionB: '「バレるかも」という状況や、非日常の緊張感がないと物足りない' },
 
-  // ── 頻度高(H) ⇄ 頻度低(L) 軸 ── high=H, reverse=true → L寄り ──
-  { id: 16, axis: 'hl', text: '性的な欲求は頻繁にある方だと思う',                               reverse: false },
-  { id: 17, axis: 'hl', text: '間を空けるより、できるだけ多く楽しみたい',                       reverse: false },
-  { id: 18, axis: 'hl', text: '欲求が来たらなかなか抑えられない',                               reverse: false },
-  { id: 19, axis: 'hl', text: '回数より、一度の深さや濃さを大切にしたい',                       reverse: true  },
-  { id: 20, axis: 'hl', text: '性的な行為は特別な機会として、じっくり楽しみたい',               reverse: true  },
+  // ── 偏食(C) ⇄ 雑食(W) 軸 ── A=C側, B=W側 ──
+  { id: 10, axis: 'cw', optionA: 'こだわりの条件がちょっとでもズレると一気に冷める',           optionB: '雰囲気さえ合えば細かい条件は全然気にしない' },
+  { id: 11, axis: 'cw', optionA: '自分の性癖を友達に話すと「細かすぎ」って引かれる自覚がある', optionB: 'こだわりはほぼなく、わりと何でも楽しめる' },
+  { id: 12, axis: 'cw', optionA: '頭の中に理想の展開があって、そこから外れると萎える',          optionB: 'その場の流れに乗れれば何でも楽しい' },
 ];
 
 export interface AxisScore {
-  pct: number;     // 0〜100（高いほどD/N/P/H寄り）
+  pct: number;     // 0〜100（高いほどD/N/P/C寄り）
   label: string;   // 「ドS（支配）」「S（支配）寄り」など
-  isHigh: boolean; // true=D/N/P/H側, false=S/X/E/L側
+  isHigh: boolean; // true=S/N/P/C側, false=M/X/E/W側
 }
 
 export interface QuizResult {
@@ -109,17 +101,19 @@ export interface QuizResult {
   scores: Record<Axis, AxisScore>;
 }
 
-// 5段階回答(1〜5)から各軸スコアを計算
+// 5段階回答(1=完全にA 〜 5=完全にB)から各軸スコアを計算
+// A=high側(S/P/N/C), B=low側(M/E/X/W) なので 1→100%, 5→0%
 export function calcResult(answers: Record<number, number>): QuizResult {
-  const axes: Axis[] = ['ds', 'nx', 'pe', 'hl'];
+  const axes: Axis[] = ['ds', 'nx', 'pe', 'cw'];
   const scores: Record<Axis, AxisScore> = {} as Record<Axis, AxisScore>;
 
   for (const axis of axes) {
     const qs = QUESTIONS.filter((q) => q.axis === axis);
     const n = qs.length;
+    // ans=1→high寄り(5点換算), ans=5→low寄り(1点換算)
     const raw = qs.reduce((sum, q) => {
       const ans = answers[q.id] ?? 3;
-      return sum + (q.reverse ? 6 - ans : ans);
+      return sum + (6 - ans);
     }, 0);
     const pct = Math.round(((raw - n) / (n * 4)) * 100);
     const meta = AXIS_META[axis];
@@ -138,107 +132,107 @@ export function calcResult(answers: Record<number, number>): QuizResult {
   const d = scores.ds.isHigh ? 's' : 'm';
   const n = scores.nx.isHigh ? 'n' : 'x';
   const p = scores.pe.isHigh ? 'p' : 'e';
-  const h = scores.hl.isHigh ? 'h' : 'l';
-  const typeKey = `${d}${n}${p}${h}` as QuizTypeKey;
+  const c = scores.cw.isHigh ? 'c' : 'w';
+  const typeKey = `${d}${p}${n}${c}` as QuizTypeKey;
 
   return { typeKey, scores };
 }
 
 export const QUIZ_TYPES: Record<QuizTypeKey, QuizType> = {
-  snph: {
-    key: 'snph', name: '肉食系番長', emoji: '🔥',
-    tagline: '欲求に素直、ぐいぐい主導権を握るタイプ',
-    description: '衝動が来たら止まらない。相手より先に動いて、流れを自分で作る。「もっと」が口癖で、物足りなさを感じると自分からアクションを起こす。リードする側にいると本領発揮するタイプ。',
+  spnc: {
+    key: 'spnc', name: 'グルメな狩人', emoji: '🔥',
+    tagline: '条件が揃ったときだけ、本気になる',
+    description: 'リードするのが自然で、外見や身体の相性で相手を選ぶ。慣れた相手・いつもの場所でも十分スイッチが入るが、こだわりの条件が細かくてズレると一気に冷める。「これじゃないと」が多い分、揃ったときの集中力は誰より高い。',
     color: '#FF6B6B', accent: '#C0392B',
   },
-  snpl: {
-    key: 'snpl', name: '確実に落とす職人', emoji: '🧊',
-    tagline: '急がない、でも確実に相手を落とす',
-    description: '自分がコントロールする側でいたいけど、焦らない。じっくりペースを作って、気づいたら相手が夢中になってる。日常の中でさりげなく主導権を握るのが得意。',
+  spnw: {
+    key: 'spnw', name: '全方位ハンター', emoji: '🧊',
+    tagline: '誰でも落とせる、どこでも本気',
+    description: '外見や身体の相性で動き、リードするのが好き。慣れた相手でも新しい相手でも十分燃えるし、細かいこだわりもない。「まあなんでもいけるし、リードさせてくれれば」という間口の広さが武器。',
     color: '#4ECDC4', accent: '#1A9B8C',
   },
-  sneh: {
-    key: 'sneh', name: '激情型リーダー', emoji: '❤️‍🔥',
-    tagline: '気持ちが燃えると、誰より熱くリードする',
-    description: '感情と欲求がリンクしている。気持ちが盛り上がると行動も加速する。日常の中の積み重ねで興奮するタイプで、「好き」と「もっと」が同時に来る。リードしながらも感情豊か。',
+  senc: {
+    key: 'senc', name: 'むっつり帝王', emoji: '❤️‍🔥',
+    tagline: '感情のスイッチが入ると、誰より熱い',
+    description: '感情が動いた相手をリードしたくなる。慣れ親しんだ日常の中でもしっかり燃えるが、感情のトリガーが細かい。「この人のこういうところ」が揃わないと本気になれず、条件が揃った瞬間は誰より熱くなる。',
     color: '#FF8E53', accent: '#E74C3C',
   },
-  snel: {
-    key: 'snel', name: 'じわじわくるカリスマ', emoji: '🌙',
-    tagline: '寡黙だけど、気づいたら支配されてる',
-    description: '多くを語らず、でも確実に場の空気を掌握している。感情的になることは少ないが、その静けさ自体が圧になる。日常のリアルな場面で、じわじわと相手を引き込む。',
+  senw: {
+    key: 'senw', name: '天然の王様', emoji: '🌙',
+    tagline: '気持ちが乗れば、どこでも自然にリードする',
+    description: '感情が動けばどんな状況でもリードできる。慣れた相手・場所でも十分OKで、細かいこだわりもない。その場の雰囲気を読んで自然にリードし、気づいたら相手が夢中になっている。一番「普通に最強」なタイプ。',
     color: '#A29BFE', accent: '#6C5CE7',
   },
-  sxph: {
-    key: 'sxph', name: '刺激中毒の冒険家', emoji: '⚡',
-    tagline: '普通じゃ物足りない、いつも上を求めてる',
-    description: '日常の刺激では満足できない。特殊なシチュエーションや非日常的な体験に強く反応する。身体的な刺激への感度が高く、「こんなことしてみたい」リストが尽きない。',
+  spxc: {
+    key: 'spxc', name: '刺激ジャンキー', emoji: '⚡',
+    tagline: '非日常の緊張感の中でしか、本気にならない',
+    description: 'ホテルや旅先、バレるかもしれない場所など、いつもと違う刺激がないと物足りない。外見重視でリードしたいが、こだわりが細かく設定がズレると冷める。「いつもと違う場所で、自分のペースで支配する」が理想形。',
     color: '#FD79A8', accent: '#E84393',
   },
-  sxpl: {
-    key: 'sxpl', name: '謎多き一匹狼', emoji: '🐺',
-    tagline: '自分のペースで、自分だけの世界を持つ',
-    description: '欲求はあるが、頻繁には動かない。独自のファンタジーや世界観を持っていて、日常にはない特別な状況にしか本気で反応しない。ミステリアスな雰囲気が自然と出るタイプ。',
+  spxw: {
+    key: 'spxw', name: 'アドレナリン番長', emoji: '🎲',
+    tagline: '非日常さえあれば、なんでもいける',
+    description: 'いつもの場所では物足りない。ホテルでも旅先でも、非日常の空気さえあればこだわりなく全力になれる。外見重視でリードするのが好き。「普通の状況はつまらないが、どこでも遊べる」という自由人な支配タイプ。',
     color: '#636E72', accent: '#2D3436',
   },
-  sxeh: {
-    key: 'sxeh', name: '劇場型支配者', emoji: '🎭',
-    tagline: '物語が動くとき、自分が主役でいたい',
-    description: '非日常的なシチュエーションに感情が乗ると、スイッチが入る。頻度よりも「盛り上がり」を重視。特定の設定やシナリオで感情が爆発する、感情トリガー型の欲求持ち。',
+  sexc: {
+    key: 'sexc', name: '過激な演出家', emoji: '🎭',
+    tagline: '感情も場所も、全部揃って初めて動く',
+    description: '感情が動いた相手をリードしたいが、非日常の場でないとスイッチが入らない。さらに感情のトリガーも細かい。条件が二重に絞られているぶん、全部揃ったときの爆発力はすさまじい。「なんか違う」が多い代わりに、刺さったときは全力。',
     color: '#FDCB6E', accent: '#E17055',
   },
-  sxel: {
-    key: 'sxel', name: '孤高のロマンチスト', emoji: '🌌',
-    tagline: '頻度より深度、滅多に来ないが来たら本物',
-    description: 'めったに動かないが、動くときは全力。非日常的な感情体験を重視していて、その瞬間の「深さ」がすべて。ファンタジーな設定で感情が動くと、誰より激しくなる。',
+  sexw: {
+    key: 'sexw', name: '刺激の旅人', emoji: '🌌',
+    tagline: '感情さえ動けば、非日常の中でどこでもリードする',
+    description: '感情が動いた相手には強くリードしたくなる。ただ、いつもと同じ場所では物足りない。ホテルや旅先など非日常の空気の中で感情に火がつくと、こだわりなく全力になれる。感情主導で刺激を求めるロマンチストな支配者。',
     color: '#6C5CE7', accent: '#4A3AB5',
   },
-  mnph: {
-    key: 'mnph', name: '献身体質の沼らせ屋', emoji: '🌿',
-    tagline: '相手が喜ぶことが、自分の快感になる',
-    description: '相手の反応を見るのが何より好き。日常的な場面で、相手の身体的な満足を引き出すことに強い充実感を覚える。欲求の頻度も高く、尽くす回数も多い。気づいたらやりすぎてる。',
+  mpnc: {
+    key: 'mpnc', name: 'こだわり沼らせ魔', emoji: '🌿',
+    tagline: '条件が揃った相手にだけ、全力で尽くす',
+    description: '相手を喜ばせることが好きで、外見や身体の相性で相手を選ぶ。慣れた環境でも十分燃えるが、こだわりの条件が細かい。「この人だ」と思えた相手への集中力は異常で、気づいたら相手が深みにはまっている。',
     color: '#55EFC4', accent: '#00B894',
   },
-  mnpl: {
-    key: 'mnpl', name: '気まぐれ世話焼き', emoji: '🌸',
-    tagline: '気が向いたとき、とことん尽くす',
-    description: '欲求もサービス精神も、波がある。でもやると決めたら手加減しない。日常の中で相手の身体的な反応を引き出すことに喜びを感じるが、ペースは完全に自分で決める。',
-    color: '#81ECEC', accent: '#00CEC9',
+  mpnw: {
+    key: 'mpnw', name: '世話焼き八方美人', emoji: '🌸',
+    tagline: '誰に対しても、どこでも尽くせる',
+    description: '相手の身体的な満足を引き出すのが好きで、こだわりは少ない。慣れた相手でも新しい相手でも自分なりに尽くせる。「まあ誰でもいけるし、喜んでくれれば嬉しい」という、間口の広い頼もしい奉仕タイプ。',
+    color: '#F9E784', accent: '#F1C40F',
   },
-  mneh: {
-    key: 'mneh', name: '溺愛体質の愛情家', emoji: '💝',
-    tagline: '気持ちと欲求が、いつもセットでやってくる',
-    description: '気持ちが動くと欲求も動く。相手の感情状態に敏感で、心のつながりを感じることで火がつく。日常の中で頻繁に感情が揺れ動き、その都度ちゃんと反応してしまう正直な人。',
-    color: '#FF7675', accent: '#D63031',
+  menc: {
+    key: 'menc', name: 'むっつり溺愛体質', emoji: '💝',
+    tagline: 'この感情、この人だけに全部渡す',
+    description: '心がつながった相手に尽くしたくなるが、感情のトリガーが細かい。「この人のこういうところが好き」が揃って初めてスイッチが入る。慣れ親しんだ関係の中で愛情が深まるタイプで、刺さると溺愛モードに入る。',
+    color: '#E84393', accent: '#C0136F',
   },
-  mnel: {
-    key: 'mnel', name: '縁の下の天使', emoji: '🕊️',
-    tagline: '深い感情の共鳴を、静かに待てる人',
-    description: '心がつながったと感じるときにだけ、スイッチが入る。頻度より質派で、日常の延長で相手の感情に寄り添うことに快感がある。派手な刺激より、静かな充足を好む。',
+  menw: {
+    key: 'menw', name: '一途な忠犬', emoji: '🕊️',
+    tagline: '気持ちさえ動けば、どんな相手も受け止める',
+    description: '心がつながったと感じれば、どんな状況でも相手に寄り添える。慣れた日常の中でじっくり愛情が育つタイプで、こだわりなく相手に合わせられる。静かで包容力があり、「あなたに合わせます」という姿勢が自然体。',
     color: '#DFE6E9', accent: '#B2BEC3',
   },
-  mxph: {
-    key: 'mxph', name: '妄想族の甘やかし屋', emoji: '🍬',
-    tagline: '頭の中はファンタジー、でも行動は尽くし型',
-    description: '妄想の中に非日常的な設定がたくさんある。でも実際には相手の身体的な満足を引き出すことに全力で、頻繁に動く。ギャップがすごい。「実はこんなこと考えてた」と言われるタイプ。',
+  mpxc: {
+    key: 'mpxc', name: '指示多めのしもべ', emoji: '🍬',
+    tagline: '非日常の場で、決まった条件が揃って初めて動く',
+    description: 'ホテルや旅先など非日常の環境で、外見が好みの相手に尽くすのが理想。こだわりの条件が細かく、設定がズレると冷める。「この場所で、この人に、こういうふうに尽くしたい」という妄想がクリアに決まっている。',
     color: '#FAB1A0', accent: '#E17055',
   },
-  mxpl: {
-    key: 'mxpl', name: '解像度の高い妄想家', emoji: '✨',
-    tagline: '理想の場面へのこだわりが、人並み外れている',
-    description: '日常じゃない。特殊なシチュエーションや非現実的な設定に、身体が正直に反応する。頻度は少ないが、その分「理想の場面」へのこだわりが強い。妄想の解像度が異常に高い。',
+  mpxw: {
+    key: 'mpxw', name: 'スキンシップ魔人', emoji: '✨',
+    tagline: 'いつもと違う場所さえあれば、なんでも尽くせる',
+    description: '日常では物足りない。ホテルでも旅先でも、非日常の空気さえあれば相手の身体的な満足を引き出すことに全力になれる。細かいこだわりは薄く、「非日常さえあれば何でもいける」という柔軟な刺激追求型の尽くし屋。',
     color: '#FFF4E6', accent: '#FDCB6E',
   },
-  mxeh: {
-    key: 'mxeh', name: '愛に生きる感情家', emoji: '💫',
-    tagline: '感情の爆発が、欲求のスイッチになる',
-    description: '非日常的な状況や特殊な関係性の中で感情が動いたとき、欲求が最大化する。心が揺れるほど欲しくなる、感情連動型。頻度も高く、感情的な盛り上がりを何度も求めてしまう。',
-    color: '#FD79A8', accent: '#E84393',
+  mexc: {
+    key: 'mexc', name: 'こじらせの極み', emoji: '💫',
+    tagline: '感情も場所も揃って、初めて全部渡せる',
+    description: '心が動いた相手に尽くしたいが、非日常の場でないとスイッチが入らない。さらに感情のトリガーも細かい。条件が二重に絞られているぶん、全部揃ったときの没入度はすさまじい。旅先やホテルで感情が爆発する愛情家。',
+    color: '#E17055', accent: '#C0392B',
   },
-  mxel: {
-    key: 'mxel', name: '一途すぎる月の人', emoji: '🌕',
-    tagline: '深い感情が動いたとき、唯一スイッチが入る',
-    description: 'めったに欲求が来ないが、来たときは深い。非日常的な感情体験との組み合わせでしか本気にならない。心が完全に動いた相手には全力で応じる、一生に数回型の本気タイプ。',
+  mexw: {
+    key: 'mexw', name: '夢見る妄想家', emoji: '🌕',
+    tagline: '感情さえ動けば、どんな非日常でも全力で尽くす',
+    description: '感情が動いた相手には全力で尽くしたくなる。いつもの場所より非日常の空気の中の方が燃える。細かいこだわりは薄く、ホテルでも旅先でも感情スイッチが入れば何でもOK。感情主導で動く、刺激を求める献身家。',
     color: '#C7ECEE', accent: '#74B9FF',
   },
 };

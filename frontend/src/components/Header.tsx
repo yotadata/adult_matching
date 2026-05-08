@@ -254,7 +254,7 @@ const Header = ({ cardWidth, mobileGauge }: { cardWidth: number | undefined; mob
                               <div className="py-0.5">
                                 {(() => { const Icon = quizNavItem.icon; return (
                                   <button
-                                    onClick={() => { setIsMenuDrawerOpen(false); router.push(quizNavItem.href); }}
+                                    onClick={() => { setIsMenuDrawerOpen(false); window.open(quizNavItem.href, '_blank', 'noopener,noreferrer'); }}
                                     className="w-full flex items-center gap-2 text-left px-4 py-3 hover:bg-[#21262d] transition"
                                   >
                                     <Icon size={18} />
@@ -315,6 +315,8 @@ const Header = ({ cardWidth, mobileGauge }: { cardWidth: number | undefined; mob
             <div className="flex items-center justify-end gap-2">
               <Link
                 href="/quiz"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="flex items-center gap-1.5 px-4 py-2 text-sm font-bold text-white rounded-full backdrop-blur-md bg-white/10 border border-white/30 hover:bg-white/20 transition-all duration-300"
                 style={{ filter: 'drop-shadow(0 0 0.5rem rgba(0, 0, 0, 0.1))' }}
               >

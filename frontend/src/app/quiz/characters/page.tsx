@@ -9,17 +9,17 @@ export const metadata: Metadata = {
 };
 
 const TYPE_ORDER: QuizTypeKey[] = [
-  'snph', 'snpl', 'sneh', 'snel',
-  'sxph', 'sxpl', 'sxeh', 'sxel',
-  'mnph', 'mnpl', 'mneh', 'mnel',
-  'mxph', 'mxpl', 'mxeh', 'mxel',
+  'spnc', 'spnw', 'spxc', 'spxw',
+  'senc', 'senw', 'sexc', 'sexw',
+  'mpnc', 'mpnw', 'mpxc', 'mpxw',
+  'menc', 'menw', 'mexc', 'mexw',
 ];
 
 const GROUP_LABELS = [
-  { label: '支配 × 日常', range: [0, 4], color: '#C0392B' },
-  { label: '支配 × 非日常', range: [4, 8], color: '#2471A3' },
-  { label: '奉仕 × 日常', range: [8, 12], color: '#17A589' },
-  { label: '奉仕 × 非日常', range: [12, 16], color: '#7D3C98' },
+  { label: '支配 × 快楽', range: [0, 4], color: '#C0392B' },
+  { label: '支配 × 感情', range: [4, 8], color: '#2471A3' },
+  { label: '奉仕 × 快楽', range: [8, 12], color: '#17A589' },
+  { label: '奉仕 × 感情', range: [12, 16], color: '#7D3C98' },
 ];
 
 const DARK_CARD = {
@@ -63,7 +63,7 @@ export default function CharactersPage() {
                   >
                     {/* カラーヘッダー */}
                     <div
-                      className="h-56 flex items-center justify-center relative overflow-hidden rounded-t-3xl"
+                      className="h-44 flex items-center justify-center relative overflow-hidden rounded-t-3xl"
                       style={{ background: `${t.color}55` }}
                     >
                       <div

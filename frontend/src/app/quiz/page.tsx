@@ -9,7 +9,7 @@ import { supabase } from '@/lib/supabase';
 
 type Gender = 'male' | 'female' | 'other';
 
-const SCALE_LABELS = ['全然違う', 'あまり違う', 'どちらでも', 'やや当てはまる', 'まさにそう'];
+const SCALE_LABELS = ['完全にA', 'AよりかなA', 'どちらでも', 'BよりかなB', '完全にB'];
 const TOTAL_STEPS = QUESTIONS.length + 1;
 const STORAGE_KEY_PROGRESS = 'quiz_progress';
 const STORAGE_KEY_RESULT = 'quiz_result';
@@ -255,46 +255,66 @@ export default function QuizPage() {
       >
         {!isGenderStep ? (
           <div className="p-6 flex flex-col gap-6" style={DARK_CARD}>
-            <p className="text-[18px] font-black leading-snug" style={{ color: '#f0e6d3' }}>
-              {currentQ.text}
+            <p className="text-[12px] font-black tracking-widest uppercase text-center" style={{ color: 'rgba(180,150,80,0.5)' }}>
+              ✦ どちらが好きですか？ ✦
             </p>
 
-            <div>
-              <div className="flex justify-between text-[11px] font-bold mb-2.5 px-1" style={{ color: 'rgba(200,180,140,0.5)' }}>
-                <span>全然違う</span>
-                <span>まさにそう</span>
-              </div>
-              <div className="flex gap-2 justify-between">
-                {[1, 2, 3, 4, 5].map((v) => (
+            {/* A / B の選択肢 */}
+            <div className="flex gap-3">
+              {[
+                { option: currentQ.optionA, label: 'A', color: '#FF6B6B', isSelected: selected !== null && selected <= 2 },
+                { option: currentQ.optionB, label: 'B', color: '#55EFC4', isSelected: selected !== null && selected >= 4 },
+              ].map(({ option, label, color, isSelected }) => (
+                <div
+                  key={label}
+                  className="flex-1 rounded-2xl p-4 text-center transition-all duration-200"
+                  style={{
+                    background: isSelected ? `${color}20` : 'rgba(255,255,255,0.04)',
+                    border: `1px solid ${isSelected ? color + '60' : 'rgba(255,255,255,0.1)'}`,
+                  }}
+                >
+                  <p className="text-[11px] font-black tracking-[0.2em] mb-2" style={{ color }}>{label}</p>
+                  <p className="text-[14px] font-bold leading-snug" style={{ color: isSelected ? '#ffffff' : 'rgba(240,230,211,0.75)' }}>{option}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* 5段階スケール — ドットサイズでA/B強度を表現 */}
+            <div className="flex gap-2 items-end justify-between px-1">
+              {[1, 2, 3, 4, 5].map((v) => {
+                const isA = v <= 2;
+                const isB = v >= 4;
+                const color = isA ? '#FF6B6B' : isB ? '#55EFC4' : 'rgba(232,213,160,0.6)';
+                // ドットサイズ: 端ほど大きい (1→20, 2→14, 3→9, 4→14, 5→20)
+                const dotSizes = [20, 14, 9, 14, 20];
+                const dotSize = dotSizes[v - 1];
+                const isSelected = selected === v;
+                return (
                   <button
                     key={v}
                     onClick={() => handleSelect(v)}
-                    className="flex-1 aspect-square rounded-2xl flex items-center justify-center font-black text-[15px] transition-all duration-150"
-                    style={
-                      selected === v
-                        ? {
-                            background: `hsl(${240 + v * 20}, 60%, 55%)`,
-                            color: '#fff',
-                            boxShadow: `0 3px 0 hsl(${240 + v * 20}, 60%, 35%)`,
-                            transform: 'translateY(-2px)',
-                            border: '1px solid rgba(255,255,255,0.2)',
-                          }
-                        : {
-                            background: 'rgba(180,150,80,0.08)',
-                            color: 'rgba(200,180,140,0.6)',
-                            border: '1px solid rgba(180,150,80,0.25)',
-                          }
-                    }
+                    className="flex-1 flex flex-col items-center gap-2 py-3 rounded-2xl transition-all duration-150"
+                    style={{
+                      background: isSelected ? (isA ? 'rgba(255,107,107,0.15)' : isB ? 'rgba(85,239,196,0.12)' : 'rgba(232,213,160,0.08)') : 'transparent',
+                      border: isSelected ? `1px solid ${color}` : '1px solid transparent',
+                      transform: isSelected ? 'translateY(-2px)' : 'none',
+                    }}
                   >
-                    {v}
+                    <div
+                      className="rounded-full transition-all duration-150"
+                      style={{
+                        width: `${dotSize}px`,
+                        height: `${dotSize}px`,
+                        background: isSelected ? color : isA ? 'rgba(255,107,107,0.25)' : isB ? 'rgba(85,239,196,0.2)' : 'rgba(232,213,160,0.15)',
+                        boxShadow: isSelected ? `0 0 8px ${color}80` : 'none',
+                      }}
+                    />
+                    <span className="text-[9px] font-bold" style={{ color: isSelected ? color : 'rgba(200,180,140,0.3)' }}>
+                      {['A強', 'Aやや', 'どちら', 'Bやや', 'B強'][v - 1]}
+                    </span>
                   </button>
-                ))}
-              </div>
-              {selected !== null && (
-                <p className="text-center text-[12px] font-bold mt-2.5" style={{ color: `hsl(${240 + selected * 20}, 60%, 70%)` }}>
-                  {SCALE_LABELS[selected - 1]}
-                </p>
-              )}
+                );
+              })}
             </div>
 
             <button

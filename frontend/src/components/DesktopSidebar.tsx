@@ -40,11 +40,12 @@ export default function DesktopSidebar() {
     icon: Icon,
     href,
     disabled = false,
-  }: { label: string; icon: React.ComponentType<{ size?: number; className?: string }>; href: string; disabled?: boolean }) => (
+    newTab = false,
+  }: { label: string; icon: React.ComponentType<{ size?: number; className?: string }>; href: string; disabled?: boolean; newTab?: boolean }) => (
     <button
       disabled={disabled}
       className={`w-full min-w-0 flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors ${disabled ? 'opacity-40 cursor-not-allowed text-[#656d76]' : pathname === href ? 'bg-[#21262d] text-[#e6edf3]' : 'text-[#8b949e] hover:bg-[#21262d] hover:text-[#e6edf3]'}`}
-      onClick={() => { if (!disabled) router.push(href); }}
+      onClick={() => { if (!disabled) { if (newTab) window.open(href, '_blank', 'noopener,noreferrer'); else router.push(href); } }}
       title={label}
     >
       <Icon size={18} className="shrink-0" />
@@ -127,7 +128,7 @@ export default function DesktopSidebar() {
         <div className="px-3 pt-2 pb-10">
           <div className="border-t border-[#30363d] my-2" />
           <div className="space-y-1 text-sm">
-            <NavButton label="性癖16タイプ診断" icon={FlaskConical} href="/quiz" disabled={false} />
+            <NavButton label="性癖16タイプ診断" icon={FlaskConical} href="/quiz" disabled={false} newTab />
           </div>
           <div className="border-t border-[#30363d] my-2" />
           <div className="space-y-1 text-sm">

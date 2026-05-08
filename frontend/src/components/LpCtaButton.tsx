@@ -11,14 +11,17 @@ type Props = {
   className?: string;
   style?: React.CSSProperties;
   iconSize?: number;
+  newTab?: boolean;
 };
 
-export default function LpCtaButton({ href, label, eventName, className, style, iconSize = 18 }: Props) {
+export default function LpCtaButton({ href, label, eventName, className, style, iconSize = 18, newTab }: Props) {
   return (
     <Link
       href={href}
       className={className}
       style={style}
+      target={newTab ? '_blank' : undefined}
+      rel={newTab ? 'noopener noreferrer' : undefined}
       onClick={() => trackEvent(eventName)}
     >
       {label}

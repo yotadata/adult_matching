@@ -5,87 +5,109 @@ import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { toPng } from 'html-to-image';
+import QRCode from 'qrcode';
 import { QUIZ_TYPES, AXIS_META, QuizTypeKey, QuizType, Axis } from '../../data';
 import { trackEvent } from '@/lib/analytics';
 
 const CTA_SHOWN_KEY = 'quiz_male_cta_shown';
-const AXES: Axis[] = ['ds', 'nx', 'pe', 'hl'];
+const AXES: Axis[] = ['ds', 'pe', 'nx', 'cw'];
 
 // ─── シェアカード（html-to-image でキャプチャ用） ────────────────────────────
 function ShareCard({
   typeKey,
   quizType,
   axes,
+  qrDataUrl,
   cardRef,
 }: {
   typeKey: QuizTypeKey;
   quizType: QuizType;
   axes: { axis: Axis; pct: number }[];
+  qrDataUrl: string;
   cardRef: React.RefObject<HTMLDivElement | null>;
 }) {
   return (
     <div
       ref={cardRef}
       style={{
-        position: 'fixed',
-        top: '-9999px',
-        left: 0,
+        position: 'relative',
         width: '750px',
-        background: 'linear-gradient(135deg, #1a0d2e 0%, #2a1020 60%, #1e0d1a 100%)',
-        padding: '48px',
+        height: '750px',
+        background: 'linear-gradient(170deg, #0d0b08 0%, #1a1510 100%)',
         fontFamily: 'sans-serif',
         display: 'flex',
         flexDirection: 'column',
-        alignItems: 'center',
+        overflow: 'hidden',
       }}
     >
-      <p style={{ color: 'rgba(216,180,254,0.6)', fontSize: '13px', letterSpacing: '0.3em', textTransform: 'uppercase', marginBottom: '20px' }}>
-        性癖16タイプ診断
-      </p>
-
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={`/quiz/${typeKey}.png`}
-        alt={quizType.name}
-        style={{ width: '240px', height: '240px', objectFit: 'contain', filter: 'drop-shadow(0 6px 20px rgba(0,0,0,0.5))', marginBottom: '20px' }}
-        crossOrigin="anonymous"
-      />
-
-      <div style={{ display: 'flex', gap: '6px', marginBottom: '12px' }}>
-        {typeKey.toUpperCase().split('').map((c, i) => (
-          <span key={i} style={{ background: quizType.color, color: quizType.accent, fontSize: '13px', fontWeight: 900, padding: '3px 12px', borderRadius: '100px' }}>
-            {c}
-          </span>
-        ))}
+      {/* キャラクター画像エリア */}
+      <div style={{ height: '450px', background: `${quizType.color}38`, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', flexShrink: 0 }}>
+        <div style={{ position: 'absolute', inset: 0, background: `radial-gradient(ellipse at center, ${quizType.color}22 0%, transparent 70%)` }} />
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={`/quiz/${typeKey}.png`}
+          alt={quizType.name}
+          style={{ width: '380px', height: '380px', objectFit: 'contain', filter: 'drop-shadow(0 12px 32px rgba(0,0,0,0.85))', position: 'relative' }}
+          crossOrigin="anonymous"
+        />
+        {/* ヘッダーバー */}
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, padding: '12px 22px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <p style={{ color: 'rgba(180,150,80,0.65)', fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', margin: 0 }}>性癖16タイプ診断</p>
+          <div style={{ display: 'flex', gap: '5px' }}>
+            {typeKey.toUpperCase().split('').map((c, i) => (
+              <span key={i} style={{ background: `${quizType.color}30`, color: quizType.color, fontSize: '11px', fontWeight: 900, padding: '3px 10px', borderRadius: '100px', border: `1px solid ${quizType.color}55` }}>{c}</span>
+            ))}
+          </div>
+        </div>
+        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '80px', background: 'linear-gradient(to bottom, transparent, #0d0b08)' }} />
+        {/* QRコード（画像エリア右下） */}
+        {qrDataUrl && (
+          <div style={{ position: 'absolute', bottom: '14px', right: '16px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={qrDataUrl} alt="QR" style={{ width: '64px', height: '64px', borderRadius: '6px', background: 'white', padding: '4px', display: 'block' }} />
+            <p style={{ color: 'rgba(180,150,80,0.55)', fontSize: '9px', margin: 0, letterSpacing: '0.05em' }}>seihekilab.com</p>
+          </div>
+        )}
       </div>
 
-      <h2 style={{ color: 'white', fontSize: '48px', fontWeight: 900, margin: '0 0 6px', textAlign: 'center', lineHeight: 1.1 }}>
-        {quizType.name}
-      </h2>
-      <p style={{ color: quizType.color, fontSize: '18px', fontWeight: 700, margin: '0 0 28px', textAlign: 'center' }}>
-        {quizType.tagline}
-      </p>
+      {/* テキストエリア */}
+      <div style={{ padding: '18px 28px 20px', display: 'flex', flexDirection: 'column', gap: '12px', flex: 1 }}>
+        {/* 名前・タグライン */}
+        <div>
+          <h2 style={{ color: '#f0e6d3', fontSize: '38px', fontWeight: 900, margin: '0 0 5px', lineHeight: 1.1 }}>{quizType.name}</h2>
+          <p style={{ color: quizType.color, fontSize: '15px', fontWeight: 700, margin: 0, lineHeight: 1.4 }}>{quizType.tagline}</p>
+        </div>
 
-      <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '28px' }}>
-        {axes.map(({ axis, pct }) => {
-          const meta = AXIS_META[axis];
-          const color = pct >= 50 ? meta.colorHigh : meta.colorLow;
-          return (
-            <div key={axis} style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ color: 'rgba(255,255,255,0.55)', fontSize: '13px', fontWeight: 700 }}>{meta.labelHigh}</span>
-                <span style={{ color: 'rgba(255,255,255,0.55)', fontSize: '13px', fontWeight: 700 }}>{meta.labelLow}</span>
+        {/* 説明文 */}
+        <p style={{ color: 'rgba(200,180,140,0.65)', fontSize: '12px', lineHeight: 1.7, margin: 0 }}>
+          {quizType.description}
+        </p>
+
+        {/* 軸バー */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '9px' }}>
+          {axes.map(({ axis, pct }) => {
+            const meta = AXIS_META[axis];
+            const isHigh = pct >= 50;
+            const color = isHigh ? meta.colorHigh : meta.colorLow;
+            const label = isHigh ? meta.labelHigh : meta.labelLow;
+            const barWidth = Math.abs(pct - 50) * 2;
+            return (
+              <div key={axis} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <span style={{ color: 'rgba(200,180,140,0.5)', fontSize: '11px', fontWeight: 700, width: '34px', textAlign: 'right', flexShrink: 0 }}>{meta.labelHigh}</span>
+                <div style={{ flex: 1, background: 'rgba(180,150,80,0.1)', borderRadius: '100px', height: '7px', overflow: 'hidden', position: 'relative' }}>
+                  <div style={{ position: 'absolute', left: '50%', top: 0, bottom: 0, width: '1px', background: 'rgba(180,150,80,0.25)' }} />
+                  {isHigh
+                    ? <div style={{ position: 'absolute', right: '50%', top: 0, bottom: 0, width: `${barWidth}%`, background: color, borderRadius: '100px' }} />
+                    : <div style={{ position: 'absolute', left: '50%', top: 0, bottom: 0, width: `${barWidth}%`, background: color, borderRadius: '100px' }} />
+                  }
+                </div>
+                <span style={{ color: 'rgba(200,180,140,0.5)', fontSize: '11px', fontWeight: 700, width: '34px', flexShrink: 0 }}>{meta.labelLow}</span>
+                <span style={{ color, fontSize: '11px', fontWeight: 900, width: '44px', textAlign: 'right', flexShrink: 0 }}>{label}</span>
               </div>
-              <div style={{ background: 'rgba(255,255,255,0.1)', borderRadius: '100px', height: '10px', overflow: 'hidden' }}>
-                <div style={{ width: `${pct}%`, height: '100%', background: color, borderRadius: '100px' }} />
-              </div>
-              <p style={{ color, fontSize: '12px', fontWeight: 700, textAlign: 'right', margin: 0 }}>{pct}%</p>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
-
-      <p style={{ color: 'rgba(255,255,255,0.25)', fontSize: '13px', margin: 0 }}>seihekilab.com</p>
     </div>
   );
 }
@@ -169,6 +191,8 @@ function MaleCTAModal({ typeKey, onClose }: { typeKey: QuizTypeKey; onClose: () 
         <p className="text-sm text-white/60 mb-5">AIがあなたの好みを学習して、刺さる動画だけをおすすめ。スワイプして探してみよう。</p>
         <Link
           href="/"
+          target="_blank"
+          rel="noopener noreferrer"
           className="block w-full rounded-2xl py-4 text-center font-black text-white text-[15px] active:translate-y-[1px] transition-transform"
           style={{ background: 'linear-gradient(90deg, #9333ea, #ec4899)', boxShadow: '0 4px 0 #6b21a8' }}
           onClick={() => trackEvent('quiz_swipe_cta_click', { type: typeKey })}
@@ -189,6 +213,13 @@ export function ResultContent({ typeKey }: { typeKey: QuizTypeKey }) {
   const router = useRouter();
   const shareCardRef = useRef<HTMLDivElement>(null);
   const [showCTA, setShowCTA] = useState(false);
+  const [qrDataUrl, setQrDataUrl] = useState('');
+
+  useEffect(() => {
+    QRCode.toDataURL('https://seihekilab.com/quiz', { width: 128, margin: 1, color: { dark: '#000000', light: '#ffffff' } })
+      .then(setQrDataUrl)
+      .catch(() => {});
+  }, []);
 
   const gender = searchParams.get('gender') ?? 'other';
   const isMale = gender === 'male';
@@ -198,10 +229,10 @@ export function ResultContent({ typeKey }: { typeKey: QuizTypeKey }) {
     catch { return {}; }
   })();
 
-  const quizType = QUIZ_TYPES[typeKey] ?? QUIZ_TYPES['sneh'];
+  const quizType = QUIZ_TYPES[typeKey] ?? QUIZ_TYPES['senc'];
   const shareText = `私の性癖16タイプは「${quizType.name}」でした！${quizType.tagline}\n\nあなたは？👇`;
   const scoresParam = searchParams.get('scores') ?? '';
-  const shareUrl = `https://seihekilab.com/quiz/result/${typeKey}?scores=${scoresParam}`;
+  const shareUrl = `https://seihekilab.com/quiz/result/${typeKey}?scores=${encodeURIComponent(scoresParam)}`;
 
   const axes: { axis: Axis; pct: number }[] = AXES.map((axis) => ({
     axis,
@@ -248,8 +279,10 @@ export function ResultContent({ typeKey }: { typeKey: QuizTypeKey }) {
     <div className="min-h-[calc(100vh-56px)] flex flex-col items-center px-4 py-8">
       {showCTA && <MaleCTAModal typeKey={typeKey} onClose={closeCTA} />}
 
-      {/* キャプチャ用シェアカード（画面外） */}
-      <ShareCard typeKey={typeKey} quizType={quizType} axes={axes} cardRef={shareCardRef} />
+      {/* キャプチャ用シェアカード（画面外非表示） */}
+      <div style={{ position: 'absolute', left: '-9999px', top: 0, overflow: 'hidden', pointerEvents: 'none' }}>
+        <ShareCard typeKey={typeKey} quizType={quizType} axes={axes} qrDataUrl={qrDataUrl} cardRef={shareCardRef} />
+      </div>
 
       <p className="text-[11px] font-black tracking-[0.3em] uppercase mb-5" style={{ color: 'rgba(180,150,80,0.5)' }}>✦ 診断結果 ✦</p>
 
@@ -265,8 +298,8 @@ export function ResultContent({ typeKey }: { typeKey: QuizTypeKey }) {
       >
         {/* キャラクターヘッダー */}
         <div
-          className="relative w-full overflow-hidden"
-          style={{ background: `${quizType.color}55`, aspectRatio: '4/5' }}
+          className="relative h-72 flex items-center justify-center overflow-hidden"
+          style={{ background: `${quizType.color}55` }}
         >
           <div
             className="absolute inset-3 rounded-2xl"
@@ -275,8 +308,10 @@ export function ResultContent({ typeKey }: { typeKey: QuizTypeKey }) {
           <Image
             src={`/quiz/${typeKey}.png`}
             alt={quizType.name}
-            fill
-            style={{ filter: 'drop-shadow(0 6px 24px rgba(0,0,0,0.6))', padding: '16px' }}
+            width={260}
+            height={260}
+            className="relative object-contain"
+            style={{ filter: 'drop-shadow(0 6px 24px rgba(0,0,0,0.6))' }}
           />
         </div>
 
@@ -318,15 +353,21 @@ export function ResultContent({ typeKey }: { typeKey: QuizTypeKey }) {
                       <span className="text-[10px]" style={{ color: 'rgba(180,150,80,0.5)' }}>⇄</span>
                       <span className="text-[11px] font-black" style={{ color: 'rgba(200,180,140,0.7)' }}>{meta.labelLow}</span>
                     </div>
-                    <span className="text-[11px] font-black" style={{ color }}>{degreeLabel}</span>
+                    <span
+                      className="text-[10px] font-black px-2 py-0.5 rounded-full"
+                      style={{ background: `${color}22`, color, border: `1px solid ${color}55` }}
+                    >{degreeLabel}</span>
                   </div>
                   <div className="relative h-3 rounded-full overflow-hidden" style={{ background: 'rgba(180,150,80,0.1)' }}>
                     <div className="absolute left-1/2 top-0 bottom-0 w-px z-10" style={{ background: 'rgba(180,150,80,0.3)' }} />
-                    <div className="absolute left-0 top-0 bottom-0 rounded-full transition-all" style={{ width: `${pct}%`, background: color }} />
+                    {isHigh
+                      ? <div className="absolute top-0 bottom-0 rounded-full transition-all" style={{ right: '50%', width: `${(pct - 50) * 2}%`, background: color }} />
+                      : <div className="absolute top-0 bottom-0 rounded-full transition-all" style={{ left: '50%', width: `${(50 - pct) * 2}%`, background: color }} />
+                    }
                   </div>
                   <div className="flex justify-between text-[10px] mt-0.5 font-bold" style={{ color: 'rgba(180,150,80,0.35)' }}>
                     <span>{meta.labelHigh}</span>
-                    <span>{pct}%</span>
+                    <span>{Math.round(Math.abs(pct - 50) * 2)}%</span>
                     <span>{meta.labelLow}</span>
                   </div>
                 </div>
@@ -375,6 +416,8 @@ export function ResultContent({ typeKey }: { typeKey: QuizTypeKey }) {
           <p className="text-sm text-white/55 mb-4">AIがあなたの好みを学習して、刺さる動画だけをおすすめ。スワイプして探してみよう。</p>
           <Link
             href="/"
+            target="_blank"
+            rel="noopener noreferrer"
             className="block w-full rounded-2xl py-4 text-center font-black text-white text-[15px] active:translate-y-[1px] transition-transform"
             style={{ background: 'linear-gradient(90deg, #7b2d8b, #c4337a)', boxShadow: '0 4px 0 #5a1a6b', border: '2px solid #9b3dab' }}
             onClick={() => trackEvent('quiz_swipe_cta_click', { type: typeKey })}

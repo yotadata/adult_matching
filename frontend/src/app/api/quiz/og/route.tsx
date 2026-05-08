@@ -4,17 +4,17 @@ import { QUIZ_TYPES, AXIS_META, QuizTypeKey, Axis } from '@/app/quiz/data'
 
 export const runtime = 'edge'
 
-const AXES: Axis[] = ['ds', 'nx', 'pe', 'hl']
+const AXES: Axis[] = ['ds', 'pe', 'nx', 'cw']
 
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url)
-  const typeKey = (searchParams.get('type') ?? 'sneh') as QuizTypeKey
+  const typeKey = (searchParams.get('type') ?? 'senc') as QuizTypeKey
   const scoresRaw = searchParams.get('scores') ?? '{}'
 
   let scores: Record<string, number> = {}
   try { scores = JSON.parse(decodeURIComponent(scoresRaw)) } catch {}
 
-  const quizType = QUIZ_TYPES[typeKey] ?? QUIZ_TYPES['sneh']
+  const quizType = QUIZ_TYPES[typeKey] ?? QUIZ_TYPES['senc']
   const charImageUrl = `${origin}/quiz/${typeKey}.png`
 
   return new ImageResponse(
@@ -113,10 +113,15 @@ export async function GET(request: NextRequest) {
                     background: 'rgba(255,255,255,0.1)',
                     borderRadius: '100px',
                     height: '8px',
-                    display: 'flex',
                     overflow: 'hidden',
+                    position: 'relative',
+                    display: 'flex',
                   }}>
-                    <div style={{ width: `${pct}%`, background: color, borderRadius: '100px' }} />
+                    <div style={{ position: 'absolute', left: '50%', top: 0, bottom: 0, width: '1px', background: 'rgba(255,255,255,0.2)' }} />
+                    {pct >= 50
+                      ? <div style={{ position: 'absolute', right: '50%', top: 0, bottom: 0, width: `${(pct - 50) * 2}%`, background: color, borderRadius: '100px' }} />
+                      : <div style={{ position: 'absolute', left: '50%', top: 0, bottom: 0, width: `${(50 - pct) * 2}%`, background: color, borderRadius: '100px' }} />
+                    }
                   </div>
                 </div>
               )
