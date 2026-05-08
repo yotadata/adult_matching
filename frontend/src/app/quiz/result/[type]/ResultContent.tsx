@@ -129,6 +129,13 @@ function SaveImageButton({
     setLoading(true);
     trackEvent('quiz_save_image', { type: typeKey });
     try {
+      // キャラクター画像をpreloadしてからキャプチャ
+      await new Promise<void>((resolve) => {
+        const img = new window.Image();
+        img.onload = () => resolve();
+        img.onerror = () => resolve();
+        img.src = `/quiz/${typeKey}.png?v=${Date.now()}`;
+      });
       const dataUrl = await toPng(cardRef.current, { pixelRatio: 2, cacheBust: true });
       const blob = await (await fetch(dataUrl)).blob();
       const file = new File([blob], `seiheki_${typeKey}.png`, { type: 'image/png' });
@@ -262,7 +269,7 @@ export function ResultContent({ typeKey }: { typeKey: QuizTypeKey }) {
   const shareToX = () => {
     trackEvent('quiz_share', { method: 'x', type: typeKey });
     window.open(
-      `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}&hashtags=性癖16タイプ診断`,
+      `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}&hashtags=性癖ラボ`,
       '_blank', 'noopener'
     );
   };
