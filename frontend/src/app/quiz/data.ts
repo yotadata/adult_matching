@@ -224,9 +224,9 @@ export const QUIZ_TYPES: Record<QuizTypeKey, QuizType> = {
     color: '#E59866', accent: '#CA6F1E',
   },
   mxpl: {
-    key: 'mxpl', name: '毒リンゴを待つ姫', emoji: '🍎',
+    key: 'mxpl', name: 'お菓子の家のグレーテル', emoji: '🍬',
     tagline: '理想の場面へのこだわりが、人並み外れている',
-    description: '白雪姫のように、日常じゃない。特殊なシチュエーションや非現実的な設定に、身体が正直に反応する。頻度は少ないが、その分「理想の場面」へのこだわりが強い。妄想の解像度が異常に高い。',
+    description: 'グレーテルのように、普通の場面では動かない。理想のシチュエーションや非現実的な設定にだけ、身体が正直に反応する。頻度は少ないが、その分「完璧な場面」へのこだわりが強く、妄想の解像度が異常に高い。',
     color: '#E74C3C', accent: '#CB4335',
   },
   mxeh: {
