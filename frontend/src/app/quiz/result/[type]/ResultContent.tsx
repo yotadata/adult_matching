@@ -351,7 +351,10 @@ export function ResultContent({ typeKey }: { typeKey: QuizTypeKey }) {
                       <span className="text-[10px]" style={{ color: 'rgba(180,150,80,0.5)' }}>⇄</span>
                       <span className="text-[11px] font-black" style={{ color: 'rgba(200,180,140,0.7)' }}>{meta.labelLow}</span>
                     </div>
-                    <span className="text-[11px] font-black" style={{ color }}>{degreeLabel}</span>
+                    <span
+                      className="text-[10px] font-black px-2 py-0.5 rounded-full"
+                      style={{ background: `${color}22`, color, border: `1px solid ${color}55` }}
+                    >{degreeLabel}</span>
                   </div>
                   <div className="relative h-3 rounded-full overflow-hidden" style={{ background: 'rgba(180,150,80,0.1)' }}>
                     <div className="absolute left-1/2 top-0 bottom-0 w-px z-10" style={{ background: 'rgba(180,150,80,0.3)' }} />
