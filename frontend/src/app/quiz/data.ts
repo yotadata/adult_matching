@@ -140,19 +140,19 @@ export function calcResult(answers: Record<number, number>): QuizResult {
 
 export const QUIZ_TYPES: Record<QuizTypeKey, QuizType> = {
   spnc: {
-    key: 'spnc', name: '偏愛の支配者', emoji: '🔥',
+    key: 'spnc', name: '偏愛のドS', emoji: '🔥',
     tagline: '条件が揃ったときだけ、本気になる',
     description: 'リードするのが自然で、外見や身体の相性で相手を選ぶ。慣れた相手・いつもの場所でも十分スイッチが入るが、こだわりの条件が細かくてズレると一気に冷める。「これじゃないと」が多い分、揃ったときの集中力は誰より高い。',
     color: '#FF6B6B', accent: '#C0392B',
   },
   spnw: {
-    key: 'spnw', name: '無差別な番長', emoji: '🧊',
+    key: 'spnw', name: '全方位ドS', emoji: '🧊',
     tagline: '誰でも落とせる、どこでも本気',
     description: '外見や身体の相性で動き、リードするのが好き。慣れた相手でも新しい相手でも十分燃えるし、細かいこだわりもない。「まあなんでもいけるし、リードさせてくれれば」という間口の広さが武器。',
     color: '#4ECDC4', accent: '#1A9B8C',
   },
   senc: {
-    key: 'senc', name: 'こじらせ支配者', emoji: '❤️‍🔥',
+    key: 'senc', name: 'こじらせドS', emoji: '❤️‍🔥',
     tagline: '感情のスイッチが入ると、誰より熱い',
     description: '感情が動いた相手をリードしたくなる。慣れ親しんだ日常の中でもしっかり燃えるが、感情のトリガーが細かい。「この人のこういうところ」が揃わないと本気になれず、条件が揃った瞬間は誰より熱くなる。',
     color: '#FF8E53', accent: '#E74C3C',
@@ -188,25 +188,25 @@ export const QUIZ_TYPES: Record<QuizTypeKey, QuizType> = {
     color: '#6C5CE7', accent: '#4A3AB5',
   },
   mpnc: {
-    key: 'mpnc', name: '偏愛の沼らせ屋', emoji: '🌿',
+    key: 'mpnc', name: '偏愛の沼らせ魔', emoji: '🌿',
     tagline: '条件が揃った相手にだけ、全力で尽くす',
     description: '相手を喜ばせることが好きで、外見や身体の相性で相手を選ぶ。慣れた環境でも十分燃えるが、こだわりの条件が細かい。「この人だ」と思えた相手への集中力は異常で、気づいたら相手が深みにはまっている。',
     color: '#55EFC4', accent: '#00B894',
   },
   mpnw: {
-    key: 'mpnw', name: '無差別な尽くし屋', emoji: '🌸',
+    key: 'mpnw', name: '無差別な奉仕体質', emoji: '🌸',
     tagline: '誰に対しても、どこでも尽くせる',
     description: '相手の身体的な満足を引き出すのが好きで、こだわりは少ない。慣れた相手でも新しい相手でも自分なりに尽くせる。「まあ誰でもいけるし、喜んでくれれば嬉しい」という、間口の広い頼もしい奉仕タイプ。',
     color: '#81ECEC', accent: '#00CEC9',
   },
   menc: {
-    key: 'menc', name: 'こじらせ溺愛屋', emoji: '💝',
+    key: 'menc', name: 'こじらせ溺愛体質', emoji: '💝',
     tagline: 'この感情、この人だけに全部渡す',
     description: '心がつながった相手に尽くしたくなるが、感情のトリガーが細かい。「この人のこういうところが好き」が揃って初めてスイッチが入る。慣れ親しんだ関係の中で愛情が深まるタイプで、刺さると溺愛モードに入る。',
     color: '#FF7675', accent: '#D63031',
   },
   menw: {
-    key: 'menw', name: '天然の尽くし屋', emoji: '🕊️',
+    key: 'menw', name: '天然ドM', emoji: '🕊️',
     tagline: '気持ちさえ動けば、どんな相手も受け止める',
     description: '心がつながったと感じれば、どんな状況でも相手に寄り添える。慣れた日常の中でじっくり愛情が育つタイプで、こだわりなく相手に合わせられる。静かで包容力があり、「あなたに合わせます」という姿勢が自然体。',
     color: '#DFE6E9', accent: '#B2BEC3',
@@ -218,7 +218,7 @@ export const QUIZ_TYPES: Record<QuizTypeKey, QuizType> = {
     color: '#FAB1A0', accent: '#E17055',
   },
   mpxw: {
-    key: 'mpxw', name: '衝動的な尽くし屋', emoji: '✨',
+    key: 'mpxw', name: '衝動的なドM', emoji: '✨',
     tagline: 'いつもと違う場所さえあれば、なんでも尽くせる',
     description: '日常では物足りない。ホテルでも旅先でも、非日常の空気さえあれば相手の身体的な満足を引き出すことに全力になれる。細かいこだわりは薄く、「非日常さえあれば何でもいける」という柔軟な刺激追求型の尽くし屋。',
     color: '#FFF4E6', accent: '#FDCB6E',
@@ -230,7 +230,7 @@ export const QUIZ_TYPES: Record<QuizTypeKey, QuizType> = {
     color: '#FD79A8', accent: '#E84393',
   },
   mexw: {
-    key: 'mexw', name: '非日常の溺愛屋', emoji: '🌕',
+    key: 'mexw', name: '非日常の溺愛体質', emoji: '🌕',
     tagline: '感情さえ動けば、どんな非日常でも全力で尽くす',
     description: '感情が動いた相手には全力で尽くしたくなる。いつもの場所より非日常の空気の中の方が燃える。細かいこだわりは薄く、ホテルでも旅先でも感情スイッチが入れば何でもOK。感情主導で動く、刺激を求める献身家。',
     color: '#C7ECEE', accent: '#74B9FF',
