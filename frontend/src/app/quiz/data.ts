@@ -206,9 +206,9 @@ export const QUIZ_TYPES: Record<QuizTypeKey, QuizType> = {
     color: '#E91E8C', accent: '#C0166F',
   },
   mneh: {
-    key: 'mneh', name: '舞踏会のシンデレラ', emoji: '👠',
-    tagline: '気持ちと欲求が、いつもぴったり重なる',
-    description: '気持ちが動くと欲求も動く。シンデレラのように、心のつながりを感じることで火がつく。日常の中で頻繁に感情が揺れ動き、その都度ちゃんと反応してしまう正直な人。',
+    key: 'mneh', name: '赤い靴の娘', emoji: '🩰',
+    tagline: '一度動き出したら、止まれない',
+    description: 'アンデルセンの赤い靴のように、気持ちが動くと欲求も止まらなくなる。心のつながりを感じると火がつき、日常の中で頻繁に感情が揺れ動く。踊り続けずにいられない正直な人。',
     color: '#3498DB', accent: '#2874A6',
   },
   mnel: {
@@ -218,9 +218,9 @@ export const QUIZ_TYPES: Record<QuizTypeKey, QuizType> = {
     color: '#95A5A6', accent: '#717D7E',
   },
   mxph: {
-    key: 'mxph', name: 'ランプを磨くアラジン', emoji: '🪔',
-    tagline: '妄想は壮大。でも全部相手のために使う',
-    description: '頭の中に非日常的な設定がたくさんある。でも実際には相手の身体的な満足を引き出すことに全力で、頻繁に動く。アラジンのように、ランプを磨くほど期待が膨らんでしまうタイプ。',
+    key: 'mxph', name: '毎夜語るシェヘラザード', emoji: '🌙',
+    tagline: '毎晩新しい物語で、相手を引き込み続ける',
+    description: '千一夜物語のシェヘラザードのように、頭の中に非日常的な設定が尽きない。相手の身体的な満足を引き出すことに全力で、頻繁に動く。続きが気になると言わせ続けるタイプ。',
     color: '#E59866', accent: '#CA6F1E',
   },
   mxpl: {
