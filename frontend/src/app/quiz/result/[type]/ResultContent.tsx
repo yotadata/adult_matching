@@ -27,9 +27,7 @@ function ShareCard({
     <div
       ref={cardRef}
       style={{
-        position: 'fixed',
-        top: '-9999px',
-        left: 0,
+        position: 'relative',
         width: '750px',
         background: 'linear-gradient(135deg, #1a0d2e 0%, #2a1020 60%, #1e0d1a 100%)',
         padding: '48px',
@@ -248,8 +246,10 @@ export function ResultContent({ typeKey }: { typeKey: QuizTypeKey }) {
     <div className="min-h-[calc(100vh-56px)] flex flex-col items-center px-4 py-8">
       {showCTA && <MaleCTAModal typeKey={typeKey} onClose={closeCTA} />}
 
-      {/* キャプチャ用シェアカード（画面外） */}
-      <ShareCard typeKey={typeKey} quizType={quizType} axes={axes} cardRef={shareCardRef} />
+      {/* キャプチャ用シェアカード（画面外非表示） */}
+      <div style={{ position: 'absolute', left: '-9999px', top: 0, overflow: 'hidden', pointerEvents: 'none' }}>
+        <ShareCard typeKey={typeKey} quizType={quizType} axes={axes} cardRef={shareCardRef} />
+      </div>
 
       <p className="text-[11px] font-black tracking-[0.3em] uppercase mb-5" style={{ color: 'rgba(180,150,80,0.5)' }}>✦ 診断結果 ✦</p>
 
