@@ -41,7 +41,7 @@ function ShareCard({
       }}
     >
       {/* キャラクター画像エリア */}
-      <div style={{ height: '420px', background: `${quizType.color}38`, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', flexShrink: 0 }}>
+      <div style={{ height: '450px', background: `${quizType.color}38`, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', flexShrink: 0 }}>
         <div style={{ position: 'absolute', inset: 0, background: `radial-gradient(ellipse at center, ${quizType.color}22 0%, transparent 70%)` }} />
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
@@ -74,9 +74,14 @@ function ShareCard({
       <div style={{ padding: '18px 28px 20px', display: 'flex', flexDirection: 'column', gap: '12px', flex: 1 }}>
         {/* 名前・タグライン */}
         <div>
-          <h2 style={{ color: '#f0e6d3', fontSize: '42px', fontWeight: 900, margin: '0 0 5px', lineHeight: 1.1 }}>{quizType.name}</h2>
-          <p style={{ color: quizType.color, fontSize: '16px', fontWeight: 700, margin: 0, lineHeight: 1.4 }}>{quizType.tagline}</p>
+          <h2 style={{ color: '#f0e6d3', fontSize: '38px', fontWeight: 900, margin: '0 0 5px', lineHeight: 1.1 }}>{quizType.name}</h2>
+          <p style={{ color: quizType.color, fontSize: '15px', fontWeight: 700, margin: 0, lineHeight: 1.4 }}>{quizType.tagline}</p>
         </div>
+
+        {/* 説明文 */}
+        <p style={{ color: 'rgba(200,180,140,0.65)', fontSize: '12px', lineHeight: 1.7, margin: 0 }}>
+          {quizType.description}
+        </p>
 
         {/* 軸バー */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '9px' }}>
