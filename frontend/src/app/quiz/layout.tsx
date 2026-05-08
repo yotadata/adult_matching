@@ -24,16 +24,15 @@ export default function QuizLayout({ children }: { children: React.ReactNode }) 
     <div
       className="min-h-screen flex flex-col"
       style={{
-        backgroundColor: '#fdf6e8',
-        backgroundImage: `radial-gradient(circle, rgba(180,120,60,0.07) 1px, transparent 1px)`,
-        backgroundSize: '20px 20px',
+        background: 'linear-gradient(160deg, #0f0a1e 0%, #1a0d2e 50%, #0d1020 100%)',
+        backgroundAttachment: 'fixed',
       }}
     >
       <QuizHeader />
       <div className="flex-1">{children}</div>
-      <footer className="flex flex-col items-center py-8 gap-3" style={{ borderTop: '2px dashed rgba(180,120,60,0.28)' }}>
-        <Image src="/seiheki_lab_header.png" alt="性癖ラボ" width={160} height={44} className="object-contain opacity-70" />
-        <p className="text-[11px] text-[#b5541a]/50 font-bold">© 性癖ラボ</p>
+      <footer className="flex flex-col items-center py-8 gap-3" style={{ borderTop: '1px solid rgba(180,150,80,0.2)' }}>
+        <Image src="/seiheki_lab_header.png" alt="性癖ラボ" width={160} height={44} className="object-contain opacity-50" />
+        <p className="text-[11px] font-bold" style={{ color: 'rgba(180,150,80,0.4)' }}>© 性癖ラボ</p>
       </footer>
     </div>
   );
