@@ -4,17 +4,17 @@ import { QUIZ_TYPES, AXIS_META, QuizTypeKey, Axis } from '@/app/quiz/data'
 
 export const runtime = 'edge'
 
-const AXES: Axis[] = ['ds', 'nx', 'pe', 'hl']
+const AXES: Axis[] = ['ds', 'pe', 'nx', 'cw']
 
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url)
-  const typeKey = (searchParams.get('type') ?? 'sneh') as QuizTypeKey
+  const typeKey = (searchParams.get('type') ?? 'senc') as QuizTypeKey
   const scoresRaw = searchParams.get('scores') ?? '{}'
 
   let scores: Record<string, number> = {}
   try { scores = JSON.parse(decodeURIComponent(scoresRaw)) } catch {}
 
-  const quizType = QUIZ_TYPES[typeKey] ?? QUIZ_TYPES['sneh']
+  const quizType = QUIZ_TYPES[typeKey] ?? QUIZ_TYPES['senc']
   const charImageUrl = `${origin}/quiz/${typeKey}.png`
 
   return new ImageResponse(
