@@ -37,8 +37,8 @@ export const AXIS_META: Record<Axis, {
   ds: {
     labelHigh: '支配',
     labelLow: '奉仕',
-    degreesHigh: ['ガチ支配', '支配寄り'],
-    degreesLow: ['ガチ奉仕', '奉仕寄り'],
+    degreesHigh: ['ドS', 'S寄り'],
+    degreesLow: ['ドM', 'M寄り'],
     colorHigh: '#FF6B6B',
     colorLow: '#55EFC4',
   },
