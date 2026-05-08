@@ -191,6 +191,8 @@ function MaleCTAModal({ typeKey, onClose }: { typeKey: QuizTypeKey; onClose: () 
         <p className="text-sm text-white/60 mb-5">AIがあなたの好みを学習して、刺さる動画だけをおすすめ。スワイプして探してみよう。</p>
         <Link
           href="/"
+          target="_blank"
+          rel="noopener noreferrer"
           className="block w-full rounded-2xl py-4 text-center font-black text-white text-[15px] active:translate-y-[1px] transition-transform"
           style={{ background: 'linear-gradient(90deg, #9333ea, #ec4899)', boxShadow: '0 4px 0 #6b21a8' }}
           onClick={() => trackEvent('quiz_swipe_cta_click', { type: typeKey })}
@@ -414,6 +416,8 @@ export function ResultContent({ typeKey }: { typeKey: QuizTypeKey }) {
           <p className="text-sm text-white/55 mb-4">AIがあなたの好みを学習して、刺さる動画だけをおすすめ。スワイプして探してみよう。</p>
           <Link
             href="/"
+            target="_blank"
+            rel="noopener noreferrer"
             className="block w-full rounded-2xl py-4 text-center font-black text-white text-[15px] active:translate-y-[1px] transition-transform"
             style={{ background: 'linear-gradient(90deg, #7b2d8b, #c4337a)', boxShadow: '0 4px 0 #5a1a6b', border: '2px solid #9b3dab' }}
             onClick={() => trackEvent('quiz_swipe_cta_click', { type: typeKey })}

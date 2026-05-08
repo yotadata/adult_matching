@@ -226,6 +226,7 @@ export default function AboutPage() {
                   className="inline-flex items-center gap-2 px-6 py-3 rounded-full font-black text-[#5c2e00] text-sm hover:opacity-90 transition-opacity"
                   style={{ background: 'linear-gradient(90deg, #ffb347, #ff8c00)' }}
                   iconSize={16}
+                  newTab
                 />
               </div>
             </div>
