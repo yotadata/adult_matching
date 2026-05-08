@@ -9,7 +9,7 @@ import { QUIZ_TYPES, AXIS_META, QuizTypeKey, QuizType, Axis } from '../../data';
 import { trackEvent } from '@/lib/analytics';
 
 const CTA_SHOWN_KEY = 'quiz_male_cta_shown';
-const AXES: Axis[] = ['ds', 'nx', 'pe', 'hl'];
+const AXES: Axis[] = ['ds', 'nx', 'pe', 'cw'];
 
 // ─── シェアカード（html-to-image でキャプチャ用） ────────────────────────────
 function ShareCard({
@@ -198,7 +198,7 @@ export function ResultContent({ typeKey }: { typeKey: QuizTypeKey }) {
     catch { return {}; }
   })();
 
-  const quizType = QUIZ_TYPES[typeKey] ?? QUIZ_TYPES['sneh'];
+  const quizType = QUIZ_TYPES[typeKey] ?? QUIZ_TYPES['snec'];
   const shareText = `私の性癖16タイプは「${quizType.name}」でした！${quizType.tagline}\n\nあなたは？👇`;
   const scoresParam = searchParams.get('scores') ?? '';
   const shareUrl = `https://seihekilab.com/quiz/result/${typeKey}?scores=${scoresParam}`;

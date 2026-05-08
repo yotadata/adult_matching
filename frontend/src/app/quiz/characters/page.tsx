@@ -9,10 +9,10 @@ export const metadata: Metadata = {
 };
 
 const TYPE_ORDER: QuizTypeKey[] = [
-  'snph', 'snpl', 'sneh', 'snel',
-  'sxph', 'sxpl', 'sxeh', 'sxel',
-  'mnph', 'mnpl', 'mneh', 'mnel',
-  'mxph', 'mxpl', 'mxeh', 'mxel',
+  'snpc', 'snpw', 'snec', 'snew',
+  'sxpc', 'sxpw', 'sxec', 'sxew',
+  'mnpc', 'mnpw', 'mnec', 'mnew',
+  'mxpc', 'mxpw', 'mxec', 'mxew',
 ];
 
 const GROUP_LABELS = [
