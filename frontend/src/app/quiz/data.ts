@@ -46,7 +46,7 @@ export const AXIS_META: Record<Axis, {
     labelHigh: '日常',
     labelLow: '非日常',
     degreesHigh: ['超日常派', '日常寄り'],
-    degreesLow: ['超ファンタジー派', 'ファンタジー寄り'],
+    degreesLow: ['刺激派', '非日常寄り'],
     colorHigh: '#74B9FF',
     colorLow: '#FD79A8',
   },
@@ -80,9 +80,9 @@ export const QUESTIONS: Question[] = [
   { id: 6,  axis: 'pe', optionA: '会って数分で「この人とやりたい」と思うことがある',       optionB: 'ある程度仲良くなった相手じゃないと欲求が生まれない' },
 
   // ── 日常(N) ⇄ 非日常(X) 軸 ── A=N側, B=X側 ──
-  { id: 7,  axis: 'nx', optionA: '普通の部屋・普段着のシチュで十分興奮できる',          optionB: 'コスプレや特殊な設定があるほうが断然盛り上がる' },
-  { id: 8,  axis: 'nx', optionA: 'リアルな状況のほうが刺さる',                          optionB: '現実ではあり得ない設定のほうが興奮する' },
-  { id: 9,  axis: 'nx', optionA: '普段の何気ない場面でも欲求が生まれる',                optionB: 'ファンタジー・異世界・特殊な役割設定に強く惹かれる' },
+  { id: 7,  axis: 'nx', optionA: '毎日会う相手でも欲求は普通に続く',                    optionB: '旅行先やホテルなど、いつもと違う場所だと明らかに興奮が上がる' },
+  { id: 8,  axis: 'nx', optionA: '慣れ親しんだ相手の方が安心して本気になれる',          optionB: '初対面に近い緊張感のある相手の方が燃える' },
+  { id: 9,  axis: 'nx', optionA: 'いつもの部屋・いつもの雰囲気で十分テンションが上がる', optionB: '「バレるかも」という状況や、非日常の緊張感がないと物足りない' },
 
   // ── 偏食(C) ⇄ 雑食(W) 軸 ── A=C側, B=W側 ──
   { id: 10, axis: 'cw', optionA: 'こだわりの条件がちょっとでもズレると一気に冷める',           optionB: '雰囲気さえ合えば細かい条件は全然気にしない' },
