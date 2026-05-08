@@ -265,7 +265,7 @@ export function ResultContent({ typeKey }: { typeKey: QuizTypeKey }) {
       >
         {/* キャラクターヘッダー */}
         <div
-          className="relative h-72 flex items-end justify-center pb-4 overflow-hidden"
+          className="relative h-72 flex items-center justify-center overflow-hidden"
           style={{ background: `${quizType.color}55` }}
         >
           <div
