@@ -4,8 +4,8 @@ import type { Metadata } from 'next';
 import { QUIZ_TYPES, QuizTypeKey } from '../data';
 
 export const metadata: Metadata = {
-  title: 'キャラクター一覧 | 性癖16タイプ診断',
-  description: '性癖16タイプ診断の16タイプを一覧で紹介します。あなたはどのタイプ？',
+  title: 'キャラクター一覧 | 性癖16タイプ分析',
+  description: '性癖16タイプ分析の16タイプを一覧で紹介します。あなたはどのタイプ？',
 };
 
 const TYPE_ORDER: QuizTypeKey[] = [

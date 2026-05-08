@@ -52,7 +52,7 @@ function ShareCard({
         />
         {/* ヘッダーバー */}
         <div style={{ position: 'absolute', top: 0, left: 0, right: 0, padding: '12px 22px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <p style={{ color: 'rgba(180,150,80,0.65)', fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', margin: 0 }}>性癖16タイプ診断</p>
+          <p style={{ color: 'rgba(180,150,80,0.65)', fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', margin: 0 }}>性癖16タイプ分析</p>
           <div style={{ display: 'flex', gap: '5px' }}>
             {typeKey.toUpperCase().split('').map((c, i) => (
               <span key={i} style={{ background: `${quizType.color}30`, color: quizType.color, fontSize: '11px', fontWeight: 900, padding: '3px 10px', borderRadius: '100px', border: `1px solid ${quizType.color}55` }}>{c}</span>
@@ -129,6 +129,13 @@ function SaveImageButton({
     setLoading(true);
     trackEvent('quiz_save_image', { type: typeKey });
     try {
+      // キャラクター画像をpreloadしてからキャプチャ
+      await new Promise<void>((resolve) => {
+        const img = new window.Image();
+        img.onload = () => resolve();
+        img.onerror = () => resolve();
+        img.src = `/quiz/${typeKey}.png?v=${Date.now()}`;
+      });
       const dataUrl = await toPng(cardRef.current, { pixelRatio: 2, cacheBust: true });
       const blob = await (await fetch(dataUrl)).blob();
       const file = new File([blob], `seiheki_${typeKey}.png`, { type: 'image/png' });
@@ -230,7 +237,7 @@ export function ResultContent({ typeKey }: { typeKey: QuizTypeKey }) {
   })();
 
   const quizType = QUIZ_TYPES[typeKey] ?? QUIZ_TYPES['senc'];
-  const shareText = `私の性癖16タイプは「${quizType.name}」でした！${quizType.tagline}\n\nあなたは？👇`;
+  const shareText = `私の性癖16タイプは「${quizType.name}」でした！`;
   const scoresParam = searchParams.get('scores') ?? '';
   const shareUrl = `https://seihekilab.com/quiz/result/${typeKey}?scores=${encodeURIComponent(scoresParam)}`;
 
@@ -262,7 +269,7 @@ export function ResultContent({ typeKey }: { typeKey: QuizTypeKey }) {
   const shareToX = () => {
     trackEvent('quiz_share', { method: 'x', type: typeKey });
     window.open(
-      `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}&hashtags=性癖16タイプ診断`,
+      `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}&hashtags=性癖16タイプ分析,性癖ラボ`,
       '_blank', 'noopener'
     );
   };
@@ -375,7 +382,7 @@ export function ResultContent({ typeKey }: { typeKey: QuizTypeKey }) {
             })}
           </div>
 
-          <p className="text-[10px] font-bold tracking-widest mt-5 text-right" style={{ color: 'rgba(180,150,80,0.35)' }}>✦ 性癖16タイプ診断 ✦</p>
+          <p className="text-[10px] font-bold tracking-widest mt-5 text-right" style={{ color: 'rgba(180,150,80,0.35)' }}>✦ 性癖16タイプ分析 ✦</p>
         </div>
       </div>
 
