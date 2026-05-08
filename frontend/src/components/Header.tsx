@@ -52,7 +52,7 @@ const Header = ({ cardWidth, mobileGauge }: { cardWidth: number | undefined; mob
     { label: 'このサイトについて', href: '/about', icon: Info, requiresLogin: false },
   ];
 
-  const quizNavItem: NavItem = { label: '性癖16タイプ診断', href: '/quiz', icon: FlaskConical, requiresLogin: false };
+  const quizNavItem: NavItem = { label: '性癖16タイプ分析', href: '/quiz', icon: FlaskConical, requiresLogin: false };
 
   useEffect(() => {
     const getSession = async () => {

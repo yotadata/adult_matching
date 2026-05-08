@@ -54,7 +54,7 @@ export async function GET(request: NextRequest) {
             textTransform: 'uppercase',
             margin: '0 0 12px 0',
           }}>
-            性癖16タイプ診断
+            性癖16タイプ分析
           </p>
 
           {/* タイプキーバッジ */}

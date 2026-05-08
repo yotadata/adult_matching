@@ -128,7 +128,7 @@ export default function DesktopSidebar() {
         <div className="px-3 pt-2 pb-10">
           <div className="border-t border-[#30363d] my-2" />
           <div className="space-y-1 text-sm">
-            <NavButton label="性癖16タイプ診断" icon={FlaskConical} href="/quiz" disabled={false} newTab />
+            <NavButton label="性癖16タイプ分析" icon={FlaskConical} href="/quiz" disabled={false} newTab />
           </div>
           <div className="border-t border-[#30363d] my-2" />
           <div className="space-y-1 text-sm">

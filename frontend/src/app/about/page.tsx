@@ -221,7 +221,7 @@ export default function AboutPage() {
                 <p className="text-sm text-white/60 mb-5">8つの質問に答えるだけで、あなたの性癖パーソナリティが16タイプに分類されます。</p>
                 <LpCtaButton
                   href="/quiz"
-                  label="性癖16タイプ診断を試す"
+                  label="性癖16タイプ分析を試す"
                   eventName="lp_quiz_cta_click"
                   className="inline-flex items-center gap-2 px-6 py-3 rounded-full font-black text-[#5c2e00] text-sm hover:opacity-90 transition-opacity"
                   style={{ background: 'linear-gradient(90deg, #ffb347, #ff8c00)' }}

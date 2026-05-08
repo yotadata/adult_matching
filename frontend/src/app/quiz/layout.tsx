@@ -3,10 +3,10 @@ import Image from 'next/image';
 import QuizHeader from './QuizHeader';
 
 export const metadata: Metadata = {
-  title: '性癖16タイプ診断 | 性癖ラボ',
+  title: '性癖16タイプ分析 | 性癖ラボ',
   description: '8つの質問に答えるだけ。あなたの性癖パーソナリティタイプを診断します。',
   openGraph: {
-    title: '性癖16タイプ診断',
+    title: '性癖16タイプ分析',
     description: '8つの質問に答えるだけ。あなたのタイプがわかる！',
     url: 'https://seihekilab.com/quiz',
     siteName: '性癖ラボ',
@@ -14,7 +14,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: '性癖16タイプ診断',
+    title: '性癖16タイプ分析',
     description: '8つの質問に答えるだけ。あなたのタイプがわかる！',
   },
 };
