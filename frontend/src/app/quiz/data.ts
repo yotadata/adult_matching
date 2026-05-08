@@ -1,10 +1,10 @@
 export type Axis = 'ds' | 'nx' | 'pe' | 'cw';
 
 export type QuizTypeKey =
-  | 'snpc' | 'snpw' | 'snec' | 'snew'
-  | 'sxpc' | 'sxpw' | 'sxec' | 'sxew'
-  | 'mnpc' | 'mnpw' | 'mnec' | 'mnew'
-  | 'mxpc' | 'mxpw' | 'mxec' | 'mxew';
+  | 'spnc' | 'spnw' | 'senc' | 'senw'
+  | 'spxc' | 'spxw' | 'sexc' | 'sexw'
+  | 'mpnc' | 'mpnw' | 'menc' | 'menw'
+  | 'mpxc' | 'mpxw' | 'mexc' | 'mexw';
 
 // 5段階スコア: 1=全然違う 〜 5=まさにそう
 // reverse=true のとき、スコアは反転（S/X/E/W 寄りを示す質問）
@@ -139,104 +139,104 @@ export function calcResult(answers: Record<number, number>): QuizResult {
   const n = scores.nx.isHigh ? 'n' : 'x';
   const p = scores.pe.isHigh ? 'p' : 'e';
   const c = scores.cw.isHigh ? 'c' : 'w';
-  const typeKey = `${d}${n}${p}${c}` as QuizTypeKey;
+  const typeKey = `${d}${p}${n}${c}` as QuizTypeKey;
 
   return { typeKey, scores };
 }
 
 export const QUIZ_TYPES: Record<QuizTypeKey, QuizType> = {
-  snpc: {
-    key: 'snpc', name: '肉食系番長', emoji: '🔥',
+  spnc: {
+    key: 'spnc', name: '肉食系番長', emoji: '🔥',
     tagline: '型が決まってる、だから強い',
     description: '自分のやり方とペースがある。リードする側が自然だが、相手や状況が合わないとスイッチが入らない。「これじゃなきゃダメ」な条件がはっきりしていて、それが揃ったときだけ本領発揮する。',
     color: '#FF6B6B', accent: '#C0392B',
   },
-  snpw: {
-    key: 'snpw', name: '確実に落とす職人', emoji: '🧊',
+  spnw: {
+    key: 'spnw', name: '確実に落とす職人', emoji: '🧊',
     tagline: '誰でも落とせる、それが強さ',
     description: '自分がリードする側でいたいが、こだわりは薄い。相手が誰でも、状況がどこでも、自分のペースで場を作れる。「まあなんでもいける」という柔軟さが武器で、気づいたら相手が夢中になってる。',
     color: '#4ECDC4', accent: '#1A9B8C',
   },
-  snec: {
-    key: 'snec', name: '激情型リーダー', emoji: '❤️‍🔥',
+  senc: {
+    key: 'senc', name: '激情型リーダー', emoji: '❤️‍🔥',
     tagline: '火種が合えば、誰より熱くなる',
     description: '感情とリードがリンクしている。ただし、特定の感情トリガーが揃わないとスイッチが入らない。「この感じじゃないと」という条件がある。刺さった瞬間は誰より熱く、日常の中でそのポイントを探している。',
     color: '#FF8E53', accent: '#E74C3C',
   },
-  snew: {
-    key: 'snew', name: 'じわじわくるカリスマ', emoji: '🌙',
+  senw: {
+    key: 'senw', name: 'じわじわくるカリスマ', emoji: '🌙',
     tagline: '空気に乗って、気づいたら支配してる',
     description: '感情が乗れば何でもいける。特定のシチュや条件にこだわらず、その場の雰囲気を読んで自然にリードする。「なんとなく好き」が欲求に直結するタイプで、場を選ばずじわじわ引き込む。',
     color: '#A29BFE', accent: '#6C5CE7',
   },
-  sxpc: {
-    key: 'sxpc', name: '刺激中毒の冒険家', emoji: '⚡',
+  spxc: {
+    key: 'spxc', name: '刺激中毒の冒険家', emoji: '⚡',
     tagline: '決まったシチュでしか本気にならない',
     description: '非日常的な設定に強く反応するが、どんなファンタジーでもいいわけじゃない。「これだ」と思えるシチュエーションが決まっていて、そこから外れると冷める。こだわりリストが細かすぎて、自分でも驚くことがある。',
     color: '#FD79A8', accent: '#E84393',
   },
-  sxpw: {
-    key: 'sxpw', name: '全部乗りの冒険家', emoji: '🎲',
+  spxw: {
+    key: 'spxw', name: '全部乗りの冒険家', emoji: '🎲',
     tagline: '非日常なら、なんでもいける',
     description: '普通じゃ物足りないが、特定のシチュへのこだわりはない。コスプレでも役割設定でも異世界でも、非日常っぽければ大体乗れる。「まあ何でも楽しめるけど、普通はつまらない」がモットー。',
     color: '#636E72', accent: '#2D3436',
   },
-  sxec: {
-    key: 'sxec', name: '劇場型支配者', emoji: '🎭',
+  sexc: {
+    key: 'sexc', name: '劇場型支配者', emoji: '🎭',
     tagline: '脚本が決まって初めてスイッチが入る',
     description: '非日常の感情体験にしか反応しないうえ、そのシナリオが自分の中で決まっている。設定と感情、両方が揃って初めて本気になれる。「お膳立てが合わないと無理」と自覚している、二重こだわり型。',
     color: '#FDCB6E', accent: '#E17055',
   },
-  sxew: {
-    key: 'sxew', name: '孤高のロマンチスト', emoji: '🌌',
+  sexw: {
+    key: 'sexw', name: '孤高のロマンチスト', emoji: '🌌',
     tagline: '感情さえ乗れば、どんな世界でも入れる',
     description: '非日常な感情体験を求めているが、どんな設定でも感情が動けばOK。ファンタジーな空気さえあれば細かい条件にはこだわらない。感情スイッチが入った瞬間は誰より没入し、その深さがすべてになる。',
     color: '#6C5CE7', accent: '#4A3AB5',
   },
-  mnpc: {
-    key: 'mnpc', name: '献身体質の沼らせ屋', emoji: '🌿',
+  mpnc: {
+    key: 'mpnc', name: '献身体質の沼らせ屋', emoji: '🌿',
     tagline: '刺さる相手にしか、全力を出せない',
     description: '相手が喜ぶことが快感だが、誰にでも尽くせるわけじゃない。「この人だ」と思える条件が揃った相手にしか本気になれない。その分、スイッチが入った相手への集中度は異常で、気づいたら沼らせている。',
     color: '#55EFC4', accent: '#00B894',
   },
-  mnpw: {
-    key: 'mnpw', name: '気まぐれ世話焼き', emoji: '🌸',
+  mpnw: {
+    key: 'mpnw', name: '気まぐれ世話焼き', emoji: '🌸',
     tagline: '誰でも尽くせる、それが自分のスタイル',
     description: '相手の身体的な満足を引き出すことが好きで、こだわりは少ない。誰が相手でも、どんな状況でも自分なりに尽くせる。「まあなんでもいけるし、喜んでくれれば嬉しい」という、とにかく柔軟な奉仕型。',
     color: '#81ECEC', accent: '#00CEC9',
   },
-  mnec: {
-    key: 'mnec', name: '溺愛体質の愛情家', emoji: '💝',
+  menc: {
+    key: 'menc', name: '溺愛体質の愛情家', emoji: '💝',
     tagline: 'この感じ、この人だけに全部渡す',
     description: '気持ちが動くと尽くしたくなるが、感情のトリガーが細かい。「この人のこういうところが好き」という条件が揃って初めてスイッチが入る。刺さると溺愛モードに入り、細部まで尽くすこだわり派の愛情家。',
     color: '#FF7675', accent: '#D63031',
   },
-  mnew: {
-    key: 'mnew', name: '縁の下の天使', emoji: '🕊️',
+  menw: {
+    key: 'menw', name: '縁の下の天使', emoji: '🕊️',
     tagline: '気持ちさえ動けば、何でも受け止める',
     description: '心がつながったと感じれば、どんな状況でも相手に寄り添える。シチュや条件にこだわりはなく、感情が動いた相手ならなんでもOK。静かで包容力があり、「あなたに合わせます」という雑食型の献身家。',
     color: '#DFE6E9', accent: '#B2BEC3',
   },
-  mxpc: {
-    key: 'mxpc', name: '妄想族の甘やかし屋', emoji: '🍬',
+  mpxc: {
+    key: 'mpxc', name: '妄想族の甘やかし屋', emoji: '🍬',
     tagline: '頭の中の設定通りじゃないと動けない',
     description: '非日常的な妄想の中に「決まったシチュ」がある。その設定が揃わないと本気になれないが、揃った瞬間に全力で尽くす。「実はこういう場面でこういう展開じゃないとダメ」という細かいこだわりを持つ尽くし屋。',
     color: '#FAB1A0', accent: '#E17055',
   },
-  mxpw: {
-    key: 'mxpw', name: '解像度の低い妄想家', emoji: '✨',
+  mpxw: {
+    key: 'mpxw', name: '解像度の低い妄想家', emoji: '✨',
     tagline: '非日常っぽければ、細かいことは気にしない',
     description: '日常じゃない設定が好きで、身体的な反応に素直。でも「このシチュじゃなきゃ」というこだわりは薄く、非日常感さえあれば大体乗れる。妄想はするが解像度は低め。雰囲気重視のフワッとした尽くし屋。',
     color: '#FFF4E6', accent: '#FDCB6E',
   },
-  mxec: {
-    key: 'mxec', name: '愛に生きる感情家', emoji: '💫',
+  mexc: {
+    key: 'mexc', name: '愛に生きる感情家', emoji: '💫',
     tagline: 'この設定、この感情、全部揃って初めて動く',
     description: '非日常的な感情体験にしか反応しないうえ、その「感情の種類」まで決まっている。二重に条件が絞られていて、揃ったときの爆発力はすさまじい。「なんか違う」が多いが、刺さったときは全部渡せる感情家。',
     color: '#FD79A8', accent: '#E84393',
   },
-  mxew: {
-    key: 'mxew', name: '一途すぎる月の人', emoji: '🌕',
+  mexw: {
+    key: 'mexw', name: '一途すぎる月の人', emoji: '🌕',
     tagline: '感情さえ動けば、どんな世界でも全部渡す',
     description: '非日常的な感情体験が好きだが、どんな設定でも感情が動けばOK。細かいシチュへのこだわりはなく、心が動いた相手に対してはどんな状況でも全力で応じる。感情主導で動く、雑食型の一途な献身家。',
     color: '#C7ECEE', accent: '#74B9FF',
