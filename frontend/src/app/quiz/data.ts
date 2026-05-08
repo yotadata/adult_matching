@@ -197,13 +197,13 @@ export const QUIZ_TYPES: Record<QuizTypeKey, QuizType> = {
     key: 'mpnw', name: '世話焼き八方美人', emoji: '🌸',
     tagline: '誰に対しても、どこでも尽くせる',
     description: '相手の身体的な満足を引き出すのが好きで、こだわりは少ない。慣れた相手でも新しい相手でも自分なりに尽くせる。「まあ誰でもいけるし、喜んでくれれば嬉しい」という、間口の広い頼もしい奉仕タイプ。',
-    color: '#81ECEC', accent: '#00CEC9',
+    color: '#F9E784', accent: '#F1C40F',
   },
   menc: {
     key: 'menc', name: 'むっつり溺愛体質', emoji: '💝',
     tagline: 'この感情、この人だけに全部渡す',
     description: '心がつながった相手に尽くしたくなるが、感情のトリガーが細かい。「この人のこういうところが好き」が揃って初めてスイッチが入る。慣れ親しんだ関係の中で愛情が深まるタイプで、刺さると溺愛モードに入る。',
-    color: '#FF7675', accent: '#D63031',
+    color: '#E84393', accent: '#C0136F',
   },
   menw: {
     key: 'menw', name: '一途な忠犬', emoji: '🕊️',
@@ -227,7 +227,7 @@ export const QUIZ_TYPES: Record<QuizTypeKey, QuizType> = {
     key: 'mexc', name: 'こじらせの極み', emoji: '💫',
     tagline: '感情も場所も揃って、初めて全部渡せる',
     description: '心が動いた相手に尽くしたいが、非日常の場でないとスイッチが入らない。さらに感情のトリガーも細かい。条件が二重に絞られているぶん、全部揃ったときの没入度はすさまじい。旅先やホテルで感情が爆発する愛情家。',
-    color: '#FD79A8', accent: '#E84393',
+    color: '#E17055', accent: '#C0392B',
   },
   mexw: {
     key: 'mexw', name: '夢見る妄想家', emoji: '🌕',
