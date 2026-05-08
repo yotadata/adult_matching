@@ -257,7 +257,7 @@ export function ResultContent({ typeKey }: { typeKey: QuizTypeKey }) {
       <div
         className="w-full max-w-sm rounded-3xl overflow-hidden mb-6"
         style={{
-          background: 'rgba(26,16,48,0.9)',
+          background: 'rgba(28,24,18,0.9)',
           border: '1px solid rgba(180,150,80,0.35)',
           boxShadow: '0 4px 0 rgba(0,0,0,0.5), 0 8px 32px rgba(0,0,0,0.6), inset 0 1px 0 rgba(180,150,80,0.15)',
           backdropFilter: 'blur(8px)',
@@ -266,7 +266,7 @@ export function ResultContent({ typeKey }: { typeKey: QuizTypeKey }) {
         {/* キャラクターヘッダー */}
         <div
           className="relative h-72 flex items-end justify-center pb-4 overflow-hidden"
-          style={{ background: `${quizType.color}20` }}
+          style={{ background: `${quizType.color}55` }}
         >
           <div
             className="absolute inset-3 rounded-2xl"

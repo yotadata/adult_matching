@@ -196,7 +196,7 @@ export default function QuizPage() {
   if (!ready) return null;
 
   const DARK_CARD = {
-    background: 'rgba(26,16,48,0.85)',
+    background: 'rgba(28,24,18,0.85)',
     borderRadius: '24px',
     border: '1px solid rgba(180,150,80,0.35)',
     boxShadow: '0 4px 0 rgba(0,0,0,0.4), 0 8px 32px rgba(0,0,0,0.5), inset 0 1px 0 rgba(180,150,80,0.15)',
@@ -208,7 +208,7 @@ export default function QuizPage() {
       {/* 前回の結果バナー */}
       {prevResult && step === 0 && (
         <div className="w-full max-w-sm mb-4 rounded-2xl px-4 py-3 flex items-center justify-between gap-2"
-          style={{ background: 'rgba(26,16,48,0.8)', border: '1px solid rgba(180,150,80,0.3)' }}>
+          style={{ background: 'rgba(28,24,18,0.8)', border: '1px solid rgba(180,150,80,0.3)' }}>
           <p className="text-[12px] font-bold" style={{ color: 'rgba(200,180,140,0.7)' }}>前回の結果: <span style={{ color: '#e8d5a0' }}>{prevResult.name}</span></p>
           <Link href={`/quiz/result/${prevResult.typeKey}?gender=${prevResult.gender}&scores=${prevResult.scores}`}
             className="text-[11px] font-black px-3 py-1 rounded-full shrink-0"

@@ -24,7 +24,7 @@ export default function QuizLayout({ children }: { children: React.ReactNode }) 
     <div
       className="min-h-screen flex flex-col"
       style={{
-        background: 'linear-gradient(160deg, #0f0a1e 0%, #1a0d2e 50%, #0d1020 100%)',
+        background: 'linear-gradient(160deg, #0d0b08 0%, #1a1510 50%, #0e0c08 100%)',
         backgroundAttachment: 'fixed',
       }}
     >

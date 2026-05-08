@@ -34,7 +34,7 @@ const AXES = [
 ];
 
 const DARK_CARD = {
-  background: 'rgba(26,16,48,0.85)',
+  background: 'rgba(28,24,18,0.85)',
   borderRadius: '20px',
   border: '1px solid rgba(180,150,80,0.35)',
   boxShadow: '0 4px 0 rgba(0,0,0,0.4), 0 8px 24px rgba(0,0,0,0.5), inset 0 1px 0 rgba(180,150,80,0.15)',
@@ -98,7 +98,7 @@ export default function AboutPage() {
       {/* 注意書き */}
       <div
         className="rounded-2xl p-4 mb-10"
-        style={{ background: 'rgba(26,16,48,0.6)', border: '1px dashed rgba(180,150,80,0.3)' }}
+        style={{ background: 'rgba(28,24,18,0.6)', border: '1px dashed rgba(180,150,80,0.3)' }}
       >
         <p className="text-[12px] leading-relaxed" style={{ color: 'rgba(200,180,140,0.5)' }}>
           ⚠️ この診断はエンターテインメント目的のものです。医学的・心理学的な診断ではありません。結果はあくまで参考としてお楽しみください。

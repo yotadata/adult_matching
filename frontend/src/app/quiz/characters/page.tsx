@@ -23,7 +23,7 @@ const GROUP_LABELS = [
 ];
 
 const DARK_CARD = {
-  background: 'rgba(26,16,48,0.85)',
+  background: 'rgba(28,24,18,0.85)',
   borderRadius: '20px',
   border: '1px solid rgba(180,150,80,0.35)',
   boxShadow: '0 4px 0 rgba(0,0,0,0.4), 0 8px 24px rgba(0,0,0,0.5), inset 0 1px 0 rgba(180,150,80,0.15)',
@@ -64,7 +64,7 @@ export default function CharactersPage() {
                     {/* カラーヘッダー */}
                     <div
                       className="h-44 flex items-center justify-center relative overflow-hidden rounded-t-3xl"
-                      style={{ background: `${t.color}18` }}
+                      style={{ background: `${t.color}55` }}
                     >
                       <div
                         className="absolute inset-2 rounded-2xl"

@@ -16,7 +16,7 @@ export default function QuizHeader() {
 
   return (
     <>
-      <header className="w-full sticky top-0 z-50" style={{ background: 'rgba(15,10,30,0.92)', backdropFilter: 'blur(12px)', borderBottom: '1px solid rgba(180,150,80,0.25)' }}>
+      <header className="w-full sticky top-0 z-50" style={{ background: 'rgba(13,11,8,0.96)', backdropFilter: 'blur(12px)', borderBottom: '1px solid rgba(180,150,80,0.25)' }}>
         <div className="max-w-lg mx-auto px-4 h-14 flex items-center justify-between">
           <Link href="/quiz" className="font-black text-[16px] leading-tight" style={{ color: '#e8d5a0' }}>
             性癖16タイプ診断
@@ -59,7 +59,7 @@ export default function QuizHeader() {
       {open && (
         <>
           <div className="fixed inset-0 z-40 sm:hidden" onClick={() => setOpen(false)} />
-          <nav className="fixed top-14 right-0 z-50 w-48 rounded-bl-2xl shadow-lg py-2 sm:hidden" style={{ background: '#1a1030', border: '1px solid rgba(180,150,80,0.3)', borderTop: 'none', borderRight: 'none' }}>
+          <nav className="fixed top-14 right-0 z-50 w-48 rounded-bl-2xl shadow-lg py-2 sm:hidden" style={{ background: '#181410', border: '1px solid rgba(180,150,80,0.3)', borderTop: 'none', borderRight: 'none' }}>
             {links.map((link) => {
               const isActive = pathname === link.href;
               return (
