@@ -87,14 +87,19 @@ function ShareCard({
         <div style={{ display: 'flex', flexDirection: 'column', gap: '9px' }}>
           {axes.map(({ axis, pct }) => {
             const meta = AXIS_META[axis];
-            const color = pct >= 50 ? meta.colorHigh : meta.colorLow;
-            const label = pct >= 50 ? meta.labelHigh : meta.labelLow;
+            const isHigh = pct >= 50;
+            const color = isHigh ? meta.colorHigh : meta.colorLow;
+            const label = isHigh ? meta.labelHigh : meta.labelLow;
+            const barWidth = Math.abs(pct - 50) * 2;
             return (
               <div key={axis} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <span style={{ color: 'rgba(200,180,140,0.5)', fontSize: '11px', fontWeight: 700, width: '34px', textAlign: 'right', flexShrink: 0 }}>{meta.labelHigh}</span>
                 <div style={{ flex: 1, background: 'rgba(180,150,80,0.1)', borderRadius: '100px', height: '7px', overflow: 'hidden', position: 'relative' }}>
                   <div style={{ position: 'absolute', left: '50%', top: 0, bottom: 0, width: '1px', background: 'rgba(180,150,80,0.25)' }} />
-                  <div style={{ width: `${pct}%`, height: '100%', background: color, borderRadius: '100px' }} />
+                  {isHigh
+                    ? <div style={{ position: 'absolute', right: '50%', top: 0, bottom: 0, width: `${barWidth}%`, background: color, borderRadius: '100px' }} />
+                    : <div style={{ position: 'absolute', left: '50%', top: 0, bottom: 0, width: `${barWidth}%`, background: color, borderRadius: '100px' }} />
+                  }
                 </div>
                 <span style={{ color: 'rgba(200,180,140,0.5)', fontSize: '11px', fontWeight: 700, width: '34px', flexShrink: 0 }}>{meta.labelLow}</span>
                 <span style={{ color, fontSize: '11px', fontWeight: 900, width: '44px', textAlign: 'right', flexShrink: 0 }}>{label}</span>
@@ -350,11 +355,14 @@ export function ResultContent({ typeKey }: { typeKey: QuizTypeKey }) {
                   </div>
                   <div className="relative h-3 rounded-full overflow-hidden" style={{ background: 'rgba(180,150,80,0.1)' }}>
                     <div className="absolute left-1/2 top-0 bottom-0 w-px z-10" style={{ background: 'rgba(180,150,80,0.3)' }} />
-                    <div className="absolute left-0 top-0 bottom-0 rounded-full transition-all" style={{ width: `${pct}%`, background: color }} />
+                    {isHigh
+                      ? <div className="absolute top-0 bottom-0 rounded-full transition-all" style={{ right: '50%', width: `${(pct - 50) * 2}%`, background: color }} />
+                      : <div className="absolute top-0 bottom-0 rounded-full transition-all" style={{ left: '50%', width: `${(50 - pct) * 2}%`, background: color }} />
+                    }
                   </div>
                   <div className="flex justify-between text-[10px] mt-0.5 font-bold" style={{ color: 'rgba(180,150,80,0.35)' }}>
                     <span>{meta.labelHigh}</span>
-                    <span>{pct}%</span>
+                    <span>{Math.round(Math.abs(pct - 50) * 2)}%</span>
                     <span>{meta.labelLow}</span>
                   </div>
                 </div>

@@ -113,10 +113,15 @@ export async function GET(request: NextRequest) {
                     background: 'rgba(255,255,255,0.1)',
                     borderRadius: '100px',
                     height: '8px',
-                    display: 'flex',
                     overflow: 'hidden',
+                    position: 'relative',
+                    display: 'flex',
                   }}>
-                    <div style={{ width: `${pct}%`, background: color, borderRadius: '100px' }} />
+                    <div style={{ position: 'absolute', left: '50%', top: 0, bottom: 0, width: '1px', background: 'rgba(255,255,255,0.2)' }} />
+                    {pct >= 50
+                      ? <div style={{ position: 'absolute', right: '50%', top: 0, bottom: 0, width: `${(pct - 50) * 2}%`, background: color, borderRadius: '100px' }} />
+                      : <div style={{ position: 'absolute', left: '50%', top: 0, bottom: 0, width: `${(50 - pct) * 2}%`, background: color, borderRadius: '100px' }} />
+                    }
                   </div>
                 </div>
               )
