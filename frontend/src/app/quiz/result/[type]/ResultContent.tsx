@@ -269,7 +269,7 @@ export function ResultContent({ typeKey }: { typeKey: QuizTypeKey }) {
   const shareToX = () => {
     trackEvent('quiz_share', { method: 'x', type: typeKey });
     window.open(
-      `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}&hashtags=性癖ラボ診断`,
+      `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}&hashtags=性癖ラボ診断,性癖16タイプ診断`,
       '_blank', 'noopener'
     );
   };
