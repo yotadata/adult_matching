@@ -140,19 +140,19 @@ export function calcResult(answers: Record<number, number>): QuizResult {
 
 export const QUIZ_TYPES: Record<QuizTypeKey, QuizType> = {
   spnc: {
-    key: 'spnc', name: '偏愛のドS', emoji: '🔥',
+    key: 'spnc', name: 'グルメな狩人', emoji: '🔥',
     tagline: '条件が揃ったときだけ、本気になる',
     description: 'リードするのが自然で、外見や身体の相性で相手を選ぶ。慣れた相手・いつもの場所でも十分スイッチが入るが、こだわりの条件が細かくてズレると一気に冷める。「これじゃないと」が多い分、揃ったときの集中力は誰より高い。',
     color: '#FF6B6B', accent: '#C0392B',
   },
   spnw: {
-    key: 'spnw', name: '全方位ドS', emoji: '🧊',
+    key: 'spnw', name: '全方位ハンター', emoji: '🧊',
     tagline: '誰でも落とせる、どこでも本気',
     description: '外見や身体の相性で動き、リードするのが好き。慣れた相手でも新しい相手でも十分燃えるし、細かいこだわりもない。「まあなんでもいけるし、リードさせてくれれば」という間口の広さが武器。',
     color: '#4ECDC4', accent: '#1A9B8C',
   },
   senc: {
-    key: 'senc', name: 'むっつりドS', emoji: '❤️‍🔥',
+    key: 'senc', name: 'むっつり帝王', emoji: '❤️‍🔥',
     tagline: '感情のスイッチが入ると、誰より熱い',
     description: '感情が動いた相手をリードしたくなる。慣れ親しんだ日常の中でもしっかり燃えるが、感情のトリガーが細かい。「この人のこういうところ」が揃わないと本気になれず、条件が揃った瞬間は誰より熱くなる。',
     color: '#FF8E53', accent: '#E74C3C',
@@ -176,25 +176,25 @@ export const QUIZ_TYPES: Record<QuizTypeKey, QuizType> = {
     color: '#636E72', accent: '#2D3436',
   },
   sexc: {
-    key: 'sexc', name: '情熱的な演出家', emoji: '🎭',
+    key: 'sexc', name: '過激な演出家', emoji: '🎭',
     tagline: '感情も場所も、全部揃って初めて動く',
     description: '感情が動いた相手をリードしたいが、非日常の場でないとスイッチが入らない。さらに感情のトリガーも細かい。条件が二重に絞られているぶん、全部揃ったときの爆発力はすさまじい。「なんか違う」が多い代わりに、刺さったときは全力。',
     color: '#FDCB6E', accent: '#E17055',
   },
   sexw: {
-    key: 'sexw', name: '旅先の情熱家', emoji: '🌌',
+    key: 'sexw', name: '刺激の旅人', emoji: '🌌',
     tagline: '感情さえ動けば、非日常の中でどこでもリードする',
     description: '感情が動いた相手には強くリードしたくなる。ただ、いつもと同じ場所では物足りない。ホテルや旅先など非日常の空気の中で感情に火がつくと、こだわりなく全力になれる。感情主導で刺激を求めるロマンチストな支配者。',
     color: '#6C5CE7', accent: '#4A3AB5',
   },
   mpnc: {
-    key: 'mpnc', name: '偏愛の沼らせ魔', emoji: '🌿',
+    key: 'mpnc', name: 'こだわり沼らせ魔', emoji: '🌿',
     tagline: '条件が揃った相手にだけ、全力で尽くす',
     description: '相手を喜ばせることが好きで、外見や身体の相性で相手を選ぶ。慣れた環境でも十分燃えるが、こだわりの条件が細かい。「この人だ」と思えた相手への集中力は異常で、気づいたら相手が深みにはまっている。',
     color: '#55EFC4', accent: '#00B894',
   },
   mpnw: {
-    key: 'mpnw', name: '無差別な奉仕体質', emoji: '🌸',
+    key: 'mpnw', name: '世話焼き八方美人', emoji: '🌸',
     tagline: '誰に対しても、どこでも尽くせる',
     description: '相手の身体的な満足を引き出すのが好きで、こだわりは少ない。慣れた相手でも新しい相手でも自分なりに尽くせる。「まあ誰でもいけるし、喜んでくれれば嬉しい」という、間口の広い頼もしい奉仕タイプ。',
     color: '#81ECEC', accent: '#00CEC9',
@@ -206,7 +206,7 @@ export const QUIZ_TYPES: Record<QuizTypeKey, QuizType> = {
     color: '#FF7675', accent: '#D63031',
   },
   menw: {
-    key: 'menw', name: '天然ドM', emoji: '🕊️',
+    key: 'menw', name: '一途な忠犬', emoji: '🕊️',
     tagline: '気持ちさえ動けば、どんな相手も受け止める',
     description: '心がつながったと感じれば、どんな状況でも相手に寄り添える。慣れた日常の中でじっくり愛情が育つタイプで、こだわりなく相手に合わせられる。静かで包容力があり、「あなたに合わせます」という姿勢が自然体。',
     color: '#DFE6E9', accent: '#B2BEC3',
@@ -218,19 +218,19 @@ export const QUIZ_TYPES: Record<QuizTypeKey, QuizType> = {
     color: '#FAB1A0', accent: '#E17055',
   },
   mpxw: {
-    key: 'mpxw', name: '衝動的なドM', emoji: '✨',
+    key: 'mpxw', name: '愛情スキンシップ魔', emoji: '✨',
     tagline: 'いつもと違う場所さえあれば、なんでも尽くせる',
     description: '日常では物足りない。ホテルでも旅先でも、非日常の空気さえあれば相手の身体的な満足を引き出すことに全力になれる。細かいこだわりは薄く、「非日常さえあれば何でもいける」という柔軟な刺激追求型の尽くし屋。',
     color: '#FFF4E6', accent: '#FDCB6E',
   },
   mexc: {
-    key: 'mexc', name: '究極のこじらせドM', emoji: '💫',
+    key: 'mexc', name: 'こじらせの極み', emoji: '💫',
     tagline: '感情も場所も揃って、初めて全部渡せる',
     description: '心が動いた相手に尽くしたいが、非日常の場でないとスイッチが入らない。さらに感情のトリガーも細かい。条件が二重に絞られているぶん、全部揃ったときの没入度はすさまじい。旅先やホテルで感情が爆発する愛情家。',
     color: '#FD79A8', accent: '#E84393',
   },
   mexw: {
-    key: 'mexw', name: '非日常の溺愛体質', emoji: '🌕',
+    key: 'mexw', name: '夢見る妄想家', emoji: '🌕',
     tagline: '感情さえ動けば、どんな非日常でも全力で尽くす',
     description: '感情が動いた相手には全力で尽くしたくなる。いつもの場所より非日常の空気の中の方が燃える。細かいこだわりは薄く、ホテルでも旅先でも感情スイッチが入れば何でもOK。感情主導で動く、刺激を求める献身家。',
     color: '#C7ECEE', accent: '#74B9FF',
