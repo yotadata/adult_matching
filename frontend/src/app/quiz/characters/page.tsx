@@ -63,7 +63,7 @@ export default function CharactersPage() {
                   >
                     {/* カラーヘッダー */}
                     <div
-                      className="h-44 flex items-center justify-center relative overflow-hidden rounded-t-3xl"
+                      className="h-56 flex items-center justify-center relative overflow-hidden rounded-t-3xl"
                       style={{ background: `${t.color}55` }}
                     >
                       <div

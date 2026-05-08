@@ -265,7 +265,7 @@ export function ResultContent({ typeKey }: { typeKey: QuizTypeKey }) {
       >
         {/* キャラクターヘッダー */}
         <div
-          className="relative h-72 flex items-center justify-center overflow-hidden"
+          className="relative h-96 flex items-center justify-center overflow-hidden"
           style={{ background: `${quizType.color}55` }}
         >
           <div
@@ -275,8 +275,8 @@ export function ResultContent({ typeKey }: { typeKey: QuizTypeKey }) {
           <Image
             src={`/quiz/${typeKey}.png`}
             alt={quizType.name}
-            width={260}
-            height={260}
+            width={320}
+            height={320}
             className="relative object-contain"
             style={{ filter: 'drop-shadow(0 6px 24px rgba(0,0,0,0.6))' }}
           />
