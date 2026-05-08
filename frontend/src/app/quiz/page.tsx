@@ -9,7 +9,7 @@ import { supabase } from '@/lib/supabase';
 
 type Gender = 'male' | 'female' | 'other';
 
-const SCALE_LABELS = ['全然違う', 'あまり違う', 'どちらでも', 'やや当てはまる', 'まさにそう'];
+const SCALE_LABELS = ['完全にA', 'AよりかなA', 'どちらでも', 'BよりかなB', '完全にB'];
 const TOTAL_STEPS = QUESTIONS.length + 1;
 const STORAGE_KEY_PROGRESS = 'quiz_progress';
 const STORAGE_KEY_RESULT = 'quiz_result';
@@ -255,46 +255,72 @@ export default function QuizPage() {
       >
         {!isGenderStep ? (
           <div className="p-6 flex flex-col gap-6" style={DARK_CARD}>
-            <p className="text-[18px] font-black leading-snug" style={{ color: '#f0e6d3' }}>
-              {currentQ.text}
+            <p className="text-[12px] font-black tracking-widest uppercase text-center" style={{ color: 'rgba(180,150,80,0.5)' }}>
+              ✦ どちらが好きですか？ ✦
             </p>
 
+            {/* A / B の選択肢 */}
+            <div className="flex gap-3">
+              <div
+                className="flex-1 rounded-2xl p-4 text-center transition-all duration-150"
+                style={{
+                  background: selected !== null && selected <= 2 ? 'rgba(255,107,107,0.18)' : 'rgba(180,150,80,0.06)',
+                  border: selected !== null && selected <= 2 ? '1px solid rgba(255,107,107,0.5)' : '1px solid rgba(180,150,80,0.2)',
+                }}
+              >
+                <p className="text-[10px] font-black tracking-widest mb-1.5" style={{ color: 'rgba(255,107,107,0.7)' }}>A</p>
+                <p className="text-[13px] font-bold leading-snug" style={{ color: '#f0e6d3' }}>{currentQ.optionA}</p>
+              </div>
+              <div
+                className="flex-1 rounded-2xl p-4 text-center transition-all duration-150"
+                style={{
+                  background: selected !== null && selected >= 4 ? 'rgba(85,239,196,0.15)' : 'rgba(180,150,80,0.06)',
+                  border: selected !== null && selected >= 4 ? '1px solid rgba(85,239,196,0.45)' : '1px solid rgba(180,150,80,0.2)',
+                }}
+              >
+                <p className="text-[10px] font-black tracking-widest mb-1.5" style={{ color: 'rgba(85,239,196,0.7)' }}>B</p>
+                <p className="text-[13px] font-bold leading-snug" style={{ color: '#f0e6d3' }}>{currentQ.optionB}</p>
+              </div>
+            </div>
+
+            {/* 5段階スケール */}
             <div>
-              <div className="flex justify-between text-[11px] font-bold mb-2.5 px-1" style={{ color: 'rgba(200,180,140,0.5)' }}>
-                <span>全然違う</span>
-                <span>まさにそう</span>
+              <div className="flex justify-between text-[10px] font-bold mb-2 px-1" style={{ color: 'rgba(200,180,140,0.4)' }}>
+                <span>← 完全にA</span>
+                <span>完全にB →</span>
               </div>
               <div className="flex gap-2 justify-between">
-                {[1, 2, 3, 4, 5].map((v) => (
-                  <button
-                    key={v}
-                    onClick={() => handleSelect(v)}
-                    className="flex-1 aspect-square rounded-2xl flex items-center justify-center font-black text-[15px] transition-all duration-150"
-                    style={
-                      selected === v
-                        ? {
-                            background: `hsl(${240 + v * 20}, 60%, 55%)`,
-                            color: '#fff',
-                            boxShadow: `0 3px 0 hsl(${240 + v * 20}, 60%, 35%)`,
-                            transform: 'translateY(-2px)',
-                            border: '1px solid rgba(255,255,255,0.2)',
-                          }
-                        : {
-                            background: 'rgba(180,150,80,0.08)',
-                            color: 'rgba(200,180,140,0.6)',
-                            border: '1px solid rgba(180,150,80,0.25)',
-                          }
-                    }
-                  >
-                    {v}
-                  </button>
-                ))}
+                {[1, 2, 3, 4, 5].map((v) => {
+                  const isA = v <= 2;
+                  const isB = v >= 4;
+                  const activeColor = isA ? '#FF6B6B' : isB ? '#55EFC4' : '#e8d5a0';
+                  const activeBg = isA ? 'rgba(255,107,107,0.25)' : isB ? 'rgba(85,239,196,0.2)' : 'rgba(232,213,160,0.15)';
+                  return (
+                    <button
+                      key={v}
+                      onClick={() => handleSelect(v)}
+                      className="flex-1 rounded-2xl flex flex-col items-center justify-center gap-1 transition-all duration-150 py-3"
+                      style={
+                        selected === v
+                          ? { background: activeBg, border: `1px solid ${activeColor}80`, transform: 'translateY(-2px)', boxShadow: `0 3px 0 rgba(0,0,0,0.3)` }
+                          : { background: 'rgba(180,150,80,0.06)', border: '1px solid rgba(180,150,80,0.2)' }
+                      }
+                    >
+                      <div
+                        className="rounded-full transition-all duration-150"
+                        style={{
+                          width: selected === v ? '12px' : '8px',
+                          height: selected === v ? '12px' : '8px',
+                          background: selected === v ? activeColor : 'rgba(180,150,80,0.3)',
+                        }}
+                      />
+                      <span className="text-[9px] font-bold" style={{ color: selected === v ? activeColor : 'rgba(200,180,140,0.3)' }}>
+                        {v === 1 ? 'A強' : v === 2 ? 'Aやや' : v === 3 ? 'どちら\nでも' : v === 4 ? 'Bやや' : 'B強'}
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
-              {selected !== null && (
-                <p className="text-center text-[12px] font-bold mt-2.5" style={{ color: `hsl(${240 + selected * 20}, 60%, 70%)` }}>
-                  {SCALE_LABELS[selected - 1]}
-                </p>
-              )}
             </div>
 
             <button

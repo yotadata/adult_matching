@@ -6,13 +6,13 @@ export type QuizTypeKey =
   | 'mpnc' | 'mpnw' | 'menc' | 'menw'
   | 'mpxc' | 'mpxw' | 'mexc' | 'mexw';
 
-// 5段階スコア: 1=全然違う 〜 5=まさにそう
-// reverse=true のとき、スコアは反転（S/X/E/W 寄りを示す質問）
+// optionA = high側（S/N/P/C）, optionB = low側（M/X/E/W）
+// 回答: 1=完全にA 〜 5=完全にB
 export interface Question {
   id: number;
   axis: Axis;
-  text: string;
-  reverse: boolean;
+  optionA: string;
+  optionB: string;
 }
 
 export interface QuizType {
@@ -69,33 +69,25 @@ export const AXIS_META: Record<Axis, {
 };
 
 export const QUESTIONS: Question[] = [
-  // ── 支配(S) ⇄ 奉仕(M) 軸 ── high=S側, reverse=true → M寄り ──
-  { id: 1,  axis: 'ds', text: '性的な場面では、自分がリードする側にいるほうが自然だ',           reverse: false },
-  { id: 2,  axis: 'ds', text: '相手を言葉や行動でコントロールできると、興奮が高まる',           reverse: false },
-  { id: 3,  axis: 'ds', text: '「もっとして」と相手に言わせる側でいたい',                       reverse: false },
-  { id: 4,  axis: 'ds', text: '相手に思い通りにされることで、気持ちが高まる',                    reverse: true  },
-  { id: 5,  axis: 'ds', text: '相手の指示や要求に応えることに、強い喜びを感じる',               reverse: true  },
+  // ── 支配(S) ⇄ 奉仕(M) 軸 ── A=S側, B=M側 ──
+  { id: 1,  axis: 'ds', optionA: '相手を押さえつけて「やめて」と言わせたい', optionB: '押さえつけられて「やめて」と言いたい' },
+  { id: 2,  axis: 'ds', optionA: '相手を泣かせるくらい追い詰めたい',         optionB: '泣かされるくらい追い詰められたい' },
+  { id: 3,  axis: 'ds', optionA: '「もっとして」と相手に言わせたい',          optionB: '「もっとして」と自分が言いたい' },
 
-  // ── 日常(N) ⇄ 非日常(X) 軸 ── high=N, reverse=true → X寄り ──
-  { id: 6,  axis: 'nx', text: 'コスプレや特殊な役割設定がなくても、現実にありそうな場面で十分に興奮できる', reverse: false },
-  { id: 7,  axis: 'nx', text: 'コスプレや役割設定より、リアルな状況のほうが刺さる',             reverse: false },
-  { id: 8,  axis: 'nx', text: '特別な場所や雰囲気がなくても、普段の何気ない場面で欲求が生まれる', reverse: false },
-  { id: 9,  axis: 'nx', text: 'コスプレ・役割設定など、非日常の演出があると盛り上がる',         reverse: true  },
-  { id: 10, axis: 'nx', text: 'コスプレや異世界・特殊な役割など、現実にはない設定に強く惹かれる',  reverse: true  },
+  // ── 快楽(P) ⇄ 感情(E) 軸 ── A=P側, B=E側 ──
+  { id: 4,  axis: 'pe', optionA: '顔とスタイルが好みなら、性格や関係性は関係なく惹かれる', optionB: 'どれだけ好みでも、気持ちが入らない相手とは無理' },
+  { id: 5,  axis: 'pe', optionA: '気持ちよければ相手への感情は関係ない',                  optionB: '好きじゃない相手だと気持ちよくても虚しい' },
+  { id: 6,  axis: 'pe', optionA: '会って数分で「この人とやりたい」と思うことがある',       optionB: 'ある程度仲良くなった相手じゃないと欲求が生まれない' },
 
-  // ── 快楽(P) ⇄ 感情(E) 軸 ── high=P, reverse=true → E寄り ──
-  { id: 11, axis: 'pe', text: '外見や雰囲気が好みなら、深く知らなくても欲求が生まれる',         reverse: false },
-  { id: 12, axis: 'pe', text: '身体的な相性が合う相手なら、気持ちが深くなくても満足できる',     reverse: false },
-  { id: 13, axis: 'pe', text: '気持ちより身体の感覚への反応のほうが、欲求に直結している',       reverse: false },
-  { id: 14, axis: 'pe', text: '気持ちが伴わない相手との行為は、どれだけ良くても虚しさが残る',   reverse: true  },
-  { id: 15, axis: 'pe', text: '好みの外見でも、感情が動かなければ欲求はほとんど生まれない',     reverse: true  },
+  // ── 日常(N) ⇄ 非日常(X) 軸 ── A=N側, B=X側 ──
+  { id: 7,  axis: 'nx', optionA: '普通の部屋・普段着のシチュで十分興奮できる',          optionB: 'コスプレや特殊な設定があるほうが断然盛り上がる' },
+  { id: 8,  axis: 'nx', optionA: 'リアルな状況のほうが刺さる',                          optionB: '現実ではあり得ない設定のほうが興奮する' },
+  { id: 9,  axis: 'nx', optionA: '普段の何気ない場面でも欲求が生まれる',                optionB: 'ファンタジー・異世界・特殊な役割設定に強く惹かれる' },
 
-  // ── 偏食(C) ⇄ 雑食(W) 軸 ── high=C（こだわり強）, reverse=true → W（雑食）寄り ──
-  { id: 16, axis: 'cw', text: '興奮するシチュや条件が細かすぎて、人に説明すると引かれることがある',         reverse: false },
-  { id: 17, axis: 'cw', text: '理想の展開が頭の中にあって、そこからズレると一気に冷める',                   reverse: false },
-  { id: 18, axis: 'cw', text: '刺さるシチュが絞られすぎていて、「また同じやつだ」と自分でも思う',           reverse: false },
-  { id: 19, axis: 'cw', text: 'シチュや条件より雰囲気さえ合えば全然楽しめる、こだわりがほぼない',           reverse: true  },
-  { id: 20, axis: 'cw', text: '「何でもいい」が本音で、特定の設定にこだわる感覚がよくわからない',           reverse: true  },
+  // ── 偏食(C) ⇄ 雑食(W) 軸 ── A=C側, B=W側 ──
+  { id: 10, axis: 'cw', optionA: 'こだわりの条件がちょっとでもズレると一気に冷める',           optionB: '雰囲気さえ合えば細かい条件は全然気にしない' },
+  { id: 11, axis: 'cw', optionA: '自分の性癖を友達に話すと「細かすぎ」って引かれる自覚がある', optionB: 'こだわりはほぼなく、わりと何でも楽しめる' },
+  { id: 12, axis: 'cw', optionA: '頭の中に理想の展開があって、そこから外れると萎える',          optionB: 'その場の流れに乗れれば何でも楽しい' },
 ];
 
 export interface AxisScore {
@@ -109,7 +101,8 @@ export interface QuizResult {
   scores: Record<Axis, AxisScore>;
 }
 
-// 5段階回答(1〜5)から各軸スコアを計算
+// 5段階回答(1=完全にA 〜 5=完全にB)から各軸スコアを計算
+// A=high側(S/P/N/C), B=low側(M/E/X/W) なので 1→100%, 5→0%
 export function calcResult(answers: Record<number, number>): QuizResult {
   const axes: Axis[] = ['ds', 'nx', 'pe', 'cw'];
   const scores: Record<Axis, AxisScore> = {} as Record<Axis, AxisScore>;
@@ -117,9 +110,10 @@ export function calcResult(answers: Record<number, number>): QuizResult {
   for (const axis of axes) {
     const qs = QUESTIONS.filter((q) => q.axis === axis);
     const n = qs.length;
+    // ans=1→high寄り(5点換算), ans=5→low寄り(1点換算)
     const raw = qs.reduce((sum, q) => {
       const ans = answers[q.id] ?? 3;
-      return sum + (q.reverse ? 6 - ans : ans);
+      return sum + (6 - ans);
     }, 0);
     const pct = Math.round(((raw - n) / (n * 4)) * 100);
     const meta = AXIS_META[axis];
