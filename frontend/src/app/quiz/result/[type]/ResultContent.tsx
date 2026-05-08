@@ -265,8 +265,8 @@ export function ResultContent({ typeKey }: { typeKey: QuizTypeKey }) {
       >
         {/* キャラクターヘッダー */}
         <div
-          className="relative w-full overflow-hidden"
-          style={{ background: `${quizType.color}55`, aspectRatio: '4/5' }}
+          className="relative h-72 flex items-center justify-center overflow-hidden"
+          style={{ background: `${quizType.color}55` }}
         >
           <div
             className="absolute inset-3 rounded-2xl"
@@ -275,8 +275,10 @@ export function ResultContent({ typeKey }: { typeKey: QuizTypeKey }) {
           <Image
             src={`/quiz/${typeKey}.png`}
             alt={quizType.name}
-            fill
-            style={{ filter: 'drop-shadow(0 6px 24px rgba(0,0,0,0.6))', padding: '16px' }}
+            width={260}
+            height={260}
+            className="relative object-contain"
+            style={{ filter: 'drop-shadow(0 6px 24px rgba(0,0,0,0.6))' }}
           />
         </div>
 
