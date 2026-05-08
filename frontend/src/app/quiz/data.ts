@@ -170,13 +170,13 @@ export const QUIZ_TYPES: Record<QuizTypeKey, QuizType> = {
     color: '#FD79A8', accent: '#E84393',
   },
   spxw: {
-    key: 'spxw', name: 'アドレナリン系番長', emoji: '🎲',
+    key: 'spxw', name: 'アドレナリン番長', emoji: '🎲',
     tagline: '非日常さえあれば、なんでもいける',
     description: 'いつもの場所では物足りない。ホテルでも旅先でも、非日常の空気さえあればこだわりなく全力になれる。外見重視でリードするのが好き。「普通の状況はつまらないが、どこでも遊べる」という自由人な支配タイプ。',
     color: '#636E72', accent: '#2D3436',
   },
   sexc: {
-    key: 'sexc', name: '演出狂の情熱家', emoji: '🎭',
+    key: 'sexc', name: '情熱的な演出家', emoji: '🎭',
     tagline: '感情も場所も、全部揃って初めて動く',
     description: '感情が動いた相手をリードしたいが、非日常の場でないとスイッチが入らない。さらに感情のトリガーも細かい。条件が二重に絞られているぶん、全部揃ったときの爆発力はすさまじい。「なんか違う」が多い代わりに、刺さったときは全力。',
     color: '#FDCB6E', accent: '#E17055',
