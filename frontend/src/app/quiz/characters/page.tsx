@@ -54,7 +54,7 @@ export default function CharactersPage() {
                     style={{
                       background: '#fffdf5',
                       border: '2px solid #e0c090',
-                      outline: '2px dashed rgba(180,120,60,0.25)',
+                      outline: '2px dashed rgba(180,120,60,0.28)',
                       outlineOffset: '-7px',
                       boxShadow: '0 3px 0 #c8946a, 0 6px 16px rgba(100,50,0,0.10)',
                     }}

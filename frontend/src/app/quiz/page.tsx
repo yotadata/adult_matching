@@ -199,9 +199,9 @@ export default function QuizPage() {
     background: '#fffdf5',
     borderRadius: '24px',
     border: '2px solid #e0c090',
-    outline: '2px dashed rgba(180,120,60,0.3)',
+    outline: '2px dashed rgba(180,120,60,0.28)',
     outlineOffset: '-8px',
-    boxShadow: '0 3px 0 #c8946a, 0 6px 20px rgba(100,50,0,0.10)',
+    boxShadow: '0 4px 0 #c8946a, 0 8px 24px rgba(100,50,0,0.10)',
   };
 
   return (
@@ -243,7 +243,7 @@ export default function QuizPage() {
                   ? '#c87941'
                   : i === step
                   ? '#e8a060'
-                  : 'rgba(180,120,60,0.18)',
+                  : 'rgba(100,55,15,0.22)',
               }}
             />
           ))}
@@ -283,9 +283,9 @@ export default function QuizPage() {
                             border: '2px solid transparent',
                           }
                         : {
-                            background: '#fdf0e0',
+                            background: '#fff0e6',
                             color: '#c8956a',
-                            border: '2px dashed rgba(180,120,60,0.3)',
+                            border: '2px dashed rgba(180,120,60,0.35)',
                             boxShadow: '0 2px 0 #d4a574',
                           }
                     }
@@ -336,7 +336,7 @@ export default function QuizPage() {
                   key={value}
                   onClick={() => handleGender(value)}
                   className="w-full rounded-2xl px-5 py-4 text-left text-[15px] font-bold text-[#3d1a00] active:translate-y-[1px] transition-transform"
-                  style={{ background: '#fdf0e0', border: '2px dashed rgba(180,120,60,0.4)', boxShadow: '0 3px 0 #c8946a' }}
+                  style={{ background: '#fff0e6', border: '2px dashed rgba(180,120,60,0.4)', boxShadow: '0 3px 0 #c8946a' }}
                 >
                   {emoji} {label}
                 </button>

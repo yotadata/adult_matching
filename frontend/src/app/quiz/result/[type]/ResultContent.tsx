@@ -139,7 +139,7 @@ function SaveImageButton({
       className="w-full rounded-2xl py-4 font-black flex items-center justify-center gap-2 text-[15px] active:translate-y-[1px] transition-all"
       style={
         loading
-          ? { background: '#e8c9a0', color: '#c8a080', cursor: 'not-allowed' }
+          ? { background: '#e0c090', color: '#c8a080', cursor: 'not-allowed' }
           : { background: 'linear-gradient(90deg, #6c3483, #e84393)', color: '#fff', boxShadow: '0 4px 0 #4a235a' }
       }
     >
@@ -259,7 +259,7 @@ export function ResultContent({ typeKey }: { typeKey: QuizTypeKey }) {
         style={{
           background: '#fffdf5',
           border: '2px solid #e0c090',
-          outline: '2px dashed rgba(180,120,60,0.28)',
+          outline: '2px dashed rgba(180,120,60,0.35)',
           outlineOffset: '-8px',
           boxShadow: '0 4px 0 #c8946a, 0 8px 28px rgba(100,50,0,0.12)',
         }}
@@ -302,9 +302,9 @@ export function ResultContent({ typeKey }: { typeKey: QuizTypeKey }) {
 
           <h2 className="text-[28px] font-black text-[#3d1a00] leading-tight mb-1">{quizType.name}</h2>
           <p className="text-sm font-bold mb-4" style={{ color: quizType.accent }}>{quizType.tagline}</p>
-          <p className="text-sm leading-relaxed text-[#6b4423] mb-6">{quizType.description}</p>
+          <p className="text-sm leading-relaxed text-[#8b5e3c] mb-6">{quizType.description}</p>
 
-          <div className="space-y-4 pt-5" style={{ borderTop: '2px dashed rgba(180,120,60,0.25)' }}>
+          <div className="space-y-4 pt-5" style={{ borderTop: '2px dashed rgba(180,120,60,0.28)' }}>
             <p className="text-[10px] font-black tracking-widest text-[#b5541a]/50 uppercase">✦ あなたの傾向 ✦</p>
             {axes.map(({ axis, pct }) => {
               const meta = AXIS_META[axis];
@@ -328,7 +328,7 @@ export function ResultContent({ typeKey }: { typeKey: QuizTypeKey }) {
                     <span className="text-[11px] font-black" style={{ color }}>{degreeLabel}</span>
                   </div>
                   <div className="relative h-3 rounded-full overflow-hidden" style={{ background: 'rgba(180,120,60,0.12)' }}>
-                    <div className="absolute left-1/2 top-0 bottom-0 w-px z-10" style={{ background: 'rgba(180,120,60,0.3)' }} />
+                    <div className="absolute left-1/2 top-0 bottom-0 w-px z-10" style={{ background: 'rgba(180,120,60,0.35)' }} />
                     <div className="absolute left-0 top-0 bottom-0 rounded-full transition-all" style={{ width: `${pct}%`, background: color }} />
                   </div>
                   <div className="flex justify-between text-[10px] text-[#b5541a]/40 mt-0.5 font-bold">
