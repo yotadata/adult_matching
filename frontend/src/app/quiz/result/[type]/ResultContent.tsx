@@ -232,7 +232,7 @@ export function ResultContent({ typeKey }: { typeKey: QuizTypeKey }) {
   const quizType = QUIZ_TYPES[typeKey] ?? QUIZ_TYPES['senc'];
   const shareText = `私の性癖16タイプは「${quizType.name}」でした！${quizType.tagline}\n\nあなたは？👇`;
   const scoresParam = searchParams.get('scores') ?? '';
-  const shareUrl = `https://seihekilab.com/quiz/result/${typeKey}?scores=${scoresParam}`;
+  const shareUrl = `https://seihekilab.com/quiz/result/${typeKey}?scores=${encodeURIComponent(scoresParam)}`;
 
   const axes: { axis: Axis; pct: number }[] = AXES.map((axis) => ({
     axis,
