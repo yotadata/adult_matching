@@ -16,7 +16,7 @@ export default function QuizHeader() {
 
   return (
     <>
-      <header className="w-full border-b border-[#e8c9a0]/40 bg-[#fff8f0]/80 backdrop-blur-sm sticky top-0 z-50">
+      <header className="w-full sticky top-0 z-50" style={{ background: 'rgba(253,246,232,0.92)', backdropFilter: 'blur(8px)', borderBottom: '2px dashed rgba(180,120,60,0.3)' }}>
         <div className="max-w-lg mx-auto px-4 h-14 flex items-center justify-between">
           <Link href="/quiz" className="font-black text-[16px] text-[#5c2e00] leading-tight">
             性癖16タイプ診断
@@ -30,11 +30,12 @@ export default function QuizHeader() {
                 <Link
                   key={link.href}
                   href={link.href}
-                  className={`px-3 py-1.5 rounded-full text-[12px] font-bold transition-colors ${
+                  className={`px-3 py-1.5 rounded-full text-[12px] font-bold transition-all ${
                     isActive
-                      ? 'bg-[#ffb347] text-white'
-                      : 'text-[#b5541a] hover:bg-[#ffb347]/20'
+                      ? 'text-white'
+                      : 'text-[#b5541a] hover:bg-[#e8c9a0]/40'
                   }`}
+                  style={isActive ? { background: '#c87941', boxShadow: '0 2px 0 #9e5a28' } : {}}
                 >
                   {link.label}
                 </Link>
@@ -62,7 +63,7 @@ export default function QuizHeader() {
             className="fixed inset-0 z-40 sm:hidden"
             onClick={() => setOpen(false)}
           />
-          <nav className="fixed top-14 right-0 z-50 w-48 bg-[#fff8f0] border border-[#e8c9a0]/60 rounded-bl-2xl shadow-lg py-2 sm:hidden">
+          <nav className="fixed top-14 right-0 z-50 w-48 rounded-bl-2xl shadow-lg py-2 sm:hidden" style={{ background: '#fdf6e8', border: '2px dashed rgba(180,120,60,0.35)', borderTop: 'none', borderRight: 'none' }}>
             {links.map((link) => {
               const isActive = pathname === link.href;
               return (

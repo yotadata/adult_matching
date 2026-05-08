@@ -21,12 +21,19 @@ export const metadata: Metadata = {
 
 export default function QuizLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: '#fff8f0' }}>
+    <div
+      className="min-h-screen flex flex-col"
+      style={{
+        backgroundColor: '#fdf6e8',
+        backgroundImage: `radial-gradient(circle, rgba(180,120,60,0.07) 1px, transparent 1px)`,
+        backgroundSize: '22px 22px',
+      }}
+    >
       <QuizHeader />
       <div className="flex-1">{children}</div>
-      <footer className="flex flex-col items-center py-8 gap-3 border-t border-[#e8c9a0]/40">
-        <Image src="/seiheki_lab_header.png" alt="性癖ラボ" width={160} height={44} className="object-contain opacity-80" />
-        <p className="text-[11px] text-[#b5541a]/50 font-bold">© 性癖ラボ</p>
+      <footer className="flex flex-col items-center py-8 gap-3" style={{ borderTop: '2px dashed rgba(180,120,60,0.25)' }}>
+        <Image src="/seiheki_lab_header.png" alt="性癖ラボ" width={160} height={44} className="object-contain opacity-70" />
+        <p className="text-[11px] text-[#b5541a]/40 font-bold">© 性癖ラボ</p>
       </footer>
     </div>
   );

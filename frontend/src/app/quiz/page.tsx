@@ -195,19 +195,25 @@ export default function QuizPage() {
 
   if (!ready) return null;
 
+  const STITCH_CARD = {
+    background: '#fffdf5',
+    borderRadius: '24px',
+    border: '2px solid #e0c090',
+    outline: '2px dashed rgba(180,120,60,0.3)',
+    outlineOffset: '-8px',
+    boxShadow: '0 3px 0 #c8946a, 0 6px 20px rgba(100,50,0,0.10)',
+  };
+
   return (
-    <div
-      className="min-h-[calc(100vh-56px)] flex flex-col items-center px-4 py-8"
-      style={{ background: 'linear-gradient(160deg, #fff5e6 0%, #ffecd2 50%, #ffd1dc 100%)' }}
-    >
+    <div className="min-h-[calc(100vh-56px)] flex flex-col items-center px-4 py-8">
       {/* 前回の結果バナー */}
       {prevResult && step === 0 && (
         <div className="w-full max-w-sm mb-4 rounded-2xl px-4 py-3 flex items-center justify-between gap-2"
-          style={{ background: '#fff8f0', border: '1.5px solid #ffb347' }}>
+          style={{ background: '#fffdf5', border: '2px dashed rgba(180,120,60,0.35)', boxShadow: '0 2px 0 #c8946a' }}>
           <p className="text-[12px] text-[#7a4a1a] font-bold">前回の結果: <span className="text-[#c05a00]">{prevResult.name}</span></p>
           <Link href={`/quiz/result/${prevResult.typeKey}?gender=${prevResult.gender}&scores=${prevResult.scores}`}
             className="text-[11px] font-black px-3 py-1 rounded-full text-white shrink-0"
-            style={{ background: '#ffb347' }}>
+            style={{ background: '#c87941', boxShadow: '0 2px 0 #9e5a28' }}>
             見る
           </Link>
         </div>
@@ -215,7 +221,7 @@ export default function QuizPage() {
 
       {/* プログレス */}
       <div className="w-full max-w-sm mb-6">
-        <div className="flex justify-between text-xs text-[#b5541a]/60 mb-1.5 font-bold">
+        <div className="flex justify-between text-xs text-[#b5541a]/60 mb-2 font-bold">
           <span>{isGenderStep ? '最後の質問' : `Q${step + 1} / ${QUESTIONS.length}`}</span>
           <div className="flex items-center gap-3">
             <span>{Math.round(progress)}%</span>
@@ -226,11 +232,21 @@ export default function QuizPage() {
             )}
           </div>
         </div>
-        <div className="h-2.5 rounded-full bg-white/50 overflow-hidden shadow-inner">
-          <div
-            className="h-full rounded-full transition-all duration-500"
-            style={{ width: `${progress}%`, background: 'linear-gradient(90deg, #ff6b6b, #ffd93d)' }}
-          />
+        {/* ドット式プログレスバー */}
+        <div className="flex gap-1.5">
+          {Array.from({ length: TOTAL_STEPS }).map((_, i) => (
+            <div
+              key={i}
+              className="flex-1 h-2 rounded-full transition-all duration-300"
+              style={{
+                background: i < step
+                  ? '#c87941'
+                  : i === step
+                  ? '#e8a060'
+                  : 'rgba(180,120,60,0.18)',
+              }}
+            />
+          ))}
         </div>
       </div>
 
@@ -240,22 +256,14 @@ export default function QuizPage() {
         style={{ opacity: animating ? 0 : 1 }}
       >
         {!isGenderStep ? (
-          <div
-            className="rounded-3xl p-6 flex flex-col gap-6"
-            style={{
-              background: '#fffdf8',
-              boxShadow: '0 2px 0 #e8c9a0, 0 5px 0 #d4a574, 0 8px 24px rgba(100,50,0,0.12)',
-            }}
-          >
-            <div>
-              <p className="text-[18px] font-black text-[#3d1a00] leading-snug">
-                {currentQ.text}
-              </p>
-            </div>
+          <div className="p-6 flex flex-col gap-6" style={STITCH_CARD}>
+            <p className="text-[18px] font-black text-[#3d1a00] leading-snug">
+              {currentQ.text}
+            </p>
 
             {/* 5段階スケール */}
             <div>
-              <div className="flex justify-between text-[11px] font-bold text-[#b5541a]/60 mb-2 px-1">
+              <div className="flex justify-between text-[11px] font-bold text-[#b5541a]/50 mb-2.5 px-1">
                 <span>全然違う</span>
                 <span>まさにそう</span>
               </div>
@@ -268,15 +276,17 @@ export default function QuizPage() {
                     style={
                       selected === v
                         ? {
-                            background: `hsl(${20 + v * 20}, 90%, 60%)`,
+                            background: `hsl(${20 + v * 20}, 85%, 55%)`,
                             color: '#fff',
-                            boxShadow: `0 3px 0 hsl(${20 + v * 20}, 90%, 40%)`,
+                            boxShadow: `0 3px 0 hsl(${20 + v * 20}, 85%, 38%), inset 0 0 0 2px rgba(255,255,255,0.3)`,
                             transform: 'translateY(-2px)',
+                            border: '2px solid transparent',
                           }
                         : {
-                            background: '#fff0e6',
+                            background: '#fdf0e0',
                             color: '#c8956a',
-                            boxShadow: '0 2px 0 #e8c9a0',
+                            border: '2px dashed rgba(180,120,60,0.3)',
+                            boxShadow: '0 2px 0 #d4a574',
                           }
                     }
                   >
@@ -285,7 +295,7 @@ export default function QuizPage() {
                 ))}
               </div>
               {selected !== null && (
-                <p className="text-center text-[12px] font-bold mt-2.5" style={{ color: `hsl(${20 + selected * 20}, 70%, 45%)` }}>
+                <p className="text-center text-[12px] font-bold mt-2.5" style={{ color: `hsl(${20 + selected * 20}, 70%, 42%)` }}>
                   {SCALE_LABELS[selected - 1]}
                 </p>
               )}
@@ -294,11 +304,11 @@ export default function QuizPage() {
             <button
               onClick={handleNext}
               disabled={selected === null}
-              className="w-full rounded-2xl py-4 font-black text-[15px] transition-all"
+              className="w-full rounded-2xl py-4 font-black text-[15px] transition-all active:translate-y-[1px]"
               style={
                 selected !== null
-                  ? { background: 'linear-gradient(90deg, #ff6b6b, #ffd93d)', color: '#fff', boxShadow: '0 4px 0 #e08020' }
-                  : { background: '#e8c9a0', color: '#c8a080', cursor: 'not-allowed' }
+                  ? { background: '#c87941', color: '#fff', boxShadow: '0 4px 0 #9e5a28', border: '2px solid #e8a060' }
+                  : { background: '#e8d8c0', color: '#c8a880', cursor: 'not-allowed', border: '2px dashed rgba(180,120,60,0.2)' }
               }
             >
               次の質問へ →
@@ -311,16 +321,10 @@ export default function QuizPage() {
             )}
           </div>
         ) : (
-          <div
-            className="rounded-3xl p-6"
-            style={{
-              background: '#fffdf8',
-              boxShadow: '0 2px 0 #e8c9a0, 0 5px 0 #d4a574, 0 8px 24px rgba(100,50,0,0.12)',
-            }}
-          >
-            <p className="text-[11px] font-black tracking-widest text-[#b5541a]/50 uppercase mb-3">Last Question</p>
+          <div className="p-6" style={STITCH_CARD}>
+            <p className="text-[11px] font-black tracking-widest text-[#b5541a]/40 uppercase mb-3">✦ Last Question ✦</p>
             <p className="text-[18px] font-black text-[#3d1a00] leading-snug mb-6">
-              最後に、あなたの性別を教えてください🙌
+              最後に、あなたの性別を教えてください
             </p>
             <div className="space-y-3">
               {([
@@ -331,8 +335,8 @@ export default function QuizPage() {
                 <button
                   key={value}
                   onClick={() => handleGender(value)}
-                  className="w-full rounded-2xl px-5 py-4 text-left text-[15px] font-bold text-[#3d1a00] active:translate-y-[2px] transition-transform"
-                  style={{ background: '#fff0e6', border: '2.5px solid #ffb347', boxShadow: '0 3px 0 #e08020' }}
+                  className="w-full rounded-2xl px-5 py-4 text-left text-[15px] font-bold text-[#3d1a00] active:translate-y-[1px] transition-transform"
+                  style={{ background: '#fdf0e0', border: '2px dashed rgba(180,120,60,0.4)', boxShadow: '0 3px 0 #c8946a' }}
                 >
                   {emoji} {label}
                 </button>
