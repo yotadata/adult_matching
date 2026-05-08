@@ -9,17 +9,17 @@ export const metadata: Metadata = {
 };
 
 const TYPE_ORDER: QuizTypeKey[] = [
-  'spnc', 'spnw', 'senc', 'senw',
-  'spxc', 'spxw', 'sexc', 'sexw',
-  'mpnc', 'mpnw', 'menc', 'menw',
-  'mpxc', 'mpxw', 'mexc', 'mexw',
+  'spnc', 'spnw', 'spxc', 'spxw',
+  'senc', 'senw', 'sexc', 'sexw',
+  'mpnc', 'mpnw', 'mpxc', 'mpxw',
+  'menc', 'menw', 'mexc', 'mexw',
 ];
 
 const GROUP_LABELS = [
-  { label: '支配 × 日常', range: [0, 4], color: '#C0392B' },
-  { label: '支配 × 非日常', range: [4, 8], color: '#2471A3' },
-  { label: '奉仕 × 日常', range: [8, 12], color: '#17A589' },
-  { label: '奉仕 × 非日常', range: [12, 16], color: '#7D3C98' },
+  { label: '支配 × 快楽', range: [0, 4], color: '#C0392B' },
+  { label: '支配 × 感情', range: [4, 8], color: '#2471A3' },
+  { label: '奉仕 × 快楽', range: [8, 12], color: '#17A589' },
+  { label: '奉仕 × 感情', range: [12, 16], color: '#7D3C98' },
 ];
 
 const DARK_CARD = {
