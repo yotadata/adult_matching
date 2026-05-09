@@ -386,32 +386,6 @@ export function ResultContent({ typeKey }: { typeKey: QuizTypeKey }) {
         </div>
       </div>
 
-      {/* シェアボタン */}
-      <div className="w-full max-w-sm space-y-3 mb-6">
-        <SaveImageButton cardRef={shareCardRef} typeKey={typeKey} quizType={quizType} />
-        <button
-          onClick={shareToX}
-          className="w-full rounded-2xl py-4 font-black text-white flex items-center justify-center gap-2 text-[15px] active:translate-y-[1px] transition-transform"
-          style={{ background: 'rgba(255,255,255,0.08)', boxShadow: '0 4px 0 rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.2)', color: '#f0e6d3' }}
-        >
-          <span className="text-lg">𝕏</span> ポストして友だちに教える
-        </button>
-        <button
-          onClick={shareToLine}
-          className="w-full rounded-2xl py-4 font-black text-white flex items-center justify-center gap-2 text-[15px] active:translate-y-[1px] transition-transform"
-          style={{ background: '#06C755', boxShadow: '0 4px 0 #04a344', border: '1px solid #08e060' }}
-        >
-          <span className="text-lg">💬</span> LINEで送る
-        </button>
-        <button
-          onClick={copyLink}
-          className="w-full rounded-2xl py-4 font-black flex items-center justify-center gap-2 text-[15px] active:translate-y-[1px] transition-transform"
-          style={{ background: 'rgba(180,150,80,0.1)', border: '1px solid rgba(180,150,80,0.35)', color: '#e8d5a0' }}
-        >
-          🔗 リンクをコピー
-        </button>
-      </div>
-
       {/* 相性の良いタイプ */}
       <div className="w-full max-w-sm mb-6">
         <p className="text-[11px] font-black tracking-[0.3em] uppercase mb-4 text-center" style={{ color: 'rgba(180,150,80,0.5)' }}>✦ 相性の良いタイプ ✦</p>
@@ -461,6 +435,32 @@ export function ResultContent({ typeKey }: { typeKey: QuizTypeKey }) {
             );
           })}
         </div>
+      </div>
+
+      {/* シェアボタン */}
+      <div className="w-full max-w-sm space-y-3 mb-6">
+        <SaveImageButton cardRef={shareCardRef} typeKey={typeKey} quizType={quizType} />
+        <button
+          onClick={shareToX}
+          className="w-full rounded-2xl py-4 font-black text-white flex items-center justify-center gap-2 text-[15px] active:translate-y-[1px] transition-transform"
+          style={{ background: 'rgba(255,255,255,0.08)', boxShadow: '0 4px 0 rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.2)', color: '#f0e6d3' }}
+        >
+          <span className="text-lg">𝕏</span> ポストして友だちに教える
+        </button>
+        <button
+          onClick={shareToLine}
+          className="w-full rounded-2xl py-4 font-black text-white flex items-center justify-center gap-2 text-[15px] active:translate-y-[1px] transition-transform"
+          style={{ background: '#06C755', boxShadow: '0 4px 0 #04a344', border: '1px solid #08e060' }}
+        >
+          <span className="text-lg">💬</span> LINEで送る
+        </button>
+        <button
+          onClick={copyLink}
+          className="w-full rounded-2xl py-4 font-black flex items-center justify-center gap-2 text-[15px] active:translate-y-[1px] transition-transform"
+          style={{ background: 'rgba(180,150,80,0.1)', border: '1px solid rgba(180,150,80,0.35)', color: '#e8d5a0' }}
+        >
+          🔗 リンクをコピー
+        </button>
       </div>
 
       {/* 男性向けCTA（インライン） */}
