@@ -19,7 +19,7 @@ export default function QuizHeader() {
       <header className="w-full sticky top-0 z-50" style={{ background: 'rgba(13,11,8,0.96)', backdropFilter: 'blur(12px)', borderBottom: '1px solid rgba(180,150,80,0.25)' }}>
         <div className="max-w-lg mx-auto px-4 h-14 flex items-center justify-between">
           <Link href="/quiz" className="font-black text-[16px] leading-tight" style={{ color: '#e8d5a0' }}>
-            性癖16タイプ分析
+            偏愛16診断
           </Link>
 
           {/* PC: 通常ナビ */}

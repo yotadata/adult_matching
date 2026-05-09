@@ -2,8 +2,8 @@ import Link from 'next/link';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'この診断とは | 性癖16タイプ分析',
-  description: '性癖16タイプ分析の4つの軸と16タイプについて解説します。',
+  title: 'この診断とは | 偏愛16診断',
+  description: '偏愛16診断の4つの軸と16タイプについて解説します。',
 };
 
 const AXES = [

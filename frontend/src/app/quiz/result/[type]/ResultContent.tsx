@@ -89,7 +89,7 @@ async function buildShareImage(params: {
 
   // ヘッダーラベル
   ctx.font = `600 22px ${JP_FONT}`; ctx.fillStyle = 'rgba(180,150,80,0.65)';
-  ctx.fillText('性癖16タイプ分析', 28, 44);
+  ctx.fillText('偏愛16診断', 28, 44);
 
   // タイプキーバッジ
   const letters = typeKey.toUpperCase().split('');
@@ -182,7 +182,7 @@ async function buildShareImage(params: {
 
   // フッター
   ctx.font = `600 15px ${JP_FONT}`; ctx.fillStyle = 'rgba(180,150,80,0.3)';
-  ctx.textAlign = 'right'; ctx.fillText('✦ 性癖16タイプ分析 ✦', W - tx, ty + 16);
+  ctx.textAlign = 'right'; ctx.fillText('✦ 偏愛16診断 ✦', W - tx, ty + 16);
   ctx.textAlign = 'left';
 
   return canvas.toDataURL('image/png');
@@ -263,7 +263,11 @@ function SaveImageButton({
       const file = new File([blob], `seiheki_${typeKey}.png`, { type: 'image/png' });
 
       if (navigator.share && navigator.canShare?.({ files: [file] })) {
-        await navigator.share({ files: [file] });
+        await navigator.share({
+          files: [file],
+          title: `私の偏愛16診断タイプは「${quizType.name}」でした！`,
+          text: quizType.tagline,
+        });
         trackEvent('quiz_image_shared', { type: typeKey, method: 'webshare' });
       } else {
         const newTab = window.open();
@@ -381,9 +385,11 @@ export function ResultContent({ typeKey }: { typeKey: QuizTypeKey }) {
   })();
 
   const quizType = QUIZ_TYPES[typeKey] ?? QUIZ_TYPES['senc'];
-  const shareText = `私の性癖16タイプは「${quizType.name}」でした！`;
   const scoresParam = searchParams.get('scores') ?? '';
-  const shareUrl = `https://seihekilab.com/quiz/result/${typeKey}?scores=${encodeURIComponent(scoresParam)}`;
+  const shareUrl = scoresParam
+    ? `https://seihekilab.com/quiz/result/${typeKey}?scores=${encodeURIComponent(scoresParam)}`
+    : `https://seihekilab.com/quiz/result/${typeKey}`;
+  const shareText = `私の偏愛タイプは ${typeKey.toUpperCase()}「${quizType.name}」でした。\n#偏愛16 #性癖ラボ\n\n${shareUrl}`;
 
   const axes: { axis: Axis; pct: number }[] = AXES.map((axis) => ({
     axis,
@@ -413,17 +419,17 @@ export function ResultContent({ typeKey }: { typeKey: QuizTypeKey }) {
   const shareToX = () => {
     trackEvent('quiz_share', { method: 'x', type: typeKey });
     window.open(
-      `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}&hashtags=性癖16タイプ分析,性癖ラボ`,
+      `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}`,
       '_blank', 'noopener'
     );
   };
   const shareToLine = () => {
     trackEvent('quiz_share', { method: 'line', type: typeKey });
-    window.open(`https://line.me/R/msg/text/?${encodeURIComponent(`${shareText}\n${shareUrl}`)}`, '_blank', 'noopener');
+    window.open(`https://line.me/R/msg/text/?${encodeURIComponent(shareText)}`, '_blank', 'noopener');
   };
   const copyLink = async () => {
     trackEvent('quiz_share', { method: 'copy_link', type: typeKey });
-    await navigator.clipboard.writeText(shareUrl);
+    await navigator.clipboard.writeText(shareText);
   };
 
   return (
@@ -521,7 +527,7 @@ export function ResultContent({ typeKey }: { typeKey: QuizTypeKey }) {
             })}
           </div>
 
-          <p className="text-[10px] font-bold tracking-widest mt-5 text-right" style={{ color: 'rgba(180,150,80,0.35)' }}>✦ 性癖16タイプ分析 ✦</p>
+          <p className="text-[10px] font-bold tracking-widest mt-5 text-right" style={{ color: 'rgba(180,150,80,0.35)' }}>✦ 偏愛16診断 ✦</p>
         </div>
       </div>
 
