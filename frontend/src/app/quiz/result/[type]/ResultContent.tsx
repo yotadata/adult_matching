@@ -27,12 +27,12 @@ async function buildShareImage(params: {
 
   // ── テキストエリアの高さを先に計算 ──
   const offCtx = document.createElement('canvas').getContext('2d')!;
-  offCtx.font = `400 18px ${JP_FONT}`;
+  offCtx.font = `400 15px ${JP_FONT}`;
   let textH = 32; // 上パディング
   textH += 58;    // タイトル (52px)
   textH += 8;     // gap
-  textH += 28;    // タグライン
-  textH += 20;    // gap
+  textH += 22;    // タグライン (17px)
+  textH += 16;    // gap
   // 説明文の行数を計算
   let line = '';
   let descLines = 1;
@@ -41,7 +41,7 @@ async function buildShareImage(params: {
     if (offCtx.measureText(test).width > W - tx * 2 && line) { line = ch; descLines++; }
     else line = test;
   }
-  textH += descLines * 28; // 説明文
+  textH += descLines * 22; // 説明文 (15px × 22lineH)
   textH += 24;  // gap + 区切り線
   textH += 20;  // 区切り線後gap
   textH += axes.length * 32; // 軸バー
@@ -103,19 +103,19 @@ async function buildShareImage(params: {
   }
   ctx.textAlign = 'left';
 
-  // QRコード
+  // QRコード + ドメイン（QR左横に並べる）
   if (qrDataUrl) {
     await new Promise<void>((resolve) => {
       const qr = new window.Image();
       qr.onload = () => {
         ctx.fillStyle = 'white';
-        roundRect(ctx, W - 100, charH - 96, 76, 76, 8); ctx.fill();
-        ctx.drawImage(qr, W - 96, charH - 92, 68, 68); resolve();
+        roundRect(ctx, W - 92, charH - 92, 72, 72, 8); ctx.fill();
+        ctx.drawImage(qr, W - 88, charH - 88, 64, 64); resolve();
       };
       qr.onerror = () => resolve(); qr.src = qrDataUrl;
     });
-    ctx.font = `400 16px ${JP_FONT}`; ctx.fillStyle = 'rgba(180,150,80,0.5)';
-    ctx.textAlign = 'right'; ctx.fillText('seihekilab.com', W - 20, charH - 8);
+    ctx.font = `400 15px ${JP_FONT}`; ctx.fillStyle = 'rgba(180,150,80,0.5)';
+    ctx.textAlign = 'right'; ctx.fillText('seihekilab.com', W - 100, charH - 46);
     ctx.textAlign = 'left';
   }
 
@@ -125,11 +125,11 @@ async function buildShareImage(params: {
   ctx.font = `900 52px ${JP_FONT}`; ctx.fillStyle = '#f0e6d3';
   ctx.fillText(quizType.name, tx, ty + 52); ty += 58 + 8;
 
-  ctx.font = `700 22px ${JP_FONT}`; ctx.fillStyle = quizType.color;
-  ctx.fillText(quizType.tagline, tx, ty + 22); ty += 28 + 20;
+  ctx.font = `700 17px ${JP_FONT}`; ctx.fillStyle = quizType.color;
+  ctx.fillText(quizType.tagline, tx, ty + 17); ty += 22 + 16;
 
-  ctx.font = `400 18px ${JP_FONT}`; ctx.fillStyle = 'rgba(200,180,140,0.65)';
-  ty = wrapText(ctx, quizType.description, tx, ty, W - tx * 2, 28) + 24;
+  ctx.font = `400 15px ${JP_FONT}`; ctx.fillStyle = 'rgba(200,180,140,0.65)';
+  ty = wrapText(ctx, quizType.description, tx, ty, W - tx * 2, 22) + 24;
 
   // 区切り線
   ctx.strokeStyle = 'rgba(180,150,80,0.2)'; ctx.lineWidth = 1;
@@ -141,12 +141,16 @@ async function buildShareImage(params: {
     const meta = AXIS_META[axis];
     const isHigh = pct >= 50;
     const color = isHigh ? meta.colorHigh : meta.colorLow;
-    const label = isHigh ? meta.labelHigh : meta.labelLow;
-    const labelW = 56, barX = tx + labelW + 8, barW = W - tx * 2 - labelW * 2 - 16;
+    const labelW = 60, barX = tx + labelW + 8, barW = W - tx * 2 - labelW * 2 - 16;
 
-    ctx.font = `700 17px ${JP_FONT}`; ctx.fillStyle = 'rgba(200,180,140,0.5)';
-    ctx.textAlign = 'right'; ctx.fillText(meta.labelHigh, tx + labelW, ty + 9);
-    ctx.textAlign = 'left'; ctx.fillText(meta.labelLow, barX + barW + 8, ty + 9);
+    ctx.font = `700 15px ${JP_FONT}`;
+    ctx.textAlign = 'right';
+    ctx.fillStyle = isHigh ? color : 'rgba(200,180,140,0.35)';
+    ctx.fillText(meta.labelHigh, tx + labelW, ty + 9);
+
+    ctx.textAlign = 'left';
+    ctx.fillStyle = !isHigh ? color : 'rgba(200,180,140,0.35)';
+    ctx.fillText(meta.labelLow, barX + barW + 8, ty + 9);
 
     ctx.fillStyle = 'rgba(180,150,80,0.1)';
     roundRect(ctx, barX, ty, barW, 10, 5); ctx.fill();
@@ -156,8 +160,6 @@ async function buildShareImage(params: {
     ctx.fillStyle = color;
     roundRect(ctx, isHigh ? barX + barW / 2 - fillW : barX + barW / 2, ty, fillW, 10, 5); ctx.fill();
 
-    ctx.font = `900 17px ${JP_FONT}`; ctx.fillStyle = color;
-    ctx.textAlign = 'right'; ctx.fillText(label, W - tx, ty + 9);
     ctx.textAlign = 'left'; ty += 32;
   }
 
