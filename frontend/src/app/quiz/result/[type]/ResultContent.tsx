@@ -114,9 +114,6 @@ async function buildShareImage(params: {
       };
       qr.onerror = () => resolve(); qr.src = qrDataUrl;
     });
-    ctx.font = `600 14px ${JP_FONT}`; ctx.fillStyle = 'rgba(180,150,80,0.55)';
-    ctx.textAlign = 'right'; ctx.fillText('seihekilab.com', W - 20, charH - 8);
-    ctx.textAlign = 'left';
   }
 
   // ── テキストエリア（下詰め）──
