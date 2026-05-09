@@ -42,7 +42,7 @@ const Header = ({ cardWidth, mobileGauge }: { cardWidth: number | undefined; mob
   const primaryNavItems: NavItem[] = [
     { label: 'スワイプ', href: '/swipe', icon: HomeIcon, requiresLogin: false },
     { label: '気になるリスト', href: '/lists', icon: List, requiresLogin: true },
-    { label: 'AIで探す', href: '/search', icon: Sparkles, requiresLogin: false, withGauge: true },
+    { label: 'さがす', href: '/search', icon: Sparkles, requiresLogin: false, withGauge: true },
     { label: 'あなたの性癖', href: '/insights', icon: BarChart2, requiresLogin: true },
   ];
 
