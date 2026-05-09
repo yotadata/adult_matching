@@ -1,10 +1,9 @@
 'use client';
 
 import { useSearchParams, useRouter } from 'next/navigation';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { toPng } from 'html-to-image';
 import QRCode from 'qrcode';
 import { QUIZ_TYPES, AXIS_META, COMPATIBILITY, COMPATIBILITY_LABELS, QuizTypeKey, QuizType, Axis } from '../../data';
 import { trackEvent } from '@/lib/analytics';
@@ -12,179 +11,300 @@ import { trackEvent } from '@/lib/analytics';
 const CTA_SHOWN_KEY = 'quiz_male_cta_shown';
 const AXES: Axis[] = ['ds', 'pe', 'nx', 'cw'];
 
-// ─── シェアカード（html-to-image でキャプチャ用） ────────────────────────────
-function ShareCard({
-  typeKey,
-  quizType,
-  axes,
-  qrDataUrl,
-  charDataUrl,
-  cardRef,
-}: {
+const JP_FONT = '"Hiragino Kaku Gothic ProN","Hiragino Sans","Yu Gothic","Noto Sans JP",sans-serif';
+
+// ─── Canvas で直接シェア画像を生成（縦長・下詰め） ───────────────────────────
+async function buildShareImage(params: {
   typeKey: QuizTypeKey;
   quizType: QuizType;
   axes: { axis: Axis; pct: number }[];
-  qrDataUrl: string;
   charDataUrl: string;
-  cardRef: React.RefObject<HTMLDivElement | null>;
-}) {
-  return (
-    <div
-      ref={cardRef}
-      style={{
-        position: 'relative',
-        width: '750px',
-        height: '750px',
-        background: 'linear-gradient(170deg, #0d0b08 0%, #1a1510 100%)',
-        fontFamily: 'sans-serif',
-        display: 'flex',
-        flexDirection: 'column',
-        overflow: 'hidden',
-      }}
-    >
-      {/* キャラクター画像エリア */}
-      <div style={{ height: '450px', background: `${quizType.color}38`, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', flexShrink: 0 }}>
-        <div style={{ position: 'absolute', inset: 0, background: `radial-gradient(ellipse at center, ${quizType.color}22 0%, transparent 70%)` }} />
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={charDataUrl || `/quiz/${typeKey}.png`}
-          alt={quizType.name}
-          style={{ width: '380px', height: '380px', objectFit: 'contain', filter: 'drop-shadow(0 12px 32px rgba(0,0,0,0.85))', position: 'relative' }}
-        />
-        {/* ヘッダーバー */}
-        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, padding: '12px 22px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <p style={{ color: 'rgba(180,150,80,0.65)', fontSize: '11px', letterSpacing: '0.22em', textTransform: 'uppercase', margin: 0 }}>性癖16タイプ分析</p>
-          <div style={{ display: 'flex', gap: '5px' }}>
-            {typeKey.toUpperCase().split('').map((c, i) => (
-              <span key={i} style={{ background: `${quizType.color}30`, color: quizType.color, fontSize: '11px', fontWeight: 900, padding: '3px 10px', borderRadius: '100px', border: `1px solid ${quizType.color}55` }}>{c}</span>
-            ))}
-          </div>
-        </div>
-        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '80px', background: 'linear-gradient(to bottom, transparent, #0d0b08)' }} />
-        {/* QRコード（画像エリア右下） */}
-        {qrDataUrl && (
-          <div style={{ position: 'absolute', bottom: '14px', right: '16px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={qrDataUrl} alt="QR" style={{ width: '64px', height: '64px', borderRadius: '6px', background: 'white', padding: '4px', display: 'block' }} />
-            <p style={{ color: 'rgba(180,150,80,0.55)', fontSize: '9px', margin: 0, letterSpacing: '0.05em' }}>seihekilab.com</p>
-          </div>
-        )}
-      </div>
+  qrDataUrl: string;
+}): Promise<string> {
+  const { typeKey, quizType, axes, charDataUrl, qrDataUrl } = params;
+  const W = 750;
+  const tx = 36; // 横余白
 
-      {/* テキストエリア */}
-      <div style={{ padding: '18px 28px 20px', display: 'flex', flexDirection: 'column', gap: '12px', flex: 1 }}>
-        {/* 名前・タグライン */}
-        <div>
-          <h2 style={{ color: '#f0e6d3', fontSize: '38px', fontWeight: 900, margin: '0 0 5px', lineHeight: 1.1 }}>{quizType.name}</h2>
-          <p style={{ color: quizType.color, fontSize: '15px', fontWeight: 700, margin: 0, lineHeight: 1.4 }}>{quizType.tagline}</p>
-        </div>
+  // ── テキストエリアの高さを先に計算 ──
+  const offCtx = document.createElement('canvas').getContext('2d')!;
+  offCtx.font = `400 15px ${JP_FONT}`;
+  let textH = 32; // 上パディング
+  textH += 58;    // タイトル (52px)
+  textH += 8;     // gap
+  textH += 22;    // タグライン (17px)
+  textH += 16;    // gap
+  // 説明文の行数を計算
+  let line = '';
+  let descLines = 1;
+  for (const ch of quizType.description.split('')) {
+    const test = line + ch;
+    if (offCtx.measureText(test).width > W - tx * 2 && line) { line = ch; descLines++; }
+    else line = test;
+  }
+  textH += descLines * 22; // 説明文 (15px × 22lineH)
+  textH += 24;  // gap + 区切り線
+  textH += 20;  // 区切り線後gap
+  textH += axes.length * 36; // 軸バー
+  textH += 36;  // フッター + 下パディング
+  const H = textH + 600; // 残り全部がキャラエリア（最低600px）
+  const charH = H - textH;
 
-        {/* 説明文 */}
-        <p style={{ color: 'rgba(200,180,140,0.65)', fontSize: '12px', lineHeight: 1.7, margin: 0 }}>
-          {quizType.description}
-        </p>
+  const canvas = document.createElement('canvas');
+  canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext('2d')!;
+  await document.fonts.ready;
 
-        {/* 軸バー */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '9px' }}>
-          {axes.map(({ axis, pct }) => {
-            const meta = AXIS_META[axis];
-            const isHigh = pct >= 50;
-            const color = isHigh ? meta.colorHigh : meta.colorLow;
-            const label = isHigh ? meta.labelHigh : meta.labelLow;
-            const barWidth = Math.abs(pct - 50) * 2;
-            return (
-              <div key={axis} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <span style={{ color: 'rgba(200,180,140,0.5)', fontSize: '11px', fontWeight: 700, width: '34px', textAlign: 'right', flexShrink: 0 }}>{meta.labelHigh}</span>
-                <div style={{ flex: 1, background: 'rgba(180,150,80,0.1)', borderRadius: '100px', height: '7px', overflow: 'hidden', position: 'relative' }}>
-                  <div style={{ position: 'absolute', left: '50%', top: 0, bottom: 0, width: '1px', background: 'rgba(180,150,80,0.25)' }} />
-                  {isHigh
-                    ? <div style={{ position: 'absolute', right: '50%', top: 0, bottom: 0, width: `${barWidth}%`, background: color, borderRadius: '100px' }} />
-                    : <div style={{ position: 'absolute', left: '50%', top: 0, bottom: 0, width: `${barWidth}%`, background: color, borderRadius: '100px' }} />
-                  }
-                </div>
-                <span style={{ color: 'rgba(200,180,140,0.5)', fontSize: '11px', fontWeight: 700, width: '34px', flexShrink: 0 }}>{meta.labelLow}</span>
-                <span style={{ color, fontSize: '11px', fontWeight: 900, width: '44px', textAlign: 'right', flexShrink: 0 }}>{label}</span>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    </div>
-  );
+  // 背景
+  const bg = ctx.createLinearGradient(0, 0, 0, H);
+  bg.addColorStop(0, '#0d0b08'); bg.addColorStop(1, '#1a1510');
+  ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
+
+  // キャラエリア背景
+  ctx.fillStyle = quizType.color + '38'; ctx.fillRect(0, 0, W, charH);
+  const rg = ctx.createRadialGradient(W / 2, charH / 2, 0, W / 2, charH / 2, W * 0.6);
+  rg.addColorStop(0, quizType.color + '30'); rg.addColorStop(1, 'transparent');
+  ctx.fillStyle = rg; ctx.fillRect(0, 0, W, charH);
+
+  // キャラ画像
+  if (charDataUrl) {
+    await new Promise<void>((resolve) => {
+      const img = new window.Image();
+      img.onload = () => {
+        const size = Math.min(charH - 60, 480);
+        const x = (W - size) / 2, y = (charH - size) / 2 + 10;
+        ctx.save();
+        ctx.shadowColor = 'rgba(0,0,0,0.9)'; ctx.shadowBlur = 40; ctx.shadowOffsetY = 16;
+        ctx.drawImage(img, x, y, size, size);
+        ctx.restore(); resolve();
+      };
+      img.onerror = () => resolve();
+      img.src = charDataUrl;
+    });
+  }
+
+  // キャラエリア下フェード
+  const fade = ctx.createLinearGradient(0, charH - 120, 0, charH);
+  fade.addColorStop(0, 'transparent'); fade.addColorStop(1, '#0d0b08');
+  ctx.fillStyle = fade; ctx.fillRect(0, charH - 120, W, 120);
+
+  // ヘッダーラベル
+  ctx.font = `600 22px ${JP_FONT}`; ctx.fillStyle = 'rgba(180,150,80,0.65)';
+  ctx.fillText('性癖16タイプ分析', 28, 44);
+
+  // タイプキーバッジ
+  const letters = typeKey.toUpperCase().split('');
+  let bx = W - 24;
+  for (let i = letters.length - 1; i >= 0; i--) {
+    const bw = 42; bx -= bw + 6;
+    ctx.fillStyle = quizType.color + '30'; ctx.strokeStyle = quizType.color + '66'; ctx.lineWidth = 1.5;
+    roundRect(ctx, bx, 20, bw, 28, 14); ctx.fill(); ctx.stroke();
+    ctx.font = `900 15px ${JP_FONT}`; ctx.fillStyle = quizType.color;
+    ctx.textAlign = 'center'; ctx.fillText(letters[i], bx + bw / 2, 39);
+  }
+  ctx.textAlign = 'left';
+
+  // QRコード + ドメイン（QR左横に並べる）
+  if (qrDataUrl) {
+    await new Promise<void>((resolve) => {
+      const qr = new window.Image();
+      qr.onload = () => {
+        ctx.fillStyle = 'white';
+        roundRect(ctx, W - 92, charH - 92, 72, 72, 8); ctx.fill();
+        ctx.drawImage(qr, W - 88, charH - 88, 64, 64); resolve();
+      };
+      qr.onerror = () => resolve(); qr.src = qrDataUrl;
+    });
+  }
+
+  // ── テキストエリア（下詰め）──
+  let ty = charH + 32;
+
+  ctx.font = `900 52px ${JP_FONT}`; ctx.fillStyle = '#f0e6d3';
+  ctx.fillText(quizType.name, tx, ty + 52); ty += 58 + 8;
+
+  ctx.font = `700 17px ${JP_FONT}`; ctx.fillStyle = quizType.color;
+  ctx.fillText(quizType.tagline, tx, ty + 17); ty += 22 + 16;
+
+  ctx.font = `400 15px ${JP_FONT}`; ctx.fillStyle = 'rgba(200,180,140,0.65)';
+  ty = wrapText(ctx, quizType.description, tx, ty, W - tx * 2, 22) + 24;
+
+  // 区切り線
+  ctx.strokeStyle = 'rgba(180,150,80,0.2)'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(tx, ty); ctx.lineTo(W - tx, ty); ctx.stroke();
+  ty += 20;
+
+  // 軸バー
+  for (const { axis, pct } of axes) {
+    const meta = AXIS_META[axis];
+    const isHigh = pct >= 50;
+    const color = isHigh ? meta.colorHigh : meta.colorLow;
+    let degreeLabel: string;
+    if (pct >= 80)      degreeLabel = meta.degreesHigh[0];
+    else if (pct >= 60) degreeLabel = meta.degreesHigh[1];
+    else if (pct >= 40) degreeLabel = 'ニュートラル';
+    else if (pct >= 20) degreeLabel = meta.degreesLow[1];
+    else                degreeLabel = meta.degreesLow[0];
+
+    // 左: labelHigh  中: バー  右: labelLow  度合いバッジ
+    const axisLabelW = 52, degreeW = 88;
+    const barX = tx + axisLabelW + 8, barW = W - tx * 2 - axisLabelW * 2 - degreeW - 24;
+
+    ctx.font = `700 14px ${JP_FONT}`;
+    ctx.textAlign = 'right';
+    ctx.fillStyle = isHigh ? color : 'rgba(200,180,140,0.35)';
+    ctx.fillText(meta.labelHigh, tx + axisLabelW, ty + 9);
+
+    ctx.textAlign = 'left';
+    ctx.fillStyle = !isHigh ? color : 'rgba(200,180,140,0.35)';
+    ctx.fillText(meta.labelLow, barX + barW + 8, ty + 9);
+
+    ctx.fillStyle = 'rgba(180,150,80,0.1)';
+    roundRect(ctx, barX, ty, barW, 10, 5); ctx.fill();
+    ctx.fillStyle = 'rgba(180,150,80,0.3)'; ctx.fillRect(barX + barW / 2, ty, 1.5, 10);
+
+    const fillW = Math.abs(pct - 50) / 50 * (barW / 2);
+    ctx.fillStyle = color;
+    roundRect(ctx, isHigh ? barX + barW / 2 - fillW : barX + barW / 2, ty, fillW, 10, 5); ctx.fill();
+
+    // 度合いバッジ（右端）
+    const badgeX = tx + axisLabelW + 8 + barW + axisLabelW + 16;
+    const badgeH = 20, badgeY = ty - 5;
+    ctx.font = `700 12px ${JP_FONT}`;
+    ctx.fillStyle = color + '28';
+    roundRect(ctx, badgeX, badgeY, degreeW, badgeH, 10); ctx.fill();
+    ctx.strokeStyle = color + '66'; ctx.lineWidth = 1;
+    roundRect(ctx, badgeX, badgeY, degreeW, badgeH, 10); ctx.stroke();
+    ctx.fillStyle = color;
+    ctx.textAlign = 'center'; ctx.fillText(degreeLabel, badgeX + degreeW / 2, badgeY + 13);
+
+    ctx.textAlign = 'left'; ty += 36;
+  }
+
+  // フッター
+  ctx.font = `600 15px ${JP_FONT}`; ctx.fillStyle = 'rgba(180,150,80,0.3)';
+  ctx.textAlign = 'right'; ctx.fillText('✦ 性癖16タイプ分析 ✦', W - tx, ty + 16);
+  ctx.textAlign = 'left';
+
+  return canvas.toDataURL('image/png');
+}
+
+function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.arcTo(x + w, y, x + w, y + r, r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
+  ctx.lineTo(x + r, y + h);
+  ctx.arcTo(x, y + h, x, y + h - r, r);
+  ctx.lineTo(x, y + r);
+  ctx.arcTo(x, y, x + r, y, r);
+  ctx.closePath();
+}
+
+function wrapText(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, maxW: number, lineH: number): number {
+  let line = '';
+  let cy = y;
+  for (const ch of text.split('')) {
+    const test = line + ch;
+    if (ctx.measureText(test).width > maxW && line) {
+      ctx.fillText(line, x, cy);
+      line = ch;
+      cy += lineH;
+    } else {
+      line = test;
+    }
+  }
+  if (line) ctx.fillText(line, x, cy);
+  return cy;
 }
 
 // ─── 「画像で保存/シェア」ボタン ────────────────────────────────────────────
 function SaveImageButton({
-  cardRef,
   typeKey,
   quizType,
+  axes,
   charDataUrl,
+  qrDataUrl,
   onCharDataUrlReady,
 }: {
-  cardRef: React.RefObject<HTMLDivElement | null>;
   typeKey: QuizTypeKey;
   quizType: QuizType;
+  axes: { axis: Axis; pct: number }[];
   charDataUrl: string;
+  qrDataUrl: string;
   onCharDataUrlReady: (url: string) => void;
 }) {
   const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
 
   const handleSave = async () => {
-    if (!cardRef.current || loading) return;
+    if (loading) return;
     setLoading(true);
+    setErrorMsg('');
     trackEvent('quiz_save_image', { type: typeKey });
     try {
-      // charDataUrlがまだ未取得なら押下時にインラインfetchして待つ
-      if (!charDataUrl) {
-        const url = await fetch(`/quiz/${typeKey}.png`)
+      // データURLを確保（未取得なら今すぐfetch）
+      let resolvedCharDataUrl = charDataUrl;
+      if (!resolvedCharDataUrl) {
+        resolvedCharDataUrl = await fetch(`/quiz/${typeKey}.png`)
           .then((r) => r.blob())
           .then((blob) => new Promise<string>((resolve) => {
             const reader = new FileReader();
             reader.onload = () => resolve(reader.result as string);
             reader.readAsDataURL(blob);
           }));
-        onCharDataUrlReady(url);
-        // DOMへの反映を待つ
-        await new Promise((r) => setTimeout(r, 100));
+        onCharDataUrlReady(resolvedCharDataUrl);
       }
-      const dataUrl = await toPng(cardRef.current, { pixelRatio: 2, cacheBust: false });
-      const blob = await (await fetch(dataUrl)).blob();
+
+      const capturedDataUrl = await buildShareImage({ typeKey, quizType, axes, charDataUrl: resolvedCharDataUrl, qrDataUrl });
+
+      const blob = await (await fetch(capturedDataUrl)).blob();
       const file = new File([blob], `seiheki_${typeKey}.png`, { type: 'image/png' });
 
       if (navigator.share && navigator.canShare?.({ files: [file] })) {
-        await navigator.share({
-          files: [file],
-          title: `私の性癖16タイプは「${quizType.name}」でした！`,
-          text: quizType.tagline,
-        });
+        await navigator.share({ files: [file] });
         trackEvent('quiz_image_shared', { type: typeKey, method: 'webshare' });
       } else {
-        const a = document.createElement('a');
-        a.href = dataUrl;
-        a.download = `seiheki_${typeKey}.png`;
-        a.click();
+        const newTab = window.open();
+        if (newTab) {
+          newTab.document.write(`<img src="${capturedDataUrl}" style="max-width:100%;display:block;" />`);
+          newTab.document.close();
+        } else {
+          const a = document.createElement('a');
+          a.href = capturedDataUrl;
+          a.download = `seiheki_${typeKey}.png`;
+          a.click();
+        }
         trackEvent('quiz_image_shared', { type: typeKey, method: 'download' });
       }
     } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
       console.error('画像生成失敗:', e);
+      setErrorMsg(msg);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <button
-      onClick={handleSave}
-      disabled={loading}
-      className="w-full rounded-2xl py-4 font-black flex items-center justify-center gap-2 text-[15px] active:translate-y-[1px] transition-all"
-      style={
-        loading
-          ? { background: '#e0c090', color: '#c8a080', cursor: 'not-allowed' }
-          : { background: 'linear-gradient(90deg, #6c3483, #e84393)', color: '#fff', boxShadow: '0 4px 0 #4a235a' }
-      }
-    >
-      {loading ? '生成中…' : '🖼️ 画像を保存してシェア'}
-    </button>
+    <>
+      {errorMsg && (
+        <p className="text-[11px] text-red-400 mb-2 px-1 break-all">{errorMsg}</p>
+      )}
+      <button
+        onClick={handleSave}
+        disabled={loading}
+        className="w-full rounded-2xl py-4 font-black flex items-center justify-center gap-2 text-[15px] active:translate-y-[1px] transition-all"
+        style={
+          loading
+            ? { background: '#e0c090', color: '#c8a080', cursor: 'not-allowed' }
+            : { background: 'linear-gradient(90deg, #6c3483, #e84393)', color: '#fff', boxShadow: '0 4px 0 #4a235a' }
+        }
+      >
+        {loading ? '生成中…' : '🖼️ 画像を保存してシェア'}
+      </button>
+    </>
   );
 }
 
@@ -229,7 +349,6 @@ function MaleCTAModal({ typeKey, onClose }: { typeKey: QuizTypeKey; onClose: () 
 export function ResultContent({ typeKey }: { typeKey: QuizTypeKey }) {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const shareCardRef = useRef<HTMLDivElement>(null);
   const [showCTA, setShowCTA] = useState(false);
   const [qrDataUrl, setQrDataUrl] = useState('');
   const [charDataUrl, setCharDataUrl] = useState('');
@@ -310,11 +429,6 @@ export function ResultContent({ typeKey }: { typeKey: QuizTypeKey }) {
   return (
     <div className="min-h-[calc(100vh-56px)] flex flex-col items-center px-4 py-8">
       {showCTA && <MaleCTAModal typeKey={typeKey} onClose={closeCTA} />}
-
-      {/* キャプチャ用シェアカード（画面外非表示） */}
-      <div style={{ position: 'absolute', left: '-9999px', top: 0, overflow: 'hidden', pointerEvents: 'none' }}>
-        <ShareCard typeKey={typeKey} quizType={quizType} axes={axes} qrDataUrl={qrDataUrl} charDataUrl={charDataUrl} cardRef={shareCardRef} />
-      </div>
 
       <p className="text-[11px] font-black tracking-[0.3em] uppercase mb-5" style={{ color: 'rgba(180,150,80,0.5)' }}>✦ 診断結果 ✦</p>
 
@@ -464,7 +578,7 @@ export function ResultContent({ typeKey }: { typeKey: QuizTypeKey }) {
 
       {/* シェアボタン */}
       <div className="w-full max-w-sm space-y-3 mb-6">
-        <SaveImageButton cardRef={shareCardRef} typeKey={typeKey} quizType={quizType} charDataUrl={charDataUrl} onCharDataUrlReady={setCharDataUrl} />
+        <SaveImageButton typeKey={typeKey} quizType={quizType} axes={axes} charDataUrl={charDataUrl} qrDataUrl={qrDataUrl} onCharDataUrlReady={setCharDataUrl} />
         <button
           onClick={shareToX}
           className="w-full rounded-2xl py-4 font-black text-white flex items-center justify-center gap-2 text-[15px] active:translate-y-[1px] transition-transform"
