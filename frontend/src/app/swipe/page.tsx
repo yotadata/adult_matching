@@ -71,6 +71,19 @@ interface VideosFeedMetadata {
 }
 
 const ORIGINAL_GRADIENT = 'linear-gradient(135deg, #1a0d2e 0%, #160d25 33%, #2a1020 66%, #1e0d1a 100%)';
+
+const HENTAI_MILESTONES: Array<{ threshold: number; label: string }> = [
+  { threshold: 30, label: '変態入門者' },
+  { threshold: 50, label: '変態中級者' },
+  { threshold: 70, label: '変態上級者' },
+  { threshold: 85, label: '変態エキスパート' },
+  { threshold: 95, label: '変態の神' },
+];
+
+function calcHentaiScore(count: number): number {
+  if (count === 0) return 0;
+  return Math.min(Math.round((Math.log10(count) / 3) * 100), 99);
+}
 const LEFT_SWIPE_GRADIENT = ORIGINAL_GRADIENT;
 const RIGHT_SWIPE_GRADIENT = ORIGINAL_GRADIENT;
 const ONBOARDING_STORAGE_KEY = 'seihekiLab_hasSeenOnboardingSlides';
@@ -120,6 +133,8 @@ function SwipePageContent() {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showSpotlight, setShowSpotlight] = useState(false);
   const [spotlightReady, setSpotlightReady] = useState(false);
+  const [hentaiMilestone, setHentaiMilestone] = useState<{ score: number; label: string } | null>(null);
+  const prevMilestoneRef = useRef<number>(0);
   const likedListButtonRef = useRef<HTMLButtonElement | null>(null);
   const onboardingStartedRef = useRef(false);
   const spotlightStartedRef = useRef(false);
@@ -668,6 +683,21 @@ function SwipePageContent() {
     }
   }, [activeIndex, cards.length, isFetchingVideos, refetchVideos]);
 
+  // 変態度マイルストーン検知
+  useEffect(() => {
+    const score = calcHentaiScore(decisionCount);
+    const reached = HENTAI_MILESTONES.filter(
+      (m) => m.threshold <= score && m.threshold > prevMilestoneRef.current
+    );
+    if (reached.length > 0) {
+      const top = reached[reached.length - 1];
+      prevMilestoneRef.current = top.threshold;
+      setHentaiMilestone({ score, label: top.label });
+      const t = setTimeout(() => setHentaiMilestone(null), 3500);
+      return () => clearTimeout(t);
+    }
+  }, [decisionCount]);
+
   // デッキが完全に枯渇したときのフォールバック（プリフェッチが間に合わなかった場合）
   useEffect(() => {
     if (cards.length > 0 && activeIndex >= cards.length && !isFetchingVideos) {
@@ -773,6 +803,31 @@ function SwipePageContent() {
           </div>
         );
       })()}
+      {/* 変態度バッジ */}
+      {isLoggedIn && (
+        <div className="fixed top-3 left-3 z-40 flex items-center gap-1.5 rounded-full bg-black/40 border border-white/10 backdrop-blur px-2.5 py-1 select-none">
+          <span className="text-[10px] text-white/50 font-medium">変態度</span>
+          <span className="text-sm font-black text-rose-400">{calcHentaiScore(decisionCount)}</span>
+        </div>
+      )}
+
+      {/* マイルストーントースト */}
+      <AnimatePresence>
+        {hentaiMilestone && (
+          <motion.div
+            key="milestone"
+            initial={{ opacity: 0, y: 40, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.95 }}
+            transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+            className="fixed bottom-28 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center gap-1 rounded-2xl bg-gradient-to-br from-rose-500 to-fuchsia-600 px-6 py-3 shadow-2xl text-white text-center pointer-events-none"
+          >
+            <p className="text-[11px] font-bold tracking-widest uppercase opacity-80">変態度 {hentaiMilestone.score} 突破！</p>
+            <p className="text-lg font-black">🎉 {hentaiMilestone.label} に昇格</p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <main
         ref={mainRef}
         className={`flex-grow flex w-full relative ${isMobile ? 'flex-col h-full' : 'items-center justify-center pt-10'}`}
