@@ -6,7 +6,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { toPng } from 'html-to-image';
 import QRCode from 'qrcode';
-import { QUIZ_TYPES, AXIS_META, QuizTypeKey, QuizType, Axis } from '../../data';
+import { QUIZ_TYPES, AXIS_META, COMPATIBILITY, COMPATIBILITY_LABELS, QuizTypeKey, QuizType, Axis } from '../../data';
 import { trackEvent } from '@/lib/analytics';
 
 const CTA_SHOWN_KEY = 'quiz_male_cta_shown';
@@ -410,6 +410,57 @@ export function ResultContent({ typeKey }: { typeKey: QuizTypeKey }) {
         >
           🔗 リンクをコピー
         </button>
+      </div>
+
+      {/* 相性の良いタイプ */}
+      <div className="w-full max-w-sm mb-6">
+        <p className="text-[11px] font-black tracking-[0.3em] uppercase mb-4 text-center" style={{ color: 'rgba(180,150,80,0.5)' }}>✦ 相性の良いタイプ ✦</p>
+        <div className="space-y-3">
+          {COMPATIBILITY[typeKey].map((compatKey, index) => {
+            const compatType = QUIZ_TYPES[compatKey];
+            const rankLabel = COMPATIBILITY_LABELS[index];
+            const rankColors = ['#FF6B6B', '#FDCB6E', '#74B9FF'];
+            const rankColor = rankColors[index];
+            return (
+              <Link
+                key={compatKey}
+                href={`/quiz/result/${compatKey}`}
+                className="flex items-center gap-4 rounded-2xl p-4 active:scale-[0.98] transition-transform"
+                style={{
+                  background: 'rgba(28,24,18,0.9)',
+                  border: `1px solid ${compatType.color}40`,
+                  boxShadow: '0 2px 12px rgba(0,0,0,0.3)',
+                }}
+              >
+                <Image
+                  src={`/quiz/${compatKey}.png`}
+                  alt={compatType.name}
+                  width={56}
+                  height={56}
+                  className="rounded-xl object-contain flex-shrink-0"
+                  style={{ background: `${compatType.color}22` }}
+                />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <span
+                      className="text-[9px] font-black px-2 py-0.5 rounded-full flex-shrink-0"
+                      style={{ background: `${rankColor}22`, color: rankColor, border: `1px solid ${rankColor}55` }}
+                    >
+                      {rankLabel}
+                    </span>
+                    <span className="text-[10px] font-black tracking-widest" style={{ color: 'rgba(180,150,80,0.4)' }}>
+                      {compatKey.toUpperCase()}
+                    </span>
+                  </div>
+                  <p className="text-[15px] font-black leading-tight truncate" style={{ color: '#f0e6d3' }}>
+                    {compatType.emoji} {compatType.name}
+                  </p>
+                  <p className="text-[11px] mt-0.5 truncate" style={{ color: compatType.color }}>{compatType.tagline}</p>
+                </div>
+              </Link>
+            );
+          })}
+        </div>
       </div>
 
       {/* 男性向けCTA（インライン） */}

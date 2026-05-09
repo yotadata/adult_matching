@@ -138,6 +138,29 @@ export function calcResult(answers: Record<number, number>): QuizResult {
   return { typeKey, scores };
 }
 
+// 相性の良いタイプ: ds軸が逆（S↔M）で他の軸が近いほど相性◎
+// [最高相性, 高相性, 良相性] の順
+export const COMPATIBILITY: Record<QuizTypeKey, [QuizTypeKey, QuizTypeKey, QuizTypeKey]> = {
+  spnc: ['mpnc', 'mpnw', 'menc'],
+  spnw: ['mpnw', 'mpnc', 'menw'],
+  senc: ['menc', 'menw', 'mpnc'],
+  senw: ['menw', 'menc', 'mpnw'],
+  spxc: ['mpxc', 'mpxw', 'mexc'],
+  spxw: ['mpxw', 'mpxc', 'mexw'],
+  sexc: ['mexc', 'mexw', 'mpxc'],
+  sexw: ['mexw', 'mexc', 'mpxw'],
+  mpnc: ['spnc', 'spnw', 'senc'],
+  mpnw: ['spnw', 'spnc', 'senw'],
+  menc: ['senc', 'senw', 'spnc'],
+  menw: ['senw', 'senc', 'spnw'],
+  mpxc: ['spxc', 'spxw', 'sexc'],
+  mpxw: ['spxw', 'spxc', 'sexw'],
+  mexc: ['sexc', 'sexw', 'spxc'],
+  mexw: ['sexw', 'sexc', 'spxw'],
+};
+
+export const COMPATIBILITY_LABELS: [string, string, string] = ['最高相性', '高相性', '良相性'];
+
 export const QUIZ_TYPES: Record<QuizTypeKey, QuizType> = {
   spnc: {
     key: 'spnc', name: 'グルメな狩人', emoji: '🔥',
