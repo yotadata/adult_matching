@@ -260,14 +260,15 @@ export default function QuizPage() {
             </p>
 
             {/* A / B の選択肢（表示のみ） */}
-            <div className="flex gap-3">
+            <div className="flex" style={{ gap: 0 }}>
               {[
                 { option: currentQ.optionA, label: 'A', color: '#FF6B6B', isSelected: selected !== null && selected <= 2 },
                 { option: currentQ.optionB, label: 'B', color: '#55EFC4', isSelected: selected !== null && selected >= 4 },
-              ].map(({ option, label, color, isSelected }) => (
+              ].map(({ option, label, color, isSelected }, i) => (
                 <div
                   key={label}
-                  className="flex-1 p-4 text-center transition-all duration-200"
+                  className="flex-1 px-5 py-3 text-center transition-all duration-200"
+                  style={i === 0 ? { borderRight: '1px solid rgba(180,150,80,0.2)' } : {}}
                 >
                   <p className="text-[11px] font-black tracking-[0.2em] mb-2" style={{ color: isSelected ? color : `${color}55` }}>{label}</p>
                   <p className="text-[14px] font-bold leading-snug" style={{ color: isSelected ? '#ffffff' : 'rgba(240,230,211,0.5)' }}>{option}</p>
