@@ -134,33 +134,38 @@ function SaveImageButton({
     setLoading(true);
     trackEvent('quiz_save_image', { type: typeKey });
     try {
-      // charDataUrlがまだ未取得なら押下時にインラインfetchして待つ
-      if (!charDataUrl) {
-        const url = await fetch(`/quiz/${typeKey}.png`)
+      // キャラ画像のデータURLを確保（未取得なら今すぐfetch）
+      let resolvedCharDataUrl = charDataUrl;
+      if (!resolvedCharDataUrl) {
+        resolvedCharDataUrl = await fetch(`/quiz/${typeKey}.png`)
           .then((r) => r.blob())
           .then((blob) => new Promise<string>((resolve) => {
             const reader = new FileReader();
             reader.onload = () => resolve(reader.result as string);
             reader.readAsDataURL(blob);
           }));
-        onCharDataUrlReady(url);
-        // DOMへの反映を待つ
-        await new Promise((r) => setTimeout(r, 100));
+        onCharDataUrlReady(resolvedCharDataUrl);
       }
-      const dataUrl = await toPng(cardRef.current, { pixelRatio: 2, cacheBust: false });
-      const blob = await (await fetch(dataUrl)).blob();
+
+      // oncloneでクローン後のimg要素にデータURLを直接差し込む
+      const capturedDataUrl = await toPng(cardRef.current, {
+        pixelRatio: 2,
+        cacheBust: false,
+        onclone: (_doc, el) => {
+          const img = el.querySelector('img') as HTMLImageElement | null;
+          if (img) img.src = resolvedCharDataUrl;
+        },
+      });
+
+      const blob = await (await fetch(capturedDataUrl)).blob();
       const file = new File([blob], `seiheki_${typeKey}.png`, { type: 'image/png' });
 
       if (navigator.share && navigator.canShare?.({ files: [file] })) {
-        await navigator.share({
-          files: [file],
-          title: `私の性癖16タイプは「${quizType.name}」でした！`,
-          text: quizType.tagline,
-        });
+        await navigator.share({ files: [file] });
         trackEvent('quiz_image_shared', { type: typeKey, method: 'webshare' });
       } else {
         const a = document.createElement('a');
-        a.href = dataUrl;
+        a.href = capturedDataUrl;
         a.download = `seiheki_${typeKey}.png`;
         a.click();
         trackEvent('quiz_image_shared', { type: typeKey, method: 'download' });
