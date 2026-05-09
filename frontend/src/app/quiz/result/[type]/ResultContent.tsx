@@ -114,9 +114,6 @@ async function buildShareImage(params: {
       };
       qr.onerror = () => resolve(); qr.src = qrDataUrl;
     });
-    ctx.font = `400 15px ${JP_FONT}`; ctx.fillStyle = 'rgba(180,150,80,0.5)';
-    ctx.textAlign = 'right'; ctx.fillText('seihekilab.com', W - 100, charH - 46);
-    ctx.textAlign = 'left';
   }
 
   // ── テキストエリア（下詰め）──
@@ -148,14 +145,18 @@ async function buildShareImage(params: {
     else if (pct >= 20) degreeLabel = meta.degreesLow[1];
     else                degreeLabel = meta.degreesLow[0];
 
-    // 左: 軸ラベル(高側)  中: バー  右: 度合いバッジ
-    const axisLabelW = 52, degreeW = 110;
-    const barX = tx + axisLabelW + 8, barW = W - tx * 2 - axisLabelW - degreeW - 16;
+    // 左: labelHigh  中: バー  右: labelLow  度合いバッジ
+    const axisLabelW = 52, degreeW = 88;
+    const barX = tx + axisLabelW + 8, barW = W - tx * 2 - axisLabelW * 2 - degreeW - 24;
 
     ctx.font = `700 14px ${JP_FONT}`;
     ctx.textAlign = 'right';
-    ctx.fillStyle = 'rgba(200,180,140,0.4)';
+    ctx.fillStyle = isHigh ? color : 'rgba(200,180,140,0.35)';
     ctx.fillText(meta.labelHigh, tx + axisLabelW, ty + 9);
+
+    ctx.textAlign = 'left';
+    ctx.fillStyle = !isHigh ? color : 'rgba(200,180,140,0.35)';
+    ctx.fillText(meta.labelLow, barX + barW + 8, ty + 9);
 
     ctx.fillStyle = 'rgba(180,150,80,0.1)';
     roundRect(ctx, barX, ty, barW, 10, 5); ctx.fill();
@@ -165,16 +166,16 @@ async function buildShareImage(params: {
     ctx.fillStyle = color;
     roundRect(ctx, isHigh ? barX + barW / 2 - fillW : barX + barW / 2, ty, fillW, 10, 5); ctx.fill();
 
-    // 度合いバッジ（バー右）
-    const badgeX = barX + barW + 8;
+    // 度合いバッジ（右端）
+    const badgeX = tx + axisLabelW + 8 + barW + axisLabelW + 16;
     const badgeH = 20, badgeY = ty - 5;
     ctx.font = `700 12px ${JP_FONT}`;
     ctx.fillStyle = color + '28';
-    roundRect(ctx, badgeX, badgeY, degreeW - 8, badgeH, 10); ctx.fill();
+    roundRect(ctx, badgeX, badgeY, degreeW, badgeH, 10); ctx.fill();
     ctx.strokeStyle = color + '66'; ctx.lineWidth = 1;
-    roundRect(ctx, badgeX, badgeY, degreeW - 8, badgeH, 10); ctx.stroke();
+    roundRect(ctx, badgeX, badgeY, degreeW, badgeH, 10); ctx.stroke();
     ctx.fillStyle = color;
-    ctx.textAlign = 'center'; ctx.fillText(degreeLabel, badgeX + (degreeW - 8) / 2, badgeY + 13);
+    ctx.textAlign = 'center'; ctx.fillText(degreeLabel, badgeX + degreeW / 2, badgeY + 13);
 
     ctx.textAlign = 'left'; ty += 36;
   }
