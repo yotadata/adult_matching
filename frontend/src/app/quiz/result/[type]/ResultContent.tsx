@@ -44,7 +44,7 @@ async function buildShareImage(params: {
   textH += descLines * 22; // 説明文 (15px × 22lineH)
   textH += 24;  // gap + 区切り線
   textH += 20;  // 区切り線後gap
-  textH += axes.length * 32; // 軸バー
+  textH += axes.length * 36; // 軸バー
   textH += 36;  // フッター + 下パディング
   const H = textH + 600; // 残り全部がキャラエリア（最低600px）
   const charH = H - textH;
@@ -141,16 +141,21 @@ async function buildShareImage(params: {
     const meta = AXIS_META[axis];
     const isHigh = pct >= 50;
     const color = isHigh ? meta.colorHigh : meta.colorLow;
-    const labelW = 60, barX = tx + labelW + 8, barW = W - tx * 2 - labelW * 2 - 16;
+    let degreeLabel: string;
+    if (pct >= 80)      degreeLabel = meta.degreesHigh[0];
+    else if (pct >= 60) degreeLabel = meta.degreesHigh[1];
+    else if (pct >= 40) degreeLabel = 'ニュートラル';
+    else if (pct >= 20) degreeLabel = meta.degreesLow[1];
+    else                degreeLabel = meta.degreesLow[0];
 
-    ctx.font = `700 15px ${JP_FONT}`;
+    // 左: 軸ラベル(高側)  中: バー  右: 度合いバッジ
+    const axisLabelW = 52, degreeW = 110;
+    const barX = tx + axisLabelW + 8, barW = W - tx * 2 - axisLabelW - degreeW - 16;
+
+    ctx.font = `700 14px ${JP_FONT}`;
     ctx.textAlign = 'right';
-    ctx.fillStyle = isHigh ? color : 'rgba(200,180,140,0.35)';
-    ctx.fillText(meta.labelHigh, tx + labelW, ty + 9);
-
-    ctx.textAlign = 'left';
-    ctx.fillStyle = !isHigh ? color : 'rgba(200,180,140,0.35)';
-    ctx.fillText(meta.labelLow, barX + barW + 8, ty + 9);
+    ctx.fillStyle = 'rgba(200,180,140,0.4)';
+    ctx.fillText(meta.labelHigh, tx + axisLabelW, ty + 9);
 
     ctx.fillStyle = 'rgba(180,150,80,0.1)';
     roundRect(ctx, barX, ty, barW, 10, 5); ctx.fill();
@@ -160,7 +165,18 @@ async function buildShareImage(params: {
     ctx.fillStyle = color;
     roundRect(ctx, isHigh ? barX + barW / 2 - fillW : barX + barW / 2, ty, fillW, 10, 5); ctx.fill();
 
-    ctx.textAlign = 'left'; ty += 32;
+    // 度合いバッジ（バー右）
+    const badgeX = barX + barW + 8;
+    const badgeH = 20, badgeY = ty - 5;
+    ctx.font = `700 12px ${JP_FONT}`;
+    ctx.fillStyle = color + '28';
+    roundRect(ctx, badgeX, badgeY, degreeW - 8, badgeH, 10); ctx.fill();
+    ctx.strokeStyle = color + '66'; ctx.lineWidth = 1;
+    roundRect(ctx, badgeX, badgeY, degreeW - 8, badgeH, 10); ctx.stroke();
+    ctx.fillStyle = color;
+    ctx.textAlign = 'center'; ctx.fillText(degreeLabel, badgeX + (degreeW - 8) / 2, badgeY + 13);
+
+    ctx.textAlign = 'left'; ty += 36;
   }
 
   // フッター
