@@ -13,7 +13,7 @@ const AXES: Axis[] = ['ds', 'pe', 'nx', 'cw'];
 
 const JP_FONT = '"Hiragino Kaku Gothic ProN","Hiragino Sans","Yu Gothic","Noto Sans JP",sans-serif';
 
-// ─── Canvas で直接シェア画像を生成（3:4） ─────────────────────────────────────
+// ─── Canvas で直接シェア画像を生成（縦長・下詰め） ───────────────────────────
 async function buildShareImage(params: {
   typeKey: QuizTypeKey;
   quizType: QuizType;
@@ -22,45 +22,60 @@ async function buildShareImage(params: {
   qrDataUrl: string;
 }): Promise<string> {
   const { typeKey, quizType, axes, charDataUrl, qrDataUrl } = params;
-  const W = 750, H = 1000;
+  const W = 750;
+  const tx = 36; // 横余白
+
+  // ── テキストエリアの高さを先に計算 ──
+  const offCtx = document.createElement('canvas').getContext('2d')!;
+  offCtx.font = `400 18px ${JP_FONT}`;
+  let textH = 32; // 上パディング
+  textH += 58;    // タイトル (52px)
+  textH += 8;     // gap
+  textH += 28;    // タグライン
+  textH += 20;    // gap
+  // 説明文の行数を計算
+  let line = '';
+  let descLines = 1;
+  for (const ch of quizType.description.split('')) {
+    const test = line + ch;
+    if (offCtx.measureText(test).width > W - tx * 2 && line) { line = ch; descLines++; }
+    else line = test;
+  }
+  textH += descLines * 28; // 説明文
+  textH += 24;  // gap + 区切り線
+  textH += 20;  // 区切り線後gap
+  textH += axes.length * 32; // 軸バー
+  textH += 36;  // フッター + 下パディング
+  const H = textH + 600; // 残り全部がキャラエリア（最低600px）
+  const charH = H - textH;
+
   const canvas = document.createElement('canvas');
   canvas.width = W; canvas.height = H;
   const ctx = canvas.getContext('2d')!;
-
-  // フォントロード待ち
   await document.fonts.ready;
 
   // 背景
   const bg = ctx.createLinearGradient(0, 0, 0, H);
-  bg.addColorStop(0, '#0d0b08');
-  bg.addColorStop(1, '#1a1510');
-  ctx.fillStyle = bg;
-  ctx.fillRect(0, 0, W, H);
+  bg.addColorStop(0, '#0d0b08'); bg.addColorStop(1, '#1a1510');
+  ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
 
   // キャラエリア背景
-  const charH = 480;
-  ctx.fillStyle = quizType.color + '38';
-  ctx.fillRect(0, 0, W, charH);
+  ctx.fillStyle = quizType.color + '38'; ctx.fillRect(0, 0, W, charH);
   const rg = ctx.createRadialGradient(W / 2, charH / 2, 0, W / 2, charH / 2, W * 0.6);
-  rg.addColorStop(0, quizType.color + '30');
-  rg.addColorStop(1, 'transparent');
-  ctx.fillStyle = rg;
-  ctx.fillRect(0, 0, W, charH);
+  rg.addColorStop(0, quizType.color + '30'); rg.addColorStop(1, 'transparent');
+  ctx.fillStyle = rg; ctx.fillRect(0, 0, W, charH);
 
   // キャラ画像
   if (charDataUrl) {
     await new Promise<void>((resolve) => {
       const img = new window.Image();
       img.onload = () => {
-        const size = 400;
+        const size = Math.min(charH - 60, 480);
         const x = (W - size) / 2, y = (charH - size) / 2 + 10;
         ctx.save();
-        ctx.shadowColor = 'rgba(0,0,0,0.9)';
-        ctx.shadowBlur = 40;
-        ctx.shadowOffsetY = 16;
+        ctx.shadowColor = 'rgba(0,0,0,0.9)'; ctx.shadowBlur = 40; ctx.shadowOffsetY = 16;
         ctx.drawImage(img, x, y, size, size);
-        ctx.restore();
-        resolve();
+        ctx.restore(); resolve();
       };
       img.onerror = () => resolve();
       img.src = charDataUrl;
@@ -68,32 +83,23 @@ async function buildShareImage(params: {
   }
 
   // キャラエリア下フェード
-  const fade = ctx.createLinearGradient(0, charH - 100, 0, charH);
-  fade.addColorStop(0, 'transparent');
-  fade.addColorStop(1, '#0d0b08');
-  ctx.fillStyle = fade;
-  ctx.fillRect(0, charH - 100, W, 100);
+  const fade = ctx.createLinearGradient(0, charH - 120, 0, charH);
+  fade.addColorStop(0, 'transparent'); fade.addColorStop(1, '#0d0b08');
+  ctx.fillStyle = fade; ctx.fillRect(0, charH - 120, W, 120);
 
-  // ヘッダー: ラベル
-  ctx.font = `600 22px ${JP_FONT}`;
-  ctx.fillStyle = 'rgba(180,150,80,0.65)';
+  // ヘッダーラベル
+  ctx.font = `600 22px ${JP_FONT}`; ctx.fillStyle = 'rgba(180,150,80,0.65)';
   ctx.fillText('性癖16タイプ分析', 28, 44);
 
-  // ヘッダー: タイプキーバッジ
+  // タイプキーバッジ
   const letters = typeKey.toUpperCase().split('');
   let bx = W - 24;
   for (let i = letters.length - 1; i >= 0; i--) {
-    const bw = 42;
-    bx -= bw + 6;
-    ctx.fillStyle = quizType.color + '30';
-    ctx.strokeStyle = quizType.color + '66';
-    ctx.lineWidth = 1.5;
-    roundRect(ctx, bx, 20, bw, 28, 14);
-    ctx.fill(); ctx.stroke();
-    ctx.font = `900 15px ${JP_FONT}`;
-    ctx.fillStyle = quizType.color;
-    ctx.textAlign = 'center';
-    ctx.fillText(letters[i], bx + bw / 2, 39);
+    const bw = 42; bx -= bw + 6;
+    ctx.fillStyle = quizType.color + '30'; ctx.strokeStyle = quizType.color + '66'; ctx.lineWidth = 1.5;
+    roundRect(ctx, bx, 20, bw, 28, 14); ctx.fill(); ctx.stroke();
+    ctx.font = `900 15px ${JP_FONT}`; ctx.fillStyle = quizType.color;
+    ctx.textAlign = 'center'; ctx.fillText(letters[i], bx + bw / 2, 39);
   }
   ctx.textAlign = 'left';
 
@@ -103,48 +109,32 @@ async function buildShareImage(params: {
       const qr = new window.Image();
       qr.onload = () => {
         ctx.fillStyle = 'white';
-        roundRect(ctx, W - 100, charH - 96, 76, 76, 8);
-        ctx.fill();
-        ctx.drawImage(qr, W - 96, charH - 92, 68, 68);
-        resolve();
+        roundRect(ctx, W - 100, charH - 96, 76, 76, 8); ctx.fill();
+        ctx.drawImage(qr, W - 96, charH - 92, 68, 68); resolve();
       };
-      qr.onerror = () => resolve();
-      qr.src = qrDataUrl;
+      qr.onerror = () => resolve(); qr.src = qrDataUrl;
     });
-    ctx.font = `400 18px ${JP_FONT}`;
-    ctx.fillStyle = 'rgba(180,150,80,0.5)';
-    ctx.textAlign = 'right';
-    ctx.fillText('seihekilab.com', W - 20, charH - 8);
+    ctx.font = `400 16px ${JP_FONT}`; ctx.fillStyle = 'rgba(180,150,80,0.5)';
+    ctx.textAlign = 'right'; ctx.fillText('seihekilab.com', W - 20, charH - 8);
     ctx.textAlign = 'left';
   }
 
-  // テキストエリア
-  const tx = 36;
+  // ── テキストエリア（下詰め）──
   let ty = charH + 32;
 
-  ctx.font = `900 52px ${JP_FONT}`;
-  ctx.fillStyle = '#f0e6d3';
-  ctx.fillText(quizType.name, tx, ty);
-  ty += 16;
+  ctx.font = `900 52px ${JP_FONT}`; ctx.fillStyle = '#f0e6d3';
+  ctx.fillText(quizType.name, tx, ty + 52); ty += 58 + 8;
 
-  ctx.font = `700 22px ${JP_FONT}`;
-  ctx.fillStyle = quizType.color;
-  ctx.fillText(quizType.tagline, tx, ty + 22);
-  ty += 52;
+  ctx.font = `700 22px ${JP_FONT}`; ctx.fillStyle = quizType.color;
+  ctx.fillText(quizType.tagline, tx, ty + 22); ty += 28 + 20;
 
-  // 説明文
-  ctx.font = `400 18px ${JP_FONT}`;
-  ctx.fillStyle = 'rgba(200,180,140,0.65)';
-  ty = wrapText(ctx, quizType.description, tx, ty, W - tx * 2, 28) + 28;
+  ctx.font = `400 18px ${JP_FONT}`; ctx.fillStyle = 'rgba(200,180,140,0.65)';
+  ty = wrapText(ctx, quizType.description, tx, ty, W - tx * 2, 28) + 24;
 
   // 区切り線
-  ctx.strokeStyle = 'rgba(180,150,80,0.2)';
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.moveTo(tx, ty);
-  ctx.lineTo(W - tx, ty);
-  ctx.stroke();
-  ty += 24;
+  ctx.strokeStyle = 'rgba(180,150,80,0.2)'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(tx, ty); ctx.lineTo(W - tx, ty); ctx.stroke();
+  ty += 20;
 
   // 軸バー
   for (const { axis, pct } of axes) {
@@ -152,51 +142,28 @@ async function buildShareImage(params: {
     const isHigh = pct >= 50;
     const color = isHigh ? meta.colorHigh : meta.colorLow;
     const label = isHigh ? meta.labelHigh : meta.labelLow;
-    const labelW = 60;
-    const barX = tx + labelW + 8;
-    const barW = W - tx * 2 - labelW * 2 - 16;
+    const labelW = 56, barX = tx + labelW + 8, barW = W - tx * 2 - labelW * 2 - 16;
 
-    ctx.font = `700 17px ${JP_FONT}`;
-    ctx.fillStyle = 'rgba(200,180,140,0.5)';
-    ctx.textAlign = 'right';
-    ctx.fillText(meta.labelHigh, tx + labelW, ty + 8);
-    ctx.textAlign = 'left';
-    ctx.fillText(meta.labelLow, barX + barW + 8, ty + 8);
+    ctx.font = `700 17px ${JP_FONT}`; ctx.fillStyle = 'rgba(200,180,140,0.5)';
+    ctx.textAlign = 'right'; ctx.fillText(meta.labelHigh, tx + labelW, ty + 9);
+    ctx.textAlign = 'left'; ctx.fillText(meta.labelLow, barX + barW + 8, ty + 9);
 
-    // バー背景
     ctx.fillStyle = 'rgba(180,150,80,0.1)';
-    roundRect(ctx, barX, ty - 1, barW, 10, 5);
-    ctx.fill();
+    roundRect(ctx, barX, ty, barW, 10, 5); ctx.fill();
+    ctx.fillStyle = 'rgba(180,150,80,0.3)'; ctx.fillRect(barX + barW / 2, ty, 1.5, 10);
 
-    // 中央線
-    ctx.fillStyle = 'rgba(180,150,80,0.3)';
-    ctx.fillRect(barX + barW / 2, ty - 1, 1.5, 10);
-
-    // バー本体
     const fillW = Math.abs(pct - 50) / 50 * (barW / 2);
     ctx.fillStyle = color;
-    if (isHigh) {
-      roundRect(ctx, barX + barW / 2 - fillW, ty - 1, fillW, 10, 5);
-    } else {
-      roundRect(ctx, barX + barW / 2, ty - 1, fillW, 10, 5);
-    }
-    ctx.fill();
+    roundRect(ctx, isHigh ? barX + barW / 2 - fillW : barX + barW / 2, ty, fillW, 10, 5); ctx.fill();
 
-    // ラベル
-    ctx.font = `900 17px ${JP_FONT}`;
-    ctx.fillStyle = color;
-    ctx.textAlign = 'right';
-    ctx.fillText(label, W - tx, ty + 8);
-    ctx.textAlign = 'left';
-
-    ty += 32;
+    ctx.font = `900 17px ${JP_FONT}`; ctx.fillStyle = color;
+    ctx.textAlign = 'right'; ctx.fillText(label, W - tx, ty + 9);
+    ctx.textAlign = 'left'; ty += 32;
   }
 
   // フッター
-  ctx.font = `700 16px ${JP_FONT}`;
-  ctx.fillStyle = 'rgba(180,150,80,0.3)';
-  ctx.textAlign = 'right';
-  ctx.fillText('✦ 性癖16タイプ分析 ✦', W - tx, H - 24);
+  ctx.font = `600 15px ${JP_FONT}`; ctx.fillStyle = 'rgba(180,150,80,0.3)';
+  ctx.textAlign = 'right'; ctx.fillText('✦ 性癖16タイプ分析 ✦', W - tx, ty + 16);
   ctx.textAlign = 'left';
 
   return canvas.toDataURL('image/png');
