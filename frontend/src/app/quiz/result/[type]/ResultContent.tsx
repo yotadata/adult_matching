@@ -118,10 +118,14 @@ function SaveImageButton({
   cardRef,
   typeKey,
   quizType,
+  charDataUrl,
+  onCharDataUrlReady,
 }: {
   cardRef: React.RefObject<HTMLDivElement | null>;
   typeKey: QuizTypeKey;
   quizType: QuizType;
+  charDataUrl: string;
+  onCharDataUrlReady: (url: string) => void;
 }) {
   const [loading, setLoading] = useState(false);
 
@@ -130,6 +134,19 @@ function SaveImageButton({
     setLoading(true);
     trackEvent('quiz_save_image', { type: typeKey });
     try {
+      // charDataUrlがまだ未取得なら押下時にインラインfetchして待つ
+      if (!charDataUrl) {
+        const url = await fetch(`/quiz/${typeKey}.png`)
+          .then((r) => r.blob())
+          .then((blob) => new Promise<string>((resolve) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result as string);
+            reader.readAsDataURL(blob);
+          }));
+        onCharDataUrlReady(url);
+        // DOMへの反映を待つ
+        await new Promise((r) => setTimeout(r, 100));
+      }
       const dataUrl = await toPng(cardRef.current, { pixelRatio: 2, cacheBust: false });
       const blob = await (await fetch(dataUrl)).blob();
       const file = new File([blob], `seiheki_${typeKey}.png`, { type: 'image/png' });
@@ -447,7 +464,7 @@ export function ResultContent({ typeKey }: { typeKey: QuizTypeKey }) {
 
       {/* シェアボタン */}
       <div className="w-full max-w-sm space-y-3 mb-6">
-        <SaveImageButton cardRef={shareCardRef} typeKey={typeKey} quizType={quizType} />
+        <SaveImageButton cardRef={shareCardRef} typeKey={typeKey} quizType={quizType} charDataUrl={charDataUrl} onCharDataUrlReady={setCharDataUrl} />
         <button
           onClick={shareToX}
           className="w-full rounded-2xl py-4 font-black text-white flex items-center justify-center gap-2 text-[15px] active:translate-y-[1px] transition-transform"
