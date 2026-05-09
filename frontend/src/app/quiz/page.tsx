@@ -267,14 +267,10 @@ export default function QuizPage() {
               ].map(({ option, label, color, isSelected }) => (
                 <div
                   key={label}
-                  className="flex-1 rounded-2xl p-4 text-center transition-all duration-200"
-                  style={{
-                    background: isSelected ? `${color}18` : 'rgba(255,255,255,0.03)',
-                    border: `1px solid ${isSelected ? color + '55' : 'rgba(255,255,255,0.07)'}`,
-                  }}
+                  className="flex-1 p-4 text-center transition-all duration-200"
                 >
-                  <p className="text-[11px] font-black tracking-[0.2em] mb-2" style={{ color }}>{label}</p>
-                  <p className="text-[14px] font-bold leading-snug" style={{ color: isSelected ? '#ffffff' : 'rgba(240,230,211,0.7)' }}>{option}</p>
+                  <p className="text-[11px] font-black tracking-[0.2em] mb-2" style={{ color: isSelected ? color : `${color}55` }}>{label}</p>
+                  <p className="text-[14px] font-bold leading-snug" style={{ color: isSelected ? '#ffffff' : 'rgba(240,230,211,0.5)' }}>{option}</p>
                 </div>
               ))}
             </div>
