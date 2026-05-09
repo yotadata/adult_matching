@@ -714,7 +714,7 @@ function AiPicksSection({
               id={item.id}
               title={item.title}
               thumbnail_url={item.thumbnail_url}
-              product_url={item.product_url}
+              product_url={item.product_url ?? null}
               product_released_at={item.metrics.product_released_at ?? null}
               tags={item.tags}
               aiReason={item.reason.summary}
