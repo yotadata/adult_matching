@@ -147,15 +147,18 @@ function SaveImageButton({
         onCharDataUrlReady(resolvedCharDataUrl);
       }
 
-      // oncloneでクローン後のimg要素にデータURLを直接差し込む
-      const capturedDataUrl = await toPng(cardRef.current, {
-        pixelRatio: 2,
-        cacheBust: false,
-        onclone: (_doc, el) => {
-          const img = el.querySelector('img') as HTMLImageElement | null;
-          if (img) img.src = resolvedCharDataUrl;
-        },
-      });
+      // オフスクリーンカード内のimg要素にデータURLを直接セットしてからキャプチャ
+      const imgEl = cardRef.current.querySelector('img') as HTMLImageElement | null;
+      if (imgEl) {
+        imgEl.src = resolvedCharDataUrl;
+        if (!imgEl.complete) {
+          await new Promise<void>((resolve) => {
+            imgEl.onload = () => resolve();
+            imgEl.onerror = () => resolve();
+          });
+        }
+      }
+      const capturedDataUrl = await toPng(cardRef.current, { pixelRatio: 2, cacheBust: false });
 
       const blob = await (await fetch(capturedDataUrl)).blob();
       const file = new File([blob], `seiheki_${typeKey}.png`, { type: 'image/png' });
