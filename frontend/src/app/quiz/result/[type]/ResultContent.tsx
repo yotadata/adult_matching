@@ -103,17 +103,20 @@ async function buildShareImage(params: {
   }
   ctx.textAlign = 'left';
 
-  // QRコード + ドメイン（QR左横に並べる）
+  // QRコード + ドメイン（右下に大きめに配置）
   if (qrDataUrl) {
     await new Promise<void>((resolve) => {
       const qr = new window.Image();
       qr.onload = () => {
         ctx.fillStyle = 'white';
-        roundRect(ctx, W - 92, charH - 92, 72, 72, 8); ctx.fill();
-        ctx.drawImage(qr, W - 88, charH - 88, 64, 64); resolve();
+        roundRect(ctx, W - 116, charH - 122, 100, 100, 10); ctx.fill();
+        ctx.drawImage(qr, W - 111, charH - 117, 90, 90); resolve();
       };
       qr.onerror = () => resolve(); qr.src = qrDataUrl;
     });
+    ctx.font = `600 14px ${JP_FONT}`; ctx.fillStyle = 'rgba(180,150,80,0.55)';
+    ctx.textAlign = 'right'; ctx.fillText('seihekilab.com', W - 20, charH - 8);
+    ctx.textAlign = 'left';
   }
 
   // ── テキストエリア（下詰め）──
