@@ -28,6 +28,22 @@ function ShareCard({
   charDataUrl: string;
   cardRef: React.RefObject<HTMLDivElement | null>;
 }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  // charDataUrl が揃ったら canvas に描画（html-to-image がフェッチ不要になる）
+  useEffect(() => {
+    if (!charDataUrl || !canvasRef.current) return;
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    const img = new window.Image();
+    img.onload = () => {
+      ctx.clearRect(0, 0, 380, 380);
+      ctx.drawImage(img, 0, 0, 380, 380);
+    };
+    img.src = charDataUrl;
+  }, [charDataUrl]);
+
   return (
     <div
       ref={cardRef}
@@ -45,11 +61,11 @@ function ShareCard({
       {/* キャラクター画像エリア */}
       <div style={{ height: '450px', background: `${quizType.color}38`, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', flexShrink: 0 }}>
         <div style={{ position: 'absolute', inset: 0, background: `radial-gradient(ellipse at center, ${quizType.color}22 0%, transparent 70%)` }} />
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={charDataUrl || `/quiz/${typeKey}.png`}
-          alt={quizType.name}
-          style={{ width: '380px', height: '380px', objectFit: 'contain', filter: 'drop-shadow(0 12px 32px rgba(0,0,0,0.85))', position: 'relative' }}
+        <canvas
+          ref={canvasRef}
+          width={380}
+          height={380}
+          style={{ position: 'relative', filter: 'drop-shadow(0 12px 32px rgba(0,0,0,0.85))' }}
         />
         {/* ヘッダーバー */}
         <div style={{ position: 'absolute', top: 0, left: 0, right: 0, padding: '12px 22px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -134,30 +150,20 @@ function SaveImageButton({
     setLoading(true);
     trackEvent('quiz_save_image', { type: typeKey });
     try {
-      // キャラ画像のデータURLを確保（未取得なら今すぐfetch）
-      let resolvedCharDataUrl = charDataUrl;
-      if (!resolvedCharDataUrl) {
-        resolvedCharDataUrl = await fetch(`/quiz/${typeKey}.png`)
+      // charDataUrl未取得なら今すぐfetchしてcanvasに描画されるまで待つ
+      if (!charDataUrl) {
+        const url = await fetch(`/quiz/${typeKey}.png`)
           .then((r) => r.blob())
           .then((blob) => new Promise<string>((resolve) => {
             const reader = new FileReader();
             reader.onload = () => resolve(reader.result as string);
             reader.readAsDataURL(blob);
           }));
-        onCharDataUrlReady(resolvedCharDataUrl);
+        onCharDataUrlReady(url);
+        // canvasへの描画完了を待つ
+        await new Promise((r) => setTimeout(r, 200));
       }
 
-      // オフスクリーンカード内のimg要素にデータURLを直接セットしてからキャプチャ
-      const imgEl = cardRef.current.querySelector('img') as HTMLImageElement | null;
-      if (imgEl) {
-        imgEl.src = resolvedCharDataUrl;
-        if (!imgEl.complete) {
-          await new Promise<void>((resolve) => {
-            imgEl.onload = () => resolve();
-            imgEl.onerror = () => resolve();
-          });
-        }
-      }
       const capturedDataUrl = await toPng(cardRef.current, { pixelRatio: 2, cacheBust: false });
 
       const blob = await (await fetch(capturedDataUrl)).blob();
