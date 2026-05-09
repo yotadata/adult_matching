@@ -259,23 +259,26 @@ export default function QuizPage() {
               ✦ どちらが好きですか？ ✦
             </p>
 
-            {/* A / B の選択肢 */}
+            {/* A / B の選択肢（タップで選択） */}
             <div className="flex gap-3">
               {[
-                { option: currentQ.optionA, label: 'A', color: '#FF6B6B', isSelected: selected !== null && selected <= 2 },
-                { option: currentQ.optionB, label: 'B', color: '#55EFC4', isSelected: selected !== null && selected >= 4 },
-              ].map(({ option, label, color, isSelected }) => (
-                <div
+                { option: currentQ.optionA, label: 'A', color: '#FF6B6B', selectValue: 1, isSelected: selected !== null && selected <= 2 },
+                { option: currentQ.optionB, label: 'B', color: '#55EFC4', selectValue: 5, isSelected: selected !== null && selected >= 4 },
+              ].map(({ option, label, color, selectValue, isSelected }) => (
+                <button
                   key={label}
-                  className="flex-1 rounded-2xl p-4 text-center transition-all duration-200"
+                  onClick={() => handleSelect(selectValue)}
+                  className="flex-1 rounded-2xl p-4 text-center transition-all duration-200 active:scale-[0.97]"
                   style={{
                     background: isSelected ? `${color}20` : 'rgba(255,255,255,0.04)',
-                    border: `1px solid ${isSelected ? color + '60' : 'rgba(255,255,255,0.1)'}`,
+                    border: `1px solid ${isSelected ? color + '80' : 'rgba(255,255,255,0.1)'}`,
+                    boxShadow: isSelected ? `0 0 12px ${color}30` : 'none',
+                    cursor: 'pointer',
                   }}
                 >
                   <p className="text-[11px] font-black tracking-[0.2em] mb-2" style={{ color }}>{label}</p>
                   <p className="text-[14px] font-bold leading-snug" style={{ color: isSelected ? '#ffffff' : 'rgba(240,230,211,0.75)' }}>{option}</p>
-                </div>
+                </button>
               ))}
             </div>
 
