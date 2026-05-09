@@ -6,6 +6,7 @@ export type VideoSearchItem = {
   title: string;
   thumbnail_url: string | null;
   product_url: string | null;
+  affiliate_url: string | null;
   sample_video_url: string | null;
   product_released_at: string | null;
   tags: Array<{ id: string; name: string }>;
@@ -68,7 +69,7 @@ export function useVideoSearch({ keyword, tagIds = [], performerIds = [], limit 
 
       let query = supabase
         .from('videos')
-        .select('id, title, thumbnail_url, product_url, sample_video_url, product_released_at')
+        .select('id, title, thumbnail_url, product_url, affiliate_url, sample_video_url, product_released_at')
         .ilike('title', `%${trimmed}%`)
         .order('product_released_at', { ascending: false, nullsFirst: false })
         .limit(limit);

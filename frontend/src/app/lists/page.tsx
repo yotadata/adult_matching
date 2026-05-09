@@ -51,7 +51,7 @@ export default function ListsPage() {
     {
       id: 'liked',
       title: 'いいねした作品',
-      description: 'AIで探すやスワイプで「気になる」とした作品をまとめて見返せます。',
+      description: '「さがす」やスワイプで「気になる」とした作品をまとめて見返せます。',
       onClick: () => setIsDrawerOpen(true),
       icon: Heart,
       accent: 'from-rose-500/80 to-pink-400/80',
