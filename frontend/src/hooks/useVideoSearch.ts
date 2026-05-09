@@ -20,12 +20,18 @@ type UseVideoSearchOptions = {
   limit?: number;
 };
 
-export function useVideoSearch({ keyword, tagIds = [], performerIds = [], limit = 24 }: UseVideoSearchOptions) {
+export function useVideoSearch({ keyword, tagIds, performerIds, limit = 24 }: UseVideoSearchOptions) {
   const [results, setResults] = useState<VideoSearchItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // 配列をキー文字列に変換して参照安定化（配列をdepsに入れると毎render変わる）
+  const tagIdsKey = (tagIds ?? []).join(',');
+  const performerIdsKey = (performerIds ?? []).join(',');
+
   const search = useCallback(async () => {
+    const tagIdsArr = tagIdsKey ? tagIdsKey.split(',') : [];
+    const performerIdsArr = performerIdsKey ? performerIdsKey.split(',') : [];
     const trimmed = keyword.trim();
     if (trimmed.length === 0) {
       setResults([]);
@@ -40,20 +46,20 @@ export function useVideoSearch({ keyword, tagIds = [], performerIds = [], limit 
       // タグ・出演者でビデオIDを絞り込む
       let filteredIds: Set<string> | null = null;
 
-      if (tagIds.length > 0) {
+      if (tagIdsArr.length > 0) {
         const { data: tagRows } = await supabase
           .from('video_tags')
           .select('video_id')
-          .in('tag_id', tagIds);
+          .in('tag_id', tagIdsArr);
         const ids = new Set((tagRows ?? []).map((r) => r.video_id as string));
         filteredIds = ids;
       }
 
-      if (performerIds.length > 0) {
+      if (performerIdsArr.length > 0) {
         const { data: perfRows } = await supabase
           .from('video_performers')
           .select('video_id')
-          .in('performer_id', performerIds);
+          .in('performer_id', performerIdsArr);
         const ids = new Set((perfRows ?? []).map((r) => r.video_id as string));
         filteredIds = filteredIds
           ? new Set([...filteredIds].filter((id) => ids.has(id)))
@@ -115,7 +121,8 @@ export function useVideoSearch({ keyword, tagIds = [], performerIds = [], limit 
     } finally {
       setLoading(false);
     }
-  }, [keyword, tagIds, performerIds, limit]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [keyword, tagIdsKey, performerIdsKey, limit]);
 
   useEffect(() => {
     search();
