@@ -99,13 +99,13 @@ export function useVideoSearch({ keyword, tagIds = [], performerIds = [], limit 
           tags: (tagData ?? [])
             .filter((t) => t.video_id === v.id)
             .flatMap((t) => {
-              const tag = t.tags as { id: string; name: string } | null;
+              const tag = t.tags as unknown as { id: string; name: string } | null;
               return tag ? [tag] : [];
             }),
           performers: (perfData ?? [])
             .filter((p) => p.video_id === v.id)
             .flatMap((p) => {
-              const perf = p.performers as { id: string; name: string } | null;
+              const perf = p.performers as unknown as { id: string; name: string } | null;
               return perf ? [perf] : [];
             }),
         })),
