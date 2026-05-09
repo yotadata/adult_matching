@@ -260,51 +260,62 @@ export default function QuizPage() {
             </p>
 
             {/* A / B の選択肢（表示のみ） */}
-            <div className="flex gap-px" style={{ borderBottom: '1px solid rgba(180,150,80,0.15)' }}>
+            <div className="flex gap-3">
               {[
                 { option: currentQ.optionA, label: 'A', color: '#FF6B6B', isSelected: selected !== null && selected <= 2 },
                 { option: currentQ.optionB, label: 'B', color: '#55EFC4', isSelected: selected !== null && selected >= 4 },
-              ].map(({ option, label, color, isSelected }, i) => (
+              ].map(({ option, label, color, isSelected }) => (
                 <div
                   key={label}
-                  className="flex-1 px-3 pb-5 text-center"
-                  style={{ borderLeft: i === 1 ? '1px solid rgba(180,150,80,0.15)' : 'none' }}
+                  className="flex-1 rounded-2xl p-4 text-center transition-all duration-200"
+                  style={{
+                    background: isSelected ? `${color}18` : 'rgba(255,255,255,0.03)',
+                    border: `1px solid ${isSelected ? color + '55' : 'rgba(255,255,255,0.07)'}`,
+                  }}
                 >
-                  <p className="text-[11px] font-black tracking-[0.2em] mb-2" style={{ color: isSelected ? color : `${color}66` }}>{label}</p>
-                  <p className="text-[14px] font-bold leading-snug" style={{ color: isSelected ? '#ffffff' : 'rgba(240,230,211,0.55)' }}>{option}</p>
+                  <p className="text-[11px] font-black tracking-[0.2em] mb-2" style={{ color }}>{label}</p>
+                  <p className="text-[14px] font-bold leading-snug" style={{ color: isSelected ? '#ffffff' : 'rgba(240,230,211,0.7)' }}>{option}</p>
                 </div>
               ))}
             </div>
 
-            {/* 5段階選択ボタン */}
-            <div className="flex gap-2">
+            {/* 5段階スケール — ドットサイズ＋ボタン枠で選べることを明示 */}
+            <div className="flex gap-2 items-end justify-between px-1">
               {[1, 2, 3, 4, 5].map((v) => {
                 const isA = v <= 2;
                 const isB = v >= 4;
-                const color = isA ? '#FF6B6B' : isB ? '#55EFC4' : 'rgba(232,213,160,0.9)';
-                const labels = ['A強', 'Aやや', 'どちら', 'Bやや', 'B強'];
+                const color = isA ? '#FF6B6B' : isB ? '#55EFC4' : 'rgba(232,213,160,0.8)';
+                const dotSizes = [20, 14, 9, 14, 20];
+                const dotSize = dotSizes[v - 1];
                 const isSelected = selected === v;
                 return (
                   <button
                     key={v}
                     onClick={() => handleSelect(v)}
-                    className="flex-1 rounded-2xl py-3 font-black text-[11px] transition-all duration-150 active:scale-[0.95]"
-                    style={
-                      isSelected
-                        ? {
-                            background: isA ? 'rgba(255,107,107,0.2)' : isB ? 'rgba(85,239,196,0.15)' : 'rgba(232,213,160,0.12)',
-                            border: `1.5px solid ${color}`,
-                            color,
-                            boxShadow: `0 2px 0 rgba(0,0,0,0.3), 0 0 10px ${color}40`,
-                          }
-                        : {
-                            background: 'rgba(255,255,255,0.05)',
-                            border: '1.5px solid rgba(180,150,80,0.15)',
-                            color: 'rgba(200,180,140,0.4)',
-                          }
-                    }
+                    className="flex-1 flex flex-col items-center gap-2 py-3 rounded-2xl transition-all duration-150 active:scale-[0.95]"
+                    style={{
+                      background: isSelected
+                        ? (isA ? 'rgba(255,107,107,0.15)' : isB ? 'rgba(85,239,196,0.12)' : 'rgba(232,213,160,0.08)')
+                        : 'rgba(255,255,255,0.04)',
+                      border: isSelected
+                        ? `1.5px solid ${color}`
+                        : '1.5px solid rgba(180,150,80,0.18)',
+                      transform: isSelected ? 'translateY(-2px)' : 'none',
+                      boxShadow: isSelected ? `0 4px 0 rgba(0,0,0,0.3), 0 0 10px ${color}30` : '0 2px 0 rgba(0,0,0,0.2)',
+                    }}
                   >
-                    {labels[v - 1]}
+                    <div
+                      className="rounded-full transition-all duration-150"
+                      style={{
+                        width: `${dotSize}px`,
+                        height: `${dotSize}px`,
+                        background: isSelected ? color : isA ? 'rgba(255,107,107,0.3)' : isB ? 'rgba(85,239,196,0.25)' : 'rgba(232,213,160,0.2)',
+                        boxShadow: isSelected ? `0 0 8px ${color}80` : 'none',
+                      }}
+                    />
+                    <span className="text-[9px] font-bold" style={{ color: isSelected ? color : 'rgba(200,180,140,0.4)' }}>
+                      {['A強', 'Aやや', 'どちら', 'Bやや', 'B強'][v - 1]}
+                    </span>
                   </button>
                 );
               })}
