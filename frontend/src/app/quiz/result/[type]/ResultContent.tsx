@@ -18,12 +18,14 @@ function ShareCard({
   quizType,
   axes,
   qrDataUrl,
+  charDataUrl,
   cardRef,
 }: {
   typeKey: QuizTypeKey;
   quizType: QuizType;
   axes: { axis: Axis; pct: number }[];
   qrDataUrl: string;
+  charDataUrl: string;
   cardRef: React.RefObject<HTMLDivElement | null>;
 }) {
   return (
@@ -45,10 +47,9 @@ function ShareCard({
         <div style={{ position: 'absolute', inset: 0, background: `radial-gradient(ellipse at center, ${quizType.color}22 0%, transparent 70%)` }} />
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src={`/quiz/${typeKey}.png`}
+          src={charDataUrl || `/quiz/${typeKey}.png`}
           alt={quizType.name}
           style={{ width: '380px', height: '380px', objectFit: 'contain', filter: 'drop-shadow(0 12px 32px rgba(0,0,0,0.85))', position: 'relative' }}
-          crossOrigin="anonymous"
         />
         {/* ヘッダーバー */}
         <div style={{ position: 'absolute', top: 0, left: 0, right: 0, padding: '12px 22px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -129,14 +130,7 @@ function SaveImageButton({
     setLoading(true);
     trackEvent('quiz_save_image', { type: typeKey });
     try {
-      // キャラクター画像をpreloadしてからキャプチャ
-      await new Promise<void>((resolve) => {
-        const img = new window.Image();
-        img.onload = () => resolve();
-        img.onerror = () => resolve();
-        img.src = `/quiz/${typeKey}.png?v=${Date.now()}`;
-      });
-      const dataUrl = await toPng(cardRef.current, { pixelRatio: 2, cacheBust: true });
+      const dataUrl = await toPng(cardRef.current, { pixelRatio: 2, cacheBust: false });
       const blob = await (await fetch(dataUrl)).blob();
       const file = new File([blob], `seiheki_${typeKey}.png`, { type: 'image/png' });
 
@@ -221,12 +215,26 @@ export function ResultContent({ typeKey }: { typeKey: QuizTypeKey }) {
   const shareCardRef = useRef<HTMLDivElement>(null);
   const [showCTA, setShowCTA] = useState(false);
   const [qrDataUrl, setQrDataUrl] = useState('');
+  const [charDataUrl, setCharDataUrl] = useState('');
 
   useEffect(() => {
     QRCode.toDataURL('https://seihekilab.com/quiz', { width: 128, margin: 1, color: { dark: '#000000', light: '#ffffff' } })
       .then(setQrDataUrl)
       .catch(() => {});
   }, []);
+
+  // キャラ画像をデータURLとして事前取得（html-to-imageがネットワーク未取得の画像を空で描画するのを防ぐ）
+  useEffect(() => {
+    fetch(`/quiz/${typeKey}.png`)
+      .then((r) => r.blob())
+      .then((blob) => new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.readAsDataURL(blob);
+      }))
+      .then(setCharDataUrl)
+      .catch(() => {});
+  }, [typeKey]);
 
   const gender = searchParams.get('gender') ?? 'other';
   const isMale = gender === 'male';
@@ -288,7 +296,7 @@ export function ResultContent({ typeKey }: { typeKey: QuizTypeKey }) {
 
       {/* キャプチャ用シェアカード（画面外非表示） */}
       <div style={{ position: 'absolute', left: '-9999px', top: 0, overflow: 'hidden', pointerEvents: 'none' }}>
-        <ShareCard typeKey={typeKey} quizType={quizType} axes={axes} qrDataUrl={qrDataUrl} cardRef={shareCardRef} />
+        <ShareCard typeKey={typeKey} quizType={quizType} axes={axes} qrDataUrl={qrDataUrl} charDataUrl={charDataUrl} cardRef={shareCardRef} />
       </div>
 
       <p className="text-[11px] font-black tracking-[0.3em] uppercase mb-5" style={{ color: 'rgba(180,150,80,0.5)' }}>✦ 診断結果 ✦</p>
