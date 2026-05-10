@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: '偏愛16診断',
     description: '8つの質問に答えるだけ。あなたのタイプがわかる！',
-    url: 'https://seihekilab.com/quiz',
+    url: 'https://www.seihekilab.com/quiz',
     siteName: '性癖ラボ',
     type: 'website',
   },

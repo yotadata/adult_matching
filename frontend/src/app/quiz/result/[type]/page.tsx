@@ -3,8 +3,7 @@ import type { Metadata } from 'next';
 import { ResultContent } from './ResultContent';
 import { QUIZ_TYPES, QuizTypeKey } from '../../data';
 
-const BASE_URL = 'https://seihekilab.com';
-const QUIZ_OG_VERSION = '2026-05-09-01';
+const BASE_URL = 'https://www.seihekilab.com';
 
 export async function generateMetadata({ params, searchParams }: {
   params: Promise<{ type: string }>;
@@ -18,10 +17,7 @@ export async function generateMetadata({ params, searchParams }: {
   const title = `私の偏愛16診断タイプは「${quizType.name}」でした！`;
   const description = `${quizType.tagline} — ${quizType.description.slice(0, 60)}…`;
 
-  const ogParams = new URLSearchParams({ type });
-  if (sp.scores) ogParams.set('scores', sp.scores);
-  ogParams.set('v', QUIZ_OG_VERSION);
-  const ogImageUrl = `${BASE_URL}/api/quiz/og?${ogParams.toString()}`;
+  const ogImageUrl = `${BASE_URL}/quiz/${type}.png`;
   const resultParams = new URLSearchParams();
   if (sp.scores) resultParams.set('scores', sp.scores);
   if (sp.gender) resultParams.set('gender', sp.gender);

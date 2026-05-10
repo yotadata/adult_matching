@@ -358,7 +358,7 @@ export function ResultContent({ typeKey }: { typeKey: QuizTypeKey }) {
   const [charDataUrl, setCharDataUrl] = useState('');
 
   useEffect(() => {
-    QRCode.toDataURL('https://seihekilab.com/quiz', { width: 128, margin: 1, color: { dark: '#000000', light: '#ffffff' } })
+    QRCode.toDataURL('https://www.seihekilab.com/quiz', { width: 128, margin: 1, color: { dark: '#000000', light: '#ffffff' } })
       .then(setQrDataUrl)
       .catch(() => {});
   }, []);
@@ -387,8 +387,8 @@ export function ResultContent({ typeKey }: { typeKey: QuizTypeKey }) {
   const quizType = QUIZ_TYPES[typeKey] ?? QUIZ_TYPES['senc'];
   const scoresParam = searchParams.get('scores') ?? '';
   const shareUrl = scoresParam
-    ? `https://seihekilab.com/quiz/result/${typeKey}?scores=${encodeURIComponent(scoresParam)}`
-    : `https://seihekilab.com/quiz/result/${typeKey}`;
+    ? `https://www.seihekilab.com/quiz/result/${typeKey}?scores=${encodeURIComponent(scoresParam)}`
+    : `https://www.seihekilab.com/quiz/result/${typeKey}`;
   const shareText = `私の偏愛タイプは ${typeKey.toUpperCase()}「${quizType.name}」でした。\n#偏愛16 #性癖ラボ\n\n${shareUrl}`;
 
   const axes: { axis: Axis; pct: number }[] = AXES.map((axis) => ({
