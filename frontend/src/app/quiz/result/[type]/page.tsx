@@ -17,7 +17,7 @@ export async function generateMetadata({ params, searchParams }: {
   const title = `私の偏愛16診断タイプは「${quizType.name}」でした！`;
   const description = `${quizType.tagline} — ${quizType.description.slice(0, 60)}…`;
 
-  const ogImageUrl = `${BASE_URL}/quiz/${type}.png`;
+  const ogImageUrl = `${BASE_URL}/quiz/og/henai16-${type}-${type.toUpperCase()}.png`;
   const resultParams = new URLSearchParams();
   if (sp.scores) resultParams.set('scores', sp.scores);
   if (sp.gender) resultParams.set('gender', sp.gender);
