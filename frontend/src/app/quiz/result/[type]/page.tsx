@@ -4,7 +4,7 @@ import { ResultContent } from './ResultContent';
 import { QUIZ_TYPES, QuizTypeKey } from '../../data';
 
 const BASE_URL = 'https://www.seihekilab.com';
-const QUIZ_SHARE_VERSION = '2';
+const QUIZ_SHARE_VERSION = '3';
 
 export async function generateMetadata({ params, searchParams }: {
   params: Promise<{ type: string }>;

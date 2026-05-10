@@ -356,7 +356,7 @@ export function ResultContent({ typeKey }: { typeKey: QuizTypeKey }) {
   const [showCTA, setShowCTA] = useState(false);
   const [qrDataUrl, setQrDataUrl] = useState('');
   const [charDataUrl, setCharDataUrl] = useState('');
-  const shareVersion = '2';
+  const shareVersion = '3';
 
   useEffect(() => {
     QRCode.toDataURL('https://www.seihekilab.com/quiz', { width: 128, margin: 1, color: { dark: '#000000', light: '#ffffff' } })
@@ -379,6 +379,13 @@ export function ResultContent({ typeKey }: { typeKey: QuizTypeKey }) {
 
   const gender = searchParams.get('gender') ?? 'other';
   const isMale = gender === 'male';
+
+  useEffect(() => {
+    if (searchParams.get('v')) return;
+    const nextParams = new URLSearchParams(searchParams.toString());
+    nextParams.set('v', shareVersion);
+    router.replace(`/quiz/result/${typeKey}?${nextParams.toString()}`);
+  }, [router, searchParams, shareVersion, typeKey]);
 
   const rawScores = (() => {
     try { return JSON.parse(decodeURIComponent(searchParams.get('scores') ?? '{}')); }
