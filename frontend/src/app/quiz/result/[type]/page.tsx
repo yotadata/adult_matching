@@ -4,10 +4,11 @@ import { ResultContent } from './ResultContent';
 import { QUIZ_TYPES, QuizTypeKey } from '../../data';
 
 const BASE_URL = 'https://www.seihekilab.com';
+const QUIZ_SHARE_VERSION = '2';
 
 export async function generateMetadata({ params, searchParams }: {
   params: Promise<{ type: string }>;
-  searchParams: Promise<{ scores?: string; gender?: string }>;
+  searchParams: Promise<{ scores?: string; gender?: string; v?: string }>;
 }): Promise<Metadata> {
   const { type } = await params;
   const sp = await searchParams;
@@ -16,11 +17,13 @@ export async function generateMetadata({ params, searchParams }: {
 
   const title = `私の偏愛16診断タイプは「${quizType.name}」でした！`;
   const description = `${quizType.tagline} — ${quizType.description.slice(0, 60)}…`;
+  const shareVersion = sp.v || QUIZ_SHARE_VERSION;
 
-  const ogImageUrl = `${BASE_URL}/quiz/og/henai16-${type}-${type.toUpperCase()}.png`;
+  const ogImageUrl = `${BASE_URL}/quiz/og/henai16-${type}-${type.toUpperCase()}.png?v=${shareVersion}`;
   const resultParams = new URLSearchParams();
   if (sp.scores) resultParams.set('scores', sp.scores);
   if (sp.gender) resultParams.set('gender', sp.gender);
+  resultParams.set('v', shareVersion);
   const resultUrl = resultParams.toString()
     ? `${BASE_URL}/quiz/result/${type}?${resultParams.toString()}`
     : `${BASE_URL}/quiz/result/${type}`;
