@@ -2,6 +2,8 @@ import type { Metadata } from 'next';
 import Image from 'next/image';
 import QuizHeader from './QuizHeader';
 
+const QUIZ_OG_IMAGE_URL = 'https://www.seihekilab.com/quiz/og/henai16-index.png';
+
 export const metadata: Metadata = {
   title: '偏愛16診断 | 性癖ラボ',
   description: '8つの質問に答えるだけ。あなたの性癖パーソナリティタイプを診断します。',
@@ -11,11 +13,13 @@ export const metadata: Metadata = {
     url: 'https://www.seihekilab.com/quiz',
     siteName: '性癖ラボ',
     type: 'website',
+    images: [{ url: QUIZ_OG_IMAGE_URL, width: 1200, height: 630, alt: '偏愛16診断' }],
   },
   twitter: {
     card: 'summary_large_image',
     title: '偏愛16診断',
     description: '8つの質問に答えるだけ。あなたのタイプがわかる！',
+    images: [QUIZ_OG_IMAGE_URL],
   },
 };
 
