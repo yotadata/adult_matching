@@ -7,7 +7,7 @@ import Script from 'next/script'; // ★ 追加
 export const metadata: Metadata = {
   title: { default: "性癖ラボ | AIがあなたの好みを学ぶアダルト動画サービス", template: "%s | 性癖ラボ" },
   description: "スワイプするほどAIがあなたの性癖を学習し、好みにぴったりのアダルト動画を提案します。無料・登録不要で今すぐ利用できます。",
-  metadataBase: new URL('https://seihekilab.com'),
+  metadataBase: new URL('https://www.seihekilab.com'),
   icons: {
     icon: [
       { url: '/seiheki_icon.png' },
@@ -19,7 +19,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "性癖ラボ | AIがあなたの好みを学ぶアダルト動画サービス",
     description: "スワイプするほどAIがあなたの性癖を学習し、好みにぴったりのアダルト動画を提案します。",
-    url: 'https://seihekilab.com',
+    url: 'https://www.seihekilab.com',
     siteName: '性癖ラボ',
     locale: 'ja_JP',
     type: 'website',
