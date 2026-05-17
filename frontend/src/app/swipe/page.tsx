@@ -580,6 +580,12 @@ function SwipePageContent() {
         if (error) {
           console.error(`Error inserting ${decisionType} decision:`, error);
         }
+        if (decisionType === 'like') {
+          await supabase.from('book_likes').upsert(
+            { user_id: user.id, book_id: card.id },
+            { onConflict: 'user_id,book_id' }
+          );
+        }
       }
     } else {
       const current = getGuestDecisions();
