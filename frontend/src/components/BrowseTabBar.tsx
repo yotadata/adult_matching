@@ -141,9 +141,9 @@ function BrowseTabBarInner() {
       ))}
       {levelUpLevel && <LevelUpOverlay level={levelUpLevel} onDone={() => setLevelUpLevel(null)} />}
 
-      <div className="fixed top-0 left-0 right-0 z-40 bg-[#0d1117]/95 backdrop-blur border-b border-[#30363d] flex flex-col">
-        {/* 1行目: ロゴ・タブ切替・リスト */}
-        <div className="flex items-center px-3 h-10 gap-2">
+      <div className="fixed top-0 left-0 right-0 z-40 flex flex-col">
+        {/* メインヘッダー: ロゴ・タブ切替・リスト */}
+        <div className="bg-[#0d1117]/95 backdrop-blur border-b border-[#30363d] flex items-center px-3 h-11 gap-2">
           <Link href="/" className="flex-shrink-0">
             <Image src="/seiheki_lab.png" alt="性癖ラボ" width={72} height={22} className="h-5 w-auto" />
           </Link>
@@ -178,8 +178,8 @@ function BrowseTabBarInner() {
           </button>
         </div>
 
-        {/* 2行目: ゲージ（主役） */}
-        <div className="px-3 pb-2.5">
+        {/* ゲージエリア: メインヘッダーと別領域 */}
+        <div className="bg-[#161b22] border-b border-[#21262d] px-3 py-2">
           {lv ? (
             <div className="flex items-center gap-2">
               <lv.Icon size={18} className={`flex-shrink-0 ${lv.iconColor}`} strokeWidth={2} />
@@ -194,7 +194,7 @@ function BrowseTabBarInner() {
                     {nextLv && <span> / {nextLv.min}</span>}
                   </span>
                 </div>
-                <div className="h-2.5 w-full bg-[#21262d] rounded-full overflow-hidden">
+                <div className="h-2.5 w-full bg-[#0d1117] rounded-full overflow-hidden">
                   <div
                     className={`h-full rounded-full bg-gradient-to-r ${lv.color} transition-all duration-700 ease-out`}
                     style={{ width: `${progress}%`, boxShadow: '0 0 8px 2px rgba(167,139,250,0.5)' }}
@@ -203,7 +203,7 @@ function BrowseTabBarInner() {
               </div>
             </div>
           ) : (
-            <div className="h-2.5 w-full bg-[#21262d] rounded-full" />
+            <div className="h-2.5 w-full bg-[#0d1117] rounded-full" />
           )}
         </div>
       </div>
