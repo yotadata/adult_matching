@@ -272,7 +272,7 @@ async function insertBookData(data: PreparedBookData): Promise<boolean> {
     product_url: data.product_url ?? null,
     affiliate_url: data.affiliate_url ?? null,
     product_released_at: data.product_released_at ?? null,
-    source: 'FANZA',
+    source: data.source,
   };
 
   const { data: upsertedBook, error: bookError } = await supabase
@@ -452,8 +452,8 @@ async function main() {
   console.log(`Fetching items released between ${gteReleaseDate} and ${lteReleaseDate}...`);
 
   const sources = [
-    { service: 'ebook',   floor: 'comic',  source: 'FANZA_COMIC' },
-    { service: 'digital', floor: 'doujin', source: 'FANZA_DOUJIN' },
+    { service: 'ebook',   floor: 'comic',          source: 'FANZA_COMIC' },
+    { service: 'doujin',  floor: 'digital_doujin', source: 'FANZA_DOUJIN' },
   ];
 
   let totalSuccess = 0;
