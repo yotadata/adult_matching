@@ -35,6 +35,14 @@ jobs:
           echo "Linking to project: $PROJECT_REF"
           supabase link --project-ref "$PROJECT_REF" --password "$SUPABASE_DB_PASSWORD"
 
+      - name: Repair remote-only migrations
+        working-directory: supabase
+        run: |
+          # ダッシュボード経由でリモートに直接適用されローカルに存在しないマイグレーションを
+          # "reverted" としてマークし、db push の整合性エラーを回避する。
+          supabase migration repair --status reverted \
+            20260517020453 20260517020512 20260517020530 20260517111741 || true
+
       - name: Push migrations (push to main)
         if: github.event_name == 'push'
         working-directory: supabase
