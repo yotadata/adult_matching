@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { createClient } from '@supabase/supabase-js';
+import ws from 'ws';
 import * as dotenv from 'dotenv';
 import fs from 'fs';
 import path from 'path';
@@ -36,6 +37,7 @@ if (!supabaseKey) {
 
 const supabase = createClient(supabaseUrl, supabaseKey, {
   auth: { persistSession: false },
+  realtime: { transport: ws },
 });
 if (!supabaseServiceRoleKey) {
   console.warn('[ingest_fanza] SUPABASE_SERVICE_ROLE_KEY not set. Falling back to anon key; RLS-protected tables may reject inserts.');
@@ -100,18 +102,18 @@ function toFanzaAffiliate(rawUrl: string | null | undefined, affiliateId: string
   return `https://al.fanza.co.jp/?lurl=${lurl}&af_id=${aid}&ch=link_tool&ch_id=link`;
 }
 
-async function fetchFanzaApiItems(queryParams: Record<string, any>) {
+async function fetchFanzaApiItems(queryParams: Record<string, any>, service = 'ebook', floor = 'comic') {
   const apiUrl = 'https://api.dmm.com/affiliate/v3/ItemList';
   const params = {
     api_id: fanzaApiId,
     affiliate_id: fanzaApiAffiliateId,
     site: 'FANZA',
-    service: 'ebook',   // 電子書籍
-    floor: 'comic',     // 漫画
+    service,
+    floor,
     output: 'json',
     ...queryParams,
   };
-  console.log(`[ingest_fanza] API params hits=${params.hits} offset=${params.offset} sort=${params.sort} gte=${params.gte_date ?? '-'} lte=${params.lte_date ?? '-'}`);
+  console.log(`[ingest_fanza] API params service=${service} floor=${floor} hits=${params.hits} offset=${params.offset} sort=${params.sort} gte=${params.gte_date ?? '-'} lte=${params.lte_date ?? '-'}`);
 
   try {
     const response = await axios.get(apiUrl, { params });
@@ -307,29 +309,14 @@ async function insertBookData(data: PreparedBookData): Promise<boolean> {
   return true;
 }
 
-async function main() {
-  const today = new Date();
-  const formatDate = (date: Date) => date.toISOString().split('T')[0];
-
-  let lteReleaseDate = formatDate(today);
-  let gteReleaseDate: string | undefined;
-
-  if (process.env.GTE_RELEASE_DATE) {
-    gteReleaseDate = process.env.GTE_RELEASE_DATE;
-    console.log(`Using custom gte_release_date: ${gteReleaseDate}`);
-  } else {
-    const oneYearAgo = new Date();
-    oneYearAgo.setFullYear(today.getFullYear() - 1);
-    gteReleaseDate = formatDate(oneYearAgo);
-  }
-
-  if (process.env.LTE_RELEASE_DATE) {
-    lteReleaseDate = process.env.LTE_RELEASE_DATE;
-    console.log(`Using custom lte_release_date: ${lteReleaseDate}`);
-  }
-
-  console.log(`Fetching books released between ${gteReleaseDate} and ${lteReleaseDate}...`);
-
+async function ingestSource(
+  service: string,
+  floor: string,
+  source: string,
+  gteReleaseDate: string,
+  lteReleaseDate: string,
+): Promise<{ success: number; failure: number; fetched: number }> {
+  console.log(`\n[ingest_fanza] === Starting source: ${source} (${service}/${floor}) ===`);
   let offset = 1;
   const hits = 100;
   let totalCount = 0;
@@ -344,7 +331,7 @@ async function main() {
     if (apiGteDate) query.gte_date = apiGteDate;
     if (apiLteDate) query.lte_date = apiLteDate;
 
-    const result = await fetchFanzaApiItems(query);
+    const result = await fetchFanzaApiItems(query, service, floor);
 
     if (!result || !result.items || result.items.length === 0) {
       console.log('No more items to fetch or an error occurred.');
@@ -353,16 +340,14 @@ async function main() {
 
     if (totalCount === 0) {
       totalCount = result.total_count;
-      console.log(`Total books found: ${totalCount}`);
+      console.log(`[ingest_fanza] Total items found: ${totalCount}`);
     }
 
     for (const item of result.items) {
-      // ページ数のパース（漫画APIのvolumeはページ数を返す場合がある）
       const volumeText: string | null = item.iteminfo?.volume ?? null;
       const pageCountMatch = typeof volumeText === 'string' ? volumeText.match(/(\d+)/) : null;
       const pageCount: number | null = pageCountMatch ? parseInt(pageCountMatch[1], 10) : null;
 
-      // 価格のパース
       let parsedPrice: number | null = null;
       if (item.prices?.price != null) {
         const n = parseFloat(String(item.prices.price).replace(/[^0-9.]/g, ''));
@@ -372,7 +357,6 @@ async function main() {
         }
       }
 
-      // サムネイル
       const thumbnailUrl: string | null = coalesce(
         item.imageURL?.large,
         item.imageURL?.list,
@@ -384,20 +368,17 @@ async function main() {
         item.imageURL?.list
       );
 
-      // サンプル画像（漫画の試し読みページ）
       const sampleImageUrls: string[] | null = coalesce(
         item.sampleImageURL?.sample_s?.image,
         item.sampleImageURL?.sample_l?.image
       );
 
-      // 著者情報（漫画APIではauthorまたはartistで返ってくる）
       const authorRaw = item.iteminfo?.author ?? item.iteminfo?.artist ?? null;
       const authorName: string | null = pickName(authorRaw);
       const authorId: string | null = Array.isArray(authorRaw)
         ? (authorRaw[0]?.id ?? null)
         : (authorRaw?.id ?? null);
 
-      // ジャンル
       const genres = item.iteminfo?.genre
         ? (Array.isArray(item.iteminfo.genre)
             ? item.iteminfo.genre.map((g: any) => g.name).filter(Boolean)
@@ -426,7 +407,7 @@ async function main() {
         affiliate_url: item.affiliateURL ?? toFanzaAffiliate(item.URL, fanzaLinkAffiliateId),
         product_released_at: normalizeFanzaDateTime(item.date) ?? null,
         genres,
-        source: 'FANZA',
+        source,
       };
 
       const upserted = await insertBookData(bookData);
@@ -443,7 +424,50 @@ async function main() {
     offset += hits;
   }
 
-  console.log(`[ingest_fanza] completed success=${successCount} failure=${failureCount} totalFetched=${fetchedCount}`);
+  console.log(`[ingest_fanza] ${source} completed success=${successCount} failure=${failureCount} fetched=${fetchedCount}`);
+  return { success: successCount, failure: failureCount, fetched: fetchedCount };
+}
+
+async function main() {
+  const today = new Date();
+  const formatDate = (date: Date) => date.toISOString().split('T')[0];
+
+  let lteReleaseDate = formatDate(today);
+  let gteReleaseDate: string;
+
+  if (process.env.GTE_RELEASE_DATE) {
+    gteReleaseDate = process.env.GTE_RELEASE_DATE;
+    console.log(`Using custom gte_release_date: ${gteReleaseDate}`);
+  } else {
+    const oneYearAgo = new Date();
+    oneYearAgo.setFullYear(today.getFullYear() - 1);
+    gteReleaseDate = formatDate(oneYearAgo);
+  }
+
+  if (process.env.LTE_RELEASE_DATE) {
+    lteReleaseDate = process.env.LTE_RELEASE_DATE;
+    console.log(`Using custom lte_release_date: ${lteReleaseDate}`);
+  }
+
+  console.log(`Fetching items released between ${gteReleaseDate} and ${lteReleaseDate}...`);
+
+  const sources = [
+    { service: 'ebook',   floor: 'comic',  source: 'FANZA_COMIC' },
+    { service: 'digital', floor: 'doujin', source: 'FANZA_DOUJIN' },
+  ];
+
+  let totalSuccess = 0;
+  let totalFailure = 0;
+  let totalFetched = 0;
+
+  for (const s of sources) {
+    const result = await ingestSource(s.service, s.floor, s.source, gteReleaseDate, lteReleaseDate);
+    totalSuccess += result.success;
+    totalFailure += result.failure;
+    totalFetched += result.fetched;
+  }
+
+  console.log(`\n[ingest_fanza] ALL completed success=${totalSuccess} failure=${totalFailure} totalFetched=${totalFetched}`);
 }
 
 main();
