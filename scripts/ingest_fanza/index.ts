@@ -452,8 +452,7 @@ async function main() {
   console.log(`Fetching items released between ${gteReleaseDate} and ${lteReleaseDate}...`);
 
   const sources = [
-    { service: 'ebook',   floor: 'comic',          source: 'FANZA_COMIC' },
-    { service: 'doujin',  floor: 'digital_doujin', source: 'FANZA_DOUJIN' },
+    { service: 'doujin', floor: 'digital_doujin', source: 'FANZA_DOUJIN' },
   ];
 
   let totalSuccess = 0;
