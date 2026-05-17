@@ -12,11 +12,11 @@ export type AiRecommendSectionItem = {
   title: string | null;
   thumbnail_url: string | null;
   product_url: string | null | undefined;
-  sample_video_url: string | null;
-  preview_video_url: string | null | undefined;
+  sample_image_urls: string[] | null;
+  affiliate_url: string | null | undefined;
   tags: Array<{ id: string; name: string }>;
-  performers: Array<{ id: string; name: string }>;
-  duration_minutes: number | null;
+  author: string | null;
+  page_count: number | null;
   metrics: {
     score?: number | null;
     popularity_score?: number | null;
