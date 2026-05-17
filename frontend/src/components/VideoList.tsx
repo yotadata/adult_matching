@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { Tag, Users, ExternalLink } from 'lucide-react';
+import { Tag, ExternalLink } from 'lucide-react';
 import { Video } from '@/types/video';
 import { isUpcomingRelease } from '@/lib/videoMeta';
 
@@ -115,12 +115,6 @@ export default function VideoList({ title, description, videos, loading, error, 
                       <span key={tag.id} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gray-100 border border-gray-200">
                         <Tag size={12} />
                         {tag.name}
-                      </span>
-                    ))}
-                    {video.performers?.slice(0, 2).map((perf) => (
-                      <span key={perf.id} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gray-100 border border-gray-200">
-                        <Users size={12} />
-                        {perf.name}
                       </span>
                     ))}
                   </div>

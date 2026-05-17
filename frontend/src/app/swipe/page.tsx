@@ -21,11 +21,11 @@ interface VideoFromApi {
   external_id: string;
   thumbnail_url: string;
   thumbnail_vertical_url?: string;
-  sample_video_url?: string;
-  preview_video_url?: string;
+  sample_image_urls?: string[];
+  author?: string | null;
   product_url?: string;
+  affiliate_url?: string;
   product_released_at?: string;
-  performers: { id: string; name: string }[];
   tags: { id: string; name: string }[];
   source?: string | null;
   score?: number | null;
@@ -34,7 +34,7 @@ interface VideoFromApi {
 }
 
 interface GuestDecision {
-  video_id: CardData['id'];
+  book_id: CardData['id'];
   decision_type: 'like' | 'nope';
   created_at: string;
   recommendation_source?: string | null;
@@ -336,7 +336,7 @@ function SwipePageContent() {
       position: currentPositionRef.current,
       has_session: isLoggedIn,
       source,
-      sample_type: card.sampleVideoUrl ? 'sample' : 'embed',
+      sample_type: 'image',
       session_started_at: toIsoString(sessionStartRef.current),
       sample_play_at: toIsoString(now),
       play_count_in_session: samplePlayCountRef.current,
@@ -379,25 +379,21 @@ function SwipePageContent() {
         setFeedDebug(metadata._debug ?? null);
       }
 
-      const normalizeHttps = (u?: string) => u?.startsWith('http://') ? u.replace('http://', 'https://') : u;
       const fetchedCards: CardData[] = fetchedVideos.map((video) => {
-        const fanzaEmbedUrl = `https://www.dmm.co.jp/litevideo/-/part/=/affi_id=${process.env.NEXT_PUBLIC_FANZA_AFFILIATE_ID}/cid=${video.external_id}/size=1280_720/`;
-        const normalizedSampleUrl = normalizeHttps(video.sample_video_url);
-        const normalizedPreviewUrl = normalizeHttps(video.preview_video_url);
         return {
           id: video.id,
           title: video.title,
           genre: video.tags.map((tag) => tag.name),
           description: video.description,
-          videoUrl: fanzaEmbedUrl,
-          sampleVideoUrl: normalizedSampleUrl || normalizedPreviewUrl,
-          embedUrl: fanzaEmbedUrl,
+          videoUrl: '',
           thumbnail_url: video.thumbnail_url,
           thumbnailVerticalUrl: video.thumbnail_vertical_url,
+          sampleImageUrls: video.sample_image_urls,
+          author: video.author ?? undefined,
           product_released_at: video.product_released_at,
-          performers: video.performers,
           tags: video.tags,
-          productUrl: normalizeHttps(video.product_url) || undefined,
+          productUrl: video.product_url || undefined,
+          affiliateUrl: video.affiliate_url || undefined,
           recommendationSource: video.source ?? null,
           recommendationScore: typeof video.score === 'number' ? video.score : null,
           recommendationModelVersion: video.model_version ?? null,
@@ -516,18 +512,17 @@ function SwipePageContent() {
     for (let i = 0; i < items.length; i += batchSize) {
       const chunk = items.slice(i, i + batchSize).map((d) => ({
         user_id: user.id,
-        video_id: d.video_id,
+        book_id: d.book_id,
         decision_type: d.decision_type,
         created_at: d.created_at ?? new Date().toISOString(),
         recommendation_source: d.recommendation_source ?? null,
         recommendation_score: d.recommendation_score ?? null,
         recommendation_model_version: d.recommendation_model_version ?? null,
         recommendation_params: d.recommendation_params ?? null,
-        recommendation_type: d.recommendation_type ?? 'swipe_feed',
       }));
       const { error } = await supabase
-        .from('user_video_decisions')
-        .upsert(chunk, { onConflict: 'user_id,video_id' });
+        .from('user_book_decisions')
+        .upsert(chunk, { onConflict: 'user_id,book_id' });
       if (error) {
         console.error('Error flushing guest decisions:', error?.message ?? error);
         return;
@@ -573,15 +568,14 @@ function SwipePageContent() {
     if (isLoggedIn) {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        const { error } = await supabase.from('user_video_decisions').insert({
+        const { error } = await supabase.from('user_book_decisions').insert({
           user_id: user.id,
-          video_id: card.id,
+          book_id: card.id,
           decision_type: decisionType,
           recommendation_source: card.recommendationSource ?? null,
           recommendation_score: card.recommendationScore ?? null,
           recommendation_model_version: card.recommendationModelVersion ?? null,
           recommendation_params: card.recommendationParams ?? null,
-          recommendation_type: 'swipe_feed',
         });
         if (error) {
           console.error(`Error inserting ${decisionType} decision:`, error);
@@ -594,14 +588,13 @@ function SwipePageContent() {
         return;
       }
       current.push({
-        video_id: card.id,
+        book_id: card.id,
         decision_type: decisionType,
         created_at: new Date().toISOString(),
         recommendation_source: card.recommendationSource ?? null,
         recommendation_score: card.recommendationScore ?? null,
         recommendation_model_version: card.recommendationModelVersion ?? null,
         recommendation_params: card.recommendationParams ?? null,
-        recommendation_type: 'swipe_feed',
       });
       setGuestDecisions(current);
     }
@@ -840,7 +833,6 @@ function SwipePageContent() {
                 cardData={activeCard}
                 onSkip={() => handleSwipe('left')}
                 onLike={() => handleSwipe('right')}
-                onSamplePlay={(card) => handleSamplePlay(card, 'mobile')}
                 skipButtonRef={skipButtonRef}
                 likeButtonRef={likeButtonRef}
                 likedListButtonRef={likedListButtonRef}
@@ -855,7 +847,6 @@ function SwipePageContent() {
                 onDragEnd={handleDragEnd}
                 cardWidth={cardWidth}
                 canSwipe={isLoggedIn || decisionCount < guestLimit}
-                onSamplePlay={(card) => handleSamplePlay(card, 'desktop')}
               />
             )
           ) : (
