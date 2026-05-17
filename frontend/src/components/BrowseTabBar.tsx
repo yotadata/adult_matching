@@ -5,7 +5,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useState, useEffect, useRef, Suspense } from 'react';
 import {
   LayoutGrid, Layers, Heart,
-  Search, BookOpen, Lightbulb, Flame, Zap, Crown,
+  Snail, Rabbit, Cat, Dog, Bird, Crown,
   type LucideIcon,
 } from 'lucide-react';
 import LikedVideosDrawer from '@/components/LikedVideosDrawer';
@@ -22,12 +22,12 @@ type Level = {
 };
 
 const LEVELS: Level[] = [
-  { min: 0,   max: 1,   label: '未診断',       Icon: Search,    color: 'from-gray-500 to-gray-400',    iconColor: 'text-gray-400' },
-  { min: 1,   max: 10,  label: '学習中',       Icon: BookOpen,  color: 'from-blue-500 to-cyan-400',    iconColor: 'text-cyan-400' },
-  { min: 10,  max: 30,  label: '性癖覚醒中',   Icon: Lightbulb, color: 'from-yellow-500 to-amber-400', iconColor: 'text-amber-400' },
-  { min: 30,  max: 100, label: '性癖確立',     Icon: Flame,     color: 'from-orange-500 to-red-400',   iconColor: 'text-orange-400' },
-  { min: 100, max: 200, label: '性癖マスター', Icon: Zap,       color: 'from-violet-500 to-purple-400', iconColor: 'text-violet-400' },
-  { min: 200, max: 400, label: '変態紳士',     Icon: Crown,     color: 'from-yellow-400 to-pink-400',  iconColor: 'text-yellow-400' },
+  { min: 0,   max: 1,   label: '未診断',       Icon: Snail,   color: 'from-gray-500 to-gray-400',     iconColor: 'text-gray-400' },
+  { min: 1,   max: 10,  label: '学習中',       Icon: Rabbit,  color: 'from-blue-500 to-cyan-400',     iconColor: 'text-cyan-400' },
+  { min: 10,  max: 30,  label: '性癖覚醒中',   Icon: Cat,     color: 'from-yellow-500 to-amber-400',  iconColor: 'text-amber-400' },
+  { min: 30,  max: 100, label: '性癖確立',     Icon: Dog,     color: 'from-orange-500 to-red-400',    iconColor: 'text-orange-400' },
+  { min: 100, max: 200, label: '性癖マスター', Icon: Bird,    color: 'from-violet-500 to-purple-400', iconColor: 'text-violet-400' },
+  { min: 200, max: 400, label: '変態紳士',     Icon: Crown,   color: 'from-yellow-400 to-pink-400',   iconColor: 'text-yellow-400' },
 ];
 
 function getLevel(count: number): Level {
@@ -173,14 +173,14 @@ function BrowseTabBarInner() {
               <span className={`text-[11px] font-extrabold bg-gradient-to-r ${lv.color} bg-clip-text text-transparent`}>
                 {lv.label}
               </span>
+              <span className="text-[11px] text-[#8b949e]">
+                <Heart size={9} className="inline mr-0.5 text-pink-400" fill="currentColor" />
+                <span className="text-[#e6edf3] font-bold">{likeCount ?? 0}</span>
+                {nextLv && <span> / {nextLv.min}</span>}
+              </span>
             </div>
           )}
           <div className="flex-1" />
-          <span className="text-[11px] text-[#8b949e] flex-shrink-0">
-            <Heart size={9} className="inline mr-0.5 text-pink-400" fill="currentColor" />
-            <span className="text-[#e6edf3] font-bold">{likeCount ?? 0}</span>
-            {nextLv && <span className="text-[#8b949e]"> / {nextLv.min}</span>}
-          </span>
           <button
             onClick={() => setIsDrawerOpen(true)}
             className="flex items-center gap-1 px-2 py-1 rounded-md text-[#8b949e] hover:text-pink-400 hover:bg-[#161b22] transition-colors flex-shrink-0 text-[11px] font-bold"
