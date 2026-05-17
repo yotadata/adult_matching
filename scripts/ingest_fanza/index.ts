@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { createClient } from '@supabase/supabase-js';
+import ws from 'ws';
 import * as dotenv from 'dotenv';
 import fs from 'fs';
 import path from 'path';
@@ -36,9 +37,8 @@ if (!supabaseKey) {
 }
 
 const supabase = createClient(supabaseUrl, supabaseKey, {
-  auth: {
-    persistSession: false,
-  },
+  auth: { persistSession: false },
+  realtime: { transport: ws },
 });
 if (!supabaseServiceRoleKey) {
   console.warn('[ingest_fanza] SUPABASE_SERVICE_ROLE_KEY not set. Falling back to anon key; RLS-protected tables may reject inserts.');
