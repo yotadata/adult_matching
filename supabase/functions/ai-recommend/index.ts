@@ -1,4 +1,5 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.43.0";
+// deno-lint-ignore-file no-explicit-any
+import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.43.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -146,7 +147,7 @@ const extractKeywords = (prompt: string): string[] =>
     .filter((word) => word.length > 0);
 
 const fetchPersonalized = async (
-  client: ReturnType<typeof createClient>,
+  client: SupabaseClient<any>,
   userId: string | null,
   limit: number,
 ): Promise<VideoCandidate[]> => {
@@ -159,7 +160,7 @@ const fetchPersonalized = async (
     console.error("[ai-recommend] get_videos_recommendations error:", error.message);
     return [];
   }
-  return (data ?? []).map((item: Record<string, unknown>) => ({
+  return ((data as Record<string, unknown>[] | null) ?? []).map((item: Record<string, unknown>) => ({
     id: String(item.id),
     title: (item.title ?? null) as string | null,
     description: (item.description ?? null) as string | null,
@@ -180,7 +181,7 @@ const fetchPersonalized = async (
 };
 
 const fetchTrending = async (
-  client: ReturnType<typeof createClient>,
+  client: SupabaseClient<any>,
   limit: number,
   lookbackDays: number,
 ): Promise<VideoCandidate[]> => {
@@ -192,7 +193,7 @@ const fetchTrending = async (
     console.error("[ai-recommend] get_popular_videos error:", error.message);
     return [];
   }
-  return (data ?? []).map((item: Record<string, unknown>) => ({
+  return ((data as Record<string, unknown>[] | null) ?? []).map((item: Record<string, unknown>) => ({
     id: String(item.id),
     title: (item.title ?? null) as string | null,
     description: (item.description ?? null) as string | null,
@@ -213,12 +214,12 @@ const fetchTrending = async (
 };
 
 const fetchFresh = async (
-  client: ReturnType<typeof createClient>,
+  client: SupabaseClient<any>,
   limit: number,
 ): Promise<VideoCandidate[]> => {
   const { data, error } = await client
     .from("videos")
-    .select("id, title, description, external_id, thumbnail_url, sample_video_url, product_released_at, video_tags(tags(id, name)), video_performers(performers(id, name)))")
+    .select("id, title, description, external_id, thumbnail_url, sample_video_url, product_released_at, video_tags(tags(id, name)), video_performers(performers(id, name))")
     .not("sample_video_url", "is", null)
     .order("product_released_at", { ascending: false })
     .limit(limit * 3);
@@ -228,14 +229,14 @@ const fetchFresh = async (
     return [];
   }
 
-  return (data ?? []).map((item) => ({
-    id: item.id,
-    title: item.title ?? null,
-    description: item.description ?? null,
-    external_id: item.external_id ?? null,
-    thumbnail_url: item.thumbnail_url ?? null,
-    sample_video_url: item.sample_video_url ?? null,
-    product_released_at: item.product_released_at ?? null,
+  return ((data as Record<string, unknown>[] | null) ?? []).map((item) => ({
+    id: String(item.id),
+    title: (item.title ?? null) as string | null,
+    description: (item.description ?? null) as string | null,
+    external_id: (item.external_id ?? null) as string | null,
+    thumbnail_url: (item.thumbnail_url ?? null) as string | null,
+    sample_video_url: (item.sample_video_url ?? null) as string | null,
+    product_released_at: (item.product_released_at ?? null) as string | null,
     performers: extractNestedEntities((item as { video_performers?: unknown }).video_performers, "performers"),
     tags: extractNestedEntities((item as { video_tags?: unknown }).video_tags, "tags"),
     score: null,
@@ -249,7 +250,7 @@ const fetchFresh = async (
 };
 
 const hydrateVideoDetails = async (
-  client: ReturnType<typeof createClient>,
+  client: SupabaseClient<any>,
   candidates: VideoCandidate[],
 ): Promise<Map<string, { product_url: string | null; preview_video_url: string | null; duration_minutes: number | null }>> => {
   const ids = Array.from(new Set(candidates.map((item) => item.id)));
@@ -266,11 +267,11 @@ const hydrateVideoDetails = async (
   }
 
   const map = new Map<string, { product_url: string | null; preview_video_url: string | null; duration_minutes: number | null }>();
-  for (const row of data ?? []) {
+  for (const row of (data as Record<string, unknown>[] | null) ?? []) {
     const durationSeconds = typeof row.duration_seconds === "number" ? row.duration_seconds : null;
-    map.set(row.id, {
-      product_url: row.affiliate_url ?? row.product_url ?? null,
-      preview_video_url: row.preview_video_url ?? null,
+    map.set(String(row.id), {
+      product_url: (row.affiliate_url ?? row.product_url ?? null) as string | null,
+      preview_video_url: (row.preview_video_url ?? null) as string | null,
       duration_minutes: durationSeconds ? Math.max(1, Math.round(durationSeconds / 60)) : null,
     });
   }

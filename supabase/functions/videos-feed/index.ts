@@ -1,4 +1,5 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.43.0"
+// deno-lint-ignore-file no-explicit-any
+import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.43.0"
 
 type VideoEntry = {
   id: string
@@ -45,7 +46,7 @@ function shuffle<T>(arr: T[]): T[] {
 }
 
 async function fetchModelVersions(
-  client: ReturnType<typeof createClient>,
+  client: SupabaseClient<any>,
   ids: string[],
 ): Promise<Map<string, string | null>> {
   if (ids.length === 0) return new Map()
@@ -290,9 +291,10 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     })
-  } catch (error) {
-    console.error('Unexpected error:', error?.message ?? error)
-    return new Response(JSON.stringify({ error: error?.message ?? 'unknown error' }), {
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : String(error)
+    console.error('Unexpected error:', msg)
+    return new Response(JSON.stringify({ error: msg }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 400,
     })
