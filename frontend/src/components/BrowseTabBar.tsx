@@ -142,12 +142,13 @@ function BrowseTabBarInner() {
       {levelUpLevel && <LevelUpOverlay level={levelUpLevel} onDone={() => setLevelUpLevel(null)} />}
 
       <div className="fixed top-0 left-0 right-0 z-40 bg-[#0d1117]/95 backdrop-blur flex flex-col">
-        {/* メインヘッダー: ロゴ・タブ切替・レベル・リスト */}
-        <div className="flex items-center px-3 h-11 gap-2">
-          <Link href="/" className="flex-shrink-0">
-            <Image src="/seiheki_lab.png" alt="性癖ラボ" width={72} height={22} className="h-5 w-auto" />
-          </Link>
-          <div className="flex gap-1 flex-shrink-0">
+        {/* メインヘッダー: 左(ロゴ+タブ) / 中央(レベル) / 右(リスト) */}
+        <div className="grid grid-cols-3 items-center px-3 h-11">
+          {/* 左: ロゴ＋タブ */}
+          <div className="flex items-center gap-1.5">
+            <Link href="/" className="flex-shrink-0">
+              <Image src="/seiheki_lab.png" alt="性癖ラボ" width={72} height={22} className="h-5 w-auto" />
+            </Link>
             <Link
               href="/grid"
               className={`flex items-center justify-center w-7 h-7 rounded-md transition-colors ${
@@ -167,28 +168,35 @@ function BrowseTabBarInner() {
               <Layers size={14} />
             </Link>
           </div>
-          {lv && (
-            <div className="flex items-center gap-1.5 flex-shrink-0">
-              <lv.Icon size={13} className={lv.iconColor} strokeWidth={2} />
-              <span className={`text-[11px] font-extrabold bg-gradient-to-r ${lv.color} bg-clip-text text-transparent`}>
-                {lv.label}
-              </span>
-              <span className="text-[11px] text-[#8b949e]">
-                <Heart size={9} className="inline mr-0.5 text-pink-400" fill="currentColor" />
-                <span className="text-[#e6edf3] font-bold">{likeCount ?? 0}</span>
-                {nextLv && <span> / {nextLv.min}</span>}
-              </span>
-            </div>
-          )}
-          <div className="flex-1" />
-          <button
-            onClick={() => setIsDrawerOpen(true)}
-            className="flex items-center gap-1 px-2 py-1 rounded-md text-[#8b949e] hover:text-pink-400 hover:bg-[#161b22] transition-colors flex-shrink-0 text-[11px] font-bold"
-            title="気になるリスト"
-          >
-            <Heart size={13} />
-            リスト
-          </button>
+
+          {/* 中央: レベルアイコン＋名前＋いいね数 */}
+          <div className="flex items-center justify-center gap-1.5">
+            {lv && (
+              <>
+                <lv.Icon size={13} className={lv.iconColor} strokeWidth={2} />
+                <span className={`text-[11px] font-extrabold bg-gradient-to-r ${lv.color} bg-clip-text text-transparent`}>
+                  {lv.label}
+                </span>
+                <span className="text-[11px] text-[#8b949e]">
+                  <Heart size={9} className="inline mr-0.5 text-pink-400" fill="currentColor" />
+                  <span className="text-[#e6edf3] font-bold">{likeCount ?? 0}</span>
+                  {nextLv && <span> / {nextLv.min}</span>}
+                </span>
+              </>
+            )}
+          </div>
+
+          {/* 右: リストボタン */}
+          <div className="flex justify-end">
+            <button
+              onClick={() => setIsDrawerOpen(true)}
+              className="flex items-center gap-1 px-2 py-1 rounded-md text-[#8b949e] hover:text-pink-400 hover:bg-[#161b22] transition-colors text-[11px] font-bold"
+              title="気になるリスト"
+            >
+              <Heart size={13} />
+              リスト
+            </button>
+          </div>
         </div>
 
         {/* 光るゲージバー（ヘッダー下端ライン） */}
