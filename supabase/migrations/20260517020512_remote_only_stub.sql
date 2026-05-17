@@ -1,0 +1,2 @@
+-- This migration was applied directly to the remote database via Supabase dashboard.
+-- Its effects are reverted by 20260517200000_revert_books_to_videos.sql.
