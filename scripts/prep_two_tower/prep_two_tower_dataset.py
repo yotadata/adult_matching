@@ -48,6 +48,7 @@ class PrepConfig:
     snapshot_inputs: bool
     summary_path: Path | None
     keep_legacy_outputs: bool
+    popularity_csvs: list[Path]
 
 
 def build_interactions_from_reviews(
@@ -206,6 +207,43 @@ def _ensure_cid_column(df: pd.DataFrame) -> pd.DataFrame:
         df = df.copy()
         df['cid'] = df['product_url'].apply(_extract_cid_from_url)
     return df
+
+
+def _build_popularity_features(review_csvs: list[Path]) -> pd.DataFrame | None:
+    """
+    Load one or more review CSVs (product_url, reviewer_id, stars) and aggregate
+    per product_url: review_count, avg_stars, popularity_score = log1p(review_count) * avg_stars.
+    Returns a DataFrame with columns: product_url, review_count, avg_stars, popularity_score.
+    All numeric columns are normalized to [0, 1] via min-max.
+    """
+    if not review_csvs:
+        return None
+    frames = []
+    for p in review_csvs:
+        if not p.exists():
+            sys.stderr.write(f"Warning: popularity CSV not found: {p}\n")
+            continue
+        df = pd.read_csv(p, usecols=["product_url", "stars"])
+        df["stars"] = pd.to_numeric(df["stars"], errors="coerce")
+        df = df.dropna(subset=["stars"])
+        frames.append(df)
+    if not frames:
+        return None
+    combined = pd.concat(frames, ignore_index=True)
+    agg = combined.groupby("product_url", as_index=False).agg(
+        review_count=("stars", "count"),
+        avg_stars=("stars", "mean"),
+    )
+    agg["popularity_score"] = np.log1p(agg["review_count"]) * agg["avg_stars"]
+
+    for col in ("review_count", "avg_stars", "popularity_score"):
+        mn, mx = agg[col].min(), agg[col].max()
+        if mx > mn:
+            agg[f"{col}_norm"] = (agg[col] - mn) / (mx - mn)
+        else:
+            agg[f"{col}_norm"] = 0.0
+
+    return agg
 
 
 def _load_videos_df(db_url: str | None) -> pd.DataFrame:
@@ -537,6 +575,14 @@ def main():
     ap.add_argument("--snapshot-inputs", action="store_true", help="When used with --run-id, copy input/auxiliary CSVs into the snapshot directory.")
     ap.add_argument("--summary-out", type=Path, default=None, help="Optional path to write the prep summary JSON.")
     ap.add_argument("--skip-legacy-output", action="store_true", help="If set, do not write legacy output files (out-train/out-val/out-items) and rely on snapshots only.")
+    ap.add_argument(
+        "--popularity-csv",
+        dest="popularity_csvs",
+        type=Path,
+        action="append",
+        default=[],
+        help="Path to review CSV (product_url, reviewer_id, stars) used to compute per-item popularity features. Can be repeated.",
+    )
     args = ap.parse_args()
 
     run_id = args.run_id
@@ -575,6 +621,7 @@ def main():
         snapshot_inputs=snapshot_inputs,
         summary_path=summary_path,
         keep_legacy_outputs=not args.skip_legacy_output,
+        popularity_csvs=args.popularity_csvs,
     )
 
     if cfg.db_url is None:
@@ -660,6 +707,18 @@ def main():
             items_to_write["tag_ids"] = items_to_write["tag_ids"].apply(lambda v: _normalize_to_str_list(v, sort=True))
         if "performer_ids" in items_to_write.columns:
             items_to_write["performer_ids"] = items_to_write["performer_ids"].apply(lambda v: _normalize_to_str_list(v, sort=True))
+
+        # Join popularity features derived from review CSVs
+        popularity_df = _build_popularity_features(cfg.popularity_csvs)
+        if popularity_df is not None and "product_url" in items_to_write.columns:
+            items_to_write = items_to_write.merge(popularity_df, on="product_url", how="left")
+            pop_cols = ["review_count", "avg_stars", "popularity_score", "review_count_norm", "avg_stars_norm", "popularity_score_norm"]
+            for col in pop_cols:
+                if col in items_to_write.columns:
+                    items_to_write[col] = items_to_write[col].fillna(0.0)
+            n_matched = int((items_to_write["review_count"] > 0).sum()) if "review_count" in items_to_write.columns else 0
+            sys.stderr.write(f"Info: popularity features joined. Items with reviews: {n_matched}/{len(items_to_write)}\n")
+            summary["popularity_items_matched"] = n_matched
 
     user_features_df: pd.DataFrame | None = None
     if cfg.mode != "reviews" and cfg.db_url:

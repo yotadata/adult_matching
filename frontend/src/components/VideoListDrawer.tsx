@@ -4,41 +4,39 @@ import { Dialog, Transition, Combobox, DialogBackdrop } from '@headlessui/react'
 import Image from 'next/image';
 import Link from 'next/link';
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
-import { X, Filter, Tag, ExternalLink } from 'lucide-react';
-import { isUpcomingRelease } from '@/lib/videoMeta';
+import { X, Filter, Tag, Users, ExternalLink } from 'lucide-react';
 
 export interface VideoRecord {
   id?: string;
   external_id: string;
   title: string;
   description?: string;
+  duration_seconds?: number;
   thumbnail_url?: string;
-  thumbnail_vertical_url?: string;
+  preview_video_url?: string;
+  distribution_code?: string;
+  maker_code?: string;
+  director?: string;
   series?: string;
+  maker?: string;
   label?: string;
   price?: number;
+  distribution_started_at?: string;
   product_released_at?: string;
-  sample_image_urls?: string[] | null;
-  author?: string | null;
-  affiliate_url?: string | null;
+  sample_video_url?: string;
+  image_urls?: string[];
   source: string;
+  published_at?: string;
   product_url?: string;
   tags?: Array<{ id: string; name: string }>;
+  performers?: Array<{ id: string; name: string }>;
 }
 
 export type TagFilterOption = { id: string; name: string; cnt?: number };
 export type TagFilterWithGroup = TagFilterOption & { tag_group_name?: string | null };
-export type SortKey = 'liked_at' | 'released' | 'price';
+export type PerformerFilterOption = { id: string; name: string; cnt?: number };
+export type SortKey = 'liked_at' | 'released' | 'price' | 'title';
 export type SortOrder = 'asc' | 'desc';
-
-const sortOptions = [
-  { id: 'liked_desc', label: '「気になる」が新しい順', sort: 'liked_at', order: 'desc' },
-  { id: 'liked_asc', label: '「気になる」が古い順', sort: 'liked_at', order: 'asc' },
-  { id: 'released_desc', label: '発売日が新しい順', sort: 'released', order: 'desc' },
-  { id: 'released_asc', label: '発売日が古い順', sort: 'released', order: 'asc' },
-  { id: 'price_asc', label: '価格が安い順', sort: 'price', order: 'asc' },
-  { id: 'price_desc', label: '価格が高い順', sort: 'price', order: 'desc' },
-] as const;
 
 const formatDate = (value?: string | null) => {
   if (!value) return '—';
@@ -82,13 +80,13 @@ export interface VideoListDrawerProps {
   onChangeSort: (value: SortKey) => void;
   onChangeOrder: (value: SortOrder) => void;
   tagOptions: TagFilterWithGroup[];
+  performerOptions: PerformerFilterOption[];
   selectedTagIds: string[];
+  selectedPerformerIds: string[];
   onToggleTag: (id: string) => void;
+  onTogglePerformer: (id: string) => void;
   buildAffiliateHref?: (url?: string | null) => string | undefined;
   totalCount?: number | null;
-  page: number;
-  pageSize: number;
-  onChangePage: (next: number) => void;
 }
 
 export default function VideoListDrawer({
@@ -103,22 +101,26 @@ export default function VideoListDrawer({
   onChangeSort,
   onChangeOrder,
   tagOptions,
+  performerOptions,
   selectedTagIds,
+  selectedPerformerIds,
   onToggleTag,
+  onTogglePerformer,
   buildAffiliateHref = defaultAffiliateBuilder,
   totalCount,
-  page,
-  pageSize,
-  onChangePage,
 }: VideoListDrawerProps) {
   const [tagSearch, setTagSearch] = useState('');
+  const [performerSearch, setPerformerSearch] = useState('');
   const [mobileShowFilters, setMobileShowFilters] = useState(false);
   const [tagComboboxOpen, setTagComboboxOpen] = useState(false);
+  const [performerComboboxOpen, setPerformerComboboxOpen] = useState(false);
   const tagBlurTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const performerBlurTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     return () => {
       if (tagBlurTimerRef.current) clearTimeout(tagBlurTimerRef.current);
+      if (performerBlurTimerRef.current) clearTimeout(performerBlurTimerRef.current);
     };
   }, []);
 
@@ -129,21 +131,22 @@ export default function VideoListDrawer({
       .filter((tag) => (keyword ? tag.name.toLowerCase().includes(keyword) : true));
   }, [tagOptions, selectedTagIds, tagSearch]);
 
-const buildOptionsClass = (isOpenDropdown: boolean, extra: string) =>
-  `absolute inset-x-0 top-full mt-2 z-20 ${extra} ${
-    isOpenDropdown ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
-  } transition-opacity duration-150`;
+  const filteredPerformerOptions = useMemo(() => {
+    const keyword = performerSearch.trim().toLowerCase();
+    return performerOptions
+      .filter((perf) => !selectedPerformerIds.includes(perf.id))
+      .filter((perf) => (keyword ? perf.name.toLowerCase().includes(keyword) : true));
+  }, [performerOptions, selectedPerformerIds, performerSearch]);
+
+  const buildOptionsClass = (isOpenDropdown: boolean, extra: string) =>
+    `absolute inset-x-0 top-full mt-2 z-20 ${extra} ${
+      isOpenDropdown ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+    } transition-opacity duration-150`;
 
   const handleClose = () => {
     setMobileShowFilters(false);
     onClose();
   };
-
-  const totalPages =
-    typeof totalCount === 'number' && pageSize > 0 ? Math.max(1, Math.ceil(totalCount / pageSize)) : null;
-  const hasPrevPage = page > 0;
-  const hasNextPage =
-    typeof totalPages === 'number' ? page < totalPages - 1 : videos.length >= pageSize;
 
   const showTagDropdown = () => {
     if (tagBlurTimerRef.current) clearTimeout(tagBlurTimerRef.current);
@@ -152,6 +155,15 @@ const buildOptionsClass = (isOpenDropdown: boolean, extra: string) =>
 
   const hideTagDropdown = () => {
     tagBlurTimerRef.current = setTimeout(() => setTagComboboxOpen(false), 150);
+  };
+
+  const showPerformerDropdown = () => {
+    if (performerBlurTimerRef.current) clearTimeout(performerBlurTimerRef.current);
+    setPerformerComboboxOpen(true);
+  };
+
+  const hidePerformerDropdown = () => {
+    performerBlurTimerRef.current = setTimeout(() => setPerformerComboboxOpen(false), 150);
   };
 
   return (
@@ -232,24 +244,22 @@ const buildOptionsClass = (isOpenDropdown: boolean, extra: string) =>
                       </div>
                       <div className="flex gap-2">
                         <select
-                          value={
-                            sortOptions.find((opt) => opt.sort === sort && opt.order === order)?.id ??
-                            sortOptions[0].id
-                          }
-                          onChange={(e) => {
-                            const selected = sortOptions.find((opt) => opt.id === e.target.value);
-                            if (selected) {
-                              onChangeSort(selected.sort);
-                              onChangeOrder(selected.order);
-                            }
-                          }}
+                          value={sort}
+                          onChange={(e) => onChangeSort(e.target.value as SortKey)}
                           className="flex-1 rounded-xl border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
                         >
-                          {sortOptions.map((option) => (
-                            <option key={option.id} value={option.id}>
-                              {option.label}
-                            </option>
-                          ))}
+                          <option value="liked_at">気になる日時</option>
+                          <option value="released">発売日</option>
+                          <option value="price">価格</option>
+                          <option value="title">タイトル</option>
+                        </select>
+                        <select
+                          value={order}
+                          onChange={(e) => onChangeOrder(e.target.value as SortOrder)}
+                          className="w-28 rounded-xl border border-gray-200 bg-white px-2 py-1.5 text-sm text-gray-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-violet-500"
+                        >
+                          <option value="desc">降順</option>
+                          <option value="asc">昇順</option>
                         </select>
                       </div>
                     </div>
@@ -312,61 +322,67 @@ const buildOptionsClass = (isOpenDropdown: boolean, extra: string) =>
                       </div>
                     </div>
 
+                    <div className="space-y-1">
+                      <label className="text-[11px] text-gray-600">出演者で検索</label>
+                      {selectedPerformerIds.length > 0 && (
+                        <div className="flex flex-wrap gap-2 text-[11px]">
+                          {selectedPerformerIds.map((id) => {
+                            const name = performerOptions.find((p) => p.id === id)?.name || id;
+                            return (
+                              <button
+                                key={`perf-${id}`}
+                                onClick={() => onTogglePerformer(id)}
+                                className="px-2 py-1 rounded-full border border-indigo-500/60 bg-indigo-100 text-indigo-600"
+                              >
+                                {name} ×
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+                      <div className="relative">
+                        <Combobox value="" onChange={(val: string) => onTogglePerformer(val)}>
+                          <Combobox.Input
+                            onFocus={showPerformerDropdown}
+                            onBlur={hidePerformerDropdown}
+                            placeholder="出演者を検索"
+                            value={performerSearch}
+                            onChange={(event) => setPerformerSearch(event.target.value)}
+                            className="w-full rounded-xl border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                          />
+                          <div className={buildOptionsClass(performerComboboxOpen, 'rounded-2xl border border-gray-200 bg-white shadow-lg max-h-48 overflow-auto')}>
+                            <Combobox.Options static className="py-2 text-sm text-gray-700">
+                              {filteredPerformerOptions.length === 0 ? (
+                                <p className="px-3 py-2 text-xs text-gray-400">該当する出演者がありません</p>
+                              ) : (
+                                filteredPerformerOptions.map((performer) => (
+                                  <Combobox.Option
+                                    key={`performer-${performer.id}`}
+                                    value={performer.id}
+                                    className="px-3 py-1.5 cursor-pointer hover:bg-gray-50 flex justify-between text-sm"
+                                  >
+                                    <span>{performer.name}</span>
+                                    {performer.cnt ? <span className="text-xs text-gray-400">{performer.cnt}</span> : null}
+                                  </Combobox.Option>
+                                ))
+                              )}
+                            </Combobox.Options>
+                          </div>
+                        </Combobox>
+                      </div>
+                    </div>
                   </div>
                 </aside>
 
                 <section className="flex flex-col overflow-y-auto">
                   <div className="sticky top-0 z-10 bg-white/50 backdrop-blur px-4 py-3 border-b border-white/40 text-xs sm:text-sm text-gray-700 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                     <span>
-                      {(() => {
-                        const start = videos.length > 0 ? page * pageSize + 1 : 0;
-                        const end = videos.length > 0 ? page * pageSize + videos.length : 0;
-                        return typeof totalCount === 'number' ? (
-                          <>
-                            全 <strong>{totalCount.toLocaleString('ja-JP')}</strong> 件中{' '}
-                            <strong>
-                              {Math.min(start || 1, totalCount).toLocaleString('ja-JP')} -{' '}
-                              {Math.min(totalCount, end || totalCount).toLocaleString('ja-JP')}
-                            </strong>{' '}
-                            件
-                          </>
-                        ) : videos.length > 0 ? (
-                          <>
-                            全 <strong>{videos.length.toLocaleString('ja-JP')}</strong> 件中{' '}
-                            <strong>
-                              {start.toLocaleString('ja-JP')} - {end.toLocaleString('ja-JP')}
-                            </strong>{' '}
-                            件
-                          </>
-                        ) : (
-                          '表示中: 0 件'
-                        );
-                      })()}
+                      表示中: <strong>{videos.length.toLocaleString('ja-JP')}</strong> 件
                     </span>
-                    {((typeof totalCount === 'number' && totalCount > pageSize) || (typeof totalCount !== 'number' && videos.length >= pageSize)) && (
-                      <div className="flex items-center gap-2 text-[11px] text-gray-500">
-                        <span>
-                          ページ {page + 1}
-                          {typeof totalPages === 'number' ? ` / ${totalPages}` : ''}
-                        </span>
-                        <button
-                          type="button"
-                          className="rounded-full border border-gray-300 px-3 py-1 disabled:opacity-50 disabled:cursor-not-allowed"
-                          disabled={!hasPrevPage}
-                          onClick={() => onChangePage(Math.max(0, page - 1))}
-                        >
-                          前へ
-                        </button>
-                        <button
-                          type="button"
-                          className="rounded-full border border-gray-300 px-3 py-1 disabled:opacity-50 disabled:cursor-not-allowed"
-                          disabled={!hasNextPage}
-                          onClick={() => onChangePage(page + 1)}
-                        >
-                          次へ
-                        </button>
-                      </div>
-                    )}
+                    <span>
+                      検索結果:{' '}
+                      <strong>{typeof totalCount === 'number' ? totalCount.toLocaleString('ja-JP') : '—'}</strong> 件
+                    </span>
                   </div>
                   {error ? (
                     <div className="m-4 rounded-xl bg-red-100 border border-red-300 text-sm text-red-700 px-4 py-3">
@@ -381,57 +397,52 @@ const buildOptionsClass = (isOpenDropdown: boolean, extra: string) =>
                     </div>
                   ) : (
                     <div className="p-4 space-y-4 overflow-y-auto rounded-3xl">
-                      {videos.map((video) => {
-                        const previewImage = video.thumbnail_vertical_url ?? video.thumbnail_url ?? null;
-                        const isPreorder = isUpcomingRelease(video.product_released_at);
-                        return (
-                          <article
-                            key={video.external_id}
-                            className="rounded-2xl border border-gray-200 bg-white text-gray-900 overflow-hidden flex flex-row gap-3 p-3 shadow-sm min-h-[160px]"
-                          >
-                            <div className="relative w-[120px] h-[160px] rounded-xl overflow-hidden bg-slate-200 shrink-0">
-                              {previewImage ? (
-                                <Image src={previewImage} alt={video.title} fill className="object-cover" />
-                              ) : (
-                                <div className="w-full h-full flex items-center justify-center text-sm text-gray-500">No Image</div>
-                              )}
+                      {videos.map((video) => (
+                        <article
+                          key={video.external_id}
+                          className="rounded-2xl border border-gray-200 bg-white text-gray-900 overflow-hidden flex flex-row gap-3 p-3 shadow-sm"
+                        >
+                          <div className="relative w-60 aspect-[5/4] rounded-xl overflow-hidden bg-slate-200">
+                            {video.thumbnail_url ? (
+                              <Image src={video.thumbnail_url} alt={video.title} fill className="object-cover" />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-sm text-gray-500">No Image</div>
+                            )}
+                          </div>
+                          <div className="flex flex-col gap-3 flex-1 min-w-0">
+                            <h2 className="text-base font-semibold leading-tight line-clamp-2">{video.title}</h2>
+                            <div className="text-xs text-gray-600 space-y-1">
+                              <p>{formatPrice(video.price)}</p>
+                              <p>リリース日: {formatDate(video.product_released_at)}</p>
                             </div>
-                            <div className="flex flex-col gap-3 flex-1 min-w-0">
-                              <h2 className="text-base font-semibold leading-tight line-clamp-2">{video.title}</h2>
-                              <div className="text-xs text-gray-600 space-y-1">
-                                <p>{formatPrice(video.price)}</p>
-                                <div className="flex items-center gap-2 flex-wrap">
-                                  <p>発売日: {formatDate(video.product_released_at)}</p>
-                                  {isPreorder ? (
-                                    <span className="inline-flex items-center gap-1 rounded-full bg-amber-100/80 border border-amber-200 px-2 py-0.5 text-[11px] text-amber-700">
-                                      予約作品
-                                    </span>
-                                  ) : null}
-                                </div>
-                              </div>
-                              <div className="flex flex-wrap gap-1.5 text-[11px] text-gray-600">
-                                {video.tags?.slice(0, 3).map((tag) => (
-                                  <span key={tag.id} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gray-100 border border-gray-200">
-                                    <Tag size={12} />
-                                    {tag.name}
-                                  </span>
-                                ))}
-                              </div>
-                              <div className="mt-auto flex gap-2">
-                                <Link
-                                  href={buildAffiliateHref(video.product_url) ?? '#'}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-full bg-rose-500 text-white text-sm font-semibold hover:bg-rose-400 transition"
-                                >
-                                  作品ページへ
-                                  <ExternalLink size={14} />
-                                </Link>
-                              </div>
+                            <div className="flex flex-wrap gap-1.5 text-[11px] text-gray-600">
+                              {video.tags?.slice(0, 3).map((tag) => (
+                                <span key={tag.id} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gray-100 border border-gray-200">
+                                  <Tag size={12} />
+                                  {tag.name}
+                                </span>
+                              ))}
+                              {video.performers?.slice(0, 2).map((perf) => (
+                                <span key={perf.id} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gray-100 border border-gray-200">
+                                  <Users size={12} />
+                                  {perf.name}
+                                </span>
+                              ))}
                             </div>
-                          </article>
-                        );
-                      })}
+                            <div className="mt-auto flex gap-2">
+                              <Link
+                                href={buildAffiliateHref(video.product_url) ?? '#'}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-full bg-rose-500 text-white text-sm font-semibold hover:bg-rose-400 transition"
+                              >
+                                作品ページへ
+                                <ExternalLink size={14} />
+                              </Link>
+                            </div>
+                          </div>
+                        </article>
+                      ))}
                       {videos.length === 0 && !loading ? (
                         <div className="rounded-2xl border border-dashed border-gray-300 bg-white text-gray-600 p-8 text-center">
                           条件に一致する作品がありませんでした。

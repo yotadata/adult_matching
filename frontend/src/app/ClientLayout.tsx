@@ -4,6 +4,7 @@ import Header from '@/components/Header';
 import DesktopSidebar from '@/components/DesktopSidebar';
 import useMediaQuery from '@/hooks/useMediaQuery';
 import GlobalModals from '@/components/GlobalModals';
+import BrowseTabBar from '@/components/BrowseTabBar';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
@@ -51,17 +52,19 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
   }, []);
 
   const isQuizPath = pathname?.startsWith('/quiz') ?? false;
+  const isBrowsePath = (pathname?.startsWith('/grid') || pathname?.startsWith('/swipe') || pathname?.startsWith('/browse')) ?? false;
 
   useEffect(() => {
     if (!authInitialized || isLoggedIn === null || !pathname) return;
     if (pathname.startsWith('/quiz')) return; // 診断ページは認証不要・リダイレクトなし
     const isSwipePath = pathname.startsWith('/swipe');
+    const isGridPath = pathname.startsWith('/grid');
     const isAboutPage = pathname === '/about';
     const isSearchPage = pathname === '/search';
     const isVideoPage = pathname.startsWith('/videos/');
     const isPerformerPage = pathname.startsWith('/performers');
     const isTagPage = pathname.startsWith('/tags');
-    const requiresLogin = !(isSwipePath || isAboutPage || isSearchPage || isVideoPage || isPerformerPage || isTagPage);
+    const requiresLogin = !(isSwipePath || isGridPath || isAboutPage || isSearchPage || isVideoPage || isPerformerPage || isTagPage);
 
     if (requiresLogin && isLoggedIn === false) {
       router.replace('/swipe');
@@ -77,9 +80,10 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
     <DecisionCountProvider>
       <AgeGate />
       <div className="min-h-screen w-full" style={{ background: isHome ? homeGradient : nonHomeGradient }}>
-        {!isMobile && <DesktopSidebar />}
-        <div className={!isMobile ? 'pl-56' : ''}>
-          {isMobile ? <Header cardWidth={undefined} /> : <GlobalModals />}
+        {!isMobile && !isBrowsePath && <DesktopSidebar />}
+        <div className={!isMobile && !isBrowsePath ? 'pl-56' : ''}>
+          {!isBrowsePath && (isMobile ? <Header cardWidth={undefined} /> : <GlobalModals />)}
+          {isBrowsePath && <BrowseTabBar />}
           {children}
         </div>
       </div>
