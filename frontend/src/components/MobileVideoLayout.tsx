@@ -2,7 +2,7 @@
 
 import { CardData } from '@/components/SwipeCard';
 import { useState, RefObject } from 'react';
-import { BookOpen, Calendar, User, Tag, ChevronsLeft, Heart, List, Share2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { BookOpen, Calendar, User, Tag, ChevronsLeft, Heart, List, Share2 } from 'lucide-react';
 
 interface MobileVideoLayoutProps {
   cardData: CardData;
@@ -47,7 +47,7 @@ const MobileVideoLayout: React.FC<MobileVideoLayoutProps> = ({ cardData, onSkip,
         style={{ background: '#0d1117' }}
       >
         {/* サンプル画像エリア */}
-        <div className="relative w-full aspect-[3/4] bg-black flex items-center justify-center overflow-hidden">
+        <div className="relative w-full aspect-[3/4] bg-black flex items-center justify-center overflow-hidden select-none">
           {displayImages.length > 0 ? (
             <>
               <img
@@ -56,34 +56,41 @@ const MobileVideoLayout: React.FC<MobileVideoLayoutProps> = ({ cardData, onSkip,
                 className="w-full h-full object-contain"
                 draggable={false}
               />
+
+              {/* タップ左半分で前へ / 右半分で次へ */}
               {displayImages.length > 1 && (
                 <>
                   <button
                     onClick={() => setImageIndex((p) => Math.max(0, p - 1))}
-                    disabled={imageIndex === 0}
-                    className="absolute left-2 top-1/2 -translate-y-1/2 w-9 h-9 flex items-center justify-center rounded-full bg-black/50 text-white disabled:opacity-30"
-                  >
-                    <ChevronLeft size={20} />
-                  </button>
+                    className="absolute left-0 top-0 w-1/2 h-full z-10"
+                    aria-label="前の画像"
+                  />
                   <button
                     onClick={() => setImageIndex((p) => Math.min(displayImages.length - 1, p + 1))}
-                    disabled={imageIndex === displayImages.length - 1}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 flex items-center justify-center rounded-full bg-black/50 text-white disabled:opacity-30"
-                  >
-                    <ChevronRight size={20} />
-                  </button>
-                  <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
+                    className="absolute right-0 top-0 w-1/2 h-full z-10"
+                    aria-label="次の画像"
+                  />
+
+                  {/* ページインジケーター */}
+                  <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1 z-20 pointer-events-none">
                     {displayImages.map((_, i) => (
                       <div key={i} className={`w-1.5 h-1.5 rounded-full ${i === imageIndex ? 'bg-white' : 'bg-white/40'}`} />
                     ))}
                   </div>
+
+                  {/* タップヒント（最初の表示時のみ） */}
+                  {imageIndex === 0 && displayImages.length > 1 && (
+                    <div className="absolute bottom-7 left-1/2 -translate-x-1/2 z-20 pointer-events-none">
+                      <span className="text-[10px] text-white/60 bg-black/40 px-2 py-0.5 rounded">タップでページめくり</span>
+                    </div>
+                  )}
                 </>
               )}
-              {imageIndex > 0 && (
-                <div className="absolute top-2 left-2 bg-black/60 text-white text-[10px] px-2 py-0.5 rounded">
-                  試し読み {imageIndex}/{displayImages.length - 1}
-                </div>
-              )}
+
+              {/* ページ番号 */}
+              <div className="absolute top-2 right-2 bg-black/60 text-white text-[10px] px-2 py-0.5 rounded z-20 pointer-events-none">
+                {imageIndex + 1} / {displayImages.length}
+              </div>
             </>
           ) : (
             <div className="flex flex-col items-center gap-2 text-[#8b949e]">
