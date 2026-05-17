@@ -1,7 +1,6 @@
 'use client';
 
-import TinderCard from 'react-tinder-card';
-import { motion } from 'framer-motion';
+import { motion, useAnimation, PanInfo } from 'framer-motion';
 import { forwardRef, useImperativeHandle, useState, useEffect, useRef } from 'react';
 import { Play, User, Tag, Calendar, Share2 } from 'lucide-react'; // アイコンをインポート
 
@@ -13,7 +12,6 @@ export interface CardData {
   description: string;
   videoUrl: string;
   thumbnail_url: string; // 追加
-  thumbnailVerticalUrl?: string; // 縦サムネ
   sampleVideoUrl?: string; // 追加: 直接再生用
   embedUrl?: string; // 追加: iframe用
   performers?: { id: string; name: string; }[]; // 追加
@@ -33,20 +31,16 @@ export interface SwipeCardHandle {
 interface SwipeCardProps {
   cardData: CardData;
   onSwipe: (direction: 'left' | 'right') => void;
-  onDrag?: (direction: 'left' | 'right' | 'reset') => void;
-  onDragEnd?: () => void;
+  onDrag?: (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => void;
+  onDragEnd?: (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => void;
   cardWidth: number | undefined; // cardWidth propを追加
   canSwipe?: boolean; // 追加: ゲスト制限時にスワイプを抑制
   onSamplePlay?: (card: CardData) => void;
 }
 
-type TinderApi = {
-  swipe: (dir?: 'left' | 'right' | 'up' | 'down') => Promise<void>;
-  restoreCard: () => Promise<void>;
-};
-
 const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwipe, onDrag, onDragEnd, cardWidth, canSwipe = true, onSamplePlay }, ref) => {
-  const cardRef = useRef<TinderApi | null>(null);
+  const controls = useAnimation();
+  
   const [showVideo, setShowVideo] = useState(false);
   const [showOverlay, setShowOverlay] = useState(true);
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -66,19 +60,41 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwi
   
 
   const swipe = async (direction: 'left' | 'right') => {
-    if (!canSwipe) return;
-    try {
-      await cardRef.current?.swipe(direction);
-    } catch (err) {
-      if (process.env.NODE_ENV !== 'production') {
-        console.warn('TinderCard swipe failed:', err);
-      }
+    if (!canSwipe) {
+      await controls.start({ x: 0 });
+      return;
     }
+    const swipeWidth = cardWidth || 448; // cardWidthが未定義の場合のフォールバック
+    const x = direction === 'right' ? `calc(100vw + ${swipeWidth}px)` : `calc(-100vw - ${swipeWidth}px)`;
+    await controls.start({ x, opacity: 0, transition: { duration: 0.6 } }); 
+    onSwipe(direction);
   };
 
   useImperativeHandle(ref, () => ({
     swipe,
   }));
+
+  const handleDrag = (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+    onDrag?.(event, info); // 親の onDrag を呼び出す
+  };
+
+  const handleDragEnd = (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+    if (!canSwipe) {
+      controls.start({ x: 0 });
+      onDragEnd?.(event, info);
+      return;
+    }
+    if (info.offset.x > 100) {
+      swipe('right');
+    } else if (info.offset.x < -100) {
+      swipe('left');
+    } else {
+      controls.start({ x: 0 });
+    }
+    onDragEnd?.(event, info); // 親の onDragEnd を呼び出す
+  };
+
+  
 
   const toAffiliateUrl = (raw?: string) => {
     const AF_ID = 'yotadata2-001';
@@ -112,36 +128,18 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwi
 
   return (
     <div className="absolute h-full" style={{ width: cardWidth ? `${cardWidth}px` : 'auto' }}>
-      {/* 背面カード */}
-      <div className="absolute inset-x-4 top-4 -bottom-2 bg-[#1c2128] rounded-2xl shadow-md pointer-events-none z-0" />
-      <TinderCard
-        ref={cardRef as unknown as React.RefObject<TinderApi>}
-        className="relative z-10 h-full w-full"
-        preventSwipe={canSwipe ? ['up', 'down'] : ['left', 'right', 'up', 'down']}
-        swipeRequirementType="position"
-        swipeThreshold={(() => {
-          const base = cardWidth ?? 360;
-          const computed = base * 0.35;
-          return Math.max(120, Math.min(200, computed));
-        })()}
-        onSwipe={(dir) => {
-          if (dir === 'left' || dir === 'right') onSwipe(dir);
-        }}
-        onSwipeRequirementFulfilled={(dir) => {
-          if (dir === 'left' || dir === 'right') onDrag?.(dir);
-        }}
-        onSwipeRequirementUnfulfilled={() => {
-          onDrag?.('reset');
-          onDragEnd?.();
-        }}
-        onCardLeftScreen={() => {
-          onDrag?.('reset');
-          onDragEnd?.();
-        }}
-      >
-      <motion.div
-        className="h-full rounded-2xl bg-[#0d1117] border border-[#30363d] shadow-xl flex flex-col p-4 cursor-grab overflow-hidden"
-        whileTap={{ scale: 0.995 }}
+      {/* 背面のグレー“カード”：白カードより少し小さい高さで、下側だけ少しはみ出す */}
+      <div className="absolute inset-x-4 top-4 -bottom-2 bg-gray-200/90 rounded-2xl shadow-md pointer-events-none z-0" />
+      <motion.div 
+        className="relative z-10 h-full rounded-2xl bg-white border border-gray-200 shadow-xl flex flex-col p-4 cursor-grab overflow-hidden"
+        drag="x"
+        dragConstraints={{ left: 0, right: 0 }}
+        onDragStart={(event, info) => onDrag?.(event, info)} // onDragStart も追加
+        onDrag={handleDrag}
+        onDragEnd={handleDragEnd}
+        animate={controls}
+        initial={false}
+        whileTap={{ cursor: "grabbing" }}
       >
       {/* 上部: 動画エリア（PC版は4:3のアスペクト比） */}
       <div className="relative w-full aspect-[4/3] bg-black/90 flex items-center justify-center rounded-xl overflow-hidden">
@@ -184,46 +182,48 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwi
         {/* 外部タブ再生リンクは非表示にする */}
       </div>
 
-      {/* 下部: テキスト情報エリア */}
-      <div className="flex flex-col p-4 overflow-y-auto flex-1">
-        <h2 className="text-base font-bold text-[#e6edf3] leading-snug">{cardData.title}</h2>
+      {/* 下部: テキスト情報エリア（残り領域にフィット） */}
+      <div className="flex flex-col text-gray-800 p-4 overflow-y-auto flex-1">
+        <h2 className="text-lg font-extrabold tracking-tight">{cardData.title}</h2>
           {cardData.product_released_at && (
             <div className="grid grid-cols-[auto_1fr_auto] items-center gap-x-2 mt-2">
-              <div className="flex items-center text-xs text-[#8b949e] gap-1 whitespace-nowrap">
-                <Calendar className="h-3.5 w-3.5" />
+              <div className="flex w-18 flex-shrink-0 items-center text-sm text-gray-500">
+                <Calendar className="mr-1 h-4 w-4" />
                 <span>発売日:</span>
               </div>
-              <div className="flex flex-wrap gap-1.5">
-                <span className="rounded-full bg-blue-900/50 border border-blue-700/40 px-2 py-0.5 text-[11px] text-blue-300">
+              <div className="flex flex-wrap gap-2">
+                <span className="rounded-full bg-blue-500/70 px-2 py-1 text-[11px] font-bold text-white">
                   {new Date(cardData.product_released_at).toLocaleDateString('ja-JP')}
                 </span>
               </div>
-              <button
-                onClick={() => {
-                  try {
-                    const text = cardData.title || '';
-                    const url = toAffiliateUrl(cardData.productUrl);
-                    const shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
-                    window.open(shareUrl, '_blank', 'noopener,noreferrer');
-                  } catch {}
-                }}
-                className="w-7 h-7 flex items-center justify-center rounded-full bg-[#21262d] border border-[#30363d] text-[#8b949e] hover:text-[#e6edf3]"
-                aria-label="Xで共有"
-                title="Xで共有"
-              >
-                <Share2 size={13} />
-              </button>
+              <div className="flex justify-end">
+                <button
+                  onClick={() => {
+                    try {
+                      const text = cardData.title || '';
+                      const url = toAffiliateUrl(cardData.productUrl);
+                      const shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
+                      window.open(shareUrl, '_blank', 'noopener,noreferrer');
+                    } catch {}
+                  }}
+                  className="w-8 h-8 flex items-center justify-center rounded-full bg-white text-black border border-gray-300 shadow-sm hover:bg-gray-50"
+                  aria-label="Xで共有"
+                  title="Xで共有"
+                >
+                  <Share2 size={14} />
+                </button>
+              </div>
             </div>
           )}
         {cardData.performers && cardData.performers.length > 0 && (
-          <div className="flex items-start gap-2 mt-2">
-            <div className="flex items-center text-xs text-[#8b949e] gap-1 whitespace-nowrap pt-0.5">
-              <User className="h-3.5 w-3.5" />
+          <div className="grid grid-cols-[auto_1fr] items-start gap-x-2 mt-2">
+            <div className="flex w-18 flex-shrink-0 items-center text-sm text-gray-500">
+              <User className="mr-1 h-4 w-4" />
               <span>出演:</span>
             </div>
-            <div className="flex flex-wrap gap-1.5">
+            <div className="flex flex-wrap gap-2">
               {cardData.performers.map((performer) => (
-                <span key={performer.id} className="rounded-full bg-pink-900/40 border border-pink-700/40 px-2 py-0.5 text-[11px] text-pink-300">
+                <span key={performer.id} className="rounded-full bg-pink-500/70 px-2 py-1 text-[11px] font-bold text-white">
                   {performer.name}
                 </span>
               ))}
@@ -231,14 +231,16 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwi
           </div>
         )}
         {cardData.tags && cardData.tags.length > 0 && (
-          <div className="flex items-start gap-2 mt-2">
-            <div className="flex items-center text-xs text-[#8b949e] gap-1 whitespace-nowrap pt-0.5">
-              <Tag className="h-3.5 w-3.5" />
+          <div className="grid grid-cols-[auto_1fr] items-start gap-x-2 mt-2">
+            {/* Grid Column 1: Label */}
+            <div className="flex w-18 flex-shrink-0 items-center text-sm text-gray-500">
+              <Tag className="mr-1 h-4 w-4" />
               <span>タグ:</span>
             </div>
-            <div className="flex flex-wrap gap-1.5">
+            {/* Grid Column 2: Tags container */}
+            <div className="flex flex-wrap gap-2">
               {cardData.tags.map((tag) => (
-                <span key={tag.id} className="rounded-full bg-violet-900/40 border border-violet-700/40 px-2 py-0.5 text-[11px] text-violet-300">
+                <span key={tag.id} className="rounded-full bg-purple-600/60 px-2 py-1 text-[11px] font-bold text-white">
                   {tag.name}
                 </span>
               ))}
@@ -246,8 +248,7 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwi
           </div>
         )}
       </div>
-        </motion.div>
-      </TinderCard>
+      </motion.div>
     </div>
   );
 });
