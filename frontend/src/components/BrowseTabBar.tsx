@@ -179,7 +179,7 @@ function BrowseTabBarInner() {
         </div>
 
         {/* ゲージエリア: メインヘッダーと別領域 */}
-        <div className="bg-[#161b22] border-b border-[#21262d] px-3 py-2">
+        <div className="bg-[#12101a] border-b border-violet-900/40 px-3 py-2">
           {lv ? (
             <div className="flex items-center gap-2">
               <lv.Icon size={18} className={`flex-shrink-0 ${lv.iconColor}`} strokeWidth={2} />
@@ -194,7 +194,7 @@ function BrowseTabBarInner() {
                     {nextLv && <span> / {nextLv.min}</span>}
                   </span>
                 </div>
-                <div className="h-2.5 w-full bg-[#0d1117] rounded-full overflow-hidden">
+                <div className="h-2.5 w-full bg-[#1e1530] rounded-full overflow-hidden">
                   <div
                     className={`h-full rounded-full bg-gradient-to-r ${lv.color} transition-all duration-700 ease-out`}
                     style={{ width: `${progress}%`, boxShadow: '0 0 8px 2px rgba(167,139,250,0.5)' }}
@@ -203,7 +203,7 @@ function BrowseTabBarInner() {
               </div>
             </div>
           ) : (
-            <div className="h-2.5 w-full bg-[#0d1117] rounded-full" />
+            <div className="h-2.5 w-full bg-[#1e1530] rounded-full" />
           )}
         </div>
       </div>
