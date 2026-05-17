@@ -16,6 +16,7 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const fanzaApiId = process.env.FANZA_API_ID;
+// API用とリンク用でアフィリエイトIDを分離（後方互換のためFANZA_AFFILIATE_IDも許容）
 const fanzaApiAffiliateId = process.env.FANZA_API_AFFILIATE_ID || process.env.FANZA_AFFILIATE_ID;
 const fanzaLinkAffiliateId = process.env.FANZA_LINK_AFFILIATE_ID || process.env.FANZA_AFFILIATE_ID;
 
@@ -44,32 +45,40 @@ if (!supabaseServiceRoleKey) {
 }
 const debugLogs = process.env.INGEST_FANZA_DEBUG === '1';
 
-type BookInsertPayload = {
+type RawActress = string | { id?: string | null; name?: string | null };
+
+type VideoInsertPayload = {
   external_id: string;
   title: string;
   description: string | null;
   thumbnail_url: string | null;
   thumbnail_vertical_url: string | null;
-  sample_image_urls: string[] | null;
-  page_count: number | null;
-  author: string | null;
-  author_id: string | null;
+  preview_video_url: string | null;
+  sample_video_url: string | null;
+  product_released_at: string | null;
+  duration_seconds: number | null;
+  director: string | null;
   series: string | null;
-  publisher: string | null;
+  maker: string | null;
   label: string | null;
-  price: number | null;
   product_url: string | null;
   affiliate_url: string | null;
-  product_released_at: string | null;
+  price: number | null;
+  image_urls: string[] | null;
+  distribution_code: string | null;
+  maker_code: string | null;
   source: string;
 };
 
-type PreparedBookData = BookInsertPayload & {
+type PreparedVideoData = VideoInsertPayload & {
   genres: string[];
+  actresses: RawActress[];
 };
 
 const tagCache = new Map<string, string>();
 const tagGroupIdCache = new Map<string, string>();
+const performerNameCache = new Map<string, string>();
+const performerFanzaCache = new Map<string, string>();
 const DEFAULT_TAG_GROUP_NAME = '未分類';
 const csvTagGroupMap = new Map<string, string>();
 
@@ -102,7 +111,7 @@ function toFanzaAffiliate(rawUrl: string | null | undefined, affiliateId: string
   return `https://al.fanza.co.jp/?lurl=${lurl}&af_id=${aid}&ch=link_tool&ch_id=link`;
 }
 
-async function fetchFanzaApiItems(queryParams: Record<string, any>, service = 'ebook', floor = 'comic') {
+async function fetchFanzaApiItems(queryParams: Record<string, any>, service = 'digital', floor = 'videoa') {
   const apiUrl = 'https://api.dmm.com/affiliate/v3/ItemList';
   const params = {
     api_id: fanzaApiId,
@@ -246,6 +255,72 @@ async function getTagGroupIdByName(name: string): Promise<string | null> {
   return data.id;
 }
 
+async function ensurePerformerId(name: string | null, fanzaId: string | null): Promise<string | null> {
+  const normalizedName = name?.trim() ?? null;
+
+  if (fanzaId && performerFanzaCache.has(fanzaId)) return performerFanzaCache.get(fanzaId) ?? null;
+  if (!fanzaId && normalizedName && performerNameCache.has(normalizedName)) return performerNameCache.get(normalizedName) ?? null;
+
+  if (fanzaId) {
+    const { data: existingByFanza, error: fanzaLookupError } = await supabase
+      .from('performers')
+      .select('id, name, fanza_actress_id')
+      .eq('fanza_actress_id', fanzaId)
+      .maybeSingle();
+    if (fanzaLookupError) console.error('Error fetching performer by fanza_actress_id:', fanzaLookupError);
+    if (existingByFanza) {
+      const performerId = existingByFanza.id;
+      if (existingByFanza.fanza_actress_id) performerFanzaCache.set(existingByFanza.fanza_actress_id, performerId);
+      const n = existingByFanza.name?.trim();
+      if (n) performerNameCache.set(n, performerId);
+      return performerId;
+    }
+  }
+
+  if (!fanzaId && normalizedName) {
+    const { data: existingByName, error: nameLookupError } = await supabase
+      .from('performers')
+      .select('id, name, fanza_actress_id')
+      .eq('name', normalizedName)
+      .maybeSingle();
+    if (nameLookupError) console.error('Error fetching performer by name:', nameLookupError);
+    if (existingByName) {
+      const performerId = existingByName.id;
+      performerNameCache.set(normalizedName, performerId);
+      const f = existingByName.fanza_actress_id?.trim();
+      if (f) performerFanzaCache.set(f, performerId);
+      return performerId;
+    }
+  }
+
+  if (!normalizedName && !fanzaId) return null;
+
+  const upsertPayload = fanzaId
+    ? { name: normalizedName ?? fanzaId, fanza_actress_id: fanzaId }
+    : { name: normalizedName };
+
+  const { data: upserted, error: upsertError } = await supabase
+    .from('performers')
+    .upsert([upsertPayload], { onConflict: fanzaId ? 'fanza_actress_id' : 'name' })
+    .select('id, name, fanza_actress_id')
+    .single();
+
+  if (upsertError || !upserted) {
+    console.error('Error upserting performer:', upsertError);
+    return null;
+  }
+
+  const performerId = upserted.id;
+  const returnedName = upserted.name?.trim() ?? normalizedName;
+  if (returnedName) performerNameCache.set(returnedName, performerId);
+  const returnedFanza = upserted.fanza_actress_id ?? fanzaId;
+  if (returnedFanza) performerFanzaCache.set(returnedFanza, performerId);
+  if (normalizedName) performerNameCache.set(normalizedName, performerId);
+  if (fanzaId) performerFanzaCache.set(fanzaId, performerId);
+
+  return performerId;
+}
+
 function isDuplicateError(error: any): boolean {
   if (!error) return false;
   if (error.code === '23505') return true;
@@ -254,54 +329,80 @@ function isDuplicateError(error: any): boolean {
   return msg.includes('duplicate key') || detail.includes('duplicate key');
 }
 
-async function insertBookData(data: PreparedBookData): Promise<boolean> {
-  const bookPayload: BookInsertPayload = {
+async function insertVideoData(data: PreparedVideoData): Promise<boolean> {
+  const videoPayload: VideoInsertPayload = {
     external_id: data.external_id,
     title: data.title,
     description: data.description ?? null,
     thumbnail_url: data.thumbnail_url ?? null,
     thumbnail_vertical_url: data.thumbnail_vertical_url ?? null,
-    sample_image_urls: data.sample_image_urls ?? null,
-    page_count: data.page_count ?? null,
-    author: data.author ?? null,
-    author_id: data.author_id ?? null,
+    preview_video_url: data.preview_video_url ?? null,
+    sample_video_url: data.sample_video_url ?? null,
+    product_released_at: data.product_released_at ?? null,
+    duration_seconds: data.duration_seconds ?? null,
+    director: data.director ?? null,
     series: data.series ?? null,
-    publisher: data.publisher ?? null,
+    maker: data.maker ?? null,
     label: data.label ?? null,
-    price: data.price ?? null,
     product_url: data.product_url ?? null,
     affiliate_url: data.affiliate_url ?? null,
-    product_released_at: data.product_released_at ?? null,
+    price: data.price ?? null,
+    image_urls: data.image_urls ?? null,
+    distribution_code: data.distribution_code ?? null,
+    maker_code: data.maker_code ?? null,
     source: data.source,
   };
 
-  const { data: upsertedBook, error: bookError } = await supabase
-    .from('books')
-    .upsert([bookPayload], { onConflict: 'external_id' })
+  const { data: upsertedVideo, error: videoError } = await supabase
+    .from('videos')
+    .upsert([videoPayload], { onConflict: 'external_id' })
     .select('id')
     .single();
 
-  if (bookError || !upsertedBook) {
-    console.error(`[ingest_fanza] book upsert failed external_id=${data.external_id}:`, bookError);
+  if (videoError || !upsertedVideo) {
+    console.error(`[ingest_fanza] video upsert failed external_id=${data.external_id}:`, videoError);
     return false;
   }
 
-  const bookId = upsertedBook.id;
+  const videoId = upsertedVideo.id;
 
   const uniqueGenres = unique<string>(data.genres ?? []);
-  const tagRows: { book_id: string; tag_id: string }[] = [];
+  const tagRows: { video_id: string; tag_id: string }[] = [];
   for (const genreName of uniqueGenres) {
     const tagId = await ensureTagId(genreName);
     if (!tagId) continue;
-    tagRows.push({ book_id: bookId, tag_id: tagId });
+    tagRows.push({ video_id: videoId, tag_id: tagId });
   }
 
   if (tagRows.length) {
-    const { error: bookTagError } = await supabase
-      .from('book_tags')
-      .upsert(tagRows, { onConflict: 'book_id,tag_id' });
-    if (bookTagError && !isDuplicateError(bookTagError)) {
-      console.error(`[ingest_fanza] book_tags upsert failed book_id=${bookId}:`, bookTagError);
+    const { error: videoTagError } = await supabase
+      .from('video_tags')
+      .upsert(tagRows, { onConflict: 'video_id,tag_id' });
+    if (videoTagError && !isDuplicateError(videoTagError)) {
+      console.error(`[ingest_fanza] video_tags upsert failed video_id=${videoId}:`, videoTagError);
+    }
+  }
+
+  const performerRows: { video_id: string; performer_id: string }[] = [];
+  for (const actress of data.actresses ?? []) {
+    const name = typeof actress === 'string' ? actress : actress?.name ?? null;
+    const fanzaId = typeof actress === 'object' ? actress?.id ?? null : null;
+    const performerId = await ensurePerformerId(name, fanzaId);
+    if (!performerId) continue;
+    performerRows.push({ video_id: videoId, performer_id: performerId });
+  }
+
+  if (performerRows.length) {
+    const distinctRows = new Map<string, { video_id: string; performer_id: string }>();
+    for (const row of performerRows) {
+      const key = `${row.video_id}:${row.performer_id}`;
+      if (!distinctRows.has(key)) distinctRows.set(key, row);
+    }
+    const { error: videoPerformerError } = await supabase
+      .from('video_performers')
+      .upsert(Array.from(distinctRows.values()), { onConflict: 'video_id,performer_id' });
+    if (videoPerformerError && !isDuplicateError(videoPerformerError)) {
+      console.error(`[ingest_fanza] video_performers upsert failed video_id=${videoId}:`, videoPerformerError);
     }
   }
 
@@ -334,7 +435,7 @@ async function ingestSource(
     const result = await fetchFanzaApiItems(query, service, floor);
 
     if (!result || !result.items || result.items.length === 0) {
-      console.log('No more items to fetch or an error occurred.');
+      console.log('[ingest_fanza] No more items to fetch or an error occurred.');
       break;
     }
 
@@ -345,73 +446,78 @@ async function ingestSource(
 
     for (const item of result.items) {
       const volumeText: string | null = item.iteminfo?.volume ?? null;
-      const pageCountMatch = typeof volumeText === 'string' ? volumeText.match(/(\d+)/) : null;
-      const pageCount: number | null = pageCountMatch ? parseInt(pageCountMatch[1], 10) : null;
+      const durationMinutesMatch = typeof volumeText === 'string' ? volumeText.match(/(\d+)\s*分/) : null;
+      const durationSeconds: number | null = durationMinutesMatch ? parseInt(durationMinutesMatch[1], 10) * 60 : null;
 
       let parsedPrice: number | null = null;
-      if (item.prices?.price != null) {
-        const n = parseFloat(String(item.prices.price).replace(/[^0-9.]/g, ''));
+      if (item.prices && item.prices.price != null) {
+        const priceString = String(item.prices.price).replace(/[^0-9.]/g, '');
+        const n = parseFloat(priceString);
         parsedPrice = isNaN(n) ? null : n;
         if (debugLogs) {
           console.log(`[ingest_fanza] price parsed external_id=${item.content_id} raw="${item.prices.price}" parsed=${parsedPrice}`);
         }
       }
 
-      const thumbnailUrl: string | null = coalesce(
+      const sm = item.sampleMovieURL ?? {};
+      const previewUrl: string | null = coalesce(
+        sm.size_720_480,
+        sm.size_644_414,
+        sm.size_560_360,
+        sm.size_476_306
+      );
+
+      const imageUrls: string[] | null = coalesce(
+        item.sampleImageURL?.sample_s?.image,
+        item.sampleImageURL?.sample_l?.image
+      );
+      const horizontalThumbnail: string | null = coalesce(
         item.imageURL?.large,
         item.imageURL?.list,
         item.imageURL?.small
       );
-      const thumbnailVerticalUrl: string | null = coalesce(
+      const verticalThumbnail: string | null = coalesce(
         item.imageURL?.small,
         item.imageURL?.large,
         item.imageURL?.list
       );
-
-      const sampleImageUrls: string[] | null = coalesce(
-        item.sampleImageURL?.sample_s?.image,
-        item.sampleImageURL?.sample_l?.image
-      );
-
-      const authorRaw = item.iteminfo?.author ?? item.iteminfo?.artist ?? null;
-      const authorName: string | null = pickName(authorRaw);
-      const authorId: string | null = Array.isArray(authorRaw)
-        ? (authorRaw[0]?.id ?? null)
-        : (authorRaw?.id ?? null);
 
       const genres = item.iteminfo?.genre
         ? (Array.isArray(item.iteminfo.genre)
             ? item.iteminfo.genre.map((g: any) => g.name).filter(Boolean)
             : [item.iteminfo.genre.name])
         : [];
+      const actressesRaw: RawActress[] = item.iteminfo?.actress
+        ? (Array.isArray(item.iteminfo.actress) ? item.iteminfo.actress : [item.iteminfo.actress])
+        : [];
 
-      const series = pickName(item.iteminfo?.series);
-      const publisher = pickName(item.iteminfo?.maker);
-      const label = pickName(item.iteminfo?.label);
-
-      const bookData: PreparedBookData = {
+      const videoData: PreparedVideoData = {
         external_id: item.content_id,
         title: item.title,
-        description: item.description ?? null,
-        thumbnail_url: thumbnailUrl,
-        thumbnail_vertical_url: thumbnailVerticalUrl,
-        sample_image_urls: sampleImageUrls,
-        page_count: pageCount,
-        author: authorName,
-        author_id: authorId,
-        series,
-        publisher,
-        label,
-        price: parsedPrice,
+        description: null,
+        thumbnail_url: horizontalThumbnail,
+        thumbnail_vertical_url: verticalThumbnail,
+        preview_video_url: previewUrl,
+        sample_video_url: previewUrl,
+        product_released_at: normalizeFanzaDateTime(item.date) ?? null,
+        duration_seconds: durationSeconds,
+        director: pickName(item.iteminfo?.director),
+        series: pickName(item.iteminfo?.series),
+        maker: pickName(item.iteminfo?.maker),
+        label: pickName(item.iteminfo?.label),
+        genres,
+        actresses: actressesRaw,
         product_url: item.URL ?? null,
         affiliate_url: item.affiliateURL ?? toFanzaAffiliate(item.URL, fanzaLinkAffiliateId),
-        product_released_at: normalizeFanzaDateTime(item.date) ?? null,
-        genres,
+        price: parsedPrice,
+        image_urls: imageUrls,
+        distribution_code: (item as any).jancode ?? null,
+        maker_code: (item as any).maker_product ?? item.product_id ?? null,
         source,
       };
 
-      const upserted = await insertBookData(bookData);
-      if (upserted) { successCount++; } else { failureCount++; }
+      const upserted = await insertVideoData(videoData);
+      if (upserted) successCount++; else failureCount++;
       fetchedCount++;
     }
 
@@ -424,7 +530,6 @@ async function ingestSource(
     offset += hits;
   }
 
-  console.log(`[ingest_fanza] ${source} completed success=${successCount} failure=${failureCount} fetched=${fetchedCount}`);
   return { success: successCount, failure: failureCount, fetched: fetchedCount };
 }
 
@@ -449,24 +554,25 @@ async function main() {
     console.log(`Using custom lte_release_date: ${lteReleaseDate}`);
   }
 
-  console.log(`Fetching items released between ${gteReleaseDate} and ${lteReleaseDate}...`);
+  console.log(`Fetching videos released between ${gteReleaseDate} and ${lteReleaseDate}...`);
 
   const sources = [
-    { service: 'doujin', floor: 'digital_doujin', source: 'FANZA_DOUJIN' },
+    { service: 'digital', floor: 'videoa',         source: 'FANZA' },
+    { service: 'doujin',  floor: 'digital_doujin', source: 'FANZA_DOUJIN' },
   ];
 
   let totalSuccess = 0;
   let totalFailure = 0;
   let totalFetched = 0;
 
-  for (const s of sources) {
-    const result = await ingestSource(s.service, s.floor, s.source, gteReleaseDate, lteReleaseDate);
+  for (const { service, floor, source } of sources) {
+    const result = await ingestSource(service, floor, source, gteReleaseDate, lteReleaseDate);
     totalSuccess += result.success;
     totalFailure += result.failure;
     totalFetched += result.fetched;
   }
 
-  console.log(`\n[ingest_fanza] ALL completed success=${totalSuccess} failure=${totalFailure} totalFetched=${totalFetched}`);
+  console.log(`[ingest_fanza] all sources completed success=${totalSuccess} failure=${totalFailure} totalFetched=${totalFetched}`);
 }
 
 main();
