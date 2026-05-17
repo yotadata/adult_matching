@@ -141,9 +141,9 @@ function BrowseTabBarInner() {
       ))}
       {levelUpLevel && <LevelUpOverlay level={levelUpLevel} onDone={() => setLevelUpLevel(null)} />}
 
-      <div className="fixed top-0 left-0 right-0 z-40 flex flex-col">
-        {/* メインヘッダー: ロゴ・タブ切替・リスト */}
-        <div className="bg-[#0d1117]/95 backdrop-blur border-b border-[#30363d] flex items-center px-3 h-11 gap-2">
+      <div className="fixed top-0 left-0 right-0 z-40 bg-[#0d1117]/95 backdrop-blur flex flex-col">
+        {/* メインヘッダー: ロゴ・タブ切替・レベル・リスト */}
+        <div className="flex items-center px-3 h-11 gap-2">
           <Link href="/" className="flex-shrink-0">
             <Image src="/seiheki_lab.png" alt="性癖ラボ" width={72} height={22} className="h-5 w-auto" />
           </Link>
@@ -167,7 +167,20 @@ function BrowseTabBarInner() {
               <Layers size={14} />
             </Link>
           </div>
+          {lv && (
+            <div className="flex items-center gap-1.5 flex-shrink-0">
+              <lv.Icon size={13} className={lv.iconColor} strokeWidth={2} />
+              <span className={`text-[11px] font-extrabold bg-gradient-to-r ${lv.color} bg-clip-text text-transparent`}>
+                {lv.label}
+              </span>
+            </div>
+          )}
           <div className="flex-1" />
+          <span className="text-[11px] text-[#8b949e] flex-shrink-0">
+            <Heart size={9} className="inline mr-0.5 text-pink-400" fill="currentColor" />
+            <span className="text-[#e6edf3] font-bold">{likeCount ?? 0}</span>
+            {nextLv && <span className="text-[#8b949e]"> / {nextLv.min}</span>}
+          </span>
           <button
             onClick={() => setIsDrawerOpen(true)}
             className="flex items-center gap-1 px-2 py-1 rounded-md text-[#8b949e] hover:text-pink-400 hover:bg-[#161b22] transition-colors flex-shrink-0 text-[11px] font-bold"
@@ -178,32 +191,13 @@ function BrowseTabBarInner() {
           </button>
         </div>
 
-        {/* ゲージエリア: メインヘッダーと別領域 */}
-        <div className="bg-[#12101a] border-b border-violet-900/40 px-3 py-2">
-          {lv ? (
-            <div className="flex items-center gap-2">
-              <lv.Icon size={18} className={`flex-shrink-0 ${lv.iconColor}`} strokeWidth={2} />
-              <div className="flex flex-col flex-1 min-w-0 gap-1">
-                <div className="flex items-center justify-between">
-                  <span className={`text-xs font-extrabold bg-gradient-to-r ${lv.color} bg-clip-text text-transparent`}>
-                    {lv.label}
-                  </span>
-                  <span className="text-[11px] text-[#8b949e] flex-shrink-0">
-                    <Heart size={9} className="inline mr-0.5 text-pink-400" fill="currentColor" />
-                    <span className="text-[#e6edf3] font-bold">{likeCount}</span>
-                    {nextLv && <span> / {nextLv.min}</span>}
-                  </span>
-                </div>
-                <div className="h-2.5 w-full bg-[#1e1530] rounded-full overflow-hidden">
-                  <div
-                    className={`h-full rounded-full bg-gradient-to-r ${lv.color} transition-all duration-700 ease-out`}
-                    style={{ width: `${progress}%`, boxShadow: '0 0 8px 2px rgba(167,139,250,0.5)' }}
-                  />
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="h-2.5 w-full bg-[#1e1530] rounded-full" />
+        {/* 光るゲージバー（ヘッダー下端ライン） */}
+        <div className="relative h-[3px] w-full bg-[#30363d]">
+          {lv && (
+            <div
+              className={`absolute inset-y-0 left-0 bg-gradient-to-r ${lv.color} transition-all duration-700 ease-out`}
+              style={{ width: `${progress}%`, boxShadow: '0 0 10px 2px rgba(167,139,250,0.6)' }}
+            />
           )}
         </div>
       </div>
