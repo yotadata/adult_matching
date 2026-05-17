@@ -1,14 +1,14 @@
 import { createClient, type SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.43.0"
 
-type VideoEntry = {
+type BookEntry = {
   id: string
   title: string | null
   description: string | null
   external_id: string | null
   thumbnail_url: string | null
-  sample_video_url: string | null
+  sample_image_urls: string[] | null
+  author: string | null
   product_released_at: string | null
-  performers: unknown
   tags: unknown
   score: number | null
   model_version: string | null
@@ -46,7 +46,6 @@ const ensureId = (value: unknown): string | null => {
 const toStringOrNull = (value: unknown): string | null =>
   typeof value === "string" ? value : null
 
-
 function clampLimit(limit?: number): number {
   if (!limit || limit <= 0) return DEFAULT_LIMIT
   return Math.min(limit, MAX_LIMIT)
@@ -67,9 +66,9 @@ async function fetchModelVersions(
 ): Promise<Map<string, string | null>> {
   if (ids.length === 0) return new Map()
   const { data, error } = await client
-    .from('video_embeddings')
-    .select('video_id, model_version')
-    .in('video_id', ids)
+    .from('book_embeddings')
+    .select('book_id, model_version')
+    .in('book_id', ids)
   if (error) {
     console.error('Failed to fetch model_version map:', error.message)
     return new Map()
@@ -77,10 +76,10 @@ async function fetchModelVersions(
   const map = new Map<string, string | null>()
   const rows = ensureArray<Record<string, unknown>>(data)
   for (const row of rows) {
-    const videoId = ensureId(row.video_id)
-    if (!videoId) continue
+    const bookId = ensureId(row.book_id)
+    if (!bookId) continue
     const version = toStringOrNull(row.model_version)
-    map.set(videoId, version)
+    map.set(bookId, version)
   }
   return map
 }
@@ -111,35 +110,34 @@ Deno.serve(async (req) => {
       if (!userError && userData?.user) {
         userId = userData.user.id
         const { count, error: countError } = await supabase
-          .from('user_video_decisions')
+          .from('user_book_decisions')
           .select('*', { count: 'exact', head: true })
           .eq('user_id', userId)
         if (countError) {
-          console.error('user_video_decisions count error:', countError.message)
+          console.error('user_book_decisions count error:', countError.message)
         } else {
           decisionCount = count ?? 0
         }
       }
     }
 
-    // Adjust ratios and limit based on user engagement
     let adjustedPageLimit = pageLimit
     let adjustedExploitationRatio = EXPLOITATION_RATIO
     let adjustedPopularityRatio = POPULARITY_RATIO
 
-    if (userId) { // Logged-in user
+    if (userId) {
       if (decisionCount <= 100) {
         adjustedPageLimit = 20
-        adjustedExploitationRatio = 0.5 // Increase personalization as the user has shown significant engagement
+        adjustedExploitationRatio = 0.5
         adjustedPopularityRatio = 0.3
       } else {
-        adjustedPageLimit = 30 // More videos for highly engaged users
-        adjustedExploitationRatio = 0.7 // Heavily personalized
+        adjustedPageLimit = 30
+        adjustedExploitationRatio = 0.7
         adjustedPopularityRatio = 0.1
       }
-    } else { // Guest user
-      adjustedPageLimit = 20 // Guests always get 20
-      adjustedExploitationRatio = 0 // No exploitation for guests
+    } else {
+      adjustedPageLimit = 20
+      adjustedExploitationRatio = 0
       adjustedPopularityRatio = 0.5
     }
 
@@ -148,23 +146,23 @@ Deno.serve(async (req) => {
     const explorationTarget = Math.max(0, adjustedPageLimit - exploitationTarget - popularityTarget)
 
     const seen = new Set<string>()
-    const exploitation: VideoEntry[] = []
-    const popularity: VideoEntry[] = []
-    const exploration: VideoEntry[] = []
+    const exploitation: BookEntry[] = []
+    const popularity: BookEntry[] = []
+    const exploration: BookEntry[] = []
 
     let exploitRawCount = 0
     let exploitError: string | null = null
     if (userId && adjustedExploitationRatio > 0) {
-      const { data: recs, error: recError } = await supabase.rpc('get_videos_recommendations', {
-        user_uuid: userId,
-        page_limit: Math.max(adjustedPageLimit * CANDIDATE_MULTIPLIER, 100),
+      const { data: recs, error: recError } = await supabase.rpc('get_books_recommendations', {
+        p_user_id: userId,
+        p_limit: Math.max(adjustedPageLimit * CANDIDATE_MULTIPLIER, 100),
       })
       if (recError) {
         exploitError = recError.message
-        console.error('get_videos_recommendations error:', recError.message)
+        console.error('get_books_recommendations error:', recError.message)
       } else if (recs && recs.length > 0) {
         exploitRawCount = recs.length
-        const shuffled = shuffle(recs as Record<string, unknown>[]) 
+        const shuffled = shuffle(recs as Record<string, unknown>[])
         for (const item of shuffled) {
           const id = String(item.id)
           if (seen.has(id)) continue
@@ -174,9 +172,9 @@ Deno.serve(async (req) => {
             description: (item.description ?? null) as string | null,
             external_id: (item.external_id ?? null) as string | null,
             thumbnail_url: (item.thumbnail_url ?? null) as string | null,
-            sample_video_url: (item.sample_video_url ?? null) as string | null,
+            sample_image_urls: Array.isArray(item.sample_image_urls) ? item.sample_image_urls as string[] : null,
+            author: (item.author ?? null) as string | null,
             product_released_at: (item.product_released_at ?? null) as string | null,
-            performers: item.performers ?? [],
             tags: item.tags ?? [],
             score: typeof item.score === 'number' ? item.score : null,
             model_version: typeof item.model_version === 'string' ? item.model_version : null,
@@ -191,32 +189,43 @@ Deno.serve(async (req) => {
     let popularityRawCount = 0
     let popularityError: string | null = null
     if (popularityTarget > 0) {
-      const { data: popData, error: popError } = await supabase.rpc('get_popular_videos', {
-        user_uuid: userId,
-        limit_count: popularityTarget * CANDIDATE_MULTIPLIER,
-        lookback_days: popularLookbackDays,
+      const { data: popData, error: popError } = await supabase.rpc('get_popular_books', {
+        p_user_id: userId,
+        p_limit: popularityTarget * CANDIDATE_MULTIPLIER,
+        p_days: popularLookbackDays,
       })
       if (popError) {
         popularityError = popError.message
-        console.error('get_popular_videos error:', popError.message)
+        console.error('get_popular_books error:', popError.message)
       } else if (popData && popData.length > 0) {
         popularityRawCount = popData.length
-        const popIds = (popData as { id: string }[]).map((item) => item.id)
+        const popIds = (popData as { book_id: string }[]).map((item) => item.book_id)
         const modelMap = await fetchModelVersions(supabase, popIds)
-        for (const item of popData as Record<string, unknown>[]) {
-          const id = String(item.id)
+
+        const { data: bookDetails } = await supabase
+          .from('books')
+          .select('id, title, external_id, thumbnail_url, sample_image_urls, author, product_released_at')
+          .in('id', popIds)
+        const detailMap = new Map<string, Record<string, unknown>>()
+        for (const row of (bookDetails ?? []) as Record<string, unknown>[]) {
+          detailMap.set(String(row.id), row)
+        }
+
+        for (const item of popData as { book_id: string; score: number }[]) {
+          const id = item.book_id
           if (seen.has(id)) continue
+          const detail = detailMap.get(id) ?? {}
           popularity.push({
             id,
-            title: (item.title ?? null) as string | null,
-            description: (item.description ?? null) as string | null,
-            external_id: (item.external_id ?? null) as string | null,
-            thumbnail_url: (item.thumbnail_url ?? null) as string | null,
-            sample_video_url: (item.sample_video_url ?? null) as string | null,
-            product_released_at: (item.product_released_at ?? null) as string | null,
-            performers: item.performers ?? [],
-            tags: item.tags ?? [],
-            score: item?.score !== undefined ? Number(item.score) : null,
+            title: toStringOrNull(detail.title),
+            description: null,
+            external_id: toStringOrNull(detail.external_id),
+            thumbnail_url: toStringOrNull(detail.thumbnail_url),
+            sample_image_urls: Array.isArray(detail.sample_image_urls) ? detail.sample_image_urls as string[] : null,
+            author: toStringOrNull(detail.author),
+            product_released_at: toStringOrNull(detail.product_released_at),
+            tags: [],
+            score: item.score ?? null,
             model_version: modelMap.get(id) ?? null,
             source: 'popularity',
           })
@@ -231,29 +240,40 @@ Deno.serve(async (req) => {
     )
 
     if (explorationNeeded > 0) {
-      const { data: randomData, error: randomError } = await supabase.rpc('get_videos_feed', {
-        page_limit: Math.max(explorationNeeded * CANDIDATE_MULTIPLIER, explorationTarget || DEFAULT_LIMIT),
+      const { data: randomData, error: randomError } = await supabase.rpc('get_books_feed', {
+        p_limit: Math.max(explorationNeeded * CANDIDATE_MULTIPLIER, explorationTarget || DEFAULT_LIMIT),
       })
       if (randomError) {
-        console.error('get_videos_feed (exploration) error:', randomError.message)
+        console.error('get_books_feed (exploration) error:', randomError.message)
       } else if (randomData && randomData.length > 0) {
-        const randomRecords = shuffle(randomData as Record<string, unknown>[]) // 探索枠は毎回順番を変える
-        const randomIds = (randomRecords as { id: string }[]).map((item) => item.id)
-        const modelMap = await fetchModelVersions(supabase, randomIds)
-        for (const item of randomRecords) {
-          const id = String(item.id)
+        const bookIds = (randomData as { book_id: string }[]).map((item) => item.book_id)
+        const modelMap = await fetchModelVersions(supabase, bookIds)
+
+        const { data: bookDetails } = await supabase
+          .from('books')
+          .select('id, title, external_id, thumbnail_url, sample_image_urls, author, product_released_at')
+          .in('id', bookIds)
+        const detailMap = new Map<string, Record<string, unknown>>()
+        for (const row of (bookDetails ?? []) as Record<string, unknown>[]) {
+          detailMap.set(String(row.id), row)
+        }
+
+        const shuffled = shuffle(randomData as { book_id: string }[])
+        for (const item of shuffled) {
+          const id = item.book_id
           if (seen.has(id)) continue
+          const detail = detailMap.get(id) ?? {}
           exploration.push({
             id,
-            title: (item.title ?? null) as string | null,
-            description: (item.description ?? null) as string | null,
-            external_id: (item.external_id ?? null) as string | null,
-            thumbnail_url: (item.thumbnail_url ?? null) as string | null,
-            sample_video_url: (item.sample_video_url ?? null) as string | null,
-            product_released_at: (item.product_released_at ?? null) as string | null,
-            performers: item.performers ?? [],
-            tags: item.tags ?? [],
-            score: item?.score !== undefined ? Number(item.score) : null,
+            title: toStringOrNull(detail.title),
+            description: null,
+            external_id: toStringOrNull(detail.external_id),
+            thumbnail_url: toStringOrNull(detail.thumbnail_url),
+            sample_image_urls: Array.isArray(detail.sample_image_urls) ? detail.sample_image_urls as string[] : null,
+            author: toStringOrNull(detail.author),
+            product_released_at: toStringOrNull(detail.product_released_at),
+            tags: [],
+            score: null,
             model_version: modelMap.get(id) ?? null,
             source: 'exploration',
           })
@@ -263,25 +283,15 @@ Deno.serve(async (req) => {
       }
     }
 
-    const final: VideoEntry[] = []
-    let exploitIdx = 0
-    let popIdx = 0
-    let exploreIdx = 0
+    const final: BookEntry[] = []
+    let exploitIdx = 0, popIdx = 0, exploreIdx = 0
     while (final.length < adjustedPageLimit) {
-      if (exploitIdx < exploitation.length) {
-        final.push(exploitation[exploitIdx++])
-      }
+      if (exploitIdx < exploitation.length) final.push(exploitation[exploitIdx++])
       if (final.length >= adjustedPageLimit) break
-      if (popIdx < popularity.length) {
-        final.push(popularity[popIdx++])
-      }
+      if (popIdx < popularity.length) final.push(popularity[popIdx++])
       if (final.length >= adjustedPageLimit) break
-      if (exploreIdx < exploration.length) {
-        final.push(exploration[exploreIdx++])
-      }
-      if (exploitIdx >= exploitation.length && popIdx >= popularity.length && exploreIdx >= exploration.length) {
-        break
-      }
+      if (exploreIdx < exploration.length) final.push(exploration[exploreIdx++])
+      if (exploitIdx >= exploitation.length && popIdx >= popularity.length && exploreIdx >= exploration.length) break
     }
 
     if (final.length < adjustedPageLimit) {
@@ -292,26 +302,15 @@ Deno.serve(async (req) => {
       }
     }
 
-    const finalExploitCount = final.filter(v => v.source === 'exploitation').length
-    const finalPopularityCount = final.filter(v => v.source === 'popularity').length
-    const finalExplorationCount = final.filter(v => v.source === 'exploration').length
-
     const EMBED_INTERVAL = 10
     const remainder = decisionCount % EMBED_INTERVAL
     const swipes_until_next_embed = EMBED_INTERVAL - remainder || EMBED_INTERVAL
 
-    // 個人の嗜好適合度統計（直近 N 件の回数窓）
-    type UserStats = {
-      window: number
-      like_rate: number
-      by_source: Record<string, { likes: number; total: number; like_rate: number }>
-      by_score: Record<string, { likes: number; total: number; like_rate: number }>
-    }
-    let userStats: UserStats | null = null
+    let userStats: Record<string, unknown> | null = null
     if (userId) {
       const STATS_WINDOW = 50
       const { data: recentDecisions, error: statsError } = await supabase
-        .from('user_video_decisions')
+        .from('user_book_decisions')
         .select('decision_type, recommendation_source, recommendation_score')
         .eq('user_id', userId)
         .order('created_at', { ascending: false })
@@ -322,32 +321,7 @@ Deno.serve(async (req) => {
         const rows = recentDecisions as { decision_type: string; recommendation_source: string | null; recommendation_score: number | null }[]
         const totalLikes = rows.filter(r => r.decision_type === 'like').length
         const likeRate = (n: number, d: number) => d > 0 ? Math.round(n / d * 1000) / 1000 : 0
-
-        const bySource: UserStats['by_source'] = {}
-        for (const src of ['exploitation', 'popularity', 'exploration']) {
-          const subset = rows.filter(r => r.recommendation_source === src)
-          const likes = subset.filter(r => r.decision_type === 'like').length
-          if (subset.length > 0) bySource[src] = { likes, total: subset.length, like_rate: likeRate(likes, subset.length) }
-        }
-
-        const scoreBuckets: [string, (s: number) => boolean][] = [
-          ['low',  s => s < 0.3],
-          ['mid',  s => s >= 0.3 && s < 0.6],
-          ['high', s => s >= 0.6],
-        ]
-        const byScore: UserStats['by_score'] = {}
-        for (const [label, pred] of scoreBuckets) {
-          const subset = rows.filter(r => r.recommendation_score !== null && pred(r.recommendation_score!))
-          const likes = subset.filter(r => r.decision_type === 'like').length
-          if (subset.length > 0) byScore[label] = { likes, total: subset.length, like_rate: likeRate(likes, subset.length) }
-        }
-
-        userStats = {
-          window: rows.length,
-          like_rate: likeRate(totalLikes, rows.length),
-          by_source: bySource,
-          by_score: byScore,
-        }
+        userStats = { window: rows.length, like_rate: likeRate(totalLikes, rows.length) }
       }
     }
 
@@ -360,13 +334,10 @@ Deno.serve(async (req) => {
           popularity_ratio: adjustedPopularityRatio,
           exploration_ratio: Math.max(0, 1 - adjustedExploitationRatio - adjustedPopularityRatio),
           popularity_lookback_days: popularLookbackDays,
-          exploitation_returned: finalExploitCount,
-          popularity_returned: finalPopularityCount,
-          exploration_returned: finalExplorationCount,
         },
       })),
       metadata: {
-        swipes_until_next_embed: swipes_until_next_embed,
+        swipes_until_next_embed,
         decision_count: decisionCount,
         user_stats: userStats,
         _debug: {
@@ -374,7 +345,6 @@ Deno.serve(async (req) => {
           exploit_err: exploitError,
           popularity_raw: popularityRawCount,
           popularity_err: popularityError,
-          decision_count: decisionCount,
         },
       },
     }

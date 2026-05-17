@@ -16,28 +16,26 @@ interface RequestPayload {
   prompt?: string;
   limit_per_section?: number;
   tag_ids?: unknown;
-  performer_ids?: unknown;
 }
 
-type JsonPerformer = { id?: string; name?: string };
 type JsonTag = { id?: string; name?: string };
 
-interface VideoCandidate {
+interface BookCandidate {
   id: string;
   title: string | null;
   description: string | null;
   external_id: string | null;
   thumbnail_url: string | null;
-  sample_video_url: string | null;
+  sample_image_urls: string[] | null;
+  author: string | null;
   product_released_at: string | null;
-  performers: Array<{ id: string; name: string }>;
   tags: Array<{ id: string; name: string }>;
   score?: number | null;
   popularity_score?: number | null;
   model_version?: string | null;
   product_url?: string | null;
-  preview_video_url?: string | null;
-  duration_minutes?: number | null;
+  affiliate_url?: string | null;
+  page_count?: number | null;
   source: "personalized" | "trending" | "fresh";
 }
 
@@ -45,12 +43,12 @@ interface SectionItem {
   id: string;
   title: string | null;
   thumbnail_url: string | null;
+  sample_image_urls: string[] | null;
   product_url: string | null | undefined;
-  sample_video_url: string | null;
-  preview_video_url: string | null | undefined;
+  affiliate_url: string | null | undefined;
+  author: string | null;
   tags: Array<{ id: string; name: string }>;
-  performers: Array<{ id: string; name: string }>;
-  duration_minutes: number | null;
+  page_count: number | null;
   metrics: {
     score?: number | null;
     popularity_score?: number | null;
@@ -91,49 +89,11 @@ const ensureId = (value: unknown): string | null => {
 const toStringOrNull = (value: unknown): string | null =>
   typeof value === "string" ? value : null;
 
-const filterNonNull = <T>(value: T | null): value is T => value !== null;
-
-const normalizePerformers = (value: unknown): Array<{ id: string; name: string }> => {
-  const list = toArray<JsonPerformer>(value);
-  return list
-    .filter((item): item is { id: string; name: string } => Boolean(item?.id && item?.name))
-    .map((item) => ({ id: item.id!, name: item.name! }));
-};
-
 const normalizeTags = (value: unknown): Array<{ id: string; name: string }> => {
   const list = toArray<JsonTag>(value);
   return list
     .filter((item): item is { id: string; name: string } => Boolean(item?.id && item?.name))
     .map((item) => ({ id: item.id!, name: item.name! }));
-};
-
-const extractNestedEntities = (
-  rows: unknown,
-  key: "tags" | "performers",
-): Array<{ id: string; name: string }> => {
-  if (!Array.isArray(rows)) return [];
-  const result: Array<{ id: string; name: string }> = [];
-  for (const row of rows) {
-    if (!row || typeof row !== "object") continue;
-    const nested = (row as Record<string, unknown>)[key];
-    if (Array.isArray(nested)) {
-      for (const entity of nested) {
-        if (!entity || typeof entity !== "object") continue;
-        const id = (entity as { id?: unknown }).id;
-        const name = (entity as { name?: unknown }).name;
-        if (typeof id === "string" && typeof name === "string") {
-          result.push({ id, name });
-        }
-      }
-    } else if (nested && typeof nested === "object") {
-      const id = (nested as { id?: unknown }).id;
-      const name = (nested as { name?: unknown }).name;
-      if (typeof id === "string" && typeof name === "string") {
-        result.push({ id, name });
-      }
-    }
-  }
-  return result;
 };
 
 const clampLimit = (limit?: number | null) => {
@@ -163,226 +123,150 @@ const extractKeywords = (prompt: string): string[] =>
 
 type EdgeSupabaseClient = SupabaseClient<any, "public", any>;
 
-const buildProductUrlFallback = (externalId: string | null): string | null => {
-  if (!externalId) return null;
-  return `https://www.dmm.co.jp/digital/videoa/-/detail/=/cid_${externalId}`;
-};
-
 const fetchPersonalized = async (
   client: EdgeSupabaseClient,
   userId: string | null,
   limit: number,
-): Promise<VideoCandidate[]> => {
+): Promise<BookCandidate[]> => {
   if (!userId) return [];
-  const { data, error } = await client.rpc("get_videos_recommendations", {
-    user_uuid: userId,
-    page_limit: Math.max(limit * 6, 120),
+  const { data, error } = await client.rpc("get_books_recommendations", {
+    p_user_id: userId,
+    p_limit: Math.max(limit * 6, 120),
   });
   if (error) {
-    console.error("[ai-recommend] get_videos_recommendations error:", error.message);
+    console.error("[ai-recommend] get_books_recommendations error:", error.message);
     return [];
   }
   const rows = ensureArray<Record<string, unknown>>(data);
-  const mapped: (VideoCandidate | null)[] = rows.map((item) => {
-      const id = ensureId(item.id ?? item.external_id);
-      if (!id) return null;
-      return {
-        id,
-        title: toStringOrNull(item.title),
-        description: toStringOrNull(item.description),
-        external_id: toStringOrNull(item.external_id),
-        thumbnail_url: toStringOrNull(item.thumbnail_url),
-        sample_video_url: toStringOrNull(item.sample_video_url),
-        product_released_at: toStringOrNull(item.product_released_at),
-        performers: normalizePerformers(item.performers),
-        tags: normalizeTags(item.tags),
-        score: typeof item.score === "number" ? item.score : null,
-        model_version: typeof item.model_version === "string" ? item.model_version : null,
-        popularity_score: null,
-        product_url: null,
-        preview_video_url: null,
-        duration_minutes: null,
-        source: "personalized" as const,
-      };
-    });
-  return mapped.filter((value): value is VideoCandidate => value !== null);
+  return rows.map((item) => {
+    const id = ensureId(item.id ?? item.external_id);
+    if (!id) return null;
+    return {
+      id,
+      title: toStringOrNull(item.title),
+      description: toStringOrNull(item.description),
+      external_id: toStringOrNull(item.external_id),
+      thumbnail_url: toStringOrNull(item.thumbnail_url),
+      sample_image_urls: Array.isArray(item.sample_image_urls) ? item.sample_image_urls as string[] : null,
+      author: toStringOrNull(item.author),
+      product_released_at: toStringOrNull(item.product_released_at),
+      tags: normalizeTags(item.tags),
+      score: typeof item.score === "number" ? item.score : null,
+      model_version: typeof item.model_version === "string" ? item.model_version : null,
+      popularity_score: null,
+      product_url: null,
+      affiliate_url: null,
+      page_count: null,
+      source: "personalized" as const,
+    };
+  }).filter((v): v is BookCandidate => v !== null);
 };
 
 const fetchTrending = async (
   client: EdgeSupabaseClient,
   limit: number,
   lookbackDays: number,
-): Promise<VideoCandidate[]> => {
-  const { data, error } = await client.rpc("get_popular_videos", {
-    limit_count: limit * 5,
-    lookback_days: lookbackDays,
+): Promise<BookCandidate[]> => {
+  const { data: popData, error } = await client.rpc("get_popular_books", {
+    p_limit: limit * 5,
+    p_days: lookbackDays,
   });
   if (error) {
-    console.error("[ai-recommend] get_popular_videos error:", error.message);
+    console.error("[ai-recommend] get_popular_books error:", error.message);
     return [];
   }
-  const rows = ensureArray<Record<string, unknown>>(data);
-  const mapped: (VideoCandidate | null)[] = rows.map((item) => {
-      const id = ensureId(item.id ?? item.external_id);
-      if (!id) return null;
-      return {
-        id,
-        title: toStringOrNull(item.title),
-        description: toStringOrNull(item.description),
-        external_id: toStringOrNull(item.external_id),
-        thumbnail_url: toStringOrNull(item.thumbnail_url),
-        sample_video_url: toStringOrNull(item.sample_video_url),
-        product_released_at: toStringOrNull(item.product_released_at),
-        performers: normalizePerformers(item.performers),
-        tags: normalizeTags(item.tags),
-        score: null,
-        model_version: null,
-        popularity_score: typeof item.score === "number" ? item.score : null,
-        product_url: null,
-        preview_video_url: null,
-        duration_minutes: null,
-        source: "trending" as const,
-      };
-    });
-  return mapped.filter((value): value is VideoCandidate => value !== null);
+  const bookIds = ((popData ?? []) as { book_id: string; score: number }[]).map(r => r.book_id);
+  if (bookIds.length === 0) return [];
+
+  const { data: bookDetails } = await client
+    .from("books")
+    .select("id, title, external_id, thumbnail_url, sample_image_urls, author, product_released_at")
+    .in("id", bookIds);
+  const detailMap = new Map<string, Record<string, unknown>>();
+  for (const row of (bookDetails ?? []) as Record<string, unknown>[]) {
+    detailMap.set(String(row.id), row);
+  }
+
+  return ((popData ?? []) as { book_id: string; score: number }[]).map((item) => {
+    const detail = detailMap.get(item.book_id) ?? {};
+    return {
+      id: item.book_id,
+      title: toStringOrNull(detail.title),
+      description: null,
+      external_id: toStringOrNull(detail.external_id),
+      thumbnail_url: toStringOrNull(detail.thumbnail_url),
+      sample_image_urls: Array.isArray(detail.sample_image_urls) ? detail.sample_image_urls as string[] : null,
+      author: toStringOrNull(detail.author),
+      product_released_at: toStringOrNull(detail.product_released_at),
+      tags: [],
+      score: null,
+      model_version: null,
+      popularity_score: item.score ?? null,
+      product_url: null,
+      affiliate_url: null,
+      page_count: null,
+      source: "trending" as const,
+    };
+  });
 };
 
 const fetchFresh = async (
   client: EdgeSupabaseClient,
   limit: number,
-): Promise<VideoCandidate[]> => {
+): Promise<BookCandidate[]> => {
   const { data, error } = await client
-    .from("videos")
-    .select("id, title, description, external_id, thumbnail_url, sample_video_url, product_released_at, video_tags(tags(id, name)), video_performers(performers(id, name))")
+    .from("books")
+    .select("id, title, description, external_id, thumbnail_url, sample_image_urls, author, product_released_at, book_tags(tags(id, name))")
     .order("product_released_at", { ascending: false })
     .limit(limit * 5);
 
   if (error) {
-    console.error("[ai-recommend] latest videos fetch error:", error.message);
+    console.error("[ai-recommend] latest books fetch error:", error.message);
     return [];
   }
 
-  const rows = ensureArray<Record<string, unknown>>(data);
-  const mapped: (VideoCandidate | null)[] = rows.map((item) => {
-      const id = ensureId(item.id ?? item.external_id);
-      if (!id) return null;
-      return {
-        id,
-        title: toStringOrNull(item.title),
-        description: toStringOrNull(item.description),
-        external_id: toStringOrNull(item.external_id),
-        thumbnail_url: toStringOrNull(item.thumbnail_url),
-        sample_video_url: toStringOrNull(item.sample_video_url),
-        product_released_at: toStringOrNull(item.product_released_at),
-        performers: extractNestedEntities((item as { video_performers?: unknown }).video_performers, "performers"),
-        tags: extractNestedEntities((item as { video_tags?: unknown }).video_tags, "tags"),
-        score: null,
-        model_version: null,
-        popularity_score: null,
-        product_url: null,
-        preview_video_url: null,
-        duration_minutes: null,
-        source: "fresh" as const,
-      };
-    });
-  return mapped.filter((value): value is VideoCandidate => value !== null);
+  return ensureArray<Record<string, unknown>>(data).map((item) => {
+    const id = ensureId(item.id);
+    if (!id) return null;
+    const rawTags = (item as { book_tags?: unknown }).book_tags;
+    const tags: Array<{ id: string; name: string }> = [];
+    if (Array.isArray(rawTags)) {
+      for (const bt of rawTags) {
+        const tag = (bt as { tags?: { id: string; name: string } }).tags;
+        if (tag?.id && tag?.name) tags.push({ id: tag.id, name: tag.name });
+      }
+    }
+    return {
+      id,
+      title: toStringOrNull(item.title),
+      description: toStringOrNull(item.description),
+      external_id: toStringOrNull(item.external_id),
+      thumbnail_url: toStringOrNull(item.thumbnail_url),
+      sample_image_urls: Array.isArray(item.sample_image_urls) ? item.sample_image_urls as string[] : null,
+      author: toStringOrNull(item.author),
+      product_released_at: toStringOrNull(item.product_released_at),
+      tags,
+      score: null,
+      model_version: null,
+      popularity_score: null,
+      product_url: null,
+      affiliate_url: null,
+      page_count: null,
+      source: "fresh" as const,
+    };
+  }).filter((v): v is BookCandidate => v !== null);
 };
 
-const fetchSearch = async (
+const hydrateBookDetails = async (
   client: EdgeSupabaseClient,
-  limit: number,
-  prompt: string | null,
-  tagIds: string[],
-  performerIds: string[],
-): Promise<VideoCandidate[]> => {
-  const { data, error } = await client.rpc("search_videos", {
-    p_prompt: prompt && prompt.length > 0 ? prompt : null,
-    p_tag_ids: tagIds.length ? tagIds : null,
-    p_performer_ids: performerIds.length ? performerIds : null,
-    p_limit: Math.max(limit * 4, 60),
-  });
-  if (error) {
-    console.error("[ai-recommend] search_videos error:", error.message);
-    return [];
-  }
-  const rows = ensureArray<Record<string, unknown>>(data);
-  const mapped: (VideoCandidate | null)[] = rows.map((item) => {
-      const id = ensureId(item.id ?? item.external_id);
-      if (!id) return null;
-      return {
-        id,
-        title: toStringOrNull(item.title),
-        description: toStringOrNull(item.description),
-        external_id: toStringOrNull(item.external_id),
-        thumbnail_url: toStringOrNull(item.thumbnail_url),
-        sample_video_url: toStringOrNull(item.sample_video_url),
-        product_released_at: toStringOrNull(item.product_released_at),
-        performers: normalizePerformers(item.performers),
-        tags: normalizeTags(item.tags),
-        score: null,
-        model_version: null,
-        popularity_score: null,
-        product_url: null,
-        preview_video_url: null,
-        duration_minutes: null,
-        source: "fresh" as const,
-      };
-    });
-  return mapped.filter((value): value is VideoCandidate => value !== null);
-};
-
-const fetchEmbeddingSearch = async (
-  client: EdgeSupabaseClient,
-  limit: number,
-  tagIds: string[],
-  performerIds: string[],
-): Promise<VideoCandidate[]> => {
-  if (tagIds.length === 0 && performerIds.length === 0) return [];
-  const { data, error } = await client.rpc("search_videos_by_embedding", {
-    p_tag_ids: tagIds.length ? tagIds : null,
-    p_performer_ids: performerIds.length ? performerIds : null,
-    p_limit: Math.max(limit * 3, 50),
-  });
-  if (error) {
-    console.error("[ai-recommend] search_videos_by_embedding error:", error.message);
-    return [];
-  }
-  const rows = ensureArray<Record<string, unknown>>(data);
-  const mapped: (VideoCandidate | null)[] = rows.map((item) => {
-      const id = ensureId(item.id ?? item.external_id);
-      if (!id) return null;
-      return {
-        id,
-        title: toStringOrNull(item.title),
-        description: toStringOrNull(item.description),
-        external_id: toStringOrNull(item.external_id),
-        thumbnail_url: toStringOrNull(item.thumbnail_url),
-        sample_video_url: toStringOrNull(item.sample_video_url),
-        product_released_at: toStringOrNull(item.product_released_at),
-        performers: normalizePerformers(item.performers),
-        tags: normalizeTags(item.tags),
-        score: typeof item.score === "number" ? item.score : null,
-        model_version: null,
-        popularity_score: null,
-        product_url: null,
-        preview_video_url: null,
-        duration_minutes: null,
-        source: "personalized" as const,
-      };
-    });
-  return mapped.filter((value): value is VideoCandidate => value !== null);
-};
-
-const hydrateVideoDetails = async (
-  client: EdgeSupabaseClient,
-  candidates: VideoCandidate[],
-): Promise<Map<string, { product_url: string | null; preview_video_url: string | null; duration_minutes: number | null }>> => {
+  candidates: BookCandidate[],
+): Promise<Map<string, { product_url: string | null; affiliate_url: string | null; page_count: number | null }>> => {
   const ids = Array.from(new Set(candidates.map((item) => item.id)));
   if (ids.length === 0) return new Map();
 
   const { data, error } = await client
-    .from("videos")
-    .select("id, affiliate_url, product_url, preview_video_url, duration_seconds")
+    .from("books")
+    .select("id, product_url, affiliate_url, page_count")
     .in("id", ids);
 
   if (error) {
@@ -390,30 +274,25 @@ const hydrateVideoDetails = async (
     return new Map();
   }
 
-  const map = new Map<string, { product_url: string | null; preview_video_url: string | null; duration_minutes: number | null }>();
-  const rows = ensureArray<Record<string, unknown>>(data);
-  for (const row of rows) {
+  const map = new Map<string, { product_url: string | null; affiliate_url: string | null; page_count: number | null }>();
+  for (const row of ensureArray<Record<string, unknown>>(data)) {
     const id = ensureId(row.id);
     if (!id) continue;
-    const durationSeconds = typeof row.duration_seconds === "number" ? row.duration_seconds : null;
-    const affiliate = typeof row.affiliate_url === "string" ? row.affiliate_url : null;
-    const productUrl = typeof row.product_url === "string" ? row.product_url : null;
-    const preview = typeof row.preview_video_url === "string" ? row.preview_video_url : null;
     map.set(id, {
-      product_url: affiliate ?? productUrl,
-      preview_video_url: preview,
-      duration_minutes: durationSeconds ? Math.max(1, Math.round(durationSeconds / 60)) : null,
+      product_url: toStringOrNull(row.product_url),
+      affiliate_url: toStringOrNull(row.affiliate_url),
+      page_count: typeof row.page_count === "number" ? row.page_count : null,
     });
   }
   return map;
 };
 
 const pickUnique = (
-  candidates: VideoCandidate[],
+  candidates: BookCandidate[],
   used: Set<string>,
   limit: number,
-): VideoCandidate[] => {
-  const picked: VideoCandidate[] = [];
+): BookCandidate[] => {
+  const picked: BookCandidate[] = [];
   for (const candidate of candidates) {
     if (used.has(candidate.id)) continue;
     picked.push(candidate);
@@ -423,73 +302,56 @@ const pickUnique = (
   return picked;
 };
 
-interface ReasonContext {
-  summaryPrefix: string;
-  promptKeywords?: string[];
-  selectionSummary?: string;
-}
-
 const buildReason = (
-  item: VideoCandidate,
-  ctx: ReasonContext,
+  item: BookCandidate,
+  summaryPrefix: string,
+  promptKeywords?: string[],
 ): { summary: string; detail: string; highlights: string[] } => {
   const primaryTag = item.tags?.[0]?.name;
   const highlightTags = (item.tags ?? []).slice(0, 3).map((tag) => `#${tag.name}`);
-  const performerName = item.performers?.[0]?.name;
 
-  const summaryParts: string[] = [ctx.summaryPrefix];
+  const summaryParts: string[] = [summaryPrefix];
   if (primaryTag) summaryParts.push(`「${primaryTag}」`);
   if (item.score) summaryParts.push(`スコア ${(item.score * 100).toFixed(0)}%`);
   const summary = summaryParts.join(" / ");
 
   const detailParts: string[] = [];
   if (highlightTags.length > 0) detailParts.push(`タグ: ${highlightTags.join(" ")}`);
-  if (performerName) detailParts.push(`出演: ${performerName}`);
+  if (item.author) detailParts.push(`著者: ${item.author}`);
   if (item.popularity_score) detailParts.push(`人気指標 ${item.popularity_score.toLocaleString("ja-JP")}`);
-  if (item.product_released_at) detailParts.push(`リリース: ${item.product_released_at.slice(0, 10)}`);
-  if (ctx.promptKeywords && ctx.promptKeywords.length > 0) {
-    detailParts.push(`入力ワード: ${ctx.promptKeywords.join(", ")}`);
-  }
-  if (ctx.selectionSummary) {
-    detailParts.push(ctx.selectionSummary);
-  }
+  if (item.product_released_at) detailParts.push(`発売: ${item.product_released_at.slice(0, 10)}`);
+  if (promptKeywords && promptKeywords.length > 0) detailParts.push(`入力ワード: ${promptKeywords.join(", ")}`);
 
-  return {
-    summary,
-    detail: detailParts.join(" / "),
-    highlights: highlightTags,
-  };
+  return { summary, detail: detailParts.join(" / "), highlights: highlightTags };
 };
 
-const toSectionItems = (videos: VideoCandidate[], ctx: ReasonContext): SectionItem[] =>
-  videos.map((video) => ({
-    id: video.id,
-    title: video.title,
-    thumbnail_url: video.thumbnail_url,
-    product_url: video.product_url,
-    sample_video_url: video.sample_video_url,
-    preview_video_url: video.preview_video_url,
-    tags: video.tags,
-    performers: video.performers,
-    duration_minutes: video.duration_minutes ?? null,
+const toSectionItems = (books: BookCandidate[], summaryPrefix: string, promptKeywords?: string[]): SectionItem[] =>
+  books.map((book) => ({
+    id: book.id,
+    title: book.title,
+    thumbnail_url: book.thumbnail_url,
+    sample_image_urls: book.sample_image_urls,
+    product_url: book.product_url,
+    affiliate_url: book.affiliate_url,
+    author: book.author,
+    tags: book.tags,
+    page_count: book.page_count ?? null,
     metrics: {
-      score: video.score,
-      popularity_score: video.popularity_score,
-      product_released_at: video.product_released_at,
-      source: video.source,
+      score: book.score,
+      popularity_score: book.popularity_score,
+      product_released_at: book.product_released_at,
+      source: book.source,
     },
-    reason: buildReason(video, ctx),
+    reason: buildReason(book, summaryPrefix, promptKeywords),
   }));
 
-const matchesKeywords = (video: VideoCandidate, keywords: string[]): boolean => {
+const matchesKeywords = (book: BookCandidate, keywords: string[]): boolean => {
   if (keywords.length === 0) return false;
   const haystack = [
-    video.title ?? "",
-    ...(video.tags ?? []).map((tag) => tag.name ?? ""),
-    ...(video.performers ?? []).map((perf) => perf.name ?? ""),
-  ]
-    .join(" ")
-    .toLowerCase();
+    book.title ?? "",
+    book.author ?? "",
+    ...(book.tags ?? []).map((tag) => tag.name ?? ""),
+  ].join(" ").toLowerCase();
   return keywords.some((keyword) => haystack.includes(keyword));
 };
 
@@ -502,16 +364,12 @@ const parseRequestPayload = async (req: Request): Promise<RequestPayload> => {
       prompt: typeof payload.prompt === "string" ? payload.prompt : undefined,
       limit_per_section: typeof payload.limit_per_section === "number" ? payload.limit_per_section : undefined,
       tag_ids: Array.isArray(payload.tag_ids) ? payload.tag_ids : undefined,
-      performer_ids: Array.isArray(payload.performer_ids) ? payload.performer_ids : undefined,
     };
   }
   const url = new URL(req.url);
   const parseCommaList = (value: string | null): string[] | undefined => {
     if (!value) return undefined;
-    return value
-      .split(",")
-      .map((item) => item.trim())
-      .filter((item) => item.length > 0);
+    return value.split(",").map((item) => item.trim()).filter((item) => item.length > 0);
   };
   return {
     prompt: url.searchParams.get("prompt") ?? undefined,
@@ -519,7 +377,6 @@ const parseRequestPayload = async (req: Request): Promise<RequestPayload> => {
       ? Number(url.searchParams.get("limit_per_section"))
       : undefined,
     tag_ids: parseCommaList(url.searchParams.get("tag_ids")),
-    performer_ids: parseCommaList(url.searchParams.get("performer_ids")),
   };
 };
 
@@ -538,7 +395,6 @@ Deno.serve(async (req) => {
     const normalizedPrompt = sanitizePrompt(payload.prompt);
     const promptKeywords = extractKeywords(normalizedPrompt);
     const selectedTagIds = sanitizeIdList(payload.tag_ids);
-    const selectedPerformerIds = sanitizeIdList(payload.performer_ids);
 
     const authHeader = req.headers.get("Authorization") ?? "";
     const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
@@ -547,7 +403,6 @@ Deno.serve(async (req) => {
     });
 
     let userId: string | null = null;
-
     if (authHeader) {
       const { data: userData, error: userError } = await supabase.auth.getUser();
       if (userError) {
@@ -562,30 +417,15 @@ Deno.serve(async (req) => {
       fetchTrending(supabase, limitPerSection, 7),
       fetchFresh(supabase, limitPerSection),
     ]);
-    const shouldSearch = selectedTagIds.length > 0 || selectedPerformerIds.length > 0 || promptKeywords.length > 0;
-    const [searchCandidates, embedCandidates] = shouldSearch
-      ? await Promise.all([
-          fetchSearch(
-            supabase,
-            limitPerSection,
-            normalizedPrompt || (promptKeywords.length ? promptKeywords.join(" ") : null),
-            selectedTagIds,
-            selectedPerformerIds,
-          ),
-          fetchEmbeddingSearch(supabase, limitPerSection, selectedTagIds, selectedPerformerIds),
-        ])
-      : [[], []];
 
-    const detailMap = await hydrateVideoDetails(supabase, [...personalized, ...trending, ...fresh, ...searchCandidates, ...embedCandidates]);
-    const enhance = (video: VideoCandidate): VideoCandidate => {
-      const extra = detailMap.get(video.id);
-      const fallbackUrl = buildProductUrlFallback(video.external_id ?? null);
-      const productUrl = extra?.product_url ?? video.product_url ?? fallbackUrl;
+    const detailMap = await hydrateBookDetails(supabase, [...personalized, ...trending, ...fresh]);
+    const enhance = (book: BookCandidate): BookCandidate => {
+      const extra = detailMap.get(book.id);
       return {
-        ...video,
-        product_url: productUrl,
-        preview_video_url: extra?.preview_video_url ?? video.preview_video_url ?? null,
-        duration_minutes: extra?.duration_minutes ?? video.duration_minutes ?? null,
+        ...book,
+        product_url: extra?.product_url ?? book.product_url ?? null,
+        affiliate_url: extra?.affiliate_url ?? book.affiliate_url ?? null,
+        page_count: extra?.page_count ?? book.page_count ?? null,
       };
     };
 
@@ -596,14 +436,13 @@ Deno.serve(async (req) => {
     const used = new Set<string>();
     const sections: Section[] = [];
 
-    // 1. personalized → 2. fresh → 3. trending の順に重複を避けて詰める
     const personalizedItems = pickUnique(enhancedPersonalized, used, limitPerSection);
     if (personalizedItems.length > 0) {
       sections.push({
         id: "for-you",
         title: "あなたに合わせた提案",
-        rationale: "「気になる」履歴からのあなたへのおすすめ作品です。",
-        items: toSectionItems(personalizedItems, { summaryPrefix: "あなた向け" }),
+        rationale: "「気になる」履歴からのあなたへのおすすめ漫画です。",
+        items: toSectionItems(personalizedItems, "あなた向け"),
       });
     }
 
@@ -612,8 +451,8 @@ Deno.serve(async (req) => {
       sections.push({
         id: "fresh-releases",
         title: "新着ピックアップ",
-        rationale: "発売日が新しい順に、注目度の高い作品を並べています。",
-        items: toSectionItems(freshItems, { summaryPrefix: "新着" }),
+        rationale: "発売日が新しい順に注目漫画を並べています。",
+        items: toSectionItems(freshItems, "新着"),
       });
     }
 
@@ -621,79 +460,44 @@ Deno.serve(async (req) => {
     if (trendingItems.length > 0) {
       sections.push({
         id: "trend-now",
-        title: "みんなが観ているトレンド",
-        rationale: "コミュニティ全体で人気が高まっている作品をピックアップしました。",
-        items: toSectionItems(trendingItems, { summaryPrefix: "トレンド" }),
+        title: "みんなが読んでいるトレンド",
+        rationale: "コミュニティ全体で人気が高まっている漫画をピックアップしました。",
+        items: toSectionItems(trendingItems, "トレンド"),
       });
     }
 
-    const hasSelections = selectedTagIds.length > 0 || selectedPerformerIds.length > 0;
-    const selectionSummary = [
-      selectedTagIds.length ? `タグ ${selectedTagIds.length}件` : null,
-      selectedPerformerIds.length ? `出演者 ${selectedPerformerIds.length}件` : null,
-    ]
-      .filter(Boolean)
-      .join(" / ");
-
-    const matchesSelection = (video: VideoCandidate): boolean => {
-      const tagMatch = selectedTagIds.length === 0 || (video.tags ?? []).some((tag) => selectedTagIds.includes(tag.id));
-      const performerMatch = selectedPerformerIds.length === 0 || (video.performers ?? []).some((perf) => selectedPerformerIds.includes(perf.id));
-      return tagMatch && performerMatch;
-    };
-
-    let promptCandidates: VideoCandidate[] = [];
+    const hasInputs = selectedTagIds.length > 0 || promptKeywords.length > 0;
+    let promptCandidates: BookCandidate[] = [];
     let promptTitle = "AIセレクト（気分未入力）";
-    let promptRationale = "キーワードやプリセット未選択のため、AI があなた向けとトレンドからピックアップしました。";
+    let promptRationale = "キーワードやタグ未選択のため、AIがあなた向けとトレンドからピックアップしました。";
     let summaryPrefix = "AIセレクト";
-    let reasonSelectionSummary: string | undefined;
 
-    // prompt-match 用: 検索結果を優先し、embedding検索→従来プールの順にバックアップ
-    const hasPromptInputs = hasSelections || promptKeywords.length > 0;
-    if (hasPromptInputs) {
-      const merged = [...searchCandidates, ...embedCandidates];
-      if (merged.length > 0) {
-        promptCandidates = merged;
-        promptTitle = hasSelections ? "プリセットに基づくおすすめ" : "気分キーワードとマッチ";
-        promptRationale = hasSelections
-          ? (selectionSummary || "選択したタグ/出演者に基づいて抽出しました。")
-          : `入力ワード: ${promptKeywords.join(", ")}`;
-        summaryPrefix = hasSelections ? "プリセット検索" : "気分マッチ検索";
-        reasonSelectionSummary = selectionSummary || undefined;
-      } else {
-        // 検索結果ゼロなら従来プールで補完
-        promptCandidates = hasSelections
-          ? [...enhancedPersonalized, ...enhancedTrending, ...enhancedFresh].filter(matchesSelection)
-          : [...enhancedPersonalized, ...enhancedTrending, ...enhancedFresh].filter((video) => matchesKeywords(video, promptKeywords));
-        promptTitle = hasSelections ? "プリセットに基づくおすすめ" : "気分キーワードとマッチ";
-        promptRationale = `${hasSelections ? (selectionSummary || "選択したタグ/出演者に基づいて抽出しました。") : `入力ワード: ${promptKeywords.join(", ")}`} / 検索結果が少なかったため補完しました。`;
-        summaryPrefix = hasSelections ? "プリセット" : "気分マッチ";
-        reasonSelectionSummary = selectionSummary || undefined;
-      }
+    if (hasInputs) {
+      promptCandidates = [...enhancedPersonalized, ...enhancedTrending, ...enhancedFresh].filter((book) => {
+        const tagMatch = selectedTagIds.length === 0 || (book.tags ?? []).some((tag) => selectedTagIds.includes(tag.id));
+        const keywordMatch = promptKeywords.length === 0 || matchesKeywords(book, promptKeywords);
+        return tagMatch && keywordMatch;
+      });
+      promptTitle = selectedTagIds.length > 0 ? "タグに基づくおすすめ" : "気分キーワードとマッチ";
+      promptRationale = selectedTagIds.length > 0
+        ? `タグ ${selectedTagIds.length}件に基づいて抽出しました。`
+        : `入力ワード: ${promptKeywords.join(", ")}`;
+      summaryPrefix = selectedTagIds.length > 0 ? "タグ検索" : "気分マッチ";
     } else {
       promptCandidates = [...enhancedPersonalized, ...enhancedTrending];
-      promptTitle = "AIセレクト（気分未入力）";
-      promptRationale = "キーワードやプリセット未選択のため、AI があなた向けとトレンドからピックアップしました。";
-      summaryPrefix = "AIセレクト";
-      reasonSelectionSummary = undefined;
     }
 
     if (promptCandidates.length === 0) {
-      promptRationale = `${promptRationale} / 条件に合う作品が少なかったためAIセレクトで補完しました。`;
       promptCandidates = [...enhancedPersonalized, ...enhancedTrending];
-      summaryPrefix = hasSelections ? "プリセット" : promptKeywords.length > 0 ? "気分マッチ" : "AIセレクト";
     }
 
-    const promptItems = pickUnique(promptCandidates, new Set<string>(), limitPerSection); // promptは他セクションと重複を許容
+    const promptItems = pickUnique(promptCandidates, new Set<string>(), limitPerSection);
     if (promptItems.length > 0) {
       sections.push({
         id: "prompt-match",
         title: promptTitle,
         rationale: promptRationale,
-        items: toSectionItems(promptItems, {
-          summaryPrefix,
-          promptKeywords,
-          selectionSummary: reasonSelectionSummary,
-        }),
+        items: toSectionItems(promptItems, summaryPrefix, promptKeywords),
       });
     }
 
@@ -703,30 +507,25 @@ Deno.serve(async (req) => {
         sections.push({
           id: "fallback",
           title: "おすすめセット",
-          rationale: "十分な候補が得られなかったため、人気と新着をミックスしました。",
-          items: toSectionItems(fallback, { summaryPrefix: "おすすめ" }),
+          rationale: "人気と新着をミックスしました。",
+          items: toSectionItems(fallback, "おすすめ"),
         });
       }
     }
 
-    const responseBody = {
+    return new Response(JSON.stringify({
       generated_at: new Date().toISOString(),
       sections,
       metadata: {
         personalized_candidates: personalized.length,
         trending_candidates: trending.length,
         fresh_candidates: fresh.length,
-        search_candidates: searchCandidates.length,
-        embed_candidates: embedCandidates.length,
         prompt_keywords: promptKeywords,
         has_user_context: Boolean(userId),
         limit_per_section: limitPerSection,
         selected_tag_ids: selectedTagIds,
-        selected_performer_ids: selectedPerformerIds,
       },
-    };
-
-    return new Response(JSON.stringify(responseBody), {
+    }), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
