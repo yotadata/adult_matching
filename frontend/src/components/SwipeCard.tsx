@@ -2,24 +2,23 @@
 
 import TinderCard from 'react-tinder-card';
 import { motion } from 'framer-motion';
-import { forwardRef, useImperativeHandle, useState, useEffect, useRef } from 'react';
-import { Play, User, Tag, Calendar, Share2 } from 'lucide-react'; // アイコンをインポート
+import { forwardRef, useImperativeHandle, useState, useRef } from 'react';
+import { BookOpen, User, Tag, Calendar, Share2, ChevronLeft, ChevronRight } from 'lucide-react';
 
-// カードデータの型定義
 export interface CardData {
   id: number;
   title: string;
   genre: string[];
   description: string;
-  videoUrl: string;
-  thumbnail_url: string; // 追加
-  thumbnailVerticalUrl?: string; // 縦サムネ
-  sampleVideoUrl?: string; // 追加: 直接再生用
-  embedUrl?: string; // 追加: iframe用
-  performers?: { id: string; name: string; }[]; // 追加
-  tags?: { id: string; name: string; }[]; // 追加
-  product_released_at?: string; // 追加: 発売日
-  productUrl?: string; // 追加: 外部再生リンク
+  thumbnail_url: string;
+  thumbnailVerticalUrl?: string;
+  sampleImageUrls?: string[];   // サンプル画像URL配列（試し読みページ）
+  author?: string;              // 著者名
+  tags?: { id: string; name: string; }[];
+  product_released_at?: string;
+  productUrl?: string;
+  affiliateUrl?: string;
+  pageCount?: number;
   recommendationSource?: string | null;
   recommendationScore?: number | null;
   recommendationModelVersion?: string | null;
@@ -35,9 +34,8 @@ interface SwipeCardProps {
   onSwipe: (direction: 'left' | 'right') => void;
   onDrag?: (direction: 'left' | 'right' | 'reset') => void;
   onDragEnd?: () => void;
-  cardWidth: number | undefined; // cardWidth propを追加
-  canSwipe?: boolean; // 追加: ゲスト制限時にスワイプを抑制
-  onSamplePlay?: (card: CardData) => void;
+  cardWidth: number | undefined;
+  canSwipe?: boolean;
 }
 
 type TinderApi = {
@@ -45,25 +43,17 @@ type TinderApi = {
   restoreCard: () => Promise<void>;
 };
 
-const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwipe, onDrag, onDragEnd, cardWidth, canSwipe = true, onSamplePlay }, ref) => {
+const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwipe, onDrag, onDragEnd, cardWidth, canSwipe = true }, ref) => {
   const cardRef = useRef<TinderApi | null>(null);
-  const [showVideo, setShowVideo] = useState(false);
-  const [showOverlay, setShowOverlay] = useState(true);
-  const videoRef = useRef<HTMLVideoElement | null>(null);
-  const overlayHideTimer = useRef<number | null>(null);
-  const overlayHideDelayMs = 700; // iframe読込後も少しサムネイルを維持
+  const [imageIndex, setImageIndex] = useState(0);
 
-  // Reset iframe fallback when card changes
-  useEffect(() => {
-    setShowVideo(false);
-    setShowOverlay(true);
-    if (overlayHideTimer.current) {
-      clearTimeout(overlayHideTimer.current);
-      overlayHideTimer.current = null;
-    }
-  }, [cardData.id]);
+  const images = [
+    ...(cardData.thumbnailVerticalUrl ? [cardData.thumbnailVerticalUrl] : []),
+    ...(cardData.sampleImageUrls ?? []),
+    ...(cardData.thumbnail_url && !cardData.thumbnailVerticalUrl ? [cardData.thumbnail_url] : []),
+  ].filter(Boolean);
 
-  
+  const displayImages = images.length > 0 ? images : [cardData.thumbnail_url].filter(Boolean) as string[];
 
   const swipe = async (direction: 'left' | 'right') => {
     if (!canSwipe) return;
@@ -76,9 +66,7 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwi
     }
   };
 
-  useImperativeHandle(ref, () => ({
-    swipe,
-  }));
+  useImperativeHandle(ref, () => ({ swipe }));
 
   const toAffiliateUrl = (raw?: string) => {
     const AF_ID = 'yotadata2-001';
@@ -95,24 +83,18 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwi
     try { return window.location.href; } catch { return ''; }
   };
 
-  useEffect(() => {
-    if (showVideo && videoRef.current) {
-      const v = videoRef.current;
-      // iOS/Android 対策: タップ直後に明示的に再生
-      const playPromise = v.play();
-      if (playPromise && typeof playPromise.then === 'function') {
-        playPromise.catch((err) => {
-          if (process.env.NODE_ENV !== 'production') {
-            console.warn('[SwipeCard] Autoplay failed, waiting for user gesture.', err);
-          }
-        });
-      }
-    }
-  }, [showVideo]);
+  const handlePrevImage = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setImageIndex((prev) => Math.max(0, prev - 1));
+  };
+
+  const handleNextImage = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setImageIndex((prev) => Math.min(displayImages.length - 1, prev + 1));
+  };
 
   return (
     <div className="absolute h-full" style={{ width: cardWidth ? `${cardWidth}px` : 'auto' }}>
-      {/* 背面カード */}
       <div className="absolute inset-x-4 top-4 -bottom-2 bg-[#1c2128] rounded-2xl shadow-md pointer-events-none z-0" />
       <TinderCard
         ref={cardRef as unknown as React.RefObject<TinderApi>}
@@ -139,113 +121,124 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwi
           onDragEnd?.();
         }}
       >
-      <motion.div
-        className="h-full rounded-2xl bg-[#0d1117] border border-[#30363d] shadow-xl flex flex-col p-4 cursor-grab overflow-hidden"
-        whileTap={{ scale: 0.995 }}
-      >
-      {/* 上部: 動画エリア（PC版は4:3のアスペクト比） */}
-      <div className="relative w-full aspect-[4/3] bg-black/90 flex items-center justify-center rounded-xl overflow-hidden">
-        {showOverlay && (
-          <div
-            className="absolute inset-0 w-full h-full bg-contain bg-no-repeat bg-center flex items-center justify-center z-10"
-            style={{ backgroundImage: cardData.thumbnail_url ? `url(${cardData.thumbnail_url})` : undefined, backgroundColor: cardData.thumbnail_url ? undefined : '#1f2937' }}
-            onClick={() => {
-              // iframe再生に統一。オーバーレイを即時非表示
-              setShowOverlay(false);
-              onSamplePlay?.(cardData);
-            }}
-          >
-            <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center">
-              <Play className="text-white w-16 h-16 opacity-80" fill="white" />
-            </div>
-            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 text-[10px] sm:text-xs text-white/80 bg-black/40 px-2 py-0.5 rounded">
-              注: 再生には最大2回のクリックが必要な場合があります
-            </div>
+        <motion.div
+          className="h-full rounded-2xl bg-[#0d1117] border border-[#30363d] shadow-xl flex flex-col p-4 cursor-grab overflow-hidden"
+          whileTap={{ scale: 0.995 }}
+        >
+          {/* サンプル画像エリア */}
+          <div className="relative w-full aspect-[3/4] bg-black/90 flex items-center justify-center rounded-xl overflow-hidden">
+            {displayImages.length > 0 ? (
+              <>
+                <img
+                  src={displayImages[imageIndex]}
+                  alt={cardData.title}
+                  className="w-full h-full object-contain"
+                  draggable={false}
+                />
+                {/* 画像ナビゲーション */}
+                {displayImages.length > 1 && (
+                  <>
+                    <button
+                      onClick={handlePrevImage}
+                      disabled={imageIndex === 0}
+                      className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center rounded-full bg-black/50 text-white disabled:opacity-30"
+                    >
+                      <ChevronLeft size={18} />
+                    </button>
+                    <button
+                      onClick={handleNextImage}
+                      disabled={imageIndex === displayImages.length - 1}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center rounded-full bg-black/50 text-white disabled:opacity-30"
+                    >
+                      <ChevronRight size={18} />
+                    </button>
+                    <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
+                      {displayImages.map((_, i) => (
+                        <div
+                          key={i}
+                          className={`w-1.5 h-1.5 rounded-full ${i === imageIndex ? 'bg-white' : 'bg-white/40'}`}
+                        />
+                      ))}
+                    </div>
+                  </>
+                )}
+                {/* 試し読みラベル */}
+                {imageIndex > 0 && (
+                  <div className="absolute top-2 left-2 bg-black/60 text-white text-[10px] px-2 py-0.5 rounded">
+                    試し読み {imageIndex}/{displayImages.length - 1}
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="flex flex-col items-center gap-2 text-[#8b949e]">
+                <BookOpen size={48} />
+                <span className="text-xs">画像なし</span>
+              </div>
+            )}
           </div>
-        )}
-        {/* iframe 埋め込み（litevideo） */}
-        <iframe
-          scrolling="no"
-          referrerPolicy="no-referrer"
-          src={cardData.embedUrl || cardData.videoUrl}
-          title="Embedded Video Player"
-          frameBorder="0"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
-          loading="eager"
-          onLoad={() => {
-            if (overlayHideTimer.current) clearTimeout(overlayHideTimer.current);
-            overlayHideTimer.current = window.setTimeout(() => {
-              setShowOverlay(false);
-              overlayHideTimer.current = null;
-            }, overlayHideDelayMs);
-          }}
-          className="absolute top-0 left-0 w-full h-full overflow-hidden"
-        />
-        {/* 外部タブ再生リンクは非表示にする */}
-      </div>
 
-      {/* 下部: テキスト情報エリア */}
-      <div className="flex flex-col p-4 overflow-y-auto flex-1">
-        <h2 className="text-base font-bold text-[#e6edf3] leading-snug">{cardData.title}</h2>
-          {cardData.product_released_at && (
-            <div className="grid grid-cols-[auto_1fr_auto] items-center gap-x-2 mt-2">
-              <div className="flex items-center text-xs text-[#8b949e] gap-1 whitespace-nowrap">
-                <Calendar className="h-3.5 w-3.5" />
-                <span>発売日:</span>
+          {/* 下部: テキスト情報 */}
+          <div className="flex flex-col p-4 overflow-y-auto flex-1">
+            <h2 className="text-base font-bold text-[#e6edf3] leading-snug">{cardData.title}</h2>
+
+            {cardData.product_released_at && (
+              <div className="grid grid-cols-[auto_1fr_auto] items-center gap-x-2 mt-2">
+                <div className="flex items-center text-xs text-[#8b949e] gap-1 whitespace-nowrap">
+                  <Calendar className="h-3.5 w-3.5" />
+                  <span>発売日:</span>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  <span className="rounded-full bg-blue-900/50 border border-blue-700/40 px-2 py-0.5 text-[11px] text-blue-300">
+                    {new Date(cardData.product_released_at).toLocaleDateString('ja-JP')}
+                  </span>
+                </div>
+                <button
+                  onClick={() => {
+                    try {
+                      const text = cardData.title || '';
+                      const url = toAffiliateUrl(cardData.affiliateUrl || cardData.productUrl);
+                      const shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
+                      window.open(shareUrl, '_blank', 'noopener,noreferrer');
+                    } catch {}
+                  }}
+                  className="w-7 h-7 flex items-center justify-center rounded-full bg-[#21262d] border border-[#30363d] text-[#8b949e] hover:text-[#e6edf3]"
+                  aria-label="Xで共有"
+                >
+                  <Share2 size={13} />
+                </button>
               </div>
-              <div className="flex flex-wrap gap-1.5">
-                <span className="rounded-full bg-blue-900/50 border border-blue-700/40 px-2 py-0.5 text-[11px] text-blue-300">
-                  {new Date(cardData.product_released_at).toLocaleDateString('ja-JP')}
-                </span>
+            )}
+
+            {cardData.author && (
+              <div className="flex items-start gap-2 mt-2">
+                <div className="flex items-center text-xs text-[#8b949e] gap-1 whitespace-nowrap pt-0.5">
+                  <User className="h-3.5 w-3.5" />
+                  <span>著者:</span>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  <span className="rounded-full bg-pink-900/40 border border-pink-700/40 px-2 py-0.5 text-[11px] text-pink-300">
+                    {cardData.author}
+                  </span>
+                </div>
               </div>
-              <button
-                onClick={() => {
-                  try {
-                    const text = cardData.title || '';
-                    const url = toAffiliateUrl(cardData.productUrl);
-                    const shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
-                    window.open(shareUrl, '_blank', 'noopener,noreferrer');
-                  } catch {}
-                }}
-                className="w-7 h-7 flex items-center justify-center rounded-full bg-[#21262d] border border-[#30363d] text-[#8b949e] hover:text-[#e6edf3]"
-                aria-label="Xで共有"
-                title="Xで共有"
-              >
-                <Share2 size={13} />
-              </button>
-            </div>
-          )}
-        {cardData.performers && cardData.performers.length > 0 && (
-          <div className="flex items-start gap-2 mt-2">
-            <div className="flex items-center text-xs text-[#8b949e] gap-1 whitespace-nowrap pt-0.5">
-              <User className="h-3.5 w-3.5" />
-              <span>出演:</span>
-            </div>
-            <div className="flex flex-wrap gap-1.5">
-              {cardData.performers.map((performer) => (
-                <span key={performer.id} className="rounded-full bg-pink-900/40 border border-pink-700/40 px-2 py-0.5 text-[11px] text-pink-300">
-                  {performer.name}
-                </span>
-              ))}
-            </div>
+            )}
+
+            {cardData.tags && cardData.tags.length > 0 && (
+              <div className="flex items-start gap-2 mt-2">
+                <div className="flex items-center text-xs text-[#8b949e] gap-1 whitespace-nowrap pt-0.5">
+                  <Tag className="h-3.5 w-3.5" />
+                  <span>タグ:</span>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {cardData.tags.map((tag) => (
+                    <span key={tag.id} className="rounded-full bg-violet-900/40 border border-violet-700/40 px-2 py-0.5 text-[11px] text-violet-300">
+                      {tag.name}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
-        )}
-        {cardData.tags && cardData.tags.length > 0 && (
-          <div className="flex items-start gap-2 mt-2">
-            <div className="flex items-center text-xs text-[#8b949e] gap-1 whitespace-nowrap pt-0.5">
-              <Tag className="h-3.5 w-3.5" />
-              <span>タグ:</span>
-            </div>
-            <div className="flex flex-wrap gap-1.5">
-              {cardData.tags.map((tag) => (
-                <span key={tag.id} className="rounded-full bg-violet-900/40 border border-violet-700/40 px-2 py-0.5 text-[11px] text-violet-300">
-                  {tag.name}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
         </motion.div>
       </TinderCard>
     </div>

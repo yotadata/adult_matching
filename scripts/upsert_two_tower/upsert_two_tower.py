@@ -192,9 +192,9 @@ def _eligible_users_from_parquet(
 def _eligible_users_from_db(db_url: str, min_interactions: int) -> Optional[List[str]]:
     sql_query = """
         SELECT au.id AS user_id
-        FROM public.user_video_decisions uvd
-        JOIN auth.users au ON au.id = uvd.user_id
-        WHERE uvd.decision_type = 'like'
+        FROM public.user_book_decisions ubd
+        JOIN auth.users au ON au.id = ubd.user_id
+        WHERE ubd.decision_type = 'like'
         GROUP BY au.id
         HAVING COUNT(*) >= %s
     """
@@ -312,11 +312,11 @@ def _ensure_embedding_schema(conn: psycopg.Connection, target_dim: int | None) -
     expected_dim = target_dim or 128
     expected_type = f"halfvec({expected_dim})"
     with conn.cursor() as cur:
-        video_type = _get_column_type(cur, "public.video_embeddings", "embedding")
+        video_type = _get_column_type(cur, "public.book_embeddings", "embedding")
         user_type = _get_column_type(cur, "public.user_embeddings", "embedding")
     mismatches: list[dict[str, Any]] = []
     if video_type != expected_type:
-        mismatches.append({"table": "public.video_embeddings", "found": video_type, "expected": expected_type})
+        mismatches.append({"table": "public.book_embeddings", "found": video_type, "expected": expected_type})
     if user_type != expected_type:
         mismatches.append({"table": "public.user_embeddings", "found": user_type, "expected": expected_type})
     if mismatches:
@@ -483,7 +483,7 @@ def main() -> None:
     video_df = load_embeddings(artifacts_dir / "video_embeddings.parquet", "video_id")
     video_rows, video_skipped, video_non_uuid = prepare_rows(video_df, "video_id")
     print(json.dumps({
-        "info": "video_embeddings_loaded",
+        "info": "book_embeddings_loaded",
         "rows": len(video_rows),
         "skipped": video_skipped,
         "non_uuid": video_non_uuid,
@@ -551,8 +551,8 @@ def main() -> None:
                     )
             video_result = upsert_embeddings(
                 conn,
-                "video_embeddings",
-                "video_id",
+                "book_embeddings",
+                "book_id",
                 video_rows,
                 args.chunk_size,
                 version_column="model_version",
