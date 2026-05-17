@@ -1,12 +1,12 @@
 'use client';
 
 import { useMemo, useRef, useState } from 'react';
-import { Share2, Tag as TagIcon, Users, Clock, ExternalLink } from 'lucide-react';
+import { Share2, Tag as TagIcon, Clock, ExternalLink } from 'lucide-react';
 import { toPng } from 'html-to-image';
 import ShareModal from '@/components/ShareModal';
 import AnalysisShareCard from '@/components/AnalysisShareCard';
 import { useAnalysisResults } from '@/hooks/useAnalysisResults';
-import type { AnalysisTag, AnalysisPerformer } from '@/hooks/useAnalysisResults';
+import type { AnalysisTag } from '@/hooks/useAnalysisResults';
 
 const WINDOW_OPTIONS: Array<{ label: string; value: number | null }> = [
   { label: '3日', value: 3 },
@@ -104,29 +104,6 @@ function TagRankItem({ tag, rank }: { tag: AnalysisTag; rank: number }) {
   );
 }
 
-function PerformerRankItem({ performer, rank }: { performer: AnalysisPerformer; rank: number }) {
-  return (
-    <div className="flex items-center gap-3 rounded-xl bg-white/70 border border-white/60 shadow-sm px-4 py-3">
-      <RankBadge rank={rank} />
-      <div className="flex-1 min-w-0">
-        <div className="flex items-baseline justify-between gap-2">
-          <span className="text-sm font-bold text-gray-900 truncate">{performer.performer_name}</span>
-          <span className="text-sm font-black text-indigo-500 shrink-0">{formatPercent(performer.like_ratio)}</span>
-        </div>
-        <div className="text-[10px] text-gray-400 mt-0.5">
-          気になる {formatCount(performer.likes)}件
-          {performer.share != null && <span className="ml-2">シェア {formatPercent(performer.share)}</span>}
-        </div>
-      </div>
-      {performer.representative_video?.product_url && (
-        <a href={performer.representative_video.product_url} target="_blank" rel="noopener noreferrer" className="shrink-0 text-gray-400 hover:text-indigo-400 transition">
-          <ExternalLink size={14} />
-        </a>
-      )}
-    </div>
-  );
-}
-
 // ── メインページ ──────────────────────────────────────────────────
 export default function InsightsPage() {
   const [windowDays, setWindowDays] = useState<number | null>(null);
@@ -137,13 +114,12 @@ export default function InsightsPage() {
   const { data, loading, error } = useAnalysisResults({
     windowDays,
     tagLimit: 6,
-    performerLimit: 6,
+    performerLimit: 0,
     recentLimit: 12,
   });
 
   const summary = data?.summary ?? null;
   const topTags = data?.top_tags ?? [];
-  const topPerformers = data?.top_performers ?? [];
   const recent = data?.recent_decisions ?? [];
 
   const windowLabel = useMemo(() => {
@@ -160,12 +136,10 @@ export default function InsightsPage() {
 
   const shareUrl = typeof window !== 'undefined' ? window.location.href : 'https://seiheki.me/insights';
   const primaryTag = topTags[0];
-  const primaryPerformer = topPerformers[0];
   const shareTagNames = topTags.slice(0, 2).map((t) => `#${t.tag_name}`);
   const shareText = (() => {
-    if (primaryTag && primaryPerformer) return `最近は ${primaryPerformer.performer_name} が出る #${primaryTag.tag_name} 系で毎回「気になる」。あなたも #あなたの性癖 を診断して抜けるポイントをシェアしよう。`;
-    if (shareTagNames.length > 0) return `今の抜けるタグは ${shareTagNames.join(' / ')}。あなたも #あなたの性癖 を診断して好みカードを作ろう。`;
-    if (primaryPerformer) return `${primaryPerformer.performer_name} が出ていたら即「気になる」。あなたも #あなたの性癖 を診断してみよう。`;
+    if (primaryTag) return `最近は #${primaryTag.tag_name} 系で毎回「気になる」。あなたも #あなたの性癖 を診断して好みカードを作ろう。`;
+    if (shareTagNames.length > 0) return `今の気になるタグは ${shareTagNames.join(' / ')}。あなたも #あなたの性癖 を診断して好みカードを作ろう。`;
     return `${windowLabel}の好み分析結果をシェアしました。あなたも #あなたの性癖 を診断してみて。`;
   })();
 
@@ -286,36 +260,20 @@ export default function InsightsPage() {
             ))}
           </div>
 
-          {/* ── タグ・出演者ランキング ── */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <section className="rounded-2xl bg-white/85 backdrop-blur border border-white/50 shadow-lg p-5 text-gray-900 flex flex-col gap-3">
-              <header className="flex items-center gap-2 mb-1">
-                <TagIcon size={17} className="text-rose-400" />
-                <h2 className="text-base font-bold">好きなタグ Top {topTags.length}</h2>
-              </header>
-              {loading ? (
-                Array.from({ length: 3 }).map((_, i) => <div key={i} className="h-16 rounded-xl bg-gray-100 animate-pulse" />)
-              ) : topTags.length === 0 ? (
-                <p className="text-sm text-gray-400 py-4 text-center">「気になる」を付けるとここに表示されます</p>
-              ) : (
-                topTags.map((tag, i) => <TagRankItem key={tag.tag_id} tag={tag} rank={i + 1} />)
-              )}
-            </section>
-
-            <section className="rounded-2xl bg-white/85 backdrop-blur border border-white/50 shadow-lg p-5 text-gray-900 flex flex-col gap-3">
-              <header className="flex items-center gap-2 mb-1">
-                <Users size={17} className="text-indigo-400" />
-                <h2 className="text-base font-bold">よく見る出演者 Top {topPerformers.length}</h2>
-              </header>
-              {loading ? (
-                Array.from({ length: 3 }).map((_, i) => <div key={i} className="h-14 rounded-xl bg-gray-100 animate-pulse" />)
-              ) : topPerformers.length === 0 ? (
-                <p className="text-sm text-gray-400 py-4 text-center">「気になる」とした作品の出演者がここに表示されます</p>
-              ) : (
-                topPerformers.map((perf, i) => <PerformerRankItem key={perf.performer_id} performer={perf} rank={i + 1} />)
-              )}
-            </section>
-          </div>
+          {/* ── タグランキング ── */}
+          <section className="rounded-2xl bg-white/85 backdrop-blur border border-white/50 shadow-lg p-5 text-gray-900 flex flex-col gap-3">
+            <header className="flex items-center gap-2 mb-1">
+              <TagIcon size={17} className="text-rose-400" />
+              <h2 className="text-base font-bold">好きなタグ Top {topTags.length}</h2>
+            </header>
+            {loading ? (
+              Array.from({ length: 3 }).map((_, i) => <div key={i} className="h-16 rounded-xl bg-gray-100 animate-pulse" />)
+            ) : topTags.length === 0 ? (
+              <p className="text-sm text-gray-400 py-4 text-center">「気になる」を付けるとここに表示されます</p>
+            ) : (
+              topTags.map((tag, i) => <TagRankItem key={tag.tag_id} tag={tag} rank={i + 1} />)
+            )}
+          </section>
 
           {/* ── 直近の判断履歴 ── */}
           <section className="rounded-2xl bg-white/85 backdrop-blur border border-white/50 shadow-lg p-5 text-gray-900">
@@ -332,11 +290,10 @@ export default function InsightsPage() {
                 <table className="w-full table-fixed border-separate border-spacing-y-2 text-sm text-gray-700">
                   <thead>
                     <tr className="text-xs uppercase tracking-wide text-gray-400">
-                      <th className="px-3 py-2 text-left font-semibold w-[35%]">作品</th>
-                      <th className="px-3 py-2 text-left font-semibold w-[12%]">判断</th>
-                      <th className="px-3 py-2 text-left font-semibold w-[22%]">タグ</th>
-                      <th className="px-3 py-2 text-left font-semibold w-[18%]">出演者</th>
-                      <th className="px-3 py-2 text-left font-semibold w-[13%]">日時</th>
+                      <th className="px-3 py-2 text-left font-semibold w-[40%]">作品</th>
+                      <th className="px-3 py-2 text-left font-semibold w-[15%]">判断</th>
+                      <th className="px-3 py-2 text-left font-semibold w-[30%]">タグ</th>
+                      <th className="px-3 py-2 text-left font-semibold w-[15%]">日時</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -362,13 +319,6 @@ export default function InsightsPage() {
                           <div className="flex flex-wrap gap-1">
                             {item.tags.slice(0, 3).map((tag) => (
                               <span key={tag.id} className="px-1.5 py-0.5 rounded-full bg-rose-50 text-rose-500 border border-rose-100 text-[10px]">#{tag.name}</span>
-                            ))}
-                          </div>
-                        </td>
-                        <td className="px-3 py-3 align-top">
-                          <div className="flex flex-wrap gap-1">
-                            {item.performers.slice(0, 2).map((p) => (
-                              <span key={p.id} className="px-1.5 py-0.5 rounded-full bg-indigo-50 text-indigo-500 border border-indigo-100 text-[10px]">{p.name}</span>
                             ))}
                           </div>
                         </td>
@@ -400,7 +350,7 @@ export default function InsightsPage() {
         shareText={shareText}
       />
       <div className="absolute -left-[9999px] top-0 pointer-events-none select-none" aria-hidden>
-        <AnalysisShareCard ref={cardRef} summary={summary} topTags={topTags} topPerformers={topPerformers} shareUrl={SHARE_CARD_LANDING_URL} />
+        <AnalysisShareCard ref={cardRef} summary={summary} topTags={topTags} topPerformers={[]} shareUrl={SHARE_CARD_LANDING_URL} />
       </div>
     </>
   );

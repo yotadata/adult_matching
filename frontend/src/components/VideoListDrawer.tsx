@@ -4,7 +4,7 @@ import { Dialog, Transition, Combobox, DialogBackdrop } from '@headlessui/react'
 import Image from 'next/image';
 import Link from 'next/link';
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
-import { X, Filter, Tag, Users, ExternalLink } from 'lucide-react';
+import { X, Filter, Tag, ExternalLink } from 'lucide-react';
 import { isUpcomingRelease } from '@/lib/videoMeta';
 
 export interface VideoRecord {
@@ -12,31 +12,22 @@ export interface VideoRecord {
   external_id: string;
   title: string;
   description?: string;
-  duration_seconds?: number;
   thumbnail_url?: string;
   thumbnail_vertical_url?: string;
-  preview_video_url?: string;
-  distribution_code?: string;
-  maker_code?: string;
-  director?: string;
   series?: string;
-  maker?: string;
   label?: string;
   price?: number;
-  distribution_started_at?: string;
   product_released_at?: string;
-  sample_video_url?: string;
-  image_urls?: string[];
+  sample_image_urls?: string[] | null;
+  author?: string | null;
+  affiliate_url?: string | null;
   source: string;
-  published_at?: string;
   product_url?: string;
   tags?: Array<{ id: string; name: string }>;
-  performers?: Array<{ id: string; name: string }>;
 }
 
 export type TagFilterOption = { id: string; name: string; cnt?: number };
 export type TagFilterWithGroup = TagFilterOption & { tag_group_name?: string | null };
-export type PerformerFilterOption = { id: string; name: string; cnt?: number };
 export type SortKey = 'liked_at' | 'released' | 'price';
 export type SortOrder = 'asc' | 'desc';
 
@@ -91,11 +82,8 @@ export interface VideoListDrawerProps {
   onChangeSort: (value: SortKey) => void;
   onChangeOrder: (value: SortOrder) => void;
   tagOptions: TagFilterWithGroup[];
-  performerOptions: PerformerFilterOption[];
   selectedTagIds: string[];
-  selectedPerformerIds: string[];
   onToggleTag: (id: string) => void;
-  onTogglePerformer: (id: string) => void;
   buildAffiliateHref?: (url?: string | null) => string | undefined;
   totalCount?: number | null;
   page: number;
@@ -115,11 +103,8 @@ export default function VideoListDrawer({
   onChangeSort,
   onChangeOrder,
   tagOptions,
-  performerOptions,
   selectedTagIds,
-  selectedPerformerIds,
   onToggleTag,
-  onTogglePerformer,
   buildAffiliateHref = defaultAffiliateBuilder,
   totalCount,
   page,
@@ -127,17 +112,13 @@ export default function VideoListDrawer({
   onChangePage,
 }: VideoListDrawerProps) {
   const [tagSearch, setTagSearch] = useState('');
-  const [performerSearch, setPerformerSearch] = useState('');
   const [mobileShowFilters, setMobileShowFilters] = useState(false);
   const [tagComboboxOpen, setTagComboboxOpen] = useState(false);
-  const [performerComboboxOpen, setPerformerComboboxOpen] = useState(false);
   const tagBlurTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const performerBlurTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     return () => {
       if (tagBlurTimerRef.current) clearTimeout(tagBlurTimerRef.current);
-      if (performerBlurTimerRef.current) clearTimeout(performerBlurTimerRef.current);
     };
   }, []);
 
@@ -147,13 +128,6 @@ export default function VideoListDrawer({
       .filter((tag) => !selectedTagIds.includes(tag.id))
       .filter((tag) => (keyword ? tag.name.toLowerCase().includes(keyword) : true));
   }, [tagOptions, selectedTagIds, tagSearch]);
-
-  const filteredPerformerOptions = useMemo(() => {
-    const keyword = performerSearch.trim().toLowerCase();
-    return performerOptions
-      .filter((perf) => !selectedPerformerIds.includes(perf.id))
-      .filter((perf) => (keyword ? perf.name.toLowerCase().includes(keyword) : true));
-  }, [performerOptions, selectedPerformerIds, performerSearch]);
 
 const buildOptionsClass = (isOpenDropdown: boolean, extra: string) =>
   `absolute inset-x-0 top-full mt-2 z-20 ${extra} ${
@@ -178,15 +152,6 @@ const buildOptionsClass = (isOpenDropdown: boolean, extra: string) =>
 
   const hideTagDropdown = () => {
     tagBlurTimerRef.current = setTimeout(() => setTagComboboxOpen(false), 150);
-  };
-
-  const showPerformerDropdown = () => {
-    if (performerBlurTimerRef.current) clearTimeout(performerBlurTimerRef.current);
-    setPerformerComboboxOpen(true);
-  };
-
-  const hidePerformerDropdown = () => {
-    performerBlurTimerRef.current = setTimeout(() => setPerformerComboboxOpen(false), 150);
   };
 
   return (
@@ -347,55 +312,6 @@ const buildOptionsClass = (isOpenDropdown: boolean, extra: string) =>
                       </div>
                     </div>
 
-                    <div className="space-y-1">
-                      <label className="text-[11px] text-gray-600">出演者で検索</label>
-                      {selectedPerformerIds.length > 0 && (
-                        <div className="flex flex-wrap gap-2 text-[11px]">
-                          {selectedPerformerIds.map((id) => {
-                            const name = performerOptions.find((p) => p.id === id)?.name || id;
-                            return (
-                              <button
-                                key={`perf-${id}`}
-                                onClick={() => onTogglePerformer(id)}
-                                className="px-2 py-1 rounded-full border border-indigo-500/60 bg-indigo-100 text-indigo-600"
-                              >
-                                {name} ×
-                              </button>
-                            );
-                          })}
-                        </div>
-                      )}
-                      <div className="relative">
-                        <Combobox value="" onChange={(val: string) => onTogglePerformer(val)}>
-                          <Combobox.Input
-                            onFocus={showPerformerDropdown}
-                            onBlur={hidePerformerDropdown}
-                            placeholder="出演者を検索"
-                            value={performerSearch}
-                            onChange={(event) => setPerformerSearch(event.target.value)}
-                            className="w-full rounded-xl border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                          />
-                          <div className={buildOptionsClass(performerComboboxOpen, 'rounded-2xl border border-gray-200 bg-white shadow-lg max-h-48 overflow-auto')}>
-                            <Combobox.Options static className="py-2 text-sm text-gray-700">
-                              {filteredPerformerOptions.length === 0 ? (
-                                <p className="px-3 py-2 text-xs text-gray-400">該当する出演者がありません</p>
-                              ) : (
-                                filteredPerformerOptions.map((performer) => (
-                                  <Combobox.Option
-                                    key={`performer-${performer.id}`}
-                                    value={performer.id}
-                                    className="px-3 py-1.5 cursor-pointer hover:bg-gray-50 flex justify-between text-sm"
-                                  >
-                                    <span>{performer.name}</span>
-                                    {performer.cnt ? <span className="text-xs text-gray-400">{performer.cnt}</span> : null}
-                                  </Combobox.Option>
-                                ))
-                              )}
-                            </Combobox.Options>
-                          </div>
-                        </Combobox>
-                      </div>
-                    </div>
                   </div>
                 </aside>
 
@@ -498,12 +414,6 @@ const buildOptionsClass = (isOpenDropdown: boolean, extra: string) =>
                                   <span key={tag.id} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gray-100 border border-gray-200">
                                     <Tag size={12} />
                                     {tag.name}
-                                  </span>
-                                ))}
-                                {video.performers?.slice(0, 2).map((perf) => (
-                                  <span key={perf.id} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gray-100 border border-gray-200">
-                                    <Users size={12} />
-                                    {perf.name}
                                   </span>
                                 ))}
                               </div>

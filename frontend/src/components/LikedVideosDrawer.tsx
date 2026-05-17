@@ -5,7 +5,6 @@ import { supabase } from '@/lib/supabase';
 import VideoListDrawer, {
   VideoRecord,
   TagFilterWithGroup,
-  PerformerFilterOption,
   SortKey,
   SortOrder,
 } from './VideoListDrawer';
@@ -24,20 +23,13 @@ const LikedVideosDrawer: React.FC<LikedVideosDrawerProps> = ({ isOpen, onClose }
   const [sort, setSort] = useState<SortKey>('liked_at');
   const [order, setOrder] = useState<SortOrder>('desc');
   const [tagOptions, setTagOptions] = useState<TagFilterWithGroup[]>([]);
-  const [performerOptions, setPerformerOptions] = useState<PerformerFilterOption[]>([]);
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
-  const [selectedPerformerIds, setSelectedPerformerIds] = useState<string[]>([]);
   const [totalCount, setTotalCount] = useState<number | null>(null);
   const pageSize = 40;
   const [page, setPage] = useState(0);
 
   const toggleTag = (id: string) => {
     setSelectedTagIds((prev) => (prev.includes(id) ? prev.filter((value) => value !== id) : [...prev, id]));
-    setPage(0);
-  };
-
-  const togglePerformer = (id: string) => {
-    setSelectedPerformerIds((prev) => (prev.includes(id) ? prev.filter((value) => value !== id) : [...prev, id]));
     setPage(0);
   };
 
@@ -56,12 +48,8 @@ const LikedVideosDrawer: React.FC<LikedVideosDrawerProps> = ({ isOpen, onClose }
 
     (async () => {
       try {
-        const [{ data: tags }, { data: performers }] = await Promise.all([
-          supabase.rpc('get_user_liked_tags'),
-          supabase.rpc('get_user_liked_performers'),
-        ]);
+        const { data: tags } = await supabase.rpc('get_user_liked_tags');
         setTagOptions((tags as TagFilterWithGroup[] | null)?.filter(Boolean) ?? []);
-        setPerformerOptions((performers as PerformerFilterOption[] | null)?.filter(Boolean) ?? []);
       } catch {
         /* noop */
       }
@@ -81,18 +69,9 @@ const LikedVideosDrawer: React.FC<LikedVideosDrawerProps> = ({ isOpen, onClose }
         return;
       }
 
-      const { data, error } = await supabase.rpc('get_user_likes', {
-        p_search: null,
-        p_sort: sort,
-        p_order: order,
+      const { data, error } = await supabase.rpc('get_user_book_likes', {
         p_limit: pageSize,
         p_offset: page * pageSize,
-        p_price_min: null,
-        p_price_max: null,
-        p_release_gte: null,
-        p_release_lte: null,
-        p_tag_ids: selectedTagIds.length ? selectedTagIds : null,
-        p_performer_ids: selectedPerformerIds.length ? selectedPerformerIds : null,
       });
       if (error) {
         setError(error.message);
@@ -113,7 +92,7 @@ const LikedVideosDrawer: React.FC<LikedVideosDrawerProps> = ({ isOpen, onClose }
     };
 
     fetchLikedVideos();
-  }, [isOpen, sort, order, selectedTagIds, selectedPerformerIds, page]);
+  }, [isOpen, sort, order, selectedTagIds, page]);
 
   useEffect(() => {
     if (totalCount === null) return;
@@ -128,7 +107,6 @@ const LikedVideosDrawer: React.FC<LikedVideosDrawerProps> = ({ isOpen, onClose }
       isOpen={isOpen}
       onClose={() => {
         setSelectedTagIds([]);
-        setSelectedPerformerIds([]);
         setPage(0);
         onClose();
       }}
@@ -141,11 +119,8 @@ const LikedVideosDrawer: React.FC<LikedVideosDrawerProps> = ({ isOpen, onClose }
       onChangeSort={handleSortChange}
       onChangeOrder={handleOrderChange}
       tagOptions={tagOptions}
-      performerOptions={performerOptions}
       selectedTagIds={selectedTagIds}
-      selectedPerformerIds={selectedPerformerIds}
       onToggleTag={toggleTag}
-      onTogglePerformer={togglePerformer}
       totalCount={totalCount}
       page={page}
       onChangePage={setPage}

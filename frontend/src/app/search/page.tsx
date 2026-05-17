@@ -212,15 +212,10 @@ export default function FindPage() {
   const [keyword, setKeyword] = useState('');
   const [debouncedKeyword, setDebouncedKeyword] = useState('');
   const [selectedTags, setSelectedTags] = useState<TagOrPerformer[]>([]);
-  const [selectedPerformers, setSelectedPerformers] = useState<TagOrPerformer[]>([]);
   const [appliedTagIds, setAppliedTagIds] = useState<string[]>([]);
-  const [appliedPerformerIds, setAppliedPerformerIds] = useState<string[]>([]);
   const [tagSearchTerm, setTagSearchTerm] = useState('');
-  const [performerSearchTerm, setPerformerSearchTerm] = useState('');
   const [tagSearchResults, setTagSearchResults] = useState<TagOrPerformer[]>([]);
-  const [performerSearchResults, setPerformerSearchResults] = useState<TagOrPerformer[]>([]);
   const [tagLookupLoading, setTagLookupLoading] = useState(false);
-  const [performerLookupLoading, setPerformerLookupLoading] = useState(false);
   const [likingIds, setLikingIds] = useState<Set<string>>(new Set());
   const [likedIds, setLikedIds] = useState<Set<string>>(new Set());
   const [infoMessage, setInfoMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -256,10 +251,9 @@ export default function FindPage() {
     if (filterDebounceRef.current) clearTimeout(filterDebounceRef.current);
     filterDebounceRef.current = setTimeout(() => {
       setAppliedTagIds(selectedTags.map((t) => t.id));
-      setAppliedPerformerIds(selectedPerformers.map((p) => p.id));
     }, 600);
     return () => { if (filterDebounceRef.current) clearTimeout(filterDebounceRef.current); };
-  }, [selectedTags, selectedPerformers]);
+  }, [selectedTags]);
 
   // タグ検索
   useEffect(() => {
@@ -277,41 +271,22 @@ export default function FindPage() {
     return () => { cancelled = true; clearTimeout(timer); };
   }, [tagSearchTerm]);
 
-  // 出演者検索
-  useEffect(() => {
-    const term = performerSearchTerm.trim();
-    if (term.length < 2) { setPerformerSearchResults([]); setPerformerLookupLoading(false); return; }
-    let cancelled = false;
-    setPerformerLookupLoading(true);
-    const timer = setTimeout(async () => {
-      const { data } = await supabase.from('performers').select('id,name').ilike('name', `%${term}%`).order('name').limit(8);
-      if (!cancelled) {
-        setPerformerSearchResults((data ?? []).map((r) => ({ id: String(r.id), name: (r as { name?: string }).name ?? '' })));
-        setPerformerLookupLoading(false);
-      }
-    }, 350);
-    return () => { cancelled = true; clearTimeout(timer); };
-  }, [performerSearchTerm]);
-
   useEffect(() => () => { if (infoTimeoutRef.current) clearTimeout(infoTimeoutRef.current); }, []);
 
-  // ユーザーの好みデータ（タグ・出演者サジェスト用）
+  // ユーザーの好みデータ（タグサジェスト用）
   const { data: analysisData } = useAnalysisResults({
-    windowDays: 90, includeNope: false, tagLimit: 20, performerLimit: 20, recentLimit: 0,
+    windowDays: 90, includeNope: false, tagLimit: 20, performerLimit: 0, recentLimit: 0,
     enabled: isAuthenticated,
   });
   const topTags = useMemo(() => (analysisData?.top_tags ?? []).slice(0, 10).map((t) => ({ id: t.tag_id, name: t.tag_name })), [analysisData]);
-  const topPerformers = useMemo(() => (analysisData?.top_performers ?? []).slice(0, 10).map((p) => ({ id: p.performer_id, name: p.performer_name })), [analysisData]);
 
   const displayedTagOptions = tagSearchTerm.trim().length >= 2 ? tagSearchResults : topTags;
-  const displayedPerformerOptions = performerSearchTerm.trim().length >= 2 ? performerSearchResults : topPerformers;
 
   // AIレコメンド（キーワードなし時のメインコンテンツ）
   const aiEnabled = authStatus !== 'checking';
   const { data: aiData, loading: aiLoading } = useAiRecommend({
     limitPerSection: isAuthenticated ? 12 : 8,
     tagIds: isAuthenticated ? appliedTagIds : undefined,
-    performerIds: isAuthenticated ? appliedPerformerIds : undefined,
     enabled: aiEnabled,
   });
 
@@ -319,7 +294,6 @@ export default function FindPage() {
   const { results: searchResults, loading: searchLoading } = useVideoSearch({
     keyword: debouncedKeyword,
     tagIds: appliedTagIds.length > 0 ? appliedTagIds : undefined,
-    performerIds: appliedPerformerIds.length > 0 ? appliedPerformerIds : undefined,
   });
 
   const isSearchMode = debouncedKeyword.trim().length > 0;
@@ -351,16 +325,16 @@ export default function FindPage() {
     }
     setLikingIds((prev) => new Set(prev).add(videoId));
     try {
-      const { error } = await supabase.from('user_video_decisions').upsert({
+      const { error } = await supabase.from('user_book_decisions').upsert({
         user_id: user.id,
-        video_id: videoId,
+        book_id: videoId,
         decision_type: 'like',
         recommendation_source: source ?? sectionId ?? 'find_page',
         recommendation_score: typeof score === 'number' ? score : null,
         recommendation_model_version: null,
         recommendation_params: reason ? { recommendation_reason_summary: reason } : null,
         recommendation_type: sectionId ? 'like_on_ai_search' : 'like_on_search',
-      }, { onConflict: 'user_id,video_id' });
+      }, { onConflict: 'user_id,book_id' });
       if (error) {
         showInfoMessage('error', '保存に失敗しました。');
       } else {
@@ -377,20 +351,12 @@ export default function FindPage() {
       prev.some((t) => t.id === item.id) ? prev.filter((t) => t.id !== item.id) : prev.length >= 5 ? prev : [...prev, item]
     );
   };
-  const togglePerformer = (item: TagOrPerformer) => {
-    setSelectedPerformers((prev) =>
-      prev.some((p) => p.id === item.id) ? prev.filter((p) => p.id !== item.id) : prev.length >= 5 ? prev : [...prev, item]
-    );
-  };
-
   const clearFilters = () => {
     setSelectedTags([]);
-    setSelectedPerformers([]);
     setTagSearchTerm('');
-    setPerformerSearchTerm('');
   };
 
-  const hasFilters = selectedTags.length > 0 || selectedPerformers.length > 0;
+  const hasFilters = selectedTags.length > 0;
 
   if (authStatus === 'checking') {
     return (
@@ -421,7 +387,7 @@ export default function FindPage() {
         <div className="px-4 sm:px-0 flex flex-col gap-3">
           <div>
             <h1 className="text-2xl font-extrabold text-white tracking-tight">さがす</h1>
-            <p className="text-sm text-white/60 mt-0.5">キーワード・タグ・出演者から動画を見つける</p>
+            <p className="text-sm text-white/60 mt-0.5">キーワード・タグから漫画を見つける</p>
           </div>
 
           {/* 検索バー */}
@@ -455,10 +421,10 @@ export default function FindPage() {
               className="w-full flex items-center justify-between px-4 py-2.5 text-sm text-white/80 hover:text-white transition"
             >
               <span className="flex items-center gap-2">
-                タグ・出演者でしぼる
+                タグでしぼる
                 {hasFilters && (
                   <span className="bg-rose-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
-                    {selectedTags.length + selectedPerformers.length}
+                    {selectedTags.length}
                   </span>
                 )}
               </span>
@@ -481,17 +447,6 @@ export default function FindPage() {
                         <X size={11} />
                       </button>
                     ))}
-                    {selectedPerformers.map((perf) => (
-                      <button
-                        key={perf.id}
-                        type="button"
-                        onClick={() => togglePerformer(perf)}
-                        className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-indigo-500 text-white border border-indigo-400"
-                      >
-                        {perf.name}
-                        <X size={11} />
-                      </button>
-                    ))}
                     <button
                       type="button"
                       onClick={clearFilters}
@@ -502,7 +457,7 @@ export default function FindPage() {
                   </div>
                 )}
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 relative z-[80]">
+                <div className="relative z-[80]">
                   <div className="space-y-1.5">
                     <p className="text-xs text-white/50 font-medium">タグ（最大5件）</p>
                     <FilterCombobox
@@ -536,44 +491,11 @@ export default function FindPage() {
                       </div>
                     )}
                   </div>
-
-                  <div className="space-y-1.5">
-                    <p className="text-xs text-white/50 font-medium">出演者（最大5件）</p>
-                    <FilterCombobox
-                      label="出演者名を入力"
-                      color="indigo"
-                      searchTerm={performerSearchTerm}
-                      onSearchChange={setPerformerSearchTerm}
-                      options={displayedPerformerOptions}
-                      selected={selectedPerformers}
-                      onToggle={togglePerformer}
-                      loading={performerLookupLoading}
-                    />
-                    {isAuthenticated && topPerformers.length > 0 && (
-                      <div className="flex flex-wrap gap-1.5 pt-1">
-                        {topPerformers.slice(0, 5).map((perf) => {
-                          const active = selectedPerformers.some((p) => p.id === perf.id);
-                          return (
-                            <button
-                              key={perf.id}
-                              type="button"
-                              onClick={() => togglePerformer(perf)}
-                              className={`px-2 py-0.5 rounded-full text-[11px] font-medium border transition ${
-                                active ? 'bg-indigo-500 text-white border-indigo-500' : 'bg-white/10 text-white/70 border-white/20 hover:border-indigo-300 hover:text-indigo-300'
-                              }`}
-                            >
-                              {perf.name}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
                 </div>
 
                 {!isAuthenticated && (
                   <p className="text-xs text-white/40 text-center">
-                    ログインするとあなたの好み履歴からタグ・出演者を素早く選べます
+                    ログインするとあなたの好み履歴からタグを素早く選べます
                   </p>
                 )}
               </div>

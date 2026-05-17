@@ -34,7 +34,7 @@ export default function ListsPage() {
         }
         setIsAuthenticated(true);
         const { count } = await supabase
-          .from('user_video_decisions')
+          .from('user_book_decisions')
           .select('*', { count: 'exact', head: true })
           .eq('user_id', user.id)
           .eq('decision_type', 'like');

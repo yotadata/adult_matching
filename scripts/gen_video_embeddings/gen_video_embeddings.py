@@ -266,30 +266,29 @@ def fetch_target_videos(
 ) -> pd.DataFrame:
     sql = """
         SELECT
-          v.id,
-          v.source,
-          v.maker,
-          v.label,
-          v.series,
-          v.price,
-          v.product_released_at,
-        array_remove(array_agg(DISTINCT vt.tag_id) FILTER (WHERE vt.tag_id IS NOT NULL AND coalesce(tg.use_for_training, true)), NULL) AS tag_ids,
-        array_remove(array_agg(DISTINCT vp.performer_id), NULL) AS performer_ids,
-        max(ve.model_version) AS current_model_version
-        FROM public.videos v
-        LEFT JOIN public.video_tags vt ON vt.video_id = v.id
-        LEFT JOIN public.tags t ON t.id = vt.tag_id
+          b.id,
+          b.source,
+          b.publisher AS maker,
+          b.label,
+          b.series,
+          b.price,
+          b.product_released_at,
+          array_remove(array_agg(DISTINCT bt.tag_id) FILTER (WHERE bt.tag_id IS NOT NULL AND coalesce(tg.use_for_training, true)), NULL) AS tag_ids,
+          ARRAY[b.author_id] FILTER (WHERE b.author_id IS NOT NULL) AS performer_ids,
+          max(be.model_version) AS current_model_version
+        FROM public.books b
+        LEFT JOIN public.book_tags bt ON bt.book_id = b.id
+        LEFT JOIN public.tags t ON t.id = bt.tag_id
         LEFT JOIN public.tag_groups tg ON tg.id = t.tag_group_id
-        LEFT JOIN public.video_performers vp ON vp.video_id = v.id
-        LEFT JOIN public.video_embeddings ve ON ve.video_id = v.id
+        LEFT JOIN public.book_embeddings be ON be.book_id = b.id
         WHERE (
             %(include_existing)s
-            OR ve.video_id IS NULL
-            OR ve.model_version IS NULL
-            OR ve.model_version <> %(model_version)s
+            OR be.book_id IS NULL
+            OR be.model_version IS NULL
+            OR be.model_version <> %(model_version)s
         )
-        GROUP BY v.id, v.source, v.maker, v.label, v.series, v.price, v.product_released_at
-        ORDER BY v.product_released_at DESC NULLS LAST, v.id DESC
+        GROUP BY b.id, b.source, b.publisher, b.label, b.series, b.price, b.product_released_at, b.author_id
+        ORDER BY b.product_released_at DESC NULLS LAST, b.id DESC
     """
     params = {
         "include_existing": include_existing,
@@ -306,7 +305,7 @@ def fetch_target_videos(
     if not rows:
         return pd.DataFrame(columns=["video_id"])
     df = pd.DataFrame(rows)
-    df.rename(columns={"id": "video_id"}, inplace=True)
+    df.rename(columns={"id": "video_id"}, inplace=True)  # video_id列名はモデルとの互換性のため維持
     df["video_id"] = df["video_id"].astype(str)
     df["source"] = df.get("source", "").fillna("").astype(str)
     df["maker"] = df.get("maker", "").fillna("").astype(str)
