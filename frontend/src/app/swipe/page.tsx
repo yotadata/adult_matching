@@ -581,7 +581,7 @@ export default function Home() {
 
   return (
     <motion.div
-      className="flex flex-col items-center h-screen overflow-hidden"
+      className="flex flex-col items-center h-screen overflow-hidden pt-[51px]"
       style={{ background: currentGradient }}
       transition={{ duration: 0.3 }}
     >

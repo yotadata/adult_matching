@@ -31,3 +31,22 @@ body {
     repeating-linear-gradient(45deg, rgba(255,255,255,0.01) 0 2px, rgba(0,0,0,0) 2px 4px);
   background-blend-mode: soft-light, soft-light, multiply, normal, normal;
 }
+
+/* BrowseTabBar animations */
+@keyframes float-heart {
+  0%   { opacity: 1; transform: translateY(0) scale(1); }
+  100% { opacity: 0; transform: translateY(-60px) scale(1.4); }
+}
+.animate-float-heart {
+  animation: float-heart 0.9s ease-out forwards;
+}
+
+@keyframes level-up {
+  0%   { opacity: 0; transform: scale(0.7); }
+  20%  { opacity: 1; transform: scale(1.08); }
+  80%  { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(0.95); }
+}
+.animate-level-up {
+  animation: level-up 2.8s ease-in-out forwards;
+}
