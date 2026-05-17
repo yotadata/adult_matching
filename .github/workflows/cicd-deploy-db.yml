@@ -40,8 +40,9 @@ jobs:
         run: |
           # ダッシュボード経由でリモートに直接適用されローカルに存在しないマイグレーションを
           # "reverted" としてマークし、db push の整合性エラーを回避する。
-          supabase migration repair --status reverted \
-            20260517020453 20260517020512 20260517020530 20260517111741 || true
+          for v in 20260517020453 20260517020512 20260517020530 20260517111741; do
+            supabase migration repair --status reverted "$v" || true
+          done
 
       - name: Push migrations (push to main)
         if: github.event_name == 'push'
