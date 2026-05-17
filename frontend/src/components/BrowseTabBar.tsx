@@ -142,64 +142,69 @@ function BrowseTabBarInner() {
       {levelUpLevel && <LevelUpOverlay level={levelUpLevel} onDone={() => setLevelUpLevel(null)} />}
 
       <div className="fixed top-0 left-0 right-0 z-40 bg-[#0d1117]/95 backdrop-blur border-b border-[#30363d] flex flex-col">
-        <div className="flex items-center px-3 h-12 gap-2">
-          {/* ロゴ */}
+        {/* 1行目: ロゴ・タブ切替・リスト */}
+        <div className="flex items-center px-3 h-10 gap-2">
           <Link href="/" className="flex-shrink-0">
-            <Image src="/seiheki_lab.png" alt="性癖ラボ" width={80} height={24} className="h-6 w-auto" />
+            <Image src="/seiheki_lab.png" alt="性癖ラボ" width={72} height={22} className="h-5 w-auto" />
           </Link>
-
-          {/* グリッド/スワイプ切替（アイコンのみ・コンパクト） */}
           <div className="flex gap-1 flex-shrink-0">
             <Link
               href="/grid"
-              className={`flex items-center justify-center w-8 h-8 rounded-lg transition-colors ${
+              className={`flex items-center justify-center w-7 h-7 rounded-md transition-colors ${
                 isGrid ? 'bg-violet-600 text-white' : 'text-[#8b949e] hover:text-[#e6edf3] hover:bg-[#161b22]'
               }`}
               title="グリッド"
             >
-              <LayoutGrid size={16} />
+              <LayoutGrid size={14} />
             </Link>
             <Link
               href="/swipe"
-              className={`flex items-center justify-center w-8 h-8 rounded-lg transition-colors ${
+              className={`flex items-center justify-center w-7 h-7 rounded-md transition-colors ${
                 !isGrid ? 'bg-violet-600 text-white' : 'text-[#8b949e] hover:text-[#e6edf3] hover:bg-[#161b22]'
               }`}
               title="スワイプ"
             >
-              <Layers size={16} />
+              <Layers size={14} />
             </Link>
           </div>
+          <div className="flex-1" />
+          <button
+            onClick={() => setIsDrawerOpen(true)}
+            className="flex items-center gap-1 px-2 py-1 rounded-md text-[#8b949e] hover:text-pink-400 hover:bg-[#161b22] transition-colors flex-shrink-0 text-[11px] font-bold"
+            title="気になるリスト"
+          >
+            <Heart size={13} />
+            リスト
+          </button>
+        </div>
 
-          {/* レベルゲージ（スマホでも表示） */}
-          {lv && (
-            <div className="flex items-center gap-1.5 flex-1 min-w-0">
-              <lv.Icon size={15} className={`flex-shrink-0 ${lv.iconColor}`} strokeWidth={2} />
-              <div className="flex flex-col leading-none flex-1 min-w-0">
-                <div className="flex items-center justify-between gap-1 mb-0.5">
-                  <span className="text-[10px] font-bold text-[#e6edf3] truncate">{lv.label}</span>
-                  <span className="text-[10px] text-[#8b949e] flex-shrink-0">
-                    <Heart size={8} className="inline mr-0.5" fill="currentColor" />
-                    {likeCount}{nextLv ? `/${nextLv.min}` : ''}
+        {/* 2行目: ゲージ（主役） */}
+        <div className="px-3 pb-2.5">
+          {lv ? (
+            <div className="flex items-center gap-2">
+              <lv.Icon size={18} className={`flex-shrink-0 ${lv.iconColor}`} strokeWidth={2} />
+              <div className="flex flex-col flex-1 min-w-0 gap-1">
+                <div className="flex items-center justify-between">
+                  <span className={`text-xs font-extrabold bg-gradient-to-r ${lv.color} bg-clip-text text-transparent`}>
+                    {lv.label}
+                  </span>
+                  <span className="text-[11px] text-[#8b949e] flex-shrink-0">
+                    <Heart size={9} className="inline mr-0.5 text-pink-400" fill="currentColor" />
+                    <span className="text-[#e6edf3] font-bold">{likeCount}</span>
+                    {nextLv && <span> / {nextLv.min}</span>}
                   </span>
                 </div>
-                <div className="h-1.5 w-full bg-[#30363d] rounded-full overflow-hidden">
+                <div className="h-2.5 w-full bg-[#21262d] rounded-full overflow-hidden">
                   <div
                     className={`h-full rounded-full bg-gradient-to-r ${lv.color} transition-all duration-700 ease-out`}
-                    style={{ width: `${progress}%`, boxShadow: '0 0 6px 1px rgba(167,139,250,0.5)' }}
+                    style={{ width: `${progress}%`, boxShadow: '0 0 8px 2px rgba(167,139,250,0.5)' }}
                   />
                 </div>
               </div>
             </div>
+          ) : (
+            <div className="h-2.5 w-full bg-[#21262d] rounded-full" />
           )}
-          {!lv && <div className="flex-1" />}
-
-          <button
-            onClick={() => setIsDrawerOpen(true)}
-            className="flex items-center justify-center w-8 h-8 rounded-lg text-[#8b949e] hover:text-pink-400 hover:bg-[#161b22] transition-colors flex-shrink-0"
-            title="気になるリスト"
-          >
-            <Heart size={15} />
-          </button>
         </div>
       </div>
 

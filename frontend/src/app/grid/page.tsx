@@ -156,7 +156,7 @@ function GridPage() {
   }, [likedIds]);
 
   return (
-    <div className="min-h-screen bg-[#0d1117] pt-[52px]">
+    <div className="min-h-screen bg-[#0d1117] pt-[76px]">
       {/* 説明バナー */}
       <div className="max-w-4xl mx-auto px-3 pt-4">
       <div className="mt-3 mb-5 rounded-xl border border-violet-500/40 bg-gradient-to-br from-violet-950/60 to-[#161b22] overflow-hidden shadow-lg shadow-violet-900/20">
