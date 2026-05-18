@@ -398,7 +398,7 @@ export function ResultContent({ typeKey }: { typeKey: QuizTypeKey }) {
   const shareUrl = scoresParam
     ? `https://www.seihekilab.com/quiz/result/${typeKey}?scores=${encodeURIComponent(scoresParam)}&v=${encodeURIComponent(versionParam)}`
     : `https://www.seihekilab.com/quiz/result/${typeKey}?v=${encodeURIComponent(versionParam)}`;
-  const shareText = `私の偏愛タイプは ${typeKey.toUpperCase()}「${quizType.name}」でした。\n#偏愛16 #性癖ラボ\n\n${shareUrl}`;
+  const shareText = `偏愛16診断やってみた🔍\n私のタイプは「${quizType.name}」${quizType.emoji}\n${quizType.tagline}\n\n#偏愛16診断\n${shareUrl}`;
 
   const axes: { axis: Axis; pct: number }[] = AXES.map((axis) => ({
     axis,
