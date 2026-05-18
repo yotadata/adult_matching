@@ -1,7 +1,7 @@
 'use client';
 
 import SwipeCard, { CardData, SwipeCardHandle } from "@/components/SwipeCard";
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, Suspense } from "react";
 import { AnimatePresence, motion, PanInfo } from "framer-motion";
 import useMediaQuery from "@/hooks/useMediaQuery";
 import useWindowSize from "@/hooks/useWindowSize";
@@ -9,6 +9,7 @@ import MobileVideoLayout from "@/components/MobileVideoLayout";
 import { supabase } from "@/lib/supabase";
 import { trackEvent, generateSessionId } from "@/lib/analytics";
 import { ChevronsLeft, Heart, List } from "lucide-react";
+import { useSearchParams } from "next/navigation";
 import { useDecisionCount } from "@/hooks/useDecisionCount";
 import OnboardingSlides from "@/components/OnboardingSlides";
 import SpotlightTutorial from "@/components/SpotlightTutorial";
@@ -51,8 +52,10 @@ const LEFT_SWIPE_GRADIENT = ORIGINAL_GRADIENT;
 const RIGHT_SWIPE_GRADIENT = ORIGINAL_GRADIENT;
 const ONBOARDING_STORAGE_KEY = 'seihekiLab_hasSeenOnboardingSlides';
 const SPOTLIGHT_STORAGE_KEY = 'seihekiLab_hasSeenSpotlightTutorial';
-export default function Home() {
+function SwipePage() {
 
+  const searchParams = useSearchParams();
+  const isDebug = searchParams.get('debug') === '1';
   const [cards, setCards] = useState<CardData[]>([]);
   const [activeIndex, setActiveIndex] = useState(0);
   const [isFetchingVideos, setIsFetchingVideos] = useState(false);
@@ -585,6 +588,54 @@ export default function Home() {
       style={{ background: currentGradient }}
       transition={{ duration: 0.3 }}
     >
+      {/* デバッグパネル */}
+      {isDebug && cards.length > 0 && (() => {
+        const relevant = cards.slice(activeIndex);
+        const all = cards;
+        const countFor = (arr: CardData[]) => {
+          const counts: Record<string, number> = {};
+          const scores: Record<string, number[]> = {};
+          for (const c of arr) {
+            const src = c.recommendationSource ?? 'unknown';
+            counts[src] = (counts[src] ?? 0) + 1;
+            if (c.recommendationScore != null) {
+              if (!scores[src]) scores[src] = [];
+              scores[src].push(c.recommendationScore);
+            }
+          }
+          return { counts, scores };
+        };
+        const { counts, scores } = countFor(all);
+        const total = all.length;
+        const COLORS: Record<string, string> = {
+          exploitation: 'bg-violet-600 text-white',
+          popularity: 'bg-blue-600 text-white',
+          exploration: 'bg-green-700 text-white',
+        };
+        return (
+          <div className="fixed top-[52px] left-0 right-0 z-50 bg-[#0d1117]/95 border-b border-[#30363d] px-3 py-2 text-[11px] font-mono">
+            <div className="flex flex-wrap gap-x-4 gap-y-1 items-center">
+              <span className="text-[#8b949e]">loaded:{total} remaining:{relevant.length}</span>
+              {Object.entries(counts).sort((a, b) => b[1] - a[1]).map(([src, cnt]) => {
+                const avg = scores[src]?.length
+                  ? (scores[src].reduce((a, b) => a + b, 0) / scores[src].length).toFixed(3)
+                  : '–';
+                const max = scores[src]?.length
+                  ? Math.max(...scores[src]).toFixed(3)
+                  : '–';
+                return (
+                  <span key={src} className="flex items-center gap-1.5">
+                    <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${COLORS[src] ?? 'bg-gray-600 text-white'}`}>{src}</span>
+                    <span className="text-[#e6edf3]">{cnt} ({((cnt / total) * 100).toFixed(0)}%)</span>
+                    <span className="text-yellow-300">avg:{avg}</span>
+                    <span className="text-yellow-500">max:{max}</span>
+                  </span>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })()}
       {/* ゲスト向けログイン nudge トースト */}
       {showLoginNudge && !isLoggedIn && (
         <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 bg-[#1c1f26] border border-violet-500/50 rounded-2xl px-4 py-3 shadow-2xl shadow-violet-900/30 max-w-[320px] w-[90vw]">
@@ -708,5 +759,13 @@ export default function Home() {
         onFinish={handleFinishSpotlight}
       />
     </motion.div>
+  );
+}
+
+export default function Home() {
+  return (
+    <Suspense>
+      <SwipePage />
+    </Suspense>
   );
 }

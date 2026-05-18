@@ -222,6 +222,44 @@ function GridPage() {
           </div>
         </div>
       )}
+      {/* デバッグパネル */}
+      {isDebug && videos.length > 0 && (() => {
+        const counts: Record<string, number> = {};
+        const scores: Record<string, number[]> = {};
+        for (const v of videos) {
+          counts[v.source] = (counts[v.source] ?? 0) + 1;
+          if (v.score != null) {
+            if (!scores[v.source]) scores[v.source] = [];
+            scores[v.source].push(v.score);
+          }
+        }
+        const total = videos.length;
+        const entries = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+        return (
+          <div className="sticky top-[52px] z-40 bg-[#0d1117]/95 border-b border-[#30363d] px-3 py-2 text-[11px] font-mono">
+            <div className="max-w-4xl mx-auto flex flex-wrap gap-x-4 gap-y-1 items-center">
+              <span className="text-[#8b949e]">total: {total}</span>
+              {entries.map(([src, cnt]) => {
+                const avg = scores[src]?.length
+                  ? (scores[src].reduce((a, b) => a + b, 0) / scores[src].length).toFixed(3)
+                  : '–';
+                const max = scores[src]?.length
+                  ? Math.max(...scores[src]).toFixed(3)
+                  : '–';
+                const badgeClass = SOURCE_BADGE_COLORS[src] ?? 'bg-gray-600 text-white';
+                return (
+                  <span key={src} className="flex items-center gap-1.5">
+                    <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${badgeClass}`}>{src}</span>
+                    <span className="text-[#e6edf3]">{cnt} ({((cnt / total) * 100).toFixed(0)}%)</span>
+                    <span className="text-yellow-300">avg:{avg}</span>
+                    <span className="text-yellow-500">max:{max}</span>
+                  </span>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })()}
       {/* 説明バナー */}
       <div className="max-w-4xl mx-auto px-3 pt-4">
       <div className="mt-3 mb-5 rounded-xl border border-violet-500/40 bg-gradient-to-br from-violet-950/60 to-[#161b22] overflow-hidden shadow-lg shadow-violet-900/20">
