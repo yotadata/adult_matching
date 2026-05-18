@@ -57,6 +57,7 @@ function GridPage() {
   const [likedIds, setLikedIds] = useState<Set<string>>(new Set());
   const [viewedIds, setViewedIds] = useState<Set<string>>(new Set());
   const [loadedIds, setLoadedIds] = useState<Set<string>>(new Set());
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
   const overlayHideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const loaderRef = useRef<HTMLDivElement>(null);
   const OVERLAY_HIDE_DELAY_MS = 700;
@@ -97,6 +98,17 @@ function GridPage() {
       setLoading(false);
     }
   }, [loading, hasMore]);
+
+  // 認証状態を取得
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setIsLoggedIn(Boolean(session?.user));
+    });
+    const { data: listener } = supabase.auth.onAuthStateChange((_e, session) => {
+      setIsLoggedIn(Boolean(session?.user));
+    });
+    return () => listener.subscription.unsubscribe();
+  }, []);
 
   // DBからいいね済みIDを取得
   useEffect(() => {
@@ -214,6 +226,14 @@ function GridPage() {
               <LockOpen size={13} className="flex-shrink-0 text-[#8b949e]" />
               <span>メールアドレス不要・無料で今すぐ使えます。Googleアカウントで登録するといいね履歴が永続保存されます。</span>
             </div>
+            {isLoggedIn === false && (
+              <button
+                onClick={() => window.dispatchEvent(new Event('open-auth-modal'))}
+                className="w-full py-2.5 rounded-lg bg-violet-600 hover:bg-violet-500 text-white text-sm font-bold transition-colors"
+              >
+                ログイン / 新規登録
+              </button>
+            )}
           </div>
         )}
       </div>
@@ -258,11 +278,11 @@ function GridPage() {
               </div>
               {/* 既読オーバーレイ（いいね済みでない場合のみ） */}
               {viewedIds.has(video.id) && !likedIds.has(video.id) && (
-                <div className="absolute inset-0 bg-black/40 pointer-events-none" />
+                <div className="absolute inset-0 bg-black/60 pointer-events-none" />
               )}
               {/* いいね済みオーバーレイ */}
               {likedIds.has(video.id) && (
-                <div className="absolute inset-0 bg-pink-500/20 pointer-events-none" />
+                <div className="absolute inset-0 bg-pink-500/40 pointer-events-none" />
               )}
               {/* いいね済みバッジ */}
               {likedIds.has(video.id) && (
