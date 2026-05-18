@@ -135,13 +135,13 @@ class FeatureSpace:
         offset = 0
 
         for field, values in categorical_fields.items():
-            vocab = sorted({v for v in values if v})
+            vocab = sorted({v for v in values if v and isinstance(v, str)})
             self.cat_vocab[field] = {v: i for i, v in enumerate(vocab)}
             self.offsets[field] = (offset, offset + len(vocab))
             offset += len(vocab)
 
         for field, values in multi_fields.items():
-            vocab = sorted({v for v in values if v})
+            vocab = sorted({v for v in values if v and isinstance(v, str)})
             self.multi_vocab[field] = {v: i for i, v in enumerate(vocab)}
             self.multi_offsets[field] = (offset, offset + len(vocab))
             offset += len(vocab)
