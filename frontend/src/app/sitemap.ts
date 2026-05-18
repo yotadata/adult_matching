@@ -55,5 +55,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     });
   }
 
+  // 女優LPを全件追加
+  const { data: performers } = await supabase
+    .from('performers')
+    .select('id');
+  for (const p of performers ?? []) {
+    entries.push({
+      url: `${SITE_URL}/performers/${p.id}`,
+      lastModified: new Date(),
+      changeFrequency: 'weekly',
+      priority: 0.7,
+    });
+  }
+
   return entries;
 }
