@@ -197,7 +197,7 @@ function GridPage() {
   }, [likedIds]);
 
   return (
-    <div className="min-h-screen bg-[#0d1117] pt-[52px]">
+    <div className="min-h-screen bg-[#0d1117]" style={{ paddingTop: isDebug ? '84px' : '52px' }}>
       {/* ゲスト向けログイン nudge トースト */}
       {showLoginNudge && isLoggedIn === false && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 bg-[#1c1f26] border border-violet-500/50 rounded-2xl px-4 py-3 shadow-2xl shadow-violet-900/30 max-w-[320px] w-[90vw]">
@@ -236,7 +236,7 @@ function GridPage() {
         const total = videos.length;
         const entries = Object.entries(counts).sort((a, b) => b[1] - a[1]);
         return (
-          <div className="sticky top-[52px] z-40 bg-[#0d1117]/95 border-b border-[#30363d] px-3 py-2 text-[11px] font-mono">
+          <div className="fixed top-[52px] left-0 right-0 z-40 bg-[#0d1117]/95 border-b border-[#30363d] px-3 py-2 text-[11px] font-mono">
             <div className="max-w-4xl mx-auto flex flex-wrap gap-x-4 gap-y-1 items-center">
               <span className="text-[#8b949e]">total: {total}</span>
               {entries.map(([src, cnt]) => {
