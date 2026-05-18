@@ -18,8 +18,6 @@ interface LoginFormProps {
   onClose: () => void;
 }
 
-const CTA_GRADIENT_CLASS = 'from-[#ADB4E3] via-[#F7BECE] to-[#F9B1C4]';
-
 const LoginForm: React.FC<LoginFormProps> = ({ onClose }) => {
   const { register, handleSubmit, formState: { errors } } = useForm<LoginFormInputs>();
   const [message, setMessage] = useState<{ type: 'error'; text: string } | null>(null);

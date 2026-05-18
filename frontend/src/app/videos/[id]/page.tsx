@@ -238,18 +238,7 @@ export default async function VideoPage(
               </div>
             )}
             {affiliateUrl && (
-<<<<<<< HEAD
               <FanzaLinkButton href={affiliateUrl} videoId={video.id} />
-=======
-              <Link
-                href={affiliateUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block w-full text-center bg-amber-500 hover:bg-amber-400 text-white font-bold rounded-lg py-3 text-sm transition-colors"
-              >
-                FANZAで見る
-              </Link>
->>>>>>> origin/main
             )}
             <Link
               href="/swipe"

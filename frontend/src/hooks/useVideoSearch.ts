@@ -100,7 +100,6 @@ export function useVideoSearch({ keyword, tagIds, limit = 24 }: UseVideoSearchOp
     } finally {
       setLoading(false);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [keyword, tagIdsKey, limit]);
 
   useEffect(() => {

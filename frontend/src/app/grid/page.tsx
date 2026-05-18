@@ -366,6 +366,7 @@ function GridPage() {
           >
             {/* サムネイル */}
             <div className="w-full bg-black relative group">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={(video.thumbnail_vertical_url?.replace('ps.jpg', 'pl.jpg')) || video.thumbnail_url || ''}
                 alt={video.title ?? ''}
