@@ -79,7 +79,7 @@ def parse_args() -> argparse.Namespace:
 
 def _ensure_list(value) -> List[str]:
     if isinstance(value, (list, tuple)):
-        return [str(v) for v in value if v is not None and str(v).strip()]
+        return [str(v) for v in value if v is not None and str(v) != ""]
     if value is None or (isinstance(value, float) and np.isnan(value)):
         return []
     return [str(value)]
@@ -350,11 +350,11 @@ def build_item_feature_space(
 
     tag_counter: Counter[str] = Counter()
     for values in reference_df.get("tag_ids", []):
-        tag_counter.update(_normalize_array(values))
+        tag_counter.update(_ensure_list(values))
     # 訓練時と同様にユーザーの preferred_tag_ids もタグ語彙に含める
     if user_df is not None:
         for values in user_df.get("preferred_tag_ids", []):
-            tag_counter.update(_normalize_array(values))
+            tag_counter.update(_ensure_list(values))
     if max_tag_features is not None and max_tag_features > 0:
         tag_vocab = [tag for tag, _ in tag_counter.most_common(max_tag_features)]
     else:
@@ -362,7 +362,7 @@ def build_item_feature_space(
 
     performer_counter: Counter[str] = Counter()
     for values in reference_df.get("performer_ids", []):
-        performer_counter.update(_normalize_array(values))
+        performer_counter.update(_ensure_list(values))
     if max_performer_features is not None and max_performer_features > 0:
         performer_vocab = [p for p, _ in performer_counter.most_common(max_performer_features)]
     else:
@@ -471,14 +471,25 @@ def main() -> None:
         user_df=user_ref_df,
     )
 
+    cat_field_sizes = {f: len(v) for f, v in bundle.item_space.cat_vocab.items()}
+    multi_field_sizes = {f: len(v) for f, v in bundle.item_space.multi_vocab.items()}
+    computed_dim = bundle.item_space.base_dim + len(bundle.numeric_fields)
     print(
         json.dumps(
             {
                 "info": "item_feature_space",
                 "model_version": model_version,
-                "categorical_dims": bundle.item_space.base_dim,
+                "categorical_field_sizes": cat_field_sizes,
+                "multi_field_sizes": multi_field_sizes,
+                "categorical_total": sum(cat_field_sizes.values()),
+                "multi_total": sum(multi_field_sizes.values()),
+                "base_dim": bundle.item_space.base_dim,
                 "numeric_fields": bundle.numeric_fields,
+                "computed_item_dim": computed_dim,
                 "expected_item_dim": item_feature_dim,
+                "meta_tag_vocab_size": meta.get("tag_vocab_size"),
+                "meta_performer_vocab_size": meta.get("performer_vocab_size"),
+                "user_ref_loaded": user_ref_df is not None,
             },
             ensure_ascii=False,
         )

@@ -117,7 +117,7 @@ jobs:
           if compgen -G "supabase/functions/*/index.ts" > /dev/null; then
             for file in supabase/functions/*/index.ts; do
               echo "Type-checking ${file}"
-              deno check "$file"
+              deno check --import-map=supabase/functions/import_map.json "$file"
             done
           else
             echo "No functions found to check"
