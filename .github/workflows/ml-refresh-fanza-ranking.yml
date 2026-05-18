@@ -22,17 +22,17 @@ jobs:
       - name: Prepare env file
         run: |
           mkdir -p docker/env
-          cat <<EOF > docker/env/prd.ci.env
-          NEXT_PUBLIC_SUPABASE_URL=${SUPABASE_URL}
-          SUPABASE_URL=${SUPABASE_URL}
-          NEXT_PUBLIC_SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
-          SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
-          SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
-          FANZA_API_ID=${FANZA_API_ID}
-          FANZA_API_AFFILIATE_ID=${FANZA_API_AFFILIATE_ID:-}
-          FANZA_LINK_AFFILIATE_ID=${FANZA_LINK_AFFILIATE_ID:-}
-          RANKING_ONLY=true
-          EOF
+          {
+            echo "NEXT_PUBLIC_SUPABASE_URL=${SUPABASE_URL}"
+            echo "SUPABASE_URL=${SUPABASE_URL}"
+            echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}"
+            echo "SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}"
+            echo "SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}"
+            echo "FANZA_API_ID=${FANZA_API_ID}"
+            echo "FANZA_API_AFFILIATE_ID=${FANZA_API_AFFILIATE_ID:-}"
+            echo "FANZA_LINK_AFFILIATE_ID=${FANZA_LINK_AFFILIATE_ID:-}"
+            echo "RANKING_ONLY=true"
+          } > docker/env/prd.ci.env
 
       - name: Run ranking update
         run: INGEST_FANZA_ENV_FILE=docker/env/prd.ci.env bash scripts/ingest_fanza/run.sh
