@@ -163,6 +163,10 @@ jobs:
     env:
       PYTHONUNBUFFERED: '1'
       RUN_ID: ${{ needs.prepare.outputs.run_id }}
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
+      SUPABASE_REGION: ${{ secrets.SUPABASE_REGION }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -203,6 +207,23 @@ jobs:
         with:
           name: two_tower_eval
           path: ml/artifacts/runs
+
+      - name: Prepare env file for Storage upload
+        run: |
+          mkdir -p docker/env
+          {
+            echo "SUPABASE_URL=${SUPABASE_URL}"
+            echo "NEXT_PUBLIC_SUPABASE_URL=${SUPABASE_URL}"
+            echo "SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}"
+            echo "SUPABASE_PROJECT_ID=${SUPABASE_PROJECT_ID}"
+            echo "SUPABASE_REGION=${SUPABASE_REGION}"
+          } > docker/env/prd.ci.env
+
+      - name: Upload model to Supabase Storage
+        run: |
+          ARTIFACTS_DIR="ml/artifacts/runs/${RUN_ID}"
+          bash scripts/publish_two_tower/run.sh --env-file docker/env/prd.ci.env \
+            upload --artifacts-dir "$ARTIFACTS_DIR" --run-id "$RUN_ID"
 
       - name: Notify Discord (train)
         if: always()
