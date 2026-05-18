@@ -9,17 +9,29 @@ jobs:
   refresh-rankings:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    env:
+      FANZA_API_ID: ${{ secrets.FANZA_API_ID }}
+      FANZA_API_AFFILIATE_ID: ${{ secrets.FANZA_API_AFFILIATE_ID }}
+      FANZA_LINK_AFFILIATE_ID: ${{ secrets.FANZA_LINK_AFFILIATE_ID }}
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
     steps:
       - uses: actions/checkout@v4
 
+      - name: Prepare env file
+        run: |
+          mkdir -p docker/env
+          cat <<EOF > docker/env/prd.ci.env
+          SUPABASE_URL=${SUPABASE_URL}
+          SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+          FANZA_API_ID=${FANZA_API_ID}
+          FANZA_API_AFFILIATE_ID=${FANZA_API_AFFILIATE_ID:-}
+          FANZA_LINK_AFFILIATE_ID=${FANZA_LINK_AFFILIATE_ID:-}
+          RANKING_ONLY=true
+          EOF
+
       - name: Run ranking update
-        run: bash scripts/ingest_fanza/run.sh
-        env:
-          RANKING_ONLY: 'true'
-          FANZA_API_ID: ${{ secrets.FANZA_API_ID }}
-          FANZA_AFFILIATE_ID: ${{ secrets.FANZA_AFFILIATE_ID }}
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: INGEST_FANZA_ENV_FILE=docker/env/prd.ci.env bash scripts/ingest_fanza/run.sh
 
       - name: Notify Discord
         if: always()
