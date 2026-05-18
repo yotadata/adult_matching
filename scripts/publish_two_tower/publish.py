@@ -5,6 +5,7 @@ import gzip
 import io
 import json
 import os
+import sys
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
@@ -295,17 +296,9 @@ def cmd_activate(args: argparse.Namespace) -> None:
     if onnx_data_path:
         current_entry["onnx_data_path"] = onnx_data_path
 
-    item_features_path = None
-    if (artifacts_dir / "item_features.parquet").exists():
-        item_features_path = f"{artifacts_prefix}/{run_id}/item_features.parquet.gz"
-    if item_features_path:
-        current_entry["item_features_path"] = item_features_path
-
-    user_features_path = None
-    if (artifacts_dir / "user_features.parquet").exists():
-        user_features_path = f"{artifacts_prefix}/{run_id}/user_features.parquet.gz"
-    if user_features_path:
-        current_entry["user_features_path"] = user_features_path
+    # ローカルファイルの有無に関わらずStorageパスを記録（activate時にrunnerにローカルファイルがない場合もある）
+    current_entry["item_features_path"] = f"{artifacts_prefix}/{run_id}/item_features.parquet.gz"
+    current_entry["user_features_path"] = f"{artifacts_prefix}/{run_id}/user_features.parquet.gz"
 
     manifest["model_name"] = args.model_name
     manifest["current"] = current_entry
@@ -358,27 +351,34 @@ def cmd_fetch(args: argparse.Namespace) -> None:
     dest_dir = Path(args.dest).resolve()
     dest_dir.mkdir(parents=True, exist_ok=True)
 
-    downloads: List[Tuple[str, str, bool]] = [
-        ("onnx_path", "two_tower_latest.onnx", False),
-        ("pt_path", "two_tower_latest.pt", True),
-        ("meta_path", "model_meta.json", False),
-        ("metrics_path", "metrics.json", False),
+    # (key, local_filename, decompress, required)
+    downloads: List[Tuple[str, str, bool, bool]] = [
+        ("onnx_path", "two_tower_latest.onnx", False, False),
+        ("pt_path", "two_tower_latest.pt", True, True),
+        ("meta_path", "model_meta.json", False, True),
+        ("metrics_path", "metrics.json", False, False),
     ]
     if entry.get("onnx_data_path"):
-        downloads.append(("onnx_data_path", "two_tower_latest.onnx.data", True))
+        downloads.append(("onnx_data_path", "two_tower_latest.onnx.data", True, False))
     if entry.get("summary_path"):
-        downloads.append(("summary_path", "summary.md", False))
+        downloads.append(("summary_path", "summary.md", False, False))
     if entry.get("item_features_path"):
-        downloads.append(("item_features_path", "item_features.parquet", True))
+        downloads.append(("item_features_path", "item_features.parquet", True, True))
     if entry.get("user_features_path"):
-        downloads.append(("user_features_path", "user_features.parquet", True))
+        downloads.append(("user_features_path", "user_features.parquet", True, False))
 
     written: List[Dict[str, str]] = []
-    for key, filename, decompress in downloads:
+    for key, filename, decompress, required in downloads:
         storage_path = entry.get(key)
         if not storage_path:
             continue
-        raw = client.download_file(storage_path)
+        try:
+            raw = client.download_file(storage_path)
+        except FileNotFoundError:
+            if required:
+                raise
+            print(json.dumps({"warn": "optional_file_not_found", "key": key, "path": storage_path}, ensure_ascii=False), file=sys.stderr)
+            continue
         data = gzip.decompress(raw) if decompress else raw
         target = dest_dir / filename
         target.write_bytes(data)
