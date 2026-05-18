@@ -20,8 +20,6 @@ interface RegisterFormProps {
   onClose: () => void;
 }
 
-const CTA_GRADIENT_CLASS = 'from-[#ADB4E3] via-[#F7BECE] to-[#F9B1C4]';
-
 const RegisterForm: React.FC<RegisterFormProps> = ({ onClose }) => {
   const { register, handleSubmit, watch, formState: { errors } } = useForm<RegisterFormInputs>({
     defaultValues: { isAdult: false },

@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { isUpcomingRelease } from '@/lib/videoMeta';
+import FanzaLinkButton from '@/components/FanzaLinkButton';
 
 const SITE_URL = 'https://seihekilab.com';
 const SITE_NAME = '性癖ラボ';
@@ -237,14 +238,7 @@ export default async function VideoPage(
               </div>
             )}
             {affiliateUrl && (
-              <Link
-                href={affiliateUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block w-full text-center bg-amber-500 hover:bg-amber-400 text-white font-bold rounded-lg py-3 text-sm transition-colors"
-              >
-                FANZAで見る
-              </Link>
+              <FanzaLinkButton href={affiliateUrl} videoId={video.id} />
             )}
             <Link
               href="/swipe"

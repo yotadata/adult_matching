@@ -9,7 +9,6 @@ import { supabase } from '@/lib/supabase';
 
 type Gender = 'male' | 'female' | 'other';
 
-const SCALE_LABELS = ['完全にA', 'AよりかなA', 'どちらでも', 'BよりかなB', '完全にB'];
 const TOTAL_STEPS = QUESTIONS.length + 1;
 const STORAGE_KEY_PROGRESS = 'quiz_progress';
 const STORAGE_KEY_RESULT = 'quiz_result';

@@ -65,7 +65,7 @@ function SwipePage() {
   const { height: windowHeight } = useWindowSize();
   const [cardWidth, setCardWidth] = useState<number | undefined>(400);
   const [swipesUntilNextEmbed, setSwipesUntilNextEmbed] = useState<number | null>(null);
-  const { decisionCount, incrementDecisionCount } = useDecisionCount();
+  const { incrementDecisionCount } = useDecisionCount();
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
   const [authReady, setAuthReady] = useState<boolean>(false);
   const [showLoginNudge, setShowLoginNudge] = useState(false);
