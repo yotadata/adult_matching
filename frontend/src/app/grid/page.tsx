@@ -256,7 +256,7 @@ function GridPage() {
             </div>
             <div className="flex items-center gap-2 text-[10px] text-[#8b949e] bg-[#0d1117] rounded-lg px-3 py-2">
               <LockOpen size={13} className="flex-shrink-0 text-[#8b949e]" />
-              <span>メールアドレス不要・無料で今すぐ使えます。Googleアカウントで登録するといいね履歴が永続保存されます。</span>
+              <span>メールアドレス不要・無料で今すぐ使えます。登録するといいね履歴が永続保存されます。</span>
             </div>
             {isLoggedIn === false && (
               <button
