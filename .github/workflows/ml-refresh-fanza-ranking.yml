@@ -14,6 +14,7 @@ jobs:
       FANZA_API_AFFILIATE_ID: ${{ secrets.FANZA_API_AFFILIATE_ID }}
       FANZA_LINK_AFFILIATE_ID: ${{ secrets.FANZA_LINK_AFFILIATE_ID }}
       SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
     steps:
       - uses: actions/checkout@v4
@@ -22,7 +23,10 @@ jobs:
         run: |
           mkdir -p docker/env
           cat <<EOF > docker/env/prd.ci.env
+          NEXT_PUBLIC_SUPABASE_URL=${SUPABASE_URL}
           SUPABASE_URL=${SUPABASE_URL}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
+          SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
           SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
           FANZA_API_ID=${FANZA_API_ID}
           FANZA_API_AFFILIATE_ID=${FANZA_API_AFFILIATE_ID:-}
