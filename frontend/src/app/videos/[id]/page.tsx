@@ -42,7 +42,7 @@ async function getPerformers(videoId: string): Promise<Performer[]> {
     .from('video_performers')
     .select('performers(id, name)')
     .eq('video_id', videoId);
-  return ((data || []) as { performers: Performer | null }[])
+  return ((data || []) as unknown as { performers: Performer | null }[])
     .flatMap(r => r.performers ? [r.performers] : []);
 }
 
@@ -51,7 +51,7 @@ async function getTags(videoId: string): Promise<Tag[]> {
     .from('video_tags')
     .select('tags(id, name)')
     .eq('video_id', videoId);
-  return ((data || []) as { tags: Tag | null }[])
+  return ((data || []) as unknown as { tags: Tag | null }[])
     .flatMap(r => r.tags ? [r.tags] : []);
 }
 
