@@ -524,7 +524,7 @@ export function ResultContent({ typeKey }: { typeKey: QuizTypeKey }) {
                 </p>
 
                 <div>
-                  <p className="text-[10px] font-black tracking-widest uppercase mb-2 px-1" style={{ color: 'rgba(180,150,80,0.5)' }}>好きなプレイ</p>
+                  <p className="text-[10px] font-black tracking-widest uppercase mb-2 px-1" style={{ color: 'rgba(180,150,80,0.5)' }}>好きなシチュエーション</p>
                   <div className="flex flex-wrap gap-2 px-1">
                     {quizType.favPlay.map((play, i) => (
                       <span
