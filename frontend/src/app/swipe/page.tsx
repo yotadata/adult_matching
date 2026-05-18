@@ -33,7 +33,7 @@ interface VideoFromApi {
 
 interface GuestDecision {
   video_id: CardData['id'];
-  decision_type: 'like' | 'nope';
+  decision_type: 'swipe_like' | 'swipe_nope';
   created_at: string;
   recommendation_source?: string | null;
   recommendation_score?: number | null;
@@ -209,7 +209,7 @@ export default function Home() {
     samplePlayCountRef.current = 0;
   }, [isLoggedIn, toIsoString]);
 
-  const emitDecisionEvents = useCallback((card: CardData, decisionType: 'like' | 'nope') => {
+  const emitDecisionEvents = useCallback((card: CardData, decisionType: 'swipe_like' | 'swipe_nope') => {
     if (!card) return;
     if (!sessionIdRef.current || sessionStartRef.current === null) {
       startInteractionSession(card, currentPositionRef.current);
@@ -475,7 +475,7 @@ export default function Home() {
   const handleSwipe = async (direction: 'left' | 'right') => {
     const card = activeCard;
     if (!card) return;
-    const decisionType = direction === 'right' ? 'like' : 'nope';
+    const decisionType = direction === 'right' ? 'swipe_like' : 'swipe_nope';
 
     if (isLoggedIn) {
       const { data: { user } } = await supabase.auth.getUser();
@@ -505,7 +505,7 @@ export default function Home() {
         recommendation_params: card.recommendationParams ?? null,
       });
       setGuestDecisions(current);
-      if (decisionType === 'like') {
+      if (decisionType === 'swipe_like') {
         guestLikeCountRef.current += 1;
         if (guestLikeCountRef.current === 3 || guestLikeCountRef.current % 10 === 0) {
           setShowLoginNudge(true);

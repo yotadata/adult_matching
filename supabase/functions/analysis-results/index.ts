@@ -8,7 +8,7 @@ const corsHeaders = {
 
 type DecisionRow = {
   video_id: string;
-  decision_type: "like" | "nope";
+  decision_type: "swipe_like" | "swipe_nope" | "grid_like";
   created_at: string;
 };
 
@@ -107,7 +107,7 @@ type AnalysisResponse = {
   recent_decisions: Array<{
     video_id: string;
     title: string | null;
-    decision_type: "like" | "nope";
+    decision_type: "swipe_like" | "swipe_nope" | "grid_like";
     decided_at: string;
     thumbnail_url: string | null;
     thumbnail_vertical_url?: string | null;
@@ -322,8 +322,8 @@ Deno.serve(async (req) => {
 
     const truncatedDecisions = decisions.slice(0, MAX_FETCH);
     const sampleSize = truncatedDecisions.length;
-    const totalLikes = truncatedDecisions.filter((d) => d.decision_type === "like").length;
-    const totalNope = truncatedDecisions.filter((d) => d.decision_type === "nope").length;
+    const totalLikes = truncatedDecisions.filter((d) => ["swipe_like","grid_like"].includes(d.decision_type)).length;
+    const totalNope = truncatedDecisions.filter((d) => d.decision_type === "swipe_nope").length;
 
     const uniqueVideoIds = Array.from(new Set(truncatedDecisions.map((d) => d.video_id))).filter(Boolean);
     const videoDetails = new Map<string, VideoDetails>();
@@ -368,7 +368,7 @@ Deno.serve(async (req) => {
       const tags = video.tags;
       const performers = video.performers;
 
-      if (decision.decision_type === "like") {
+      if (["swipe_like","grid_like"].includes(decision.decision_type)) {
         for (const tag of tags) {
           let stat = tagStats.get(tag.id);
           if (!stat) {
@@ -423,7 +423,7 @@ Deno.serve(async (req) => {
             };
           }
         }
-      } else if (decision.decision_type === "nope") {
+      } else if (decision.decision_type === "swipe_nope") {
         for (const tag of tags) {
           let stat = tagStats.get(tag.id);
           if (!stat && includeNope) {

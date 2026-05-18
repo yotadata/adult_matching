@@ -107,7 +107,7 @@ function BrowseTabBarInner() {
         .from('user_video_decisions')
         .select('*', { count: 'exact', head: true })
         .eq('user_id', user.id)
-        .eq('decision_type', 'like');
+        .in('decision_type', ['swipe_like', 'grid_like']);
       const c = count ?? 0;
       setLikeCount(c);
       prevLevelRef.current = getLevel(c);

@@ -70,7 +70,7 @@ const LikedVideosDrawer: React.FC<LikedVideosDrawerProps> = ({ isOpen, onClose }
         .from('user_video_decisions')
         .select('*', { count: 'exact', head: true })
         .eq('user_id', user.id)
-        .eq('decision_type', 'like');
+        .in('decision_type', ['swipe_like', 'grid_like']);
       setTotalCount(typeof count === 'number' ? count : null);
 
       const { data, error } = await supabase.rpc('get_user_likes', {

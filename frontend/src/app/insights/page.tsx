@@ -369,10 +369,10 @@ export default function AnalysisResultsPage() {
                           <td className="px-3 py-3 align-top">
                             <span
                               className={`inline-flex items-center justify-center min-w-[64px] px-2 py-0.5 text-xs font-bold rounded-full ${
-                                item.decision_type === 'like' ? 'bg-rose-500/15 text-rose-500' : 'bg-gray-200 text-gray-700'
+                                ['swipe_like','grid_like'].includes(item.decision_type) ? 'bg-rose-500/15 text-rose-500' : 'bg-gray-200 text-gray-700'
                               }`}
                             >
-                              {item.decision_type === 'like' ? '気になる' : 'スキップ'}
+                              {['swipe_like','grid_like'].includes(item.decision_type) ? '気になる' : 'スキップ'}
                             </span>
                           </td>
                           <td className="px-3 py-3 align-top">

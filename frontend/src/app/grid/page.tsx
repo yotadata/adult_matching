@@ -121,7 +121,7 @@ function GridPage() {
         .from('user_video_decisions')
         .select('video_id')
         .eq('user_id', user.id)
-        .eq('decision_type', 'like');
+        .in('decision_type', ['swipe_like', 'grid_like']);
       if (data && data.length > 0) {
         setLikedIds(new Set(data.map((d) => d.video_id)));
       }
@@ -174,7 +174,7 @@ function GridPage() {
     const { error } = await supabase.from('user_video_decisions').insert({
       user_id: user.id,
       video_id: video.id,
-      decision_type: 'like',
+      decision_type: 'grid_like',
       recommendation_source: video.source ?? null,
     });
     if (error) {

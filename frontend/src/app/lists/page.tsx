@@ -37,7 +37,7 @@ export default function ListsPage() {
           .from('user_book_decisions')
           .select('*', { count: 'exact', head: true })
           .eq('user_id', user.id)
-          .eq('decision_type', 'like');
+          .in('decision_type', ['swipe_like', 'grid_like']);
         setLikedCount(count ?? 0);
       } catch {
         setLikedCount(null);
