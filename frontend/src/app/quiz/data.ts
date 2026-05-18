@@ -75,7 +75,7 @@ export const QUESTIONS: Question[] = [
   { id: 3,  axis: 'ds', optionA: '「もっとして」と相手に言わせたい',          optionB: '「もっとして」と自分が言いたい' },
 
   // ── 快楽(P) ⇄ 感情(E) 軸 ── A=P側, B=E側 ──
-  { id: 4,  axis: 'pe', optionA: '顔とスタイルが好みなら、性格や関係性は関係なく惹かれる', optionB: 'どれだけ好みでも、気持ちが入らない相手とは無理' },
+  { id: 4,  axis: 'pe', optionA: '終わった後、相手への気持ちがスッと冷める', optionB: '終わった後の方が相手への愛着が増す' },
   { id: 5,  axis: 'pe', optionA: '気持ちよければ相手への感情は関係ない',                  optionB: '好きじゃない相手だと気持ちよくても虚しい' },
   { id: 6,  axis: 'pe', optionA: '会って数分で「この人とやりたい」と思うことがある',       optionB: 'ある程度仲良くなった相手じゃないと欲求が生まれない' },
 
@@ -85,9 +85,9 @@ export const QUESTIONS: Question[] = [
   { id: 9,  axis: 'nx', optionA: 'いつもの部屋・いつもの雰囲気で十分テンションが上がる', optionB: '「バレるかも」という状況や、非日常の緊張感がないと物足りない' },
 
   // ── 偏食(C) ⇄ 雑食(W) 軸 ── A=C側, B=W側 ──
-  { id: 10, axis: 'cw', optionA: 'こだわりの条件がちょっとでもズレると一気に冷める',           optionB: '雰囲気さえ合えば細かい条件は全然気にしない' },
-  { id: 11, axis: 'cw', optionA: '自分の性癖を友達に話すと「細かすぎ」って引かれる自覚がある', optionB: 'こだわりはほぼなく、わりと何でも楽しめる' },
-  { id: 12, axis: 'cw', optionA: '頭の中に理想の展開があって、そこから外れると萎える',          optionB: 'その場の流れに乗れれば何でも楽しい' },
+  { id: 10, axis: 'cw', optionA: '見た目の好みがはっきりしている',                              optionB: 'ストライクゾーンが広い' },
+  { id: 11, axis: 'cw', optionA: '好きなプレイと苦手なプレイがはっきりしている',                optionB: 'たいていのことは楽しめる' },
+  { id: 12, axis: 'cw', optionA: 'ちゃんと気持ちが高まるまでの流れがないとスイッチが入らない',  optionB: '流れはあまり関係なく、わりとすぐ乗れる' },
 ];
 
 export interface AxisScore {
