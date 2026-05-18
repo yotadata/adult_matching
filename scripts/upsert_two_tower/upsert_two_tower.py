@@ -312,11 +312,11 @@ def _ensure_embedding_schema(conn: psycopg.Connection, target_dim: int | None) -
     expected_dim = target_dim or 128
     expected_type = f"halfvec({expected_dim})"
     with conn.cursor() as cur:
-        video_type = _get_column_type(cur, "public.book_embeddings", "embedding")
+        video_type = _get_column_type(cur, "public.video_embeddings", "embedding")
         user_type = _get_column_type(cur, "public.user_embeddings", "embedding")
     mismatches: list[dict[str, Any]] = []
     if video_type != expected_type:
-        mismatches.append({"table": "public.book_embeddings", "found": video_type, "expected": expected_type})
+        mismatches.append({"table": "public.video_embeddings", "found": video_type, "expected": expected_type})
     if user_type != expected_type:
         mismatches.append({"table": "public.user_embeddings", "found": user_type, "expected": expected_type})
     if mismatches:
@@ -483,7 +483,7 @@ def main() -> None:
     video_df = load_embeddings(artifacts_dir / "video_embeddings.parquet", "video_id")
     video_rows, video_skipped, video_non_uuid = prepare_rows(video_df, "video_id")
     print(json.dumps({
-        "info": "book_embeddings_loaded",
+        "info": "video_embeddings_loaded",
         "rows": len(video_rows),
         "skipped": video_skipped,
         "non_uuid": video_non_uuid,
@@ -551,8 +551,8 @@ def main() -> None:
                     )
             video_result = upsert_embeddings(
                 conn,
-                "book_embeddings",
-                "book_id",
+                "video_embeddings",
+                "video_id",
                 video_rows,
                 args.chunk_size,
                 version_column="model_version",
