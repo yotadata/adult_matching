@@ -179,9 +179,9 @@ function BrowseTabBarInner() {
             </Link>
           </div>
 
-          {/* 中央: ログイン時のみレベル表示 */}
+          {/* 中央: レベル表示 */}
           <div className="flex items-center justify-center gap-1">
-            {isLoggedIn && lv && (
+            {lv && (
               <>
                 <lv.Icon size={12} className={lv.iconColor} strokeWidth={2} />
                 <span className={`text-[10px] font-extrabold bg-gradient-to-r ${lv.color} bg-clip-text text-transparent whitespace-nowrap`}>
