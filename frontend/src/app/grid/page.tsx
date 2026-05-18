@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-import { X, Play, Heart, ChevronDown, ChevronUp, Brain, Hand, Bot, Target, LockOpen, ExternalLink, type LucideIcon } from 'lucide-react';
+import { X, Play, Heart, Eye, ChevronDown, ChevronUp, Brain, Hand, Bot, Target, LockOpen, ExternalLink, type LucideIcon } from 'lucide-react';
 
 type VideoItem = {
   id: string;
@@ -55,6 +55,7 @@ function GridPage() {
   const [selected, setSelected] = useState<VideoItem | null>(null);
   const [showVideo, setShowVideo] = useState(false);
   const [likedIds, setLikedIds] = useState<Set<string>>(new Set());
+  const [viewedIds, setViewedIds] = useState<Set<string>>(new Set());
   const [loadedIds, setLoadedIds] = useState<Set<string>>(new Set());
   const overlayHideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const loaderRef = useRef<HTMLDivElement>(null);
@@ -96,6 +97,22 @@ function GridPage() {
       setLoading(false);
     }
   }, [loading, hasMore]);
+
+  // DBからいいね済みIDを取得
+  useEffect(() => {
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data } = await supabase
+        .from('user_video_decisions')
+        .select('video_id')
+        .eq('user_id', user.id)
+        .eq('decision_type', 'like');
+      if (data && data.length > 0) {
+        setLikedIds(new Set(data.map((d) => d.video_id)));
+      }
+    })();
+  }, []);
 
   // 初回ロード
   useEffect(() => {
@@ -211,14 +228,17 @@ function GridPage() {
             className={`break-inside-avoid rounded-2xl overflow-hidden cursor-pointer bg-[#161b22] border transition-all shadow-md ${
               loadedIds.has(video.id) ? 'opacity-100' : 'opacity-0'
             } ${
-              isDebug
-                ? (SOURCE_BORDER_COLORS[video.source] ?? 'border-[#30363d]')
-                : 'border-[#30363d] hover:border-violet-500/60'
+              likedIds.has(video.id)
+                ? 'border-pink-500/60'
+                : isDebug
+                  ? (SOURCE_BORDER_COLORS[video.source] ?? 'border-[#30363d]')
+                  : 'border-[#30363d] hover:border-violet-500/60'
             }`}
             onClick={() => {
               if (overlayHideTimer.current) clearTimeout(overlayHideTimer.current);
               setShowVideo(false);
               setSelected(video);
+              setViewedIds((prev) => new Set([...prev, video.id]));
             }}
           >
             {/* サムネイル */}
@@ -236,10 +256,24 @@ function GridPage() {
                   <Play size={18} className="text-white ml-0.5" fill="white" />
                 </div>
               </div>
+              {/* 既読オーバーレイ（いいね済みでない場合のみ） */}
+              {viewedIds.has(video.id) && !likedIds.has(video.id) && (
+                <div className="absolute inset-0 bg-black/40 pointer-events-none" />
+              )}
+              {/* いいね済みオーバーレイ */}
+              {likedIds.has(video.id) && (
+                <div className="absolute inset-0 bg-pink-500/20 pointer-events-none" />
+              )}
               {/* いいね済みバッジ */}
               {likedIds.has(video.id) && (
-                <div className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-pink-500 flex items-center justify-center">
+                <div className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-pink-500 flex items-center justify-center shadow-lg">
                   <Heart size={12} className="text-white" fill="white" />
+                </div>
+              )}
+              {/* 既読バッジ（いいね済みでない場合のみ） */}
+              {viewedIds.has(video.id) && !likedIds.has(video.id) && (
+                <div className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-black/60 border border-white/20 flex items-center justify-center">
+                  <Eye size={11} className="text-white/70" />
                 </div>
               )}
               {/* デバッグバッジ */}
