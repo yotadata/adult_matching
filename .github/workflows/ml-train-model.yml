@@ -219,6 +219,18 @@ jobs:
             echo "SUPABASE_REGION=${SUPABASE_REGION}"
           } > docker/env/prd.ci.env
 
+      - name: Copy feature parquets to artifacts dir
+        run: |
+          ARTIFACTS_DIR="ml/artifacts/runs/${RUN_ID}"
+          for f in item_features.parquet user_features.parquet; do
+            src="ml/data/processed/two_tower/latest/${f}"
+            if [ -f "$src" ]; then
+              cp "$src" "${ARTIFACTS_DIR}/${f}"
+            else
+              echo "Warning: ${src} not found, skipping"
+            fi
+          done
+
       - name: Upload model to Supabase Storage
         run: |
           ARTIFACTS_DIR="ml/artifacts/runs/${RUN_ID}"
