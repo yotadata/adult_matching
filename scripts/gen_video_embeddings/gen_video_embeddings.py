@@ -59,6 +59,12 @@ def parse_args() -> argparse.Namespace:
         default=Path("ml/artifacts/latest/item_features.parquet"),
         help="Training-time item_features parquet used to rebuild vocabularies.",
     )
+    parser.add_argument(
+        "--reference-user-features",
+        type=Path,
+        default=Path("ml/artifacts/latest/user_features.parquet"),
+        help="Training-time user_features parquet used to include preferred_tag_ids in tag vocab.",
+    )
     parser.add_argument("--output-dir", type=Path, default=Path("ml/artifacts/live/video_embeddings"), help="Directory to write embeddings.")
     parser.add_argument("--output-name", type=str, default="video_embeddings.parquet", help="Output parquet filename.")
     parser.add_argument("--limit", type=int, default=None, help="Optional maximum number of videos to encode (for debugging).")
@@ -333,6 +339,7 @@ def build_item_feature_space(
     use_price_feature: bool,
     max_tag_features: Optional[int],
     max_performer_features: Optional[int],
+    user_df: Optional[pd.DataFrame] = None,
 ) -> ItemFeatureBundle:
     cat_vocabs = {
         "source": reference_df.get("source", []).astype(str),
@@ -344,6 +351,10 @@ def build_item_feature_space(
     tag_counter: Counter[str] = Counter()
     for values in reference_df.get("tag_ids", []):
         tag_counter.update(_normalize_array(values))
+    # 訓練時と同様にユーザーの preferred_tag_ids もタグ語彙に含める
+    if user_df is not None:
+        for values in user_df.get("preferred_tag_ids", []):
+            tag_counter.update(_normalize_array(values))
     if max_tag_features is not None and max_tag_features > 0:
         tag_vocab = [tag for tag, _ in tag_counter.most_common(max_tag_features)]
     else:
@@ -447,11 +458,15 @@ def main() -> None:
     max_performer_features = meta.get("max_performer_features")
 
     reference_df = load_reference_item_features(args.reference_item_features)
+    user_ref_df: Optional[pd.DataFrame] = None
+    if args.reference_user_features and args.reference_user_features.exists():
+        user_ref_df = pd.read_parquet(args.reference_user_features)
     bundle = build_item_feature_space(
         reference_df,
         use_price_feature=use_price_feature,
         max_tag_features=max_tag_features,
         max_performer_features=max_performer_features,
+        user_df=user_ref_df,
     )
 
     print(

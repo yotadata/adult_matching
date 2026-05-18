@@ -171,7 +171,17 @@ def build_upload_plan(
                 item_features_path,
                 f"{prefix}/{run_id}/item_features.parquet",
                 "application/octet-stream",
-                True,  # Compress parquet file
+                True,
+            )
+        )
+    user_features_path = artifacts_dir / "user_features.parquet"
+    if user_features_path.exists():
+        plan.append(
+            (
+                user_features_path,
+                f"{prefix}/{run_id}/user_features.parquet",
+                "application/octet-stream",
+                True,
             )
         )
     if summary_path:
@@ -291,6 +301,12 @@ def cmd_activate(args: argparse.Namespace) -> None:
     if item_features_path:
         current_entry["item_features_path"] = item_features_path
 
+    user_features_path = None
+    if (artifacts_dir / "user_features.parquet").exists():
+        user_features_path = f"{artifacts_prefix}/{run_id}/user_features.parquet.gz"
+    if user_features_path:
+        current_entry["user_features_path"] = user_features_path
+
     manifest["model_name"] = args.model_name
     manifest["current"] = current_entry
     manifest["previous"] = previous_entries
@@ -354,6 +370,8 @@ def cmd_fetch(args: argparse.Namespace) -> None:
         downloads.append(("summary_path", "summary.md", False))
     if entry.get("item_features_path"):
         downloads.append(("item_features_path", "item_features.parquet", True))
+    if entry.get("user_features_path"):
+        downloads.append(("user_features_path", "user_features.parquet", True))
 
     written: List[Dict[str, str]] = []
     for key, filename, decompress in downloads:
