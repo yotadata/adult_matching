@@ -31,6 +31,9 @@ export const metadata: Metadata = {
     description: "スワイプするほどAIがあなたの性癖を学習し、好みにぴったりのアダルト動画を提案します。",
     images: ['/twitter-image.png'],
   },
+  verification: {
+    google: 'IDNQh6qoo-tpim03wuI8PUzB4iLQuioKba7w29EfLXU',
+  },
 };
 
 export default function RootLayout({
