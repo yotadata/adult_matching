@@ -15,7 +15,13 @@ CREATE INDEX IF NOT EXISTS idx_fanza_rankings_video_id ON public.fanza_rankings 
 
 -- anon/authenticated から読み取り可能にする（get_popular_videos は security definer なので不要だが念のため）
 ALTER TABLE public.fanza_rankings ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "fanza_rankings_readable" ON public.fanza_rankings FOR SELECT USING (true);
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE tablename = 'fanza_rankings' AND policyname = 'fanza_rankings_readable'
+  ) THEN
+    CREATE POLICY "fanza_rankings_readable" ON public.fanza_rankings FOR SELECT USING (true);
+  END IF;
+END $$;
 GRANT SELECT ON public.fanza_rankings TO anon, authenticated;
 GRANT INSERT, UPDATE, DELETE ON public.fanza_rankings TO service_role;
 
