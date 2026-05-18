@@ -356,6 +356,7 @@ export function ResultContent({ typeKey }: { typeKey: QuizTypeKey }) {
   const [showCTA, setShowCTA] = useState(false);
   const [qrDataUrl, setQrDataUrl] = useState('');
   const [charDataUrl, setCharDataUrl] = useState('');
+  const [showDetail, setShowDetail] = useState(false);
   const shareVersion = '3';
 
   useEffect(() => {
@@ -398,12 +399,16 @@ export function ResultContent({ typeKey }: { typeKey: QuizTypeKey }) {
   const shareUrl = scoresParam
     ? `https://www.seihekilab.com/quiz/result/${typeKey}?scores=${encodeURIComponent(scoresParam)}&v=${encodeURIComponent(versionParam)}`
     : `https://www.seihekilab.com/quiz/result/${typeKey}?v=${encodeURIComponent(versionParam)}`;
-  const shareText = `偏愛16診断やってみた🔍\n私のタイプは「${quizType.name}」${quizType.emoji}\n${quizType.tagline}\n\n#偏愛16診断\n${shareUrl}`;
-
   const axes: { axis: Axis; pct: number }[] = AXES.map((axis) => ({
     axis,
     pct: typeof rawScores[axis] === 'number' ? rawScores[axis] : 50,
   }));
+
+  const axisLine = axes.map(({ axis, pct }) => {
+    const meta = AXIS_META[axis];
+    return pct >= 50 ? meta.labelHigh : meta.labelLow;
+  }).join('｜');
+  const shareText = `偏愛16診断やってみた🔍\n私のタイプは「${quizType.name}」${quizType.emoji}\n${axisLine}\n\n#偏愛16診断\n${shareUrl}`;
 
   useEffect(() => {
     trackEvent('quiz_result_view', { type: typeKey, gender });
@@ -534,6 +539,52 @@ export function ResultContent({ typeKey }: { typeKey: QuizTypeKey }) {
                 </div>
               );
             })}
+          </div>
+
+          {/* アコーディオン: もっと詳しく */}
+          <div className="mt-5" style={{ borderTop: '1px solid rgba(180,150,80,0.2)' }}>
+            <button
+              onClick={() => setShowDetail(v => !v)}
+              className="w-full flex items-center justify-between pt-4 pb-2"
+            >
+              <span className="text-[11px] font-black tracking-widest uppercase" style={{ color: 'rgba(180,150,80,0.6)' }}>
+                ✦ もっと詳しく見る ✦
+              </span>
+              <span className="text-[13px] transition-transform duration-200" style={{ color: 'rgba(180,150,80,0.5)', transform: showDetail ? 'rotate(180deg)' : 'rotate(0deg)', display: 'inline-block' }}>▼</span>
+            </button>
+
+            {showDetail && (
+              <div className="space-y-5 pb-2">
+                <p className="text-sm leading-relaxed" style={{ color: 'rgba(200,180,140,0.75)' }}>
+                  {quizType.detailDescription}
+                </p>
+
+                <div>
+                  <p className="text-[10px] font-black tracking-widest uppercase mb-2" style={{ color: 'rgba(180,150,80,0.5)' }}>好きなプレイ</p>
+                  <div className="flex flex-wrap gap-2">
+                    {quizType.favPlay.map((play, i) => (
+                      <span
+                        key={i}
+                        className="text-[11px] font-bold px-2.5 py-1 rounded-full"
+                        style={{ background: `${quizType.color}18`, color: quizType.color, border: `1px solid ${quizType.color}45` }}
+                      >
+                        {play}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                <div
+                  className="rounded-2xl p-4"
+                  style={{ background: `${quizType.color}12`, border: `1px solid ${quizType.color}30` }}
+                >
+                  <p className="text-[10px] font-black tracking-widest uppercase mb-2" style={{ color: 'rgba(180,150,80,0.5)' }}>あるある</p>
+                  <p className="text-sm leading-relaxed" style={{ color: 'rgba(200,180,140,0.8)' }}>
+                    {quizType.trivia}
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
 
           <p className="text-[10px] font-bold tracking-widest mt-5 text-right" style={{ color: 'rgba(180,150,80,0.35)' }}>✦ 偏愛16診断 ✦</p>
