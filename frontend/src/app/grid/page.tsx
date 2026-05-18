@@ -316,10 +316,10 @@ function GridPage() {
               )}
               {/* 常時表示: 下部グラデーション + アクションヒント */}
               <div className="absolute inset-x-0 bottom-0 h-14 bg-gradient-to-t from-black/70 to-transparent pointer-events-none" />
-              {/* 再生ボタン（常時・薄め） */}
+              {/* 再生ボタン（モバイル: 常時表示、PC: hover時のみ） */}
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <div className="w-9 h-9 rounded-full bg-black/25 flex items-center justify-center group-hover:bg-black/50 transition-colors">
-                  <Play size={16} className="text-white/50 group-hover:text-white/90 ml-0.5 transition-colors" fill="currentColor" />
+                <div className="w-9 h-9 rounded-full bg-black/30 flex items-center justify-center sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                  <Play size={16} className="text-white/80 ml-0.5" fill="currentColor" />
                 </div>
               </div>
               {/* いいねボタン（常時・右下） */}
