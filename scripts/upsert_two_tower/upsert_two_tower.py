@@ -192,9 +192,9 @@ def _eligible_users_from_parquet(
 def _eligible_users_from_db(db_url: str, min_interactions: int) -> Optional[List[str]]:
     sql_query = """
         SELECT au.id AS user_id
-        FROM public.user_video_decisions uvd
-        JOIN auth.users au ON au.id = uvd.user_id
-        WHERE uvd.decision_type = 'like'
+        FROM public.user_book_decisions ubd
+        JOIN auth.users au ON au.id = ubd.user_id
+        WHERE ubd.decision_type = 'like'
         GROUP BY au.id
         HAVING COUNT(*) >= %s
     """

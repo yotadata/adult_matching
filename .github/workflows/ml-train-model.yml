@@ -9,7 +9,7 @@ on:
       mode:
         description: "データ準備モード（explicit/reviews）"
         required: false
-        default: explicit
+        default: reviews
       min_stars:
         description: "明示レビューを正例とみなす最小 star"
         required: false
@@ -30,26 +30,25 @@ jobs:
     runs-on: ${{ github.event.inputs.runner_label != '' && github.event.inputs.runner_label || 'ubuntu-latest' }}
     env:
       PYTHONUNBUFFERED: '1'
-      SKIP_SSL_PROBE: '1'
-      USE_POOLER_FOR_DUMP: '1'
-      USE_SUPABASE_LINK_DUMP: '1'
-      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-      SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
-      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
-      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       REMOTE_DATABASE_URL: ${{ secrets.REMOTE_DATABASE_URL }}
+      SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
+      SUPABASE_REGION: ${{ secrets.SUPABASE_REGION }}
     outputs:
       run_id: ${{ steps.compute_run_id.outputs.run_id }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install Supabase CLI
-        uses: supabase/setup-cli@v1
+      - name: Setup Python
+        uses: actions/setup-python@v5
         with:
-          version: latest
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install prep dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r scripts/prep_two_tower/requirements.txt
 
       - name: Determine run id
         id: compute_run_id
@@ -62,16 +61,45 @@ jobs:
           echo "run_id=$RID" >> "$GITHUB_OUTPUT"
           echo "RUN_ID=$RID" >> "$GITHUB_ENV"
 
+      - name: Build pooler DB URL
+        run: |
+          # Supabase セッションプーラー (IPv4 対応) の接続 URL を構築する
+          # REMOTE_DATABASE_URL: postgresql://postgres:<pass>@db.<ref>.supabase.co:5432/postgres
+          DB_PASS=$(python3 -c "
+          from urllib.parse import urlparse
+          import os
+          print(urlparse(os.environ['REMOTE_DATABASE_URL']).password)
+          ")
+          POOLER_URL="postgresql://postgres.${SUPABASE_PROJECT_ID}:${DB_PASS}@${SUPABASE_REGION}.pooler.supabase.com:5432/postgres?sslmode=require"
+          echo "POOLER_DATABASE_URL=${POOLER_URL}" >> "$GITHUB_ENV"
+          echo "Pooler URL constructed (password masked)"
+
+      - name: Merge review CSVs
+        run: |
+          python3 -c "
+          import pandas as pd
+          df1 = pd.read_csv('ml/data/raw/reviews/dmm_reviews_2025-10-04.csv', usecols=['product_url','reviewer_id','stars'])
+          df2 = pd.read_csv('ml/data/raw/reviews/dmm_reviews_videoa_2025-10-04.csv', usecols=['product_url','reviewer_id','stars'])
+          merged = pd.concat([df1, df2], ignore_index=True).drop_duplicates()
+          merged.to_csv('ml/data/raw/reviews/dmm_reviews_merged.csv', index=False)
+          print(f'Merged {len(merged)} rows')
+          "
+
       - name: Prepare dataset
         run: |
-          bash scripts/prep_two_tower/run_with_remote_db.sh \
-            --mode ${{ github.event.inputs.mode }} \
-            --input ml/data/raw/reactions.csv \
-            --run-id "$RUN_ID" \
-            --min-stars ${{ github.event.inputs.min_stars }} \
-            --neg-per-pos ${{ github.event.inputs.neg_per_pos }}
-        env:
-          DB_URL: ${{ secrets.REMOTE_DATABASE_URL }}
+          MODE="${{ github.event.inputs.mode || 'reviews' }}"
+          MIN_STARS="${{ github.event.inputs.min_stars || '4' }}"
+          NEG_PER_POS="${{ github.event.inputs.neg_per_pos || '3' }}"
+
+          python scripts/prep_two_tower/prep_two_tower_dataset.py \
+            --db-url "$POOLER_DATABASE_URL" \
+            --mode "$MODE" \
+            --input ml/data/raw/reviews/dmm_reviews_merged.csv \
+            --popularity-csv ml/data/raw/reviews/dmm_reviews_2025-10-04.csv \
+            --popularity-csv ml/data/raw/reviews/dmm_reviews_videoa_2025-10-04.csv \
+            --min-stars "$MIN_STARS" \
+            --neg-per-pos "$NEG_PER_POS" \
+            --run-id "$RUN_ID"
 
       - name: Upload prepared data
         uses: actions/upload-artifact@v4
@@ -135,6 +163,10 @@ jobs:
     env:
       PYTHONUNBUFFERED: '1'
       RUN_ID: ${{ needs.prepare.outputs.run_id }}
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
+      SUPABASE_REGION: ${{ secrets.SUPABASE_REGION }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -175,6 +207,35 @@ jobs:
         with:
           name: two_tower_eval
           path: ml/artifacts/runs
+
+      - name: Prepare env file for Storage upload
+        run: |
+          mkdir -p docker/env
+          {
+            echo "SUPABASE_URL=${SUPABASE_URL}"
+            echo "NEXT_PUBLIC_SUPABASE_URL=${SUPABASE_URL}"
+            echo "SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}"
+            echo "SUPABASE_PROJECT_ID=${SUPABASE_PROJECT_ID}"
+            echo "SUPABASE_REGION=${SUPABASE_REGION}"
+          } > docker/env/prd.ci.env
+
+      - name: Copy feature parquets to artifacts dir
+        run: |
+          ARTIFACTS_DIR="ml/artifacts/runs/${RUN_ID}"
+          for f in item_features.parquet user_features.parquet; do
+            src="ml/data/processed/two_tower/latest/${f}"
+            if [ -f "$src" ]; then
+              cp "$src" "${ARTIFACTS_DIR}/${f}"
+            else
+              echo "Warning: ${src} not found, skipping"
+            fi
+          done
+
+      - name: Upload model to Supabase Storage
+        run: |
+          ARTIFACTS_DIR="ml/artifacts/runs/${RUN_ID}"
+          bash scripts/publish_two_tower/run.sh --env-file docker/env/prd.ci.env \
+            upload --artifacts-dir "$ARTIFACTS_DIR" --run-id "$RUN_ID"
 
       - name: Notify Discord (train)
         if: always()

@@ -8,6 +8,8 @@ const SITE_URL = 'https://seihekilab.com';
 const SITE_NAME = '性癖ラボ';
 const PAGE_SIZE = 24;
 
+type Performer = { id: string; name: string };
+
 type PerformerVideo = {
   id: string;
   title: string;
@@ -15,19 +17,12 @@ type PerformerVideo = {
   affiliate_url: string | null;
   product_url: string | null;
   product_released_at: string | null;
-  external_id: string;
-};
-
-type Performer = {
-  id: string;
-  name: string;
-  fanza_actress_id: string | null;
 };
 
 async function getPerformer(id: string): Promise<Performer | null> {
   const { data, error } = await supabase
     .from('performers')
-    .select('id, name, fanza_actress_id')
+    .select('id, name')
     .eq('id', id)
     .maybeSingle();
   if (error || !data) return null;
@@ -37,7 +32,7 @@ async function getPerformer(id: string): Promise<Performer | null> {
 async function getPerformerVideos(id: string): Promise<{ videos: PerformerVideo[]; total: number }> {
   const { data, error, count } = await supabase
     .from('video_performers')
-    .select('videos(id, title, thumbnail_url, affiliate_url, product_url, product_released_at, external_id)', { count: 'exact' })
+    .select('videos(id, title, thumbnail_url, affiliate_url, product_url, product_released_at)', { count: 'exact' })
     .eq('performer_id', id)
     .order('created_at', { referencedTable: 'videos', ascending: false })
     .limit(PAGE_SIZE);
@@ -55,10 +50,10 @@ export async function generateMetadata(
 ): Promise<Metadata> {
   const { id } = await params;
   const performer = await getPerformer(id);
-  if (!performer) return { title: `出演者が見つかりません | ${SITE_NAME}` };
+  if (!performer) return { title: `女優が見つかりません | ${SITE_NAME}` };
 
-  const title = `${performer.name} 出演AV動画一覧 | ${SITE_NAME}`;
-  const description = `${performer.name}が出演するアダルト動画の一覧です。最新作から人気作まで、${SITE_NAME}で${performer.name}の出演作をまとめてチェックできます。`;
+  const title = `${performer.name} の出演AV動画一覧 | ${SITE_NAME}`;
+  const description = `${performer.name}の出演アダルト動画一覧。最新作から人気作まで、${SITE_NAME}で${performer.name}の作品をまとめてチェックできます。`;
   const canonicalUrl = `${SITE_URL}/performers/${id}`;
 
   return {
@@ -89,25 +84,32 @@ export default async function PerformerPage(
   if (!performer) notFound();
 
   const performerUrl = `${SITE_URL}/performers/${id}`;
-  const fanzaUrl = performer.fanza_actress_id
-    ? `https://www.dmm.co.jp/digital/videoa/-/list/=/article=actress/id=${performer.fanza_actress_id}/`
-    : null;
 
   const jsonLd = [
     {
       '@context': 'https://schema.org',
-      '@type': 'Person',
-      name: performer.name,
+      '@type': 'CollectionPage',
+      name: `${performer.name} 出演動画一覧`,
+      description: `${performer.name}の出演動画一覧`,
       url: performerUrl,
-      ...(fanzaUrl && { sameAs: [fanzaUrl] }),
+      ...(videos.length > 0 && {
+        mainEntity: {
+          '@type': 'ItemList',
+          itemListElement: videos.slice(0, 10).map((v, i) => ({
+            '@type': 'ListItem',
+            position: i + 1,
+            url: `${SITE_URL}/videos/${v.id}`,
+            name: v.title,
+          })),
+        },
+      }),
     },
     {
       '@context': 'https://schema.org',
       '@type': 'BreadcrumbList',
       itemListElement: [
         { '@type': 'ListItem', position: 1, name: 'ホーム', item: SITE_URL },
-        { '@type': 'ListItem', position: 2, name: '出演者一覧', item: `${SITE_URL}/performers` },
-        { '@type': 'ListItem', position: 3, name: performer.name, item: performerUrl },
+        { '@type': 'ListItem', position: 2, name: performer.name, item: performerUrl },
       ],
     },
   ];
@@ -124,14 +126,12 @@ export default async function PerformerPage(
         <nav className="text-xs text-[#656d76] mb-4 flex flex-wrap gap-1">
           <Link href="/" className="hover:text-[#8b949e]">ホーム</Link>
           <span>/</span>
-          <Link href="/performers" className="hover:text-[#8b949e]">出演者一覧</Link>
-          <span>/</span>
           <span className="text-[#8b949e]">{performer.name}</span>
         </nav>
 
         <div className="mb-6">
           <h1 className="text-xl font-bold text-[#e6edf3] mb-1">
-            {performer.name} 出演作品一覧
+            {performer.name} の出演動画
           </h1>
           <p className="text-sm text-[#8b949e]">
             全 {total.toLocaleString()} 作品

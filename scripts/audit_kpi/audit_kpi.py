@@ -25,13 +25,13 @@ SITE_URL = "https://seihekilab.com"
 
 METRICS_QUERY = """
 select
-    count(*) filter (where decision_type = 'like')  as likes,
-    count(*) filter (where decision_type = 'nope')  as nopes,
+    count(*) filter (where decision_type in ('swipe_like', 'grid_like'))  as likes,
+    count(*) filter (where decision_type = 'swipe_nope')  as nopes,
     count(*)                                          as total_decisions,
     count(distinct user_id)                           as active_users,
     count(*) filter (where recommendation_type is not null) as recommended_decisions,
     count(*) filter (
-        where decision_type = 'like'
+        where decision_type in ('swipe_like', 'grid_like')
           and recommendation_type is not null
     ) as recommended_likes
 from public.user_video_decisions
@@ -41,8 +41,8 @@ where created_at >= now() - interval '{days} days'
 DAILY_QUERY = """
 select
     date_trunc('day', created_at at time zone 'Asia/Tokyo')::date as day,
-    count(*) filter (where decision_type = 'like')  as likes,
-    count(*) filter (where decision_type = 'nope')  as nopes,
+    count(*) filter (where decision_type in ('swipe_like', 'grid_like'))  as likes,
+    count(*) filter (where decision_type = 'swipe_nope')  as nopes,
     count(distinct user_id)                           as dau
 from public.user_video_decisions
 where created_at >= now() - interval '{days} days'
@@ -54,7 +54,7 @@ limit 7
 SOURCE_LIKE_RATE_QUERY = """
 select
     recommendation_source,
-    count(*) filter (where decision_type = 'like') as likes,
+    count(*) filter (where decision_type in ('swipe_like', 'grid_like')) as likes,
     count(*)                                        as total
 from public.user_video_decisions
 where created_at >= now() - interval '{days} days'
@@ -70,7 +70,7 @@ select
         when recommendation_score < 0.6 then '中 (0.3-0.6)'
         else                                  '高 (0.6-1.0)'
     end as score_bucket,
-    count(*) filter (where decision_type = 'like') as likes,
+    count(*) filter (where decision_type in ('swipe_like', 'grid_like')) as likes,
     count(*)                                        as total
 from public.user_video_decisions
 where created_at >= now() - interval '{days} days'

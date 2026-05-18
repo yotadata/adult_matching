@@ -1,18 +1,18 @@
 'use client';
 
 import SwipeCard, { CardData, SwipeCardHandle } from "@/components/SwipeCard";
-import { Suspense, useState, useRef, useEffect, useCallback, useMemo } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { useState, useRef, useEffect, useCallback, Suspense } from "react";
+import { AnimatePresence, motion, PanInfo } from "framer-motion";
 import useMediaQuery from "@/hooks/useMediaQuery";
 import useWindowSize from "@/hooks/useWindowSize";
 import MobileVideoLayout from "@/components/MobileVideoLayout";
 import { supabase } from "@/lib/supabase";
 import { trackEvent, generateSessionId } from "@/lib/analytics";
 import { ChevronsLeft, Heart, List } from "lucide-react";
+import { useSearchParams } from "next/navigation";
 import { useDecisionCount } from "@/hooks/useDecisionCount";
 import OnboardingSlides from "@/components/OnboardingSlides";
 import SpotlightTutorial from "@/components/SpotlightTutorial";
-import { useSearchParams } from "next/navigation";
 
 interface VideoFromApi {
   id: number;
@@ -20,7 +20,6 @@ interface VideoFromApi {
   description: string;
   external_id: string;
   thumbnail_url: string;
-  thumbnail_vertical_url?: string;
   sample_video_url?: string;
   preview_video_url?: string;
   product_url?: string;
@@ -35,74 +34,28 @@ interface VideoFromApi {
 
 interface GuestDecision {
   video_id: CardData['id'];
-  decision_type: 'like' | 'nope';
+  decision_type: 'swipe_like' | 'swipe_nope';
   created_at: string;
   recommendation_source?: string | null;
   recommendation_score?: number | null;
   recommendation_model_version?: string | null;
   recommendation_params?: Record<string, unknown> | null;
-  recommendation_type?: string | null;
-}
-
-interface UserStatsBucket {
-  likes: number;
-  total: number;
-  like_rate: number;
-}
-
-interface UserStats {
-  window: number;
-  like_rate: number;
-  by_source: Partial<Record<'exploitation' | 'popularity' | 'exploration', UserStatsBucket>>;
-  by_score: Partial<Record<'low' | 'mid' | 'high', UserStatsBucket>>;
 }
 
 interface VideosFeedMetadata {
   swipes_until_next_embed: number;
   decision_count: number;
-  user_stats: UserStats | null;
-  _debug?: {
-    exploit_raw: number;
-    exploit_err: string | null;
-    popularity_raw: number;
-    popularity_err: string | null;
-    decision_count: number;
-  } | null;
 }
 
-const ORIGINAL_GRADIENT = 'linear-gradient(135deg, #1a0d2e 0%, #160d25 33%, #2a1020 66%, #1e0d1a 100%)';
-
-const HENTAI_MILESTONES: Array<{ threshold: number; label: string }> = [
-  { threshold: 30, label: '変態入門者' },
-  { threshold: 50, label: '変態中級者' },
-  { threshold: 70, label: '変態上級者' },
-  { threshold: 85, label: '変態エキスパート' },
-  { threshold: 95, label: '変態の神' },
-];
-
-function calcHentaiScore(count: number): number {
-  if (count === 0) return 0;
-  return Math.min(Math.round((Math.log10(count) / 3) * 100), 99);
-}
+const ORIGINAL_GRADIENT = 'linear-gradient(90deg, #C4C8E3 0%, #D7D1E3 33.333%, #F7D7E0 66.666%, #F9C9D6 100%)';
 const LEFT_SWIPE_GRADIENT = ORIGINAL_GRADIENT;
 const RIGHT_SWIPE_GRADIENT = ORIGINAL_GRADIENT;
 const ONBOARDING_STORAGE_KEY = 'seihekiLab_hasSeenOnboardingSlides';
 const SPOTLIGHT_STORAGE_KEY = 'seihekiLab_hasSeenSpotlightTutorial';
+function SwipePage() {
 
-export default function Home() {
-  return (
-    <Suspense fallback={
-      <div className="flex min-h-screen items-center justify-center bg-gradient-to-r from-[#C4C8E3] via-[#F7D7E0] to-[#F9C9D6]">
-        <div className="text-white/70 text-sm">Loading swipe experience…</div>
-      </div>
-    }>
-      <SwipePageContent />
-    </Suspense>
-  );
-}
-
-function SwipePageContent() {
-
+  const searchParams = useSearchParams();
+  const isDebug = searchParams.get('debug') === '1';
   const [cards, setCards] = useState<CardData[]>([]);
   const [activeIndex, setActiveIndex] = useState(0);
   const [isFetchingVideos, setIsFetchingVideos] = useState(false);
@@ -112,13 +65,11 @@ function SwipePageContent() {
   const { height: windowHeight } = useWindowSize();
   const [cardWidth, setCardWidth] = useState<number | undefined>(400);
   const [swipesUntilNextEmbed, setSwipesUntilNextEmbed] = useState<number | null>(null);
-  const [userStats, setUserStats] = useState<UserStats | null>(null);
-  const [feedDebug, setFeedDebug] = useState<VideosFeedMetadata['_debug']>(null);
-  const { decisionCount, incrementDecisionCount } = useDecisionCount();
+  const { incrementDecisionCount } = useDecisionCount();
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
-  const isLoggedInRef = useRef<boolean>(false);
   const [authReady, setAuthReady] = useState<boolean>(false);
-  const guestLimit = Number(process.env.NEXT_PUBLIC_GUEST_DECISIONS_LIMIT || 20);
+  const [showLoginNudge, setShowLoginNudge] = useState(false);
+  const guestLikeCountRef = useRef(0);
   const mainRef = useRef<HTMLDivElement | null>(null);
   const sessionIdRef = useRef<string | null>(null);
   const sessionStartRef = useRef<number | null>(null);
@@ -133,22 +84,9 @@ function SwipePageContent() {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showSpotlight, setShowSpotlight] = useState(false);
   const [spotlightReady, setSpotlightReady] = useState(false);
-  const [hentaiMilestone, setHentaiMilestone] = useState<{ score: number; label: string } | null>(null);
-  const prevMilestoneRef = useRef<number>(0);
   const likedListButtonRef = useRef<HTMLButtonElement | null>(null);
   const onboardingStartedRef = useRef(false);
   const spotlightStartedRef = useRef(false);
-  const postSignupTrackedRef = useRef(false);
-  // デッキに含まれる（または過去に提示した）動画IDを追跡し、append時の重複を防ぐ
-  const seenVideoIdsRef = useRef<Set<string>>(new Set());
-  const activeIndexRef = useRef(0); // append時にスワイプ済み先頭を切り捨てるためのref
-  const PREFETCH_THRESHOLD = 5; // 残り枚数がこの値以下になったらバックグラウンド取得開始
-  const searchParams = useSearchParams();
-  const isDebugMode = useMemo(() => {
-    const value = searchParams?.get('debug');
-    if (!value) return false;
-    return !['0', 'false', 'off'].includes(value.toLowerCase());
-  }, [searchParams]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -248,11 +186,7 @@ function SwipePageContent() {
       recommendation_score: typeof card.recommendationScore === 'number' ? card.recommendationScore : undefined,
       recommendation_model_version: card.recommendationModelVersion ?? undefined,
     });
-    if (isLoggedIn && !postSignupTrackedRef.current) {
-      postSignupTrackedRef.current = true;
-      trackEvent('post_signup_first_swipe', { decision_count: decisionCount });
-    }
-  }, [isLoggedIn, toIsoString, decisionCount]);
+  }, [isLoggedIn, toIsoString]);
 
   const abandonInteractionSession = useCallback((card: CardData) => {
     if (!sessionIdRef.current || sessionStartRef.current === null || sessionCompletedRef.current) {
@@ -278,7 +212,7 @@ function SwipePageContent() {
     samplePlayCountRef.current = 0;
   }, [isLoggedIn, toIsoString]);
 
-  const emitDecisionEvents = useCallback((card: CardData, decisionType: 'like' | 'nope') => {
+  const emitDecisionEvents = useCallback((card: CardData, decisionType: 'swipe_like' | 'swipe_nope') => {
     if (!card) return;
     if (!sessionIdRef.current || sessionStartRef.current === null) {
       startInteractionSession(card, currentPositionRef.current);
@@ -344,7 +278,7 @@ function SwipePageContent() {
     });
   }, [isLoggedIn, toIsoString]);
  
-  const refetchVideos = useCallback(async (mode: 'replace' | 'append' = 'replace') => {
+  const refetchVideos = useCallback(async () => {
     const requestStartedAt = Date.now();
     try {
       setIsFetchingVideos(true);
@@ -361,9 +295,8 @@ function SwipePageContent() {
         trackEvent('recommend_fetch', {
           status: 'error',
           source: 'videos_feed',
-          fetch_mode: mode,
           response_ms: Date.now() - requestStartedAt,
-          has_session: isLoggedInRef.current,
+          has_session: isLoggedIn,
           error_message: error.message,
         });
         return;
@@ -375,8 +308,6 @@ function SwipePageContent() {
 
       if (metadata) {
         setSwipesUntilNextEmbed(metadata.swipes_until_next_embed);
-        setUserStats(metadata.user_stats ?? null);
-        setFeedDebug(metadata._debug ?? null);
       }
 
       const normalizeHttps = (u?: string) => u?.startsWith('http://') ? u.replace('http://', 'https://') : u;
@@ -393,7 +324,6 @@ function SwipePageContent() {
           sampleVideoUrl: normalizedSampleUrl || normalizedPreviewUrl,
           embedUrl: fanzaEmbedUrl,
           thumbnail_url: video.thumbnail_url,
-          thumbnailVerticalUrl: video.thumbnail_vertical_url,
           product_released_at: video.product_released_at,
           performers: video.performers,
           tags: video.tags,
@@ -404,29 +334,14 @@ function SwipePageContent() {
           recommendationParams: video.params ?? null,
         };
       });
-
-      if (mode === 'append') {
-        // フロントでも重複排除（SQLのNOT EXISTSと二重防御）
-        const newCards = fetchedCards.filter(c => !seenVideoIdsRef.current.has(String(c.id)));
-        newCards.forEach(c => seenVideoIdsRef.current.add(String(c.id)));
-        if (newCards.length > 0) {
-          // スワイプ済み先頭を切り捨ててデッキサイズを一定に保つ
-          const trimAt = activeIndexRef.current;
-          setCards(prev => [...prev.slice(trimAt), ...newCards]);
-          setActiveIndex(0);
-        }
-      } else {
-        seenVideoIdsRef.current = new Set(fetchedCards.map(c => String(c.id)));
-        setCards(fetchedCards);
-        setActiveIndex(0);
-      }
+      setCards(fetchedCards);
+      setActiveIndex(0);
 
       trackEvent('recommend_fetch', {
         status: 'success',
         source: 'videos_feed',
-        fetch_mode: mode,
         response_ms: Date.now() - requestStartedAt,
-        has_session: isLoggedInRef.current,
+        has_session: isLoggedIn,
         videos_count: fetchedCards.length,
         swipes_until_next_embed: metadata?.swipes_until_next_embed,
         decision_count: metadata?.decision_count,
@@ -437,17 +352,14 @@ function SwipePageContent() {
       trackEvent('recommend_fetch', {
         status: 'error',
         source: 'videos_feed',
-        fetch_mode: mode,
         response_ms: Date.now() - requestStartedAt,
-        has_session: isLoggedInRef.current,
+        has_session: isLoggedIn,
         error_message: message,
       });
     } finally {
       setIsFetchingVideos(false);
     }
-  }, []);
-
-  useEffect(() => { activeIndexRef.current = activeIndex; }, [activeIndex]);
+  }, [isLoggedIn]);
 
   useEffect(() => {
     const recalc = () => {
@@ -523,7 +435,6 @@ function SwipePageContent() {
         recommendation_score: d.recommendation_score ?? null,
         recommendation_model_version: d.recommendation_model_version ?? null,
         recommendation_params: d.recommendation_params ?? null,
-        recommendation_type: d.recommendation_type ?? 'swipe_feed',
       }));
       const { error } = await supabase
         .from('user_video_decisions')
@@ -538,7 +449,6 @@ function SwipePageContent() {
 
   useEffect(() => {
     const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
-      isLoggedInRef.current = !!session?.user;
       setIsLoggedIn(!!session?.user);
       setAuthReady(true);
       if (!!session?.user) {
@@ -568,7 +478,7 @@ function SwipePageContent() {
   const handleSwipe = async (direction: 'left' | 'right') => {
     const card = activeCard;
     if (!card) return;
-    const decisionType = direction === 'right' ? 'like' : 'nope';
+    const decisionType = direction === 'right' ? 'swipe_like' : 'swipe_nope';
 
     if (isLoggedIn) {
       const { data: { user } } = await supabase.auth.getUser();
@@ -581,7 +491,6 @@ function SwipePageContent() {
           recommendation_score: card.recommendationScore ?? null,
           recommendation_model_version: card.recommendationModelVersion ?? null,
           recommendation_params: card.recommendationParams ?? null,
-          recommendation_type: 'swipe_feed',
         });
         if (error) {
           console.error(`Error inserting ${decisionType} decision:`, error);
@@ -589,10 +498,6 @@ function SwipePageContent() {
       }
     } else {
       const current = getGuestDecisions();
-      if (current.length >= guestLimit) {
-        try { window.dispatchEvent(new Event('open-register-modal')); } catch {}
-        return;
-      }
       current.push({
         video_id: card.id,
         decision_type: decisionType,
@@ -601,11 +506,19 @@ function SwipePageContent() {
         recommendation_score: card.recommendationScore ?? null,
         recommendation_model_version: card.recommendationModelVersion ?? null,
         recommendation_params: card.recommendationParams ?? null,
-        recommendation_type: 'swipe_feed',
       });
       setGuestDecisions(current);
+      if (decisionType === 'swipe_like') {
+        guestLikeCountRef.current += 1;
+        if (guestLikeCountRef.current === 3 || guestLikeCountRef.current % 10 === 0) {
+          setShowLoginNudge(true);
+        }
+      }
     }
 
+    if (decisionType === 'swipe_like') {
+      window.dispatchEvent(new Event('like-added'));
+    }
     emitDecisionEvents(card, decisionType);
     trackEvent('swipe_action', {
       direction,
@@ -616,22 +529,7 @@ function SwipePageContent() {
     });
     setActiveIndex((prev) => prev + 1);
     setCurrentGradient(ORIGINAL_GRADIENT);
-    const nextCount = decisionCount + 1;
     incrementDecisionCount();
-    const MILESTONES = [5, 10, 15, 20, 30, 50];
-    if (MILESTONES.includes(nextCount)) {
-      trackEvent('swipe_milestone', {
-        count: nextCount,
-        has_session: isLoggedIn ? 1 : 0,
-      });
-    }
-    if (!isLoggedIn) {
-      const current = getGuestDecisions();
-      if (current.length >= guestLimit) {
-        trackEvent('guest_limit_reached', { count: nextCount });
-        try { window.dispatchEvent(new Event('open-register-modal')); } catch {}
-      }
-    }
 
     // Decrement swipe counter and trigger embed-user if it reaches zero
     if (isLoggedIn && swipesUntilNextEmbed !== null) {
@@ -649,6 +547,8 @@ function SwipePageContent() {
               console.error("Error calling embed-user:", error.message);
             } else {
               console.log("embed-user API call successful.");
+              // Optionally, refetch videos to get the new countdown
+              refetchVideos();
             }
           });
         }
@@ -660,174 +560,106 @@ function SwipePageContent() {
     cardRef.current?.swipe(direction);
   };
 
-  const handleDrag = (dir: 'left' | 'right' | 'reset') => {
-    if (dir === 'right') setCurrentGradient(RIGHT_SWIPE_GRADIENT);
-    else if (dir === 'left') setCurrentGradient(LEFT_SWIPE_GRADIENT);
-    else setCurrentGradient(ORIGINAL_GRADIENT);
+  const handleDrag = (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+    if (info.offset.x > 50) {
+      setCurrentGradient(RIGHT_SWIPE_GRADIENT);
+    } else if (info.offset.x < -50) {
+      setCurrentGradient(LEFT_SWIPE_GRADIENT);
+    } else {
+      setCurrentGradient(ORIGINAL_GRADIENT);
+    }
   };
 
-  const handleDragEnd = () => {
-    setCurrentGradient(ORIGINAL_GRADIENT);
+  const handleDragEnd = (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+    if (Math.abs(info.offset.x) <= 100) {
+      setCurrentGradient(ORIGINAL_GRADIENT);
+    }
   };
 
-  // 残り PREFETCH_THRESHOLD 枚でバックグラウンドプリフェッチ（appendモード）
-  useEffect(() => {
-    const remaining = cards.length - activeIndex;
-    if (
-      cards.length > 0 &&
-      remaining > 0 &&
-      remaining <= PREFETCH_THRESHOLD &&
-      !isFetchingVideos
-    ) {
-      refetchVideos('append');
-    }
-  }, [activeIndex, cards.length, isFetchingVideos, refetchVideos]);
-
-  // 変態度マイルストーン検知
-  useEffect(() => {
-    const score = calcHentaiScore(decisionCount);
-    const reached = HENTAI_MILESTONES.filter(
-      (m) => m.threshold <= score && m.threshold > prevMilestoneRef.current
-    );
-    if (reached.length > 0) {
-      const top = reached[reached.length - 1];
-      prevMilestoneRef.current = top.threshold;
-      setHentaiMilestone({ score, label: top.label });
-      const t = setTimeout(() => setHentaiMilestone(null), 3500);
-      return () => clearTimeout(t);
-    }
-  }, [decisionCount]);
-
-  // デッキが完全に枯渇したときのフォールバック（プリフェッチが間に合わなかった場合）
   useEffect(() => {
     if (cards.length > 0 && activeIndex >= cards.length && !isFetchingVideos) {
-      refetchVideos('replace');
+      refetchVideos();
     }
   }, [activeIndex, cards.length, isFetchingVideos, refetchVideos]);
 
   return (
     <motion.div
-      className="flex flex-col items-center h-screen overflow-hidden"
+      className="flex flex-col items-center h-screen overflow-hidden pt-[51px]"
       style={{ background: currentGradient }}
       transition={{ duration: 0.3 }}
     >
-      {isDebugMode && (() => {
-        const score = typeof activeCard?.recommendationScore === 'number' ? activeCard.recommendationScore : null;
-        const scoreColor = score === null ? 'text-gray-400' : score >= 0.7 ? 'text-green-300' : score >= 0.5 ? 'text-yellow-300' : 'text-red-400';
-        const scoreLabel = score === null ? '—' : score >= 0.7 ? '高' : score >= 0.5 ? '中' : '低';
-        const params = activeCard?.recommendationParams ?? cards[activeIndex]?.recommendationParams ?? null;
-        const exploit = typeof params?.exploitation_returned === 'number' ? params.exploitation_returned : null;
-        const pop = typeof params?.popularity_returned === 'number' ? params.popularity_returned : null;
-        const explore = typeof params?.exploration_returned === 'number' ? params.exploration_returned : null;
-        const deckSources = exploit !== null ? `E${exploit}/P${pop}/X${explore}` : null;
+      {/* デバッグパネル */}
+      {isDebug && cards.length > 0 && (() => {
+        const relevant = cards.slice(activeIndex);
+        const all = cards;
+        const countFor = (arr: CardData[]) => {
+          const counts: Record<string, number> = {};
+          const scores: Record<string, number[]> = {};
+          for (const c of arr) {
+            const src = c.recommendationSource ?? 'unknown';
+            counts[src] = (counts[src] ?? 0) + 1;
+            if (c.recommendationScore != null) {
+              if (!scores[src]) scores[src] = [];
+              scores[src].push(c.recommendationScore);
+            }
+          }
+          return { counts, scores };
+        };
+        const { counts, scores } = countFor(all);
+        const total = all.length;
+        const COLORS: Record<string, string> = {
+          exploitation: 'bg-violet-600 text-white',
+          popularity: 'bg-blue-600 text-white',
+          exploration: 'bg-green-700 text-white',
+        };
         return (
-          <div className="pointer-events-none fixed top-4 right-4 z-50 max-w-[210px] rounded-md border border-white/20 bg-black/75 px-3 py-2 text-[11px] font-mono text-white shadow-lg backdrop-blur">
-            <div className="mb-1.5 text-[9px] font-semibold uppercase tracking-[0.2em] text-amber-300/80">
-              debug mode
-            </div>
-            <div className="space-y-0.5 leading-tight">
-              {activeCard ? (
-                <>
-                  <p>source: <span className="text-cyan-300">{activeCard.recommendationSource ?? 'videos_feed'}</span></p>
-                  <div>
-                    <span>score: </span>
-                    <span className={scoreColor}>{score !== null ? score.toFixed(4) : '—'}</span>
-                    <span className={`ml-1.5 text-[10px] ${scoreColor}`}>[{scoreLabel}]</span>
-                    {score !== null && (
-                      <div className="mt-0.5 h-1.5 w-full rounded-full bg-white/10">
-                        <div
-                          className={`h-full rounded-full ${score >= 0.7 ? 'bg-green-400' : score >= 0.5 ? 'bg-yellow-400' : 'bg-red-400'}`}
-                          style={{ width: `${Math.min(100, Math.max(0, (score - 0.3) / 0.7 * 100))}%` }}
-                        />
-                      </div>
-                    )}
-                  </div>
-                  <p>model: <span className="text-cyan-300">{activeCard.recommendationModelVersion ?? '—'}</span></p>
-                </>
-              ) : (
-                <p className="text-red-400">カードなし</p>
-              )}
-              <div className="mt-1.5 border-t border-white/10 pt-1.5 space-y-0.5">
-                <p>deck: <span className="text-green-300">{cards.length - activeIndex}</span> / {cards.length}</p>
-                {deckSources && (
-                  <p className="text-[10px]">
-                    <span className="text-violet-300">個人</span>={exploit} <span className="text-yellow-300">人気</span>={pop} <span className="text-gray-400">探索</span>={explore}
-                  </p>
-                )}
-                <p>decisions: <span className="text-green-300">{decisionCount}</span></p>
-                <p>embed in: <span className="text-green-300">{swipesUntilNextEmbed ?? '—'}</span></p>
-                <p>auth: <span className={isLoggedIn ? 'text-green-300' : 'text-red-400'}>{isLoggedIn ? 'in' : 'guest'}</span></p>
-              </div>
-              <div className="mt-1.5 border-t border-white/10 pt-1.5 space-y-0.5 text-[10px]">
-                <p className="text-[9px] uppercase tracking-widest text-amber-300/60">feed診断</p>
-                {feedDebug ? (
-                  <>
-                    <p>exploit_raw: <span className={feedDebug.exploit_raw > 0 ? 'text-green-300' : 'text-red-400'}>{feedDebug.exploit_raw}</span></p>
-                    {feedDebug.exploit_err && <p className="text-red-400 break-all">err: {feedDebug.exploit_err}</p>}
-                    <p>pop_raw: <span className={feedDebug.popularity_raw > 0 ? 'text-green-300' : 'text-red-400'}>{feedDebug.popularity_raw}</span></p>
-                    {feedDebug.popularity_err && <p className="text-red-400 break-all">err: {feedDebug.popularity_err}</p>}
-                  </>
-                ) : (
-                  <p className="text-gray-500">no data</p>
-                )}
-              </div>
-              {userStats && (
-                <div className="mt-1.5 border-t border-white/10 pt-1.5 space-y-0.5">
-                  <p className="text-[9px] uppercase tracking-widest text-amber-300/60">好み適合度 (直近{userStats.window}件)</p>
-                  <p>like率: <span className={userStats.like_rate >= 0.4 ? 'text-green-300' : userStats.like_rate >= 0.25 ? 'text-yellow-300' : 'text-red-400'}>{(userStats.like_rate * 100).toFixed(0)}%</span></p>
-                  <div className="text-[10px] space-y-0.5">
-                    {(['exploitation', 'popularity', 'exploration'] as const).map(src => {
-                      const d = userStats.by_source[src];
-                      if (!d) return null;
-                      const label = src === 'exploitation' ? '個人' : src === 'popularity' ? '人気' : '探索';
-                      const color = src === 'exploitation' ? 'text-violet-300' : src === 'popularity' ? 'text-yellow-300' : 'text-gray-400';
-                      return (
-                        <p key={src}><span className={color}>{label}</span>: {(d.like_rate * 100).toFixed(0)}% <span className="text-white/40">({d.likes}/{d.total})</span></p>
-                      );
-                    })}
-                  </div>
-                  <div className="text-[10px] space-y-0.5 mt-0.5">
-                    {(['low', 'mid', 'high'] as const).map(bucket => {
-                      const d = userStats.by_score[bucket];
-                      if (!d) return null;
-                      const label = bucket === 'low' ? '低' : bucket === 'mid' ? '中' : '高';
-                      const color = bucket === 'high' ? 'text-green-300' : bucket === 'mid' ? 'text-yellow-300' : 'text-red-400';
-                      return (
-                        <p key={bucket}>スコア<span className={color}>{label}</span>: {(d.like_rate * 100).toFixed(0)}% <span className="text-white/40">({d.total}件)</span></p>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
+          <div className="fixed top-[52px] left-0 right-0 z-50 bg-[#0d1117]/95 border-b border-[#30363d] px-3 py-2 text-[11px] font-mono">
+            <div className="flex flex-wrap gap-x-4 gap-y-1 items-center">
+              <span className="text-[#8b949e]">loaded:{total} remaining:{relevant.length}</span>
+              {Object.entries(counts).sort((a, b) => b[1] - a[1]).map(([src, cnt]) => {
+                const avg = scores[src]?.length
+                  ? (scores[src].reduce((a, b) => a + b, 0) / scores[src].length).toFixed(3)
+                  : '–';
+                const max = scores[src]?.length
+                  ? Math.max(...scores[src]).toFixed(3)
+                  : '–';
+                return (
+                  <span key={src} className="flex items-center gap-1.5">
+                    <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${COLORS[src] ?? 'bg-gray-600 text-white'}`}>{src}</span>
+                    <span className="text-[#e6edf3]">{cnt} ({((cnt / total) * 100).toFixed(0)}%)</span>
+                    <span className="text-yellow-300">avg:{avg}</span>
+                    <span className="text-yellow-500">max:{max}</span>
+                  </span>
+                );
+              })}
             </div>
           </div>
         );
       })()}
-      {/* 変態度バッジ */}
-      {isLoggedIn && (
-        <div className="fixed top-3 left-3 z-40 flex items-center gap-1.5 rounded-full bg-black/40 border border-white/10 backdrop-blur px-2.5 py-1 select-none">
-          <span className="text-[10px] text-white/50 font-medium">変態度</span>
-          <span className="text-sm font-black text-rose-400">{calcHentaiScore(decisionCount)}</span>
+      {/* ゲスト向けログイン nudge トースト */}
+      {showLoginNudge && !isLoggedIn && (
+        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 bg-[#1c1f26] border border-violet-500/50 rounded-2xl px-4 py-3 shadow-2xl shadow-violet-900/30 max-w-[320px] w-[90vw]">
+          <Heart size={18} className="text-pink-400 flex-shrink-0" fill="currentColor" />
+          <div className="flex-1 min-w-0">
+            <p className="text-white text-[12px] font-bold leading-snug">いいね履歴を保存しませんか？</p>
+            <p className="text-[#8b949e] text-[10px] mt-0.5">ログインするとAIがあなたの好みを学習します</p>
+          </div>
+          <div className="flex flex-col gap-1 flex-shrink-0">
+            <button
+              onClick={() => { setShowLoginNudge(false); window.dispatchEvent(new Event('open-auth-modal')); }}
+              className="px-3 py-1 rounded-lg bg-violet-600 hover:bg-violet-500 text-white text-[11px] font-bold transition-colors"
+            >
+              登録
+            </button>
+            <button
+              onClick={() => setShowLoginNudge(false)}
+              className="px-3 py-1 rounded-lg text-[#8b949e] hover:text-white text-[11px] transition-colors text-center"
+            >
+              後で
+            </button>
+          </div>
         </div>
       )}
-
-      {/* マイルストーントースト */}
-      <AnimatePresence>
-        {hentaiMilestone && (
-          <motion.div
-            key="milestone"
-            initial={{ opacity: 0, y: 40, scale: 0.9 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 20, scale: 0.95 }}
-            transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-            className="fixed bottom-28 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center gap-1 rounded-2xl bg-gradient-to-br from-rose-500 to-fuchsia-600 px-6 py-3 shadow-2xl text-white text-center pointer-events-none"
-          >
-            <p className="text-[11px] font-bold tracking-widest uppercase opacity-80">変態度 {hentaiMilestone.score} 突破！</p>
-            <p className="text-lg font-black">🎉 {hentaiMilestone.label} に昇格</p>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       <main
         ref={mainRef}
         className={`flex-grow flex w-full relative ${isMobile ? 'flex-col h-full' : 'items-center justify-center pt-10'}`}
@@ -854,7 +686,7 @@ function SwipePageContent() {
                 onDrag={handleDrag}
                 onDragEnd={handleDragEnd}
                 cardWidth={cardWidth}
-                canSwipe={isLoggedIn || decisionCount < guestLimit}
+                canSwipe={true}
                 onSamplePlay={(card) => handleSamplePlay(card, 'desktop')}
               />
             )
@@ -862,7 +694,7 @@ function SwipePageContent() {
             isFetchingVideos ? (
               <div className="flex items-center justify-center w-full h-full">
                 <div
-                  className="w-12 h-12 rounded-full border-4 border-white/10 border-t-violet-400 animate-spin"
+                  className="w-12 h-12 rounded-full border-4 border-gray-300 border-t-violet-500 animate-spin"
                   role="status"
                   aria-label="Loading videos"
                 />
@@ -871,7 +703,7 @@ function SwipePageContent() {
               <div className="flex flex-col items-center justify-center w-full h-full text-white/90">
                 <p className="mb-3">おすすめ候補は以上です。</p>
                 <button
-                  onClick={() => refetchVideos('replace')}
+                  onClick={refetchVideos}
                   className="px-4 py-2 rounded-md bg-white/20 hover:bg-white/30 backdrop-blur border border-white/40"
                 >
                   おすすめを再取得
@@ -927,5 +759,13 @@ function SwipePageContent() {
         onFinish={handleFinishSpotlight}
       />
     </motion.div>
+  );
+}
+
+export default function Home() {
+  return (
+    <Suspense>
+      <SwipePage />
+    </Suspense>
   );
 }

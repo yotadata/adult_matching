@@ -30,6 +30,9 @@ fi
 if [[ "${INGEST_FANZA_DEBUG:-}" != "" ]]; then
   DOCKER_ENV_ARGS+=(--env "INGEST_FANZA_DEBUG=${INGEST_FANZA_DEBUG}")
 fi
+if [[ "${RANKING_ONLY:-}" != "" ]]; then
+  DOCKER_ENV_ARGS+=(--env "RANKING_ONLY=${RANKING_ONLY}")
+fi
 
 exec docker run "${DOCKER_FLAGS[@]}" \
   --env-file "$ENV_FILE" \

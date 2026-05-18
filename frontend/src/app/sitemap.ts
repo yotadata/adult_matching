@@ -3,7 +3,6 @@ import { supabase } from '@/lib/supabase';
 
 const SITE_URL = 'https://seihekilab.com';
 
-// 1 回のクエリで取得する件数（Supabase の上限に合わせて分割）
 const PAGE_SIZE = 1000;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
@@ -13,11 +12,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${SITE_URL}/about`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.8 },
     { url: `${SITE_URL}/quiz`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.7 },
     { url: `${SITE_URL}/quiz/characters`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.6 },
-    { url: `${SITE_URL}/performers`, lastModified: new Date(), changeFrequency: 'weekly', priority: 0.8 },
     { url: `${SITE_URL}/tags`, lastModified: new Date(), changeFrequency: 'weekly', priority: 0.8 },
   ];
 
-  // 作品 LP を全件追加（ページネーションで大量件数に対応）
+  // 作品LPを全件追加
   let page = 0;
   while (true) {
     const from = page * PAGE_SIZE;
@@ -44,20 +42,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     page++;
   }
 
-  // 出演者 LP を全件追加
-  const { data: performers } = await supabase
-    .from('performers')
-    .select('id');
-  for (const p of performers ?? []) {
-    entries.push({
-      url: `${SITE_URL}/performers/${p.id}`,
-      lastModified: new Date(),
-      changeFrequency: 'weekly',
-      priority: 0.8,
-    });
-  }
-
-  // ジャンル LP を全件追加
+  // タグLPを全件追加
   const { data: tags } = await supabase
     .from('tags')
     .select('id');
@@ -67,6 +52,19 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: new Date(),
       changeFrequency: 'weekly',
       priority: 0.8,
+    });
+  }
+
+  // 女優LPを全件追加
+  const { data: performers } = await supabase
+    .from('performers')
+    .select('id');
+  for (const p of performers ?? []) {
+    entries.push({
+      url: `${SITE_URL}/performers/${p.id}`,
+      lastModified: new Date(),
+      changeFrequency: 'weekly',
+      priority: 0.7,
     });
   }
 

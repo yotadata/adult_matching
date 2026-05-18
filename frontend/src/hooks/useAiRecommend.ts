@@ -12,8 +12,8 @@ export type AiRecommendSectionItem = {
   title: string | null;
   thumbnail_url: string | null;
   product_url: string | null | undefined;
-  sample_video_url: string | null;
-  preview_video_url: string | null | undefined;
+  sample_video_url: string | null | undefined;
+  affiliate_url: string | null | undefined;
   tags: Array<{ id: string; name: string }>;
   performers: Array<{ id: string; name: string }>;
   duration_minutes: number | null;

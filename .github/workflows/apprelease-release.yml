@@ -24,7 +24,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Setup Supabase CLI
-        uses: supabase/setup-cli@v1
+        uses: supabase/setup-cli@v2
         with:
           version: latest
 
@@ -32,6 +32,13 @@ jobs:
         working-directory: supabase
         run: |
           supabase link --project-ref "$SUPABASE_PROJECT_ID" --password "$SUPABASE_DB_PASSWORD"
+
+      - name: Repair failed migrations
+        working-directory: supabase
+        run: |
+          for v in 20260517020453 20260517020512 20260517020530 20260517111741 20260518100000 20260518200000 20260518300000 20260518400000; do
+            supabase migration repair --status reverted "$v" || true
+          done
 
       - name: Push migrations
         working-directory: supabase
@@ -50,7 +57,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Setup Supabase CLI
-        uses: supabase/setup-cli@v1
+        uses: supabase/setup-cli@v2
         with:
           version: latest
 

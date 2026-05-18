@@ -29,7 +29,7 @@ export const DecisionCountProvider = ({ children }: { children: React.ReactNode 
       }
     } else {
       const { count } = await supabase
-        .from('user_video_decisions')
+        .from('user_book_decisions')
         .select('*', { count: 'exact', head: true })
         .eq('user_id', session!.user!.id);
       setDecisionCount(count || 0);

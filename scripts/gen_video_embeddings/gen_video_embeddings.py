@@ -59,6 +59,18 @@ def parse_args() -> argparse.Namespace:
         default=Path("ml/artifacts/latest/item_features.parquet"),
         help="Training-time item_features parquet used to rebuild vocabularies.",
     )
+    parser.add_argument(
+        "--reference-user-features",
+        type=Path,
+        default=Path("ml/artifacts/latest/user_features.parquet"),
+        help="Training-time user_features parquet used to include preferred_tag_ids in tag vocab.",
+    )
+    parser.add_argument(
+        "--item-cat-vocab",
+        type=Path,
+        default=Path("ml/artifacts/latest/item_cat_vocab.json"),
+        help="訓練時に保存した categorical field vocab JSON。存在する場合はparquetからの再構築より優先される。",
+    )
     parser.add_argument("--output-dir", type=Path, default=Path("ml/artifacts/live/video_embeddings"), help="Directory to write embeddings.")
     parser.add_argument("--output-name", type=str, default="video_embeddings.parquet", help="Output parquet filename.")
     parser.add_argument("--limit", type=int, default=None, help="Optional maximum number of videos to encode (for debugging).")
@@ -73,7 +85,7 @@ def parse_args() -> argparse.Namespace:
 
 def _ensure_list(value) -> List[str]:
     if isinstance(value, (list, tuple)):
-        return [str(v) for v in value if v is not None and str(v).strip()]
+        return [str(v) for v in value if v is not None and str(v) != ""]
     if value is None or (isinstance(value, float) and np.isnan(value)):
         return []
     return [str(value)]
@@ -135,13 +147,13 @@ class FeatureSpace:
         offset = 0
 
         for field, values in categorical_fields.items():
-            vocab = sorted({v for v in values if v})
+            vocab = sorted({v for v in values if v and isinstance(v, str)})
             self.cat_vocab[field] = {v: i for i, v in enumerate(vocab)}
             self.offsets[field] = (offset, offset + len(vocab))
             offset += len(vocab)
 
         for field, values in multi_fields.items():
-            vocab = sorted({v for v in values if v})
+            vocab = sorted({v for v in values if v and isinstance(v, str)})
             self.multi_vocab[field] = {v: i for i, v in enumerate(vocab)}
             self.multi_offsets[field] = (offset, offset + len(vocab))
             offset += len(vocab)
@@ -273,9 +285,9 @@ def fetch_target_videos(
           v.series,
           v.price,
           v.product_released_at,
-        array_remove(array_agg(DISTINCT vt.tag_id) FILTER (WHERE vt.tag_id IS NOT NULL AND coalesce(tg.use_for_training, true)), NULL) AS tag_ids,
-        array_remove(array_agg(DISTINCT vp.performer_id), NULL) AS performer_ids,
-        max(ve.model_version) AS current_model_version
+          array_remove(array_agg(DISTINCT vt.tag_id) FILTER (WHERE vt.tag_id IS NOT NULL AND coalesce(tg.use_for_training, true)), NULL) AS tag_ids,
+          array_remove(array_agg(DISTINCT vp.performer_id) FILTER (WHERE vp.performer_id IS NOT NULL), NULL) AS performer_ids,
+          max(ve.model_version) AS current_model_version
         FROM public.videos v
         LEFT JOIN public.video_tags vt ON vt.video_id = v.id
         LEFT JOIN public.tags t ON t.id = vt.tag_id
@@ -306,7 +318,7 @@ def fetch_target_videos(
     if not rows:
         return pd.DataFrame(columns=["video_id"])
     df = pd.DataFrame(rows)
-    df.rename(columns={"id": "video_id"}, inplace=True)
+    df.rename(columns={"id": "video_id"}, inplace=True)  # video_id列名はモデルとの互換性のため維持
     df["video_id"] = df["video_id"].astype(str)
     df["source"] = df.get("source", "").fillna("").astype(str)
     df["maker"] = df.get("maker", "").fillna("").astype(str)
@@ -333,17 +345,27 @@ def build_item_feature_space(
     use_price_feature: bool,
     max_tag_features: Optional[int],
     max_performer_features: Optional[int],
+    user_df: Optional[pd.DataFrame] = None,
+    item_cat_vocab: Optional[Dict[str, List[str]]] = None,
 ) -> ItemFeatureBundle:
-    cat_vocabs = {
-        "source": reference_df.get("source", []).astype(str),
-        "maker": reference_df.get("maker", []).astype(str),
-        "label": reference_df.get("label", []).astype(str),
-        "series": reference_df.get("series", []).astype(str),
-    }
+    if item_cat_vocab is not None:
+        # 訓練時に保存した vocab をそのまま使用（再構築のズレを完全排除）
+        cat_vocabs = item_cat_vocab
+    else:
+        cat_vocabs = {
+            "source": reference_df.get("source", []).astype(str),
+            "maker": reference_df.get("maker", []).astype(str),
+            "label": reference_df.get("label", []).astype(str),
+            "series": reference_df.get("series", []).astype(str),
+        }
 
     tag_counter: Counter[str] = Counter()
     for values in reference_df.get("tag_ids", []):
-        tag_counter.update(_normalize_array(values))
+        tag_counter.update(_ensure_list(values))
+    # 訓練時と同様にユーザーの preferred_tag_ids もタグ語彙に含める
+    if user_df is not None:
+        for values in user_df.get("preferred_tag_ids", []):
+            tag_counter.update(_ensure_list(values))
     if max_tag_features is not None and max_tag_features > 0:
         tag_vocab = [tag for tag, _ in tag_counter.most_common(max_tag_features)]
     else:
@@ -351,7 +373,7 @@ def build_item_feature_space(
 
     performer_counter: Counter[str] = Counter()
     for values in reference_df.get("performer_ids", []):
-        performer_counter.update(_normalize_array(values))
+        performer_counter.update(_ensure_list(values))
     if max_performer_features is not None and max_performer_features > 0:
         performer_vocab = [p for p, _ in performer_counter.most_common(max_performer_features)]
     else:
@@ -405,14 +427,16 @@ def build_item_vectors(
         print(
             json.dumps(
                 {
-                    "warn": "item_feature_dim_mismatch",
+                    "error": "item_feature_dim_mismatch",
                     "expected": expected_dim,
                     "computed": computed_dim,
+                    "hint": "reference_item_features と reference_user_features の両方が訓練時と一致しているか確認してください",
                 },
                 ensure_ascii=False,
             ),
             file=sys.stderr,
         )
+        sys.exit(1)
     return vectors
 
 
@@ -447,21 +471,44 @@ def main() -> None:
     max_performer_features = meta.get("max_performer_features")
 
     reference_df = load_reference_item_features(args.reference_item_features)
+    user_ref_df: Optional[pd.DataFrame] = None
+    if args.reference_user_features and args.reference_user_features.exists():
+        user_ref_df = pd.read_parquet(args.reference_user_features)
+    item_cat_vocab: Optional[Dict[str, List[str]]] = None
+    if args.item_cat_vocab and args.item_cat_vocab.exists():
+        with args.item_cat_vocab.open() as f:
+            item_cat_vocab = json.load(f)
+        print(json.dumps({"info": "item_cat_vocab_loaded", "path": str(args.item_cat_vocab)}, ensure_ascii=False))
+    else:
+        print(json.dumps({"warn": "item_cat_vocab_not_found_rebuilding_from_parquet", "path": str(args.item_cat_vocab)}, ensure_ascii=False))
     bundle = build_item_feature_space(
         reference_df,
         use_price_feature=use_price_feature,
         max_tag_features=max_tag_features,
         max_performer_features=max_performer_features,
+        user_df=user_ref_df,
+        item_cat_vocab=item_cat_vocab,
     )
 
+    cat_field_sizes = {f: len(v) for f, v in bundle.item_space.cat_vocab.items()}
+    multi_field_sizes = {f: len(v) for f, v in bundle.item_space.multi_vocab.items()}
+    computed_dim = bundle.item_space.base_dim + len(bundle.numeric_fields)
     print(
         json.dumps(
             {
                 "info": "item_feature_space",
                 "model_version": model_version,
-                "categorical_dims": bundle.item_space.base_dim,
+                "categorical_field_sizes": cat_field_sizes,
+                "multi_field_sizes": multi_field_sizes,
+                "categorical_total": sum(cat_field_sizes.values()),
+                "multi_total": sum(multi_field_sizes.values()),
+                "base_dim": bundle.item_space.base_dim,
                 "numeric_fields": bundle.numeric_fields,
+                "computed_item_dim": computed_dim,
                 "expected_item_dim": item_feature_dim,
+                "meta_tag_vocab_size": meta.get("tag_vocab_size"),
+                "meta_performer_vocab_size": meta.get("performer_vocab_size"),
+                "user_ref_loaded": user_ref_df is not None,
             },
             ensure_ascii=False,
         )

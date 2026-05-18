@@ -2,9 +2,8 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { Tag, Users, ExternalLink } from 'lucide-react';
+import { Tag, ExternalLink } from 'lucide-react';
 import { Video } from '@/types/video';
-import { isUpcomingRelease } from '@/lib/videoMeta';
 
 const GRADIENT = 'linear-gradient(90deg, #C4C8E3 0%, #D7D1E3 33.333%, #F7D7E0 66.666%, #F9C9D6 100%)';
 
@@ -101,26 +100,13 @@ export default function VideoList({ title, description, videos, loading, error, 
                   <h2 className="text-lg font-semibold line-clamp-2">{video.title}</h2>
                   <div className="text-sm text-gray-600 space-y-1">
                     <p>{formatPrice(video.price)}</p>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <p>発売日: {formatDate(video.product_released_at)}</p>
-                      {isUpcomingRelease(video.product_released_at) ? (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-amber-100/80 border border-amber-200 px-2 py-0.5 text-xs text-amber-700">
-                          予約作品
-                        </span>
-                      ) : null}
-                    </div>
+                    <p>リリース日: {formatDate(video.product_released_at)}</p>
                   </div>
                   <div className="flex flex-wrap gap-2 text-xs text-gray-600">
                     {video.tags?.slice(0, 3).map((tag) => (
                       <span key={tag.id} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gray-100 border border-gray-200">
                         <Tag size={12} />
                         {tag.name}
-                      </span>
-                    ))}
-                    {video.performers?.slice(0, 2).map((perf) => (
-                      <span key={perf.id} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gray-100 border border-gray-200">
-                        <Users size={12} />
-                        {perf.name}
                       </span>
                     ))}
                   </div>

@@ -10,8 +10,6 @@ import VideoListDrawer, {
   SortOrder,
 } from './VideoListDrawer';
 
-type RpcVideoRecord = VideoRecord & { total_count?: number | null };
-
 interface LikedVideosDrawerProps {
   isOpen: boolean;
   onClose: () => void;
@@ -29,26 +27,13 @@ const LikedVideosDrawer: React.FC<LikedVideosDrawerProps> = ({ isOpen, onClose }
   const [selectedPerformerIds, setSelectedPerformerIds] = useState<string[]>([]);
   const [totalCount, setTotalCount] = useState<number | null>(null);
   const pageSize = 40;
-  const [page, setPage] = useState(0);
 
   const toggleTag = (id: string) => {
     setSelectedTagIds((prev) => (prev.includes(id) ? prev.filter((value) => value !== id) : [...prev, id]));
-    setPage(0);
   };
 
   const togglePerformer = (id: string) => {
     setSelectedPerformerIds((prev) => (prev.includes(id) ? prev.filter((value) => value !== id) : [...prev, id]));
-    setPage(0);
-  };
-
-  const handleSortChange = (value: SortKey) => {
-    setPage(0);
-    setSort(value);
-  };
-
-  const handleOrderChange = (value: SortOrder) => {
-    setPage(0);
-    setOrder(value);
   };
 
   useEffect(() => {
@@ -81,12 +66,19 @@ const LikedVideosDrawer: React.FC<LikedVideosDrawerProps> = ({ isOpen, onClose }
         return;
       }
 
+      const { count } = await supabase
+        .from('user_video_decisions')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .in('decision_type', ['swipe_like', 'grid_like']);
+      setTotalCount(typeof count === 'number' ? count : null);
+
       const { data, error } = await supabase.rpc('get_user_likes', {
         p_search: null,
         p_sort: sort,
         p_order: order,
         p_limit: pageSize,
-        p_offset: page * pageSize,
+        p_offset: 0,
         p_price_min: null,
         p_price_max: null,
         p_release_gte: null,
@@ -98,30 +90,13 @@ const LikedVideosDrawer: React.FC<LikedVideosDrawerProps> = ({ isOpen, onClose }
         setError(error.message);
         setVideos([]);
       } else {
-        const rows = (data as RpcVideoRecord[]) ?? [];
-        const nextVideos = rows.map((row) => ({
-          ...row,
-          source: row.source || 'personalized',
-        }));
-        const nextTotal = rows.length > 0
-          ? rows[0]?.total_count ?? rows.length
-          : 0;
-        setVideos(nextVideos);
-        setTotalCount(nextTotal);
+        setVideos(((data as VideoRecord[]) ?? []).map((row) => ({ ...row, source: row.source || 'personalized' })));
       }
       setLoading(false);
     };
 
     fetchLikedVideos();
-  }, [isOpen, sort, order, selectedTagIds, selectedPerformerIds, page]);
-
-  useEffect(() => {
-    if (totalCount === null) return;
-    const maxPage = Math.max(0, Math.ceil(totalCount / pageSize) - 1);
-    if (page > maxPage) {
-      setPage(maxPage);
-    }
-  }, [totalCount, pageSize, page]);
+  }, [isOpen, sort, order, selectedTagIds, selectedPerformerIds]);
 
   return (
     <VideoListDrawer
@@ -129,7 +104,6 @@ const LikedVideosDrawer: React.FC<LikedVideosDrawerProps> = ({ isOpen, onClose }
       onClose={() => {
         setSelectedTagIds([]);
         setSelectedPerformerIds([]);
-        setPage(0);
         onClose();
       }}
       title="いいねした作品"
@@ -138,8 +112,8 @@ const LikedVideosDrawer: React.FC<LikedVideosDrawerProps> = ({ isOpen, onClose }
       error={error}
       sort={sort}
       order={order}
-      onChangeSort={handleSortChange}
-      onChangeOrder={handleOrderChange}
+      onChangeSort={setSort}
+      onChangeOrder={setOrder}
       tagOptions={tagOptions}
       performerOptions={performerOptions}
       selectedTagIds={selectedTagIds}
@@ -147,9 +121,6 @@ const LikedVideosDrawer: React.FC<LikedVideosDrawerProps> = ({ isOpen, onClose }
       onToggleTag={toggleTag}
       onTogglePerformer={togglePerformer}
       totalCount={totalCount}
-      page={page}
-      onChangePage={setPage}
-      pageSize={pageSize}
     />
   );
 };

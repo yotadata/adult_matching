@@ -34,10 +34,10 @@ export default function ListsPage() {
         }
         setIsAuthenticated(true);
         const { count } = await supabase
-          .from('user_video_decisions')
+          .from('user_book_decisions')
           .select('*', { count: 'exact', head: true })
           .eq('user_id', user.id)
-          .eq('decision_type', 'like');
+          .in('decision_type', ['swipe_like', 'grid_like']);
         setLikedCount(count ?? 0);
       } catch {
         setLikedCount(null);
@@ -51,7 +51,7 @@ export default function ListsPage() {
     {
       id: 'liked',
       title: 'いいねした作品',
-      description: '「さがす」やスワイプで「気になる」とした作品をまとめて見返せます。',
+      description: 'AIで探すやスワイプで「気になる」とした作品をまとめて見返せます。',
       onClick: () => setIsDrawerOpen(true),
       icon: Heart,
       accent: 'from-rose-500/80 to-pink-400/80',

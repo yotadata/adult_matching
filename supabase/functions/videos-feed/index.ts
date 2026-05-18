@@ -1,4 +1,5 @@
-import { createClient, type SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.43.0"
+// deno-lint-ignore-file no-explicit-any
+import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.43.0"
 
 type VideoEntry = {
   id: string
@@ -30,23 +31,6 @@ const EXPLOITATION_RATIO = 0.6
 const POPULARITY_RATIO = 0.2
 const CANDIDATE_MULTIPLIER = 3
 
-type EdgeSupabaseClient = SupabaseClient<any, "public", any>
-
-const ensureArray = <T>(value: unknown): T[] => {
-  if (!Array.isArray(value)) return []
-  return value as T[]
-}
-
-const ensureId = (value: unknown): string | null => {
-  if (typeof value === "string" && value.length > 0) return value
-  if (typeof value === "number" || typeof value === "bigint") return value.toString()
-  return null
-}
-
-const toStringOrNull = (value: unknown): string | null =>
-  typeof value === "string" ? value : null
-
-
 function clampLimit(limit?: number): number {
   if (!limit || limit <= 0) return DEFAULT_LIMIT
   return Math.min(limit, MAX_LIMIT)
@@ -62,7 +46,7 @@ function shuffle<T>(arr: T[]): T[] {
 }
 
 async function fetchModelVersions(
-  client: EdgeSupabaseClient,
+  client: SupabaseClient<any>,
   ids: string[],
 ): Promise<Map<string, string | null>> {
   if (ids.length === 0) return new Map()
@@ -75,12 +59,8 @@ async function fetchModelVersions(
     return new Map()
   }
   const map = new Map<string, string | null>()
-  const rows = ensureArray<Record<string, unknown>>(data)
-  for (const row of rows) {
-    const videoId = ensureId(row.video_id)
-    if (!videoId) continue
-    const version = toStringOrNull(row.model_version)
-    map.set(videoId, version)
+  for (const row of data ?? []) {
+    map.set(row.video_id, row.model_version ?? null)
   }
   return map
 }
@@ -152,18 +132,14 @@ Deno.serve(async (req) => {
     const popularity: VideoEntry[] = []
     const exploration: VideoEntry[] = []
 
-    let exploitRawCount = 0
-    let exploitError: string | null = null
     if (userId && adjustedExploitationRatio > 0) {
       const { data: recs, error: recError } = await supabase.rpc('get_videos_recommendations', {
         user_uuid: userId,
         page_limit: Math.max(adjustedPageLimit * CANDIDATE_MULTIPLIER, 100),
       })
       if (recError) {
-        exploitError = recError.message
         console.error('get_videos_recommendations error:', recError.message)
       } else if (recs && recs.length > 0) {
-        exploitRawCount = recs.length
         const shuffled = shuffle(recs as Record<string, unknown>[]) 
         for (const item of shuffled) {
           const id = String(item.id)
@@ -188,8 +164,6 @@ Deno.serve(async (req) => {
       }
     }
 
-    let popularityRawCount = 0
-    let popularityError: string | null = null
     if (popularityTarget > 0) {
       const { data: popData, error: popError } = await supabase.rpc('get_popular_videos', {
         user_uuid: userId,
@@ -197,10 +171,8 @@ Deno.serve(async (req) => {
         lookback_days: popularLookbackDays,
       })
       if (popError) {
-        popularityError = popError.message
         console.error('get_popular_videos error:', popError.message)
       } else if (popData && popData.length > 0) {
-        popularityRawCount = popData.length
         const popIds = (popData as { id: string }[]).map((item) => item.id)
         const modelMap = await fetchModelVersions(supabase, popIds)
         for (const item of popData as Record<string, unknown>[]) {
@@ -237,10 +209,9 @@ Deno.serve(async (req) => {
       if (randomError) {
         console.error('get_videos_feed (exploration) error:', randomError.message)
       } else if (randomData && randomData.length > 0) {
-        const randomRecords = shuffle(randomData as Record<string, unknown>[]) // 探索枠は毎回順番を変える
-        const randomIds = (randomRecords as { id: string }[]).map((item) => item.id)
+        const randomIds = (randomData as { id: string }[]).map((item) => item.id)
         const modelMap = await fetchModelVersions(supabase, randomIds)
-        for (const item of randomRecords) {
+        for (const item of randomData as Record<string, unknown>[]) {
           const id = String(item.id)
           if (seen.has(id)) continue
           exploration.push({
@@ -267,15 +238,15 @@ Deno.serve(async (req) => {
     let exploitIdx = 0
     let popIdx = 0
     let exploreIdx = 0
-    while (final.length < adjustedPageLimit) {
+    while (final.length < pageLimit) {
       if (exploitIdx < exploitation.length) {
         final.push(exploitation[exploitIdx++])
       }
-      if (final.length >= adjustedPageLimit) break
+      if (final.length >= pageLimit) break
       if (popIdx < popularity.length) {
         final.push(popularity[popIdx++])
       }
-      if (final.length >= adjustedPageLimit) break
+      if (final.length >= pageLimit) break
       if (exploreIdx < exploration.length) {
         final.push(exploration[exploreIdx++])
       }
@@ -284,72 +255,17 @@ Deno.serve(async (req) => {
       }
     }
 
-    if (final.length < adjustedPageLimit) {
+    if (final.length < pageLimit) {
       const remaining = [...exploitation.slice(exploitIdx), ...popularity.slice(popIdx), ...exploration.slice(exploreIdx)]
       for (const item of remaining) {
-        if (final.length >= adjustedPageLimit) break
+        if (final.length >= pageLimit) break
         final.push(item)
       }
     }
 
-    const finalExploitCount = final.filter(v => v.source === 'exploitation').length
-    const finalPopularityCount = final.filter(v => v.source === 'popularity').length
-    const finalExplorationCount = final.filter(v => v.source === 'exploration').length
-
     const EMBED_INTERVAL = 10
     const remainder = decisionCount % EMBED_INTERVAL
     const swipes_until_next_embed = EMBED_INTERVAL - remainder || EMBED_INTERVAL
-
-    // 個人の嗜好適合度統計（直近 N 件の回数窓）
-    type UserStats = {
-      window: number
-      like_rate: number
-      by_source: Record<string, { likes: number; total: number; like_rate: number }>
-      by_score: Record<string, { likes: number; total: number; like_rate: number }>
-    }
-    let userStats: UserStats | null = null
-    if (userId) {
-      const STATS_WINDOW = 50
-      const { data: recentDecisions, error: statsError } = await supabase
-        .from('user_video_decisions')
-        .select('decision_type, recommendation_source, recommendation_score')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false })
-        .limit(STATS_WINDOW)
-      if (statsError) {
-        console.error('user stats query error:', statsError.message)
-      } else if (recentDecisions && recentDecisions.length > 0) {
-        const rows = recentDecisions as { decision_type: string; recommendation_source: string | null; recommendation_score: number | null }[]
-        const totalLikes = rows.filter(r => r.decision_type === 'like').length
-        const likeRate = (n: number, d: number) => d > 0 ? Math.round(n / d * 1000) / 1000 : 0
-
-        const bySource: UserStats['by_source'] = {}
-        for (const src of ['exploitation', 'popularity', 'exploration']) {
-          const subset = rows.filter(r => r.recommendation_source === src)
-          const likes = subset.filter(r => r.decision_type === 'like').length
-          if (subset.length > 0) bySource[src] = { likes, total: subset.length, like_rate: likeRate(likes, subset.length) }
-        }
-
-        const scoreBuckets: [string, (s: number) => boolean][] = [
-          ['low',  s => s < 0.3],
-          ['mid',  s => s >= 0.3 && s < 0.6],
-          ['high', s => s >= 0.6],
-        ]
-        const byScore: UserStats['by_score'] = {}
-        for (const [label, pred] of scoreBuckets) {
-          const subset = rows.filter(r => r.recommendation_score !== null && pred(r.recommendation_score!))
-          const likes = subset.filter(r => r.decision_type === 'like').length
-          if (subset.length > 0) byScore[label] = { likes, total: subset.length, like_rate: likeRate(likes, subset.length) }
-        }
-
-        userStats = {
-          window: rows.length,
-          like_rate: likeRate(totalLikes, rows.length),
-          by_source: bySource,
-          by_score: byScore,
-        }
-      }
-    }
 
     const payload = {
       videos: final.slice(0, adjustedPageLimit).map((item) => ({
@@ -360,22 +276,14 @@ Deno.serve(async (req) => {
           popularity_ratio: adjustedPopularityRatio,
           exploration_ratio: Math.max(0, 1 - adjustedExploitationRatio - adjustedPopularityRatio),
           popularity_lookback_days: popularLookbackDays,
-          exploitation_returned: finalExploitCount,
-          popularity_returned: finalPopularityCount,
-          exploration_returned: finalExplorationCount,
+          exploitation_returned: exploitation.length,
+          popularity_returned: popularity.length,
+          exploration_returned: exploration.length,
         },
       })),
       metadata: {
         swipes_until_next_embed: swipes_until_next_embed,
         decision_count: decisionCount,
-        user_stats: userStats,
-        _debug: {
-          exploit_raw: exploitRawCount,
-          exploit_err: exploitError,
-          popularity_raw: popularityRawCount,
-          popularity_err: popularityError,
-          decision_count: decisionCount,
-        },
       },
     }
 
@@ -383,10 +291,10 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     })
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'unknown error'
-    console.error('Unexpected error:', message)
-    return new Response(JSON.stringify({ error: message }), {
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : String(error)
+    console.error('Unexpected error:', msg)
+    return new Response(JSON.stringify({ error: msg }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 400,
     })

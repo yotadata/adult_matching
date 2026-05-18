@@ -1,0 +1,51 @@
+name: "[ML] Refresh FANZA Rankings"
+
+on:
+  schedule:
+    - cron: '0 2 * * 1'  # 毎週月曜 2:00 UTC
+  workflow_dispatch: {}
+
+jobs:
+  refresh-rankings:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      FANZA_API_ID: ${{ secrets.FANZA_API_ID }}
+      FANZA_API_AFFILIATE_ID: ${{ secrets.FANZA_API_AFFILIATE_ID }}
+      FANZA_LINK_AFFILIATE_ID: ${{ secrets.FANZA_LINK_AFFILIATE_ID }}
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prepare env file
+        run: |
+          mkdir -p docker/env
+          {
+            echo "NEXT_PUBLIC_SUPABASE_URL=${SUPABASE_URL}"
+            echo "SUPABASE_URL=${SUPABASE_URL}"
+            echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}"
+            echo "SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}"
+            echo "SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}"
+            echo "FANZA_API_ID=${FANZA_API_ID}"
+            echo "FANZA_API_AFFILIATE_ID=${FANZA_API_AFFILIATE_ID:-}"
+            echo "FANZA_LINK_AFFILIATE_ID=${FANZA_LINK_AFFILIATE_ID:-}"
+            echo "RANKING_ONLY=true"
+          } > docker/env/prd.ci.env
+
+      - name: Run ranking update
+        run: INGEST_FANZA_ENV_FILE=docker/env/prd.ci.env bash scripts/ingest_fanza/run.sh
+
+      - name: Notify Discord
+        if: always()
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          JOB_STATUS: ${{ job.status }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          [ -z "$DISCORD_WEBHOOK_URL" ] && exit 0
+          if [ "$JOB_STATUS" = "success" ]; then ICON="✅"; else ICON="❌"; fi
+          curl -fsSL -X POST -H "Content-Type: application/json" \
+            -d "{\"content\":\"${ICON} FANZA Rankings refresh: ${JOB_STATUS} <${RUN_URL}>\"}" \
+            "$DISCORD_WEBHOOK_URL"

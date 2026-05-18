@@ -1,4 +1,5 @@
-import { createClient, type SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.43.0";
+// deno-lint-ignore-file no-explicit-any
+import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.43.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -77,22 +78,6 @@ const toArray = <T>(value: unknown): T[] => {
   return [];
 };
 
-const ensureArray = <T extends Record<string, unknown>>(data: unknown): T[] => {
-  if (!Array.isArray(data)) return [];
-  return data as T[];
-};
-
-const ensureId = (value: unknown): string | null => {
-  if (typeof value === "string" && value.length > 0) return value;
-  if (typeof value === "number" || typeof value === "bigint") return value.toString();
-  return null;
-};
-
-const toStringOrNull = (value: unknown): string | null =>
-  typeof value === "string" ? value : null;
-
-const filterNonNull = <T>(value: T | null): value is T => value !== null;
-
 const normalizePerformers = (value: unknown): Array<{ id: string; name: string }> => {
   const list = toArray<JsonPerformer>(value);
   return list
@@ -161,220 +146,111 @@ const extractKeywords = (prompt: string): string[] =>
     .map((word) => word.trim().toLowerCase())
     .filter((word) => word.length > 0);
 
-type EdgeSupabaseClient = SupabaseClient<any, "public", any>;
-
-const buildProductUrlFallback = (externalId: string | null): string | null => {
-  if (!externalId) return null;
-  return `https://www.dmm.co.jp/digital/videoa/-/detail/=/cid_${externalId}`;
-};
-
 const fetchPersonalized = async (
-  client: EdgeSupabaseClient,
+  client: SupabaseClient<any>,
   userId: string | null,
   limit: number,
 ): Promise<VideoCandidate[]> => {
   if (!userId) return [];
   const { data, error } = await client.rpc("get_videos_recommendations", {
     user_uuid: userId,
-    page_limit: Math.max(limit * 6, 120),
+    page_limit: limit * 2,
   });
   if (error) {
     console.error("[ai-recommend] get_videos_recommendations error:", error.message);
     return [];
   }
-  const rows = ensureArray<Record<string, unknown>>(data);
-  const mapped: (VideoCandidate | null)[] = rows.map((item) => {
-      const id = ensureId(item.id ?? item.external_id);
-      if (!id) return null;
-      return {
-        id,
-        title: toStringOrNull(item.title),
-        description: toStringOrNull(item.description),
-        external_id: toStringOrNull(item.external_id),
-        thumbnail_url: toStringOrNull(item.thumbnail_url),
-        sample_video_url: toStringOrNull(item.sample_video_url),
-        product_released_at: toStringOrNull(item.product_released_at),
-        performers: normalizePerformers(item.performers),
-        tags: normalizeTags(item.tags),
-        score: typeof item.score === "number" ? item.score : null,
-        model_version: typeof item.model_version === "string" ? item.model_version : null,
-        popularity_score: null,
-        product_url: null,
-        preview_video_url: null,
-        duration_minutes: null,
-        source: "personalized" as const,
-      };
-    });
-  return mapped.filter((value): value is VideoCandidate => value !== null);
+  return ((data as Record<string, unknown>[] | null) ?? []).map((item: Record<string, unknown>) => ({
+    id: String(item.id),
+    title: (item.title ?? null) as string | null,
+    description: (item.description ?? null) as string | null,
+    external_id: (item.external_id ?? null) as string | null,
+    thumbnail_url: (item.thumbnail_url ?? null) as string | null,
+    sample_video_url: (item.sample_video_url ?? null) as string | null,
+    product_released_at: (item.product_released_at ?? null) as string | null,
+    performers: normalizePerformers(item.performers),
+    tags: normalizeTags(item.tags),
+    score: typeof item.score === "number" ? item.score : null,
+    model_version: typeof item.model_version === "string" ? item.model_version : null,
+    popularity_score: null,
+    product_url: null,
+    preview_video_url: null,
+    duration_minutes: null,
+    source: "personalized",
+  }));
 };
 
 const fetchTrending = async (
-  client: EdgeSupabaseClient,
+  client: SupabaseClient<any>,
   limit: number,
   lookbackDays: number,
 ): Promise<VideoCandidate[]> => {
   const { data, error } = await client.rpc("get_popular_videos", {
-    limit_count: limit * 5,
+    limit_count: limit * 3,
     lookback_days: lookbackDays,
   });
   if (error) {
     console.error("[ai-recommend] get_popular_videos error:", error.message);
     return [];
   }
-  const rows = ensureArray<Record<string, unknown>>(data);
-  const mapped: (VideoCandidate | null)[] = rows.map((item) => {
-      const id = ensureId(item.id ?? item.external_id);
-      if (!id) return null;
-      return {
-        id,
-        title: toStringOrNull(item.title),
-        description: toStringOrNull(item.description),
-        external_id: toStringOrNull(item.external_id),
-        thumbnail_url: toStringOrNull(item.thumbnail_url),
-        sample_video_url: toStringOrNull(item.sample_video_url),
-        product_released_at: toStringOrNull(item.product_released_at),
-        performers: normalizePerformers(item.performers),
-        tags: normalizeTags(item.tags),
-        score: null,
-        model_version: null,
-        popularity_score: typeof item.score === "number" ? item.score : null,
-        product_url: null,
-        preview_video_url: null,
-        duration_minutes: null,
-        source: "trending" as const,
-      };
-    });
-  return mapped.filter((value): value is VideoCandidate => value !== null);
+  return ((data as Record<string, unknown>[] | null) ?? []).map((item: Record<string, unknown>) => ({
+    id: String(item.id),
+    title: (item.title ?? null) as string | null,
+    description: (item.description ?? null) as string | null,
+    external_id: (item.external_id ?? null) as string | null,
+    thumbnail_url: (item.thumbnail_url ?? null) as string | null,
+    sample_video_url: (item.sample_video_url ?? null) as string | null,
+    product_released_at: (item.product_released_at ?? null) as string | null,
+    performers: normalizePerformers(item.performers),
+    tags: normalizeTags(item.tags),
+    score: null,
+    model_version: null,
+    popularity_score: typeof item.score === "number" ? item.score : null,
+    product_url: null,
+    preview_video_url: null,
+    duration_minutes: null,
+    source: "trending",
+  }));
 };
 
 const fetchFresh = async (
-  client: EdgeSupabaseClient,
+  client: SupabaseClient<any>,
   limit: number,
 ): Promise<VideoCandidate[]> => {
   const { data, error } = await client
     .from("videos")
     .select("id, title, description, external_id, thumbnail_url, sample_video_url, product_released_at, video_tags(tags(id, name)), video_performers(performers(id, name))")
+    .not("sample_video_url", "is", null)
     .order("product_released_at", { ascending: false })
-    .limit(limit * 5);
+    .limit(limit * 3);
 
   if (error) {
     console.error("[ai-recommend] latest videos fetch error:", error.message);
     return [];
   }
 
-  const rows = ensureArray<Record<string, unknown>>(data);
-  const mapped: (VideoCandidate | null)[] = rows.map((item) => {
-      const id = ensureId(item.id ?? item.external_id);
-      if (!id) return null;
-      return {
-        id,
-        title: toStringOrNull(item.title),
-        description: toStringOrNull(item.description),
-        external_id: toStringOrNull(item.external_id),
-        thumbnail_url: toStringOrNull(item.thumbnail_url),
-        sample_video_url: toStringOrNull(item.sample_video_url),
-        product_released_at: toStringOrNull(item.product_released_at),
-        performers: extractNestedEntities((item as { video_performers?: unknown }).video_performers, "performers"),
-        tags: extractNestedEntities((item as { video_tags?: unknown }).video_tags, "tags"),
-        score: null,
-        model_version: null,
-        popularity_score: null,
-        product_url: null,
-        preview_video_url: null,
-        duration_minutes: null,
-        source: "fresh" as const,
-      };
-    });
-  return mapped.filter((value): value is VideoCandidate => value !== null);
-};
-
-const fetchSearch = async (
-  client: EdgeSupabaseClient,
-  limit: number,
-  prompt: string | null,
-  tagIds: string[],
-  performerIds: string[],
-): Promise<VideoCandidate[]> => {
-  const { data, error } = await client.rpc("search_videos", {
-    p_prompt: prompt && prompt.length > 0 ? prompt : null,
-    p_tag_ids: tagIds.length ? tagIds : null,
-    p_performer_ids: performerIds.length ? performerIds : null,
-    p_limit: Math.max(limit * 4, 60),
-  });
-  if (error) {
-    console.error("[ai-recommend] search_videos error:", error.message);
-    return [];
-  }
-  const rows = ensureArray<Record<string, unknown>>(data);
-  const mapped: (VideoCandidate | null)[] = rows.map((item) => {
-      const id = ensureId(item.id ?? item.external_id);
-      if (!id) return null;
-      return {
-        id,
-        title: toStringOrNull(item.title),
-        description: toStringOrNull(item.description),
-        external_id: toStringOrNull(item.external_id),
-        thumbnail_url: toStringOrNull(item.thumbnail_url),
-        sample_video_url: toStringOrNull(item.sample_video_url),
-        product_released_at: toStringOrNull(item.product_released_at),
-        performers: normalizePerformers(item.performers),
-        tags: normalizeTags(item.tags),
-        score: null,
-        model_version: null,
-        popularity_score: null,
-        product_url: null,
-        preview_video_url: null,
-        duration_minutes: null,
-        source: "fresh" as const,
-      };
-    });
-  return mapped.filter((value): value is VideoCandidate => value !== null);
-};
-
-const fetchEmbeddingSearch = async (
-  client: EdgeSupabaseClient,
-  limit: number,
-  tagIds: string[],
-  performerIds: string[],
-): Promise<VideoCandidate[]> => {
-  if (tagIds.length === 0 && performerIds.length === 0) return [];
-  const { data, error } = await client.rpc("search_videos_by_embedding", {
-    p_tag_ids: tagIds.length ? tagIds : null,
-    p_performer_ids: performerIds.length ? performerIds : null,
-    p_limit: Math.max(limit * 3, 50),
-  });
-  if (error) {
-    console.error("[ai-recommend] search_videos_by_embedding error:", error.message);
-    return [];
-  }
-  const rows = ensureArray<Record<string, unknown>>(data);
-  const mapped: (VideoCandidate | null)[] = rows.map((item) => {
-      const id = ensureId(item.id ?? item.external_id);
-      if (!id) return null;
-      return {
-        id,
-        title: toStringOrNull(item.title),
-        description: toStringOrNull(item.description),
-        external_id: toStringOrNull(item.external_id),
-        thumbnail_url: toStringOrNull(item.thumbnail_url),
-        sample_video_url: toStringOrNull(item.sample_video_url),
-        product_released_at: toStringOrNull(item.product_released_at),
-        performers: normalizePerformers(item.performers),
-        tags: normalizeTags(item.tags),
-        score: typeof item.score === "number" ? item.score : null,
-        model_version: null,
-        popularity_score: null,
-        product_url: null,
-        preview_video_url: null,
-        duration_minutes: null,
-        source: "personalized" as const,
-      };
-    });
-  return mapped.filter((value): value is VideoCandidate => value !== null);
+  return ((data as Record<string, unknown>[] | null) ?? []).map((item) => ({
+    id: String(item.id),
+    title: (item.title ?? null) as string | null,
+    description: (item.description ?? null) as string | null,
+    external_id: (item.external_id ?? null) as string | null,
+    thumbnail_url: (item.thumbnail_url ?? null) as string | null,
+    sample_video_url: (item.sample_video_url ?? null) as string | null,
+    product_released_at: (item.product_released_at ?? null) as string | null,
+    performers: extractNestedEntities((item as { video_performers?: unknown }).video_performers, "performers"),
+    tags: extractNestedEntities((item as { video_tags?: unknown }).video_tags, "tags"),
+    score: null,
+    model_version: null,
+    popularity_score: null,
+    product_url: null,
+    preview_video_url: null,
+    duration_minutes: null,
+    source: "fresh",
+  }));
 };
 
 const hydrateVideoDetails = async (
-  client: EdgeSupabaseClient,
+  client: SupabaseClient<any>,
   candidates: VideoCandidate[],
 ): Promise<Map<string, { product_url: string | null; preview_video_url: string | null; duration_minutes: number | null }>> => {
   const ids = Array.from(new Set(candidates.map((item) => item.id)));
@@ -391,17 +267,11 @@ const hydrateVideoDetails = async (
   }
 
   const map = new Map<string, { product_url: string | null; preview_video_url: string | null; duration_minutes: number | null }>();
-  const rows = ensureArray<Record<string, unknown>>(data);
-  for (const row of rows) {
-    const id = ensureId(row.id);
-    if (!id) continue;
+  for (const row of (data as Record<string, unknown>[] | null) ?? []) {
     const durationSeconds = typeof row.duration_seconds === "number" ? row.duration_seconds : null;
-    const affiliate = typeof row.affiliate_url === "string" ? row.affiliate_url : null;
-    const productUrl = typeof row.product_url === "string" ? row.product_url : null;
-    const preview = typeof row.preview_video_url === "string" ? row.preview_video_url : null;
-    map.set(id, {
-      product_url: affiliate ?? productUrl,
-      preview_video_url: preview,
+    map.set(String(row.id), {
+      product_url: (row.affiliate_url ?? row.product_url ?? null) as string | null,
+      preview_video_url: (row.preview_video_url ?? null) as string | null,
       duration_minutes: durationSeconds ? Math.max(1, Math.round(durationSeconds / 60)) : null,
     });
   }
@@ -562,28 +432,13 @@ Deno.serve(async (req) => {
       fetchTrending(supabase, limitPerSection, 7),
       fetchFresh(supabase, limitPerSection),
     ]);
-    const shouldSearch = selectedTagIds.length > 0 || selectedPerformerIds.length > 0 || promptKeywords.length > 0;
-    const [searchCandidates, embedCandidates] = shouldSearch
-      ? await Promise.all([
-          fetchSearch(
-            supabase,
-            limitPerSection,
-            normalizedPrompt || (promptKeywords.length ? promptKeywords.join(" ") : null),
-            selectedTagIds,
-            selectedPerformerIds,
-          ),
-          fetchEmbeddingSearch(supabase, limitPerSection, selectedTagIds, selectedPerformerIds),
-        ])
-      : [[], []];
 
-    const detailMap = await hydrateVideoDetails(supabase, [...personalized, ...trending, ...fresh, ...searchCandidates, ...embedCandidates]);
+    const detailMap = await hydrateVideoDetails(supabase, [...personalized, ...trending, ...fresh]);
     const enhance = (video: VideoCandidate): VideoCandidate => {
       const extra = detailMap.get(video.id);
-      const fallbackUrl = buildProductUrlFallback(video.external_id ?? null);
-      const productUrl = extra?.product_url ?? video.product_url ?? fallbackUrl;
       return {
         ...video,
-        product_url: productUrl,
+        product_url: extra?.product_url ?? video.product_url ?? null,
         preview_video_url: extra?.preview_video_url ?? video.preview_video_url ?? null,
         duration_minutes: extra?.duration_minutes ?? video.duration_minutes ?? null,
       };
@@ -596,24 +451,13 @@ Deno.serve(async (req) => {
     const used = new Set<string>();
     const sections: Section[] = [];
 
-    // 1. personalized → 2. fresh → 3. trending の順に重複を避けて詰める
     const personalizedItems = pickUnique(enhancedPersonalized, used, limitPerSection);
     if (personalizedItems.length > 0) {
       sections.push({
         id: "for-you",
         title: "あなたに合わせた提案",
-        rationale: "「気になる」履歴からのあなたへのおすすめ作品です。",
+        rationale: "LIKE 履歴と埋め込み類似度から抽出した作品です。",
         items: toSectionItems(personalizedItems, { summaryPrefix: "あなた向け" }),
-      });
-    }
-
-    const freshItems = pickUnique(enhancedFresh, used, limitPerSection);
-    if (freshItems.length > 0) {
-      sections.push({
-        id: "fresh-releases",
-        title: "新着ピックアップ",
-        rationale: "発売日が新しい順に、注目度の高い作品を並べています。",
-        items: toSectionItems(freshItems, { summaryPrefix: "新着" }),
       });
     }
 
@@ -624,6 +468,16 @@ Deno.serve(async (req) => {
         title: "みんなが観ているトレンド",
         rationale: "コミュニティ全体で人気が高まっている作品をピックアップしました。",
         items: toSectionItems(trendingItems, { summaryPrefix: "トレンド" }),
+      });
+    }
+
+    const freshItems = pickUnique(enhancedFresh, used, limitPerSection);
+    if (freshItems.length > 0) {
+      sections.push({
+        id: "fresh-releases",
+        title: "新着ピックアップ",
+        rationale: "発売日が新しい順に、注目度の高い作品を並べています。",
+        items: toSectionItems(freshItems, { summaryPrefix: "新着" }),
       });
     }
 
@@ -647,34 +501,19 @@ Deno.serve(async (req) => {
     let summaryPrefix = "AIセレクト";
     let reasonSelectionSummary: string | undefined;
 
-    // prompt-match 用: 検索結果を優先し、embedding検索→従来プールの順にバックアップ
-    const hasPromptInputs = hasSelections || promptKeywords.length > 0;
-    if (hasPromptInputs) {
-      const merged = [...searchCandidates, ...embedCandidates];
-      if (merged.length > 0) {
-        promptCandidates = merged;
-        promptTitle = hasSelections ? "プリセットに基づくおすすめ" : "気分キーワードとマッチ";
-        promptRationale = hasSelections
-          ? (selectionSummary || "選択したタグ/出演者に基づいて抽出しました。")
-          : `入力ワード: ${promptKeywords.join(", ")}`;
-        summaryPrefix = hasSelections ? "プリセット検索" : "気分マッチ検索";
-        reasonSelectionSummary = selectionSummary || undefined;
-      } else {
-        // 検索結果ゼロなら従来プールで補完
-        promptCandidates = hasSelections
-          ? [...enhancedPersonalized, ...enhancedTrending, ...enhancedFresh].filter(matchesSelection)
-          : [...enhancedPersonalized, ...enhancedTrending, ...enhancedFresh].filter((video) => matchesKeywords(video, promptKeywords));
-        promptTitle = hasSelections ? "プリセットに基づくおすすめ" : "気分キーワードとマッチ";
-        promptRationale = `${hasSelections ? (selectionSummary || "選択したタグ/出演者に基づいて抽出しました。") : `入力ワード: ${promptKeywords.join(", ")}`} / 検索結果が少なかったため補完しました。`;
-        summaryPrefix = hasSelections ? "プリセット" : "気分マッチ";
-        reasonSelectionSummary = selectionSummary || undefined;
-      }
+    if (hasSelections) {
+      promptCandidates = [...enhancedPersonalized, ...enhancedTrending, ...enhancedFresh].filter(matchesSelection);
+      promptTitle = "プリセットに基づくおすすめ";
+      promptRationale = selectionSummary || "選択したタグ/出演者に基づいて抽出しました。";
+      summaryPrefix = "プリセット";
+      reasonSelectionSummary = selectionSummary;
+    } else if (promptKeywords.length > 0) {
+      promptCandidates = [...enhancedPersonalized, ...enhancedTrending, ...enhancedFresh].filter((video) => matchesKeywords(video, promptKeywords));
+      promptTitle = "気分キーワードとマッチ";
+      promptRationale = `入力ワード: ${promptKeywords.join(", ")}`;
+      summaryPrefix = "気分マッチ";
     } else {
       promptCandidates = [...enhancedPersonalized, ...enhancedTrending];
-      promptTitle = "AIセレクト（気分未入力）";
-      promptRationale = "キーワードやプリセット未選択のため、AI があなた向けとトレンドからピックアップしました。";
-      summaryPrefix = "AIセレクト";
-      reasonSelectionSummary = undefined;
     }
 
     if (promptCandidates.length === 0) {
@@ -683,7 +522,7 @@ Deno.serve(async (req) => {
       summaryPrefix = hasSelections ? "プリセット" : promptKeywords.length > 0 ? "気分マッチ" : "AIセレクト";
     }
 
-    const promptItems = pickUnique(promptCandidates, new Set<string>(), limitPerSection); // promptは他セクションと重複を許容
+    const promptItems = pickUnique(promptCandidates, used, limitPerSection);
     if (promptItems.length > 0) {
       sections.push({
         id: "prompt-match",
@@ -716,8 +555,6 @@ Deno.serve(async (req) => {
         personalized_candidates: personalized.length,
         trending_candidates: trending.length,
         fresh_candidates: fresh.length,
-        search_candidates: searchCandidates.length,
-        embed_candidates: embedCandidates.length,
         prompt_keywords: promptKeywords,
         has_user_context: Boolean(userId),
         limit_per_section: limitPerSection,
