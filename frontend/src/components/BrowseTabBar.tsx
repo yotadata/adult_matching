@@ -19,15 +19,16 @@ type Level = {
   Icon: LucideIcon;
   color: string;
   iconColor: string;
+  borderColor: string;
 };
 
 const LEVELS: Level[] = [
-  { min: 0,   max: 1,   label: '未診断',       Icon: Snail,   color: 'from-gray-500 to-gray-400',     iconColor: 'text-gray-400' },
-  { min: 1,   max: 10,  label: '学習中',       Icon: Rabbit,  color: 'from-blue-500 to-cyan-400',     iconColor: 'text-cyan-400' },
-  { min: 10,  max: 30,  label: '性癖覚醒中',   Icon: Cat,     color: 'from-yellow-500 to-amber-400',  iconColor: 'text-amber-400' },
-  { min: 30,  max: 100, label: '性癖確立',     Icon: Dog,     color: 'from-orange-500 to-red-400',    iconColor: 'text-orange-400' },
-  { min: 100, max: 200, label: '性癖マスター', Icon: Bird,    color: 'from-violet-500 to-purple-400', iconColor: 'text-violet-400' },
-  { min: 200, max: 400, label: '変態紳士',     Icon: Crown,   color: 'from-yellow-400 to-pink-400',   iconColor: 'text-yellow-400' },
+  { min: 0,   max: 1,   label: '未診断',       Icon: Snail,   color: 'from-gray-500 to-gray-400',     iconColor: 'text-gray-400',   borderColor: 'rgba(156,163,175,0.4)' },
+  { min: 1,   max: 10,  label: '学習中',       Icon: Rabbit,  color: 'from-blue-500 to-cyan-400',     iconColor: 'text-cyan-400',   borderColor: 'rgba(34,211,238,0.4)'  },
+  { min: 10,  max: 30,  label: '性癖覚醒中',   Icon: Cat,     color: 'from-yellow-500 to-amber-400',  iconColor: 'text-amber-400',  borderColor: 'rgba(251,191,36,0.4)'  },
+  { min: 30,  max: 100, label: '性癖確立',     Icon: Dog,     color: 'from-orange-500 to-red-400',    iconColor: 'text-orange-400', borderColor: 'rgba(251,146,60,0.4)'  },
+  { min: 100, max: 200, label: '性癖マスター', Icon: Bird,    color: 'from-violet-500 to-purple-400', iconColor: 'text-violet-400', borderColor: 'rgba(167,139,250,0.4)' },
+  { min: 200, max: 400, label: '変態紳士',     Icon: Crown,   color: 'from-yellow-400 to-pink-400',   iconColor: 'text-yellow-400', borderColor: 'rgba(250,204,21,0.4)'  },
 ];
 
 function getLevel(count: number): Level {
@@ -85,6 +86,7 @@ function BrowseTabBarInner() {
   const isDebug = searchParams.get('debug') === '1';
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [likeCount, setLikeCount] = useState<number | null>(null);
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
   const [particles, setParticles] = useState<number[]>([]);
   const [levelUpLevel, setLevelUpLevel] = useState<Level | null>(null);
   const prevLevelRef = useRef<Level | null>(null);
@@ -99,17 +101,23 @@ function BrowseTabBarInner() {
   useEffect(() => {
     const fetchCount = async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { setLikeCount(0); return; }
+      if (!user) { setLikeCount(0); setIsLoggedIn(false); return; }
+      setIsLoggedIn(true);
       const { count } = await supabase
         .from('user_video_decisions')
         .select('*', { count: 'exact', head: true })
         .eq('user_id', user.id)
-        .eq('decision_type', 'like');
+        .in('decision_type', ['swipe_like', 'grid_like']);
       const c = count ?? 0;
       setLikeCount(c);
       prevLevelRef.current = getLevel(c);
     };
     fetchCount();
+
+    const { data: authListener } = supabase.auth.onAuthStateChange((_e, session) => {
+      setIsLoggedIn(Boolean(session?.user));
+      if (!session?.user) setLikeCount(0);
+    });
 
     const handler = () => {
       setParticles((prev) => [...prev, ++particleIdRef.current]);
@@ -124,7 +132,10 @@ function BrowseTabBarInner() {
       });
     };
     window.addEventListener('like-added', handler);
-    return () => window.removeEventListener('like-added', handler);
+    return () => {
+      window.removeEventListener('like-added', handler);
+      authListener.subscription.unsubscribe();
+    };
   }, []);
 
   void isDebug;
@@ -142,7 +153,7 @@ function BrowseTabBarInner() {
       {levelUpLevel && <LevelUpOverlay level={levelUpLevel} onDone={() => setLevelUpLevel(null)} />}
 
       <div className="fixed top-0 left-0 right-0 z-40 bg-[#0d1117]/95 backdrop-blur flex flex-col">
-        {/* メインヘッダー: 左(ロゴ+タブ) / 中央(レベル) / 右(リスト) */}
+        {/* メインヘッダー: 左(ロゴ+タブ) / 中央(レベル) / 右(アクション) */}
         <div className="grid grid-cols-3 items-center px-3 h-11">
           {/* 左: ロゴ＋タブ */}
           <div className="flex items-center gap-1.5">
@@ -169,33 +180,45 @@ function BrowseTabBarInner() {
             </Link>
           </div>
 
-          {/* 中央: レベルアイコン＋名前＋いいね数 */}
-          <div className="flex items-center justify-center gap-1.5">
+          {/* 中央: レベル表示 */}
+          <div className="flex items-center justify-center">
             {lv && (
-              <>
-                <lv.Icon size={13} className={lv.iconColor} strokeWidth={2} />
-                <span className={`text-[11px] font-extrabold bg-gradient-to-r ${lv.color} bg-clip-text text-transparent`}>
+              <div
+                className="flex items-center gap-1 px-2 py-0.5 rounded-full border bg-[#0d1117]/80"
+                style={{ borderColor: lv.borderColor, boxShadow: `0 0 8px 1px ${lv.borderColor}` }}
+              >
+                <lv.Icon size={12} className={lv.iconColor} strokeWidth={2} />
+                <span className={`text-[10px] font-extrabold bg-gradient-to-r ${lv.color} bg-clip-text text-transparent whitespace-nowrap`}>
                   {lv.label}
                 </span>
-                <span className="text-[11px] text-[#8b949e]">
-                  <Heart size={9} className="inline mr-0.5 text-pink-400" fill="currentColor" />
+                <span className="text-[10px] text-[#8b949e] whitespace-nowrap">
+                  <Heart size={8} className="inline mr-0.5 text-pink-400" fill="currentColor" />
                   <span className="text-[#e6edf3] font-bold">{likeCount ?? 0}</span>
-                  {nextLv && <span> / {nextLv.min}</span>}
+                  {nextLv && <span>/{nextLv.min}</span>}
                 </span>
-              </>
+              </div>
             )}
           </div>
 
-          {/* 右: リストボタン */}
+          {/* 右: ログイン時=リストボタン、未ログイン時=ログインボタン */}
           <div className="flex justify-end">
-            <button
-              onClick={() => setIsDrawerOpen(true)}
-              className="flex items-center gap-1 px-2 py-1 rounded-md text-[#8b949e] hover:text-pink-400 hover:bg-[#161b22] transition-colors text-[11px] font-bold"
-              title="気になるリスト"
-            >
-              <Heart size={13} />
-              リスト
-            </button>
+            {isLoggedIn === false ? (
+              <button
+                onClick={() => window.dispatchEvent(new Event('open-auth-modal'))}
+                className="flex items-center gap-1 px-2.5 py-1 rounded-md bg-violet-600 hover:bg-violet-500 text-white transition-colors text-[11px] font-bold"
+              >
+                ログイン
+              </button>
+            ) : (
+              <button
+                onClick={() => setIsDrawerOpen(true)}
+                className="flex items-center gap-1 px-2 py-1 rounded-md text-[#8b949e] hover:text-pink-400 hover:bg-[#161b22] transition-colors text-[11px] font-bold"
+                title="気になるリスト"
+              >
+                <Heart size={13} />
+                リスト
+              </button>
+            )}
           </div>
         </div>
 

@@ -51,7 +51,7 @@ export type AnalysisPerformer = {
 export type AnalysisDecision = {
   video_id: string;
   title: string | null;
-  decision_type: 'like' | 'nope';
+  decision_type: 'swipe_like' | 'swipe_nope' | 'grid_like';
   decided_at: string;
   thumbnail_url: string | null;
   thumbnail_vertical_url?: string | null;

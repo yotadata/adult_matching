@@ -84,6 +84,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
         <div className={!isMobile && !isBrowsePath ? 'pl-56' : ''}>
           {!isBrowsePath && (isMobile ? <Header cardWidth={undefined} /> : <GlobalModals />)}
           {isBrowsePath && <BrowseTabBar />}
+          {isBrowsePath && <GlobalModals />}
           {children}
         </div>
       </div>

@@ -33,7 +33,7 @@ interface VideoFromApi {
 
 interface GuestDecision {
   video_id: CardData['id'];
-  decision_type: 'like' | 'nope';
+  decision_type: 'swipe_like' | 'swipe_nope';
   created_at: string;
   recommendation_source?: string | null;
   recommendation_score?: number | null;
@@ -65,7 +65,8 @@ export default function Home() {
   const { decisionCount, incrementDecisionCount } = useDecisionCount();
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
   const [authReady, setAuthReady] = useState<boolean>(false);
-  const guestLimit = Number(process.env.NEXT_PUBLIC_GUEST_DECISIONS_LIMIT || 20);
+  const [showLoginNudge, setShowLoginNudge] = useState(false);
+  const guestLikeCountRef = useRef(0);
   const mainRef = useRef<HTMLDivElement | null>(null);
   const sessionIdRef = useRef<string | null>(null);
   const sessionStartRef = useRef<number | null>(null);
@@ -208,7 +209,7 @@ export default function Home() {
     samplePlayCountRef.current = 0;
   }, [isLoggedIn, toIsoString]);
 
-  const emitDecisionEvents = useCallback((card: CardData, decisionType: 'like' | 'nope') => {
+  const emitDecisionEvents = useCallback((card: CardData, decisionType: 'swipe_like' | 'swipe_nope') => {
     if (!card) return;
     if (!sessionIdRef.current || sessionStartRef.current === null) {
       startInteractionSession(card, currentPositionRef.current);
@@ -474,7 +475,7 @@ export default function Home() {
   const handleSwipe = async (direction: 'left' | 'right') => {
     const card = activeCard;
     if (!card) return;
-    const decisionType = direction === 'right' ? 'like' : 'nope';
+    const decisionType = direction === 'right' ? 'swipe_like' : 'swipe_nope';
 
     if (isLoggedIn) {
       const { data: { user } } = await supabase.auth.getUser();
@@ -494,10 +495,6 @@ export default function Home() {
       }
     } else {
       const current = getGuestDecisions();
-      if (current.length >= guestLimit) {
-        try { window.dispatchEvent(new Event('open-register-modal')); } catch {}
-        return;
-      }
       current.push({
         video_id: card.id,
         decision_type: decisionType,
@@ -508,8 +505,17 @@ export default function Home() {
         recommendation_params: card.recommendationParams ?? null,
       });
       setGuestDecisions(current);
+      if (decisionType === 'swipe_like') {
+        guestLikeCountRef.current += 1;
+        if (guestLikeCountRef.current === 3 || guestLikeCountRef.current % 10 === 0) {
+          setShowLoginNudge(true);
+        }
+      }
     }
 
+    if (decisionType === 'like') {
+      window.dispatchEvent(new Event('like-added'));
+    }
     emitDecisionEvents(card, decisionType);
     trackEvent('swipe_action', {
       direction,
@@ -521,12 +527,6 @@ export default function Home() {
     setActiveIndex((prev) => prev + 1);
     setCurrentGradient(ORIGINAL_GRADIENT);
     incrementDecisionCount();
-    if (!isLoggedIn) {
-      const current = getGuestDecisions();
-      if (current.length >= guestLimit) {
-        try { window.dispatchEvent(new Event('open-register-modal')); } catch {}
-      }
-    }
 
     // Decrement swipe counter and trigger embed-user if it reaches zero
     if (isLoggedIn && swipesUntilNextEmbed !== null) {
@@ -585,6 +585,30 @@ export default function Home() {
       style={{ background: currentGradient }}
       transition={{ duration: 0.3 }}
     >
+      {/* ゲスト向けログイン nudge トースト */}
+      {showLoginNudge && !isLoggedIn && (
+        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 bg-[#1c1f26] border border-violet-500/50 rounded-2xl px-4 py-3 shadow-2xl shadow-violet-900/30 max-w-[320px] w-[90vw]">
+          <Heart size={18} className="text-pink-400 flex-shrink-0" fill="currentColor" />
+          <div className="flex-1 min-w-0">
+            <p className="text-white text-[12px] font-bold leading-snug">いいね履歴を保存しませんか？</p>
+            <p className="text-[#8b949e] text-[10px] mt-0.5">ログインするとAIがあなたの好みを学習します</p>
+          </div>
+          <div className="flex flex-col gap-1 flex-shrink-0">
+            <button
+              onClick={() => { setShowLoginNudge(false); window.dispatchEvent(new Event('open-auth-modal')); }}
+              className="px-3 py-1 rounded-lg bg-violet-600 hover:bg-violet-500 text-white text-[11px] font-bold transition-colors"
+            >
+              登録
+            </button>
+            <button
+              onClick={() => setShowLoginNudge(false)}
+              className="px-3 py-1 rounded-lg text-[#8b949e] hover:text-white text-[11px] transition-colors text-center"
+            >
+              後で
+            </button>
+          </div>
+        </div>
+      )}
       <main
         ref={mainRef}
         className={`flex-grow flex w-full relative ${isMobile ? 'flex-col h-full' : 'items-center justify-center pt-10'}`}
@@ -611,7 +635,7 @@ export default function Home() {
                 onDrag={handleDrag}
                 onDragEnd={handleDragEnd}
                 cardWidth={cardWidth}
-                canSwipe={isLoggedIn || decisionCount < guestLimit}
+                canSwipe={true}
                 onSamplePlay={(card) => handleSamplePlay(card, 'desktop')}
               />
             )

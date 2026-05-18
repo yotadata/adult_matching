@@ -57,6 +57,9 @@ function GridPage() {
   const [likedIds, setLikedIds] = useState<Set<string>>(new Set());
   const [viewedIds, setViewedIds] = useState<Set<string>>(new Set());
   const [loadedIds, setLoadedIds] = useState<Set<string>>(new Set());
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
+  const [showLoginNudge, setShowLoginNudge] = useState(false);
+  const guestLikeCountRef = useRef(0);
   const overlayHideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const loaderRef = useRef<HTMLDivElement>(null);
   const OVERLAY_HIDE_DELAY_MS = 700;
@@ -98,6 +101,17 @@ function GridPage() {
     }
   }, [loading, hasMore]);
 
+  // 認証状態を取得
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setIsLoggedIn(Boolean(session?.user));
+    });
+    const { data: listener } = supabase.auth.onAuthStateChange((_e, session) => {
+      setIsLoggedIn(Boolean(session?.user));
+    });
+    return () => listener.subscription.unsubscribe();
+  }, []);
+
   // DBからいいね済みIDを取得
   useEffect(() => {
     (async () => {
@@ -107,7 +121,7 @@ function GridPage() {
         .from('user_video_decisions')
         .select('video_id')
         .eq('user_id', user.id)
-        .eq('decision_type', 'like');
+        .in('decision_type', ['swipe_like', 'grid_like']);
       if (data && data.length > 0) {
         setLikedIds(new Set(data.map((d) => d.video_id)));
       }
@@ -149,12 +163,18 @@ function GridPage() {
     window.dispatchEvent(new Event('like-added'));
 
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    if (!user) {
+      guestLikeCountRef.current += 1;
+      if (guestLikeCountRef.current === 3 || guestLikeCountRef.current % 10 === 0) {
+        setShowLoginNudge(true);
+      }
+      return;
+    }
 
     const { error } = await supabase.from('user_video_decisions').insert({
       user_id: user.id,
       video_id: video.id,
-      decision_type: 'like',
+      decision_type: 'grid_like',
       recommendation_source: video.source ?? null,
     });
     if (error) {
@@ -174,6 +194,30 @@ function GridPage() {
 
   return (
     <div className="min-h-screen bg-[#0d1117] pt-[52px]">
+      {/* ゲスト向けログイン nudge トースト */}
+      {showLoginNudge && isLoggedIn === false && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 bg-[#1c1f26] border border-violet-500/50 rounded-2xl px-4 py-3 shadow-2xl shadow-violet-900/30 max-w-[320px] w-[90vw]">
+          <Heart size={18} className="text-pink-400 flex-shrink-0" fill="currentColor" />
+          <div className="flex-1 min-w-0">
+            <p className="text-white text-[12px] font-bold leading-snug">いいね履歴を保存しませんか？</p>
+            <p className="text-[#8b949e] text-[10px] mt-0.5">ログインするとAIがあなたの好みを学習します</p>
+          </div>
+          <div className="flex flex-col gap-1 flex-shrink-0">
+            <button
+              onClick={() => { setShowLoginNudge(false); window.dispatchEvent(new Event('open-auth-modal')); }}
+              className="px-3 py-1 rounded-lg bg-violet-600 hover:bg-violet-500 text-white text-[11px] font-bold transition-colors"
+            >
+              登録
+            </button>
+            <button
+              onClick={() => setShowLoginNudge(false)}
+              className="px-3 py-1 rounded-lg text-[#8b949e] hover:text-white text-[11px] transition-colors text-center"
+            >
+              後で
+            </button>
+          </div>
+        </div>
+      )}
       {/* 説明バナー */}
       <div className="max-w-4xl mx-auto px-3 pt-4">
       <div className="mt-3 mb-5 rounded-xl border border-violet-500/40 bg-gradient-to-br from-violet-950/60 to-[#161b22] overflow-hidden shadow-lg shadow-violet-900/20">
@@ -212,8 +256,16 @@ function GridPage() {
             </div>
             <div className="flex items-center gap-2 text-[10px] text-[#8b949e] bg-[#0d1117] rounded-lg px-3 py-2">
               <LockOpen size={13} className="flex-shrink-0 text-[#8b949e]" />
-              <span>メールアドレス不要・無料で今すぐ使えます。Googleアカウントで登録するといいね履歴が永続保存されます。</span>
+              <span>メールアドレス不要・無料で今すぐ使えます。登録するといいね履歴が永続保存されます。</span>
             </div>
+            {isLoggedIn === false && (
+              <button
+                onClick={() => window.dispatchEvent(new Event('open-auth-modal'))}
+                className="w-full py-2.5 rounded-lg bg-violet-600 hover:bg-violet-500 text-white text-sm font-bold transition-colors"
+              >
+                ログイン / 新規登録
+              </button>
+            )}
           </div>
         )}
       </div>
@@ -258,11 +310,11 @@ function GridPage() {
               </div>
               {/* 既読オーバーレイ（いいね済みでない場合のみ） */}
               {viewedIds.has(video.id) && !likedIds.has(video.id) && (
-                <div className="absolute inset-0 bg-black/40 pointer-events-none" />
+                <div className="absolute inset-0 bg-black/60 pointer-events-none" />
               )}
               {/* いいね済みオーバーレイ */}
               {likedIds.has(video.id) && (
-                <div className="absolute inset-0 bg-pink-500/20 pointer-events-none" />
+                <div className="absolute inset-0 bg-pink-500/40 pointer-events-none" />
               )}
               {/* いいね済みバッジ */}
               {likedIds.has(video.id) && (
