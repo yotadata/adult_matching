@@ -4,13 +4,10 @@ on:
   workflow_dispatch:
     inputs:
       approved:
-        description: "評価済みか。'yes' で埋め込み反映を実行"
+        description: "評価済みか。true で埋め込み反映を実行"
         required: true
-        default: no
-        type: choice
-        options:
-          - yes
-          - no
+        default: 'false'
+        type: boolean
       run_id:
         description: "任意の識別子（省略時は UTC timestamp）"
         required: false
@@ -27,7 +24,7 @@ jobs:
   release:
     name: Sync Embeddings & Publish
     runs-on: ubuntu-latest
-    if: ${{ github.event.inputs.approved == 'yes' }}
+    if: ${{ github.event.inputs.approved == 'true' }}
     env:
       SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
       SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
