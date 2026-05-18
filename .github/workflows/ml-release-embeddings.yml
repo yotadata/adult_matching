@@ -80,6 +80,13 @@ jobs:
             echo "sslmode=require" >> docker/env/prd.ci.env
           fi
 
+      - name: Publish model manifest
+        env:
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          bash scripts/publish_two_tower/run.sh --env-file docker/env/prd.ci.env \
+            activate --run-id "$RELEASE_RUN_ID"
+
       - name: Sync video embeddings
         env:
           SYNC_VIDEO_ENV_FILE: docker/env/prd.ci.env
@@ -93,12 +100,6 @@ jobs:
           SYNC_USER_RUN_ID: "${{ github.run_id }}-${{ github.run_attempt }}"
         run: |
           bash scripts/sync_user_embeddings/run.sh --run-id "$SYNC_USER_RUN_ID" --recent-hours "${{ github.event.inputs.recent_hours }}"
-
-      - name: Publish model manifest
-        env:
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-        run: |
-          bash scripts/publish_two_tower/run.sh --run-id "$RELEASE_RUN_ID"
 
       - name: Notify Discord (release)
         if: always()

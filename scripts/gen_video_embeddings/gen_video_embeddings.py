@@ -424,6 +424,10 @@ def build_item_vectors(
             ),
             file=sys.stderr,
         )
+        # 不足分をゼロパディング（ユーザーのみ持つタグ等、動画側では常に0になる次元）
+        if computed_dim < expected_dim:
+            for vid in vectors:
+                vectors[vid] = np.pad(vectors[vid], (0, expected_dim - computed_dim))
     return vectors
 
 
