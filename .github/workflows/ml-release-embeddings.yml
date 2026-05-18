@@ -53,29 +53,29 @@ jobs:
       - name: Prepare runtime env
         run: |
           mkdir -p docker/env
-          cat <<EOF > docker/env/prd.ci.env
-          SUPABASE_URL=${SUPABASE_URL}
-          NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL:-${SUPABASE_URL}}
-          SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY:-${NEXT_PUBLIC_SUPABASE_ANON_KEY}}
-          NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY:-${SUPABASE_ANON_KEY}}
-          SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
-          SUPABASE_PROJECT_ID=${SUPABASE_PROJECT_ID}
-          SUPABASE_REGION=${SUPABASE_REGION}
-          REMOTE_DATABASE_URL=${REMOTE_DATABASE_URL}
-          SUPABASE_DB_URL=${REMOTE_DATABASE_URL}
-          SUPABASE_SERVICE_ROLE_JWT_AUDIENCE=authenticated
-          FANZA_API_ID=${FANZA_API_ID}
-          FANZA_API_AFFILIATE_ID=${FANZA_API_AFFILIATE_ID}
-          FANZA_LINK_AFFILIATE_ID=${FANZA_LINK_AFFILIATE_ID}
-          PGSSLMODE=require
-          EOF
+          {
+            echo "SUPABASE_URL=${SUPABASE_URL}"
+            echo "NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL:-${SUPABASE_URL}}"
+            echo "SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY:-${NEXT_PUBLIC_SUPABASE_ANON_KEY}}"
+            echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY:-${SUPABASE_ANON_KEY}}"
+            echo "SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}"
+            echo "SUPABASE_PROJECT_ID=${SUPABASE_PROJECT_ID}"
+            echo "SUPABASE_REGION=${SUPABASE_REGION}"
+            echo "REMOTE_DATABASE_URL=${REMOTE_DATABASE_URL}"
+            echo "SUPABASE_DB_URL=${REMOTE_DATABASE_URL}"
+            echo "SUPABASE_SERVICE_ROLE_JWT_AUDIENCE=authenticated"
+            echo "FANZA_API_ID=${FANZA_API_ID}"
+            echo "FANZA_API_AFFILIATE_ID=${FANZA_API_AFFILIATE_ID}"
+            echo "FANZA_LINK_AFFILIATE_ID=${FANZA_LINK_AFFILIATE_ID}"
+            echo "PGSSLMODE=require"
+          } > docker/env/prd.ci.env
           if [ -n "${SUPABASE_CA_CERT}" ]; then
             echo "${SUPABASE_CA_CERT}" | base64 -d > docker/env/supabase-ca.crt
-            cat <<EOF >> docker/env/prd.ci.env
-          PGSSLROOTCERT=docker/env/supabase-ca.crt
-          sslmode=require
-          sslrootcert=docker/env/supabase-ca.crt
-          EOF
+            {
+              echo "PGSSLROOTCERT=docker/env/supabase-ca.crt"
+              echo "sslmode=require"
+              echo "sslrootcert=docker/env/supabase-ca.crt"
+            } >> docker/env/prd.ci.env
           else
             echo "sslmode=require" >> docker/env/prd.ci.env
           fi
