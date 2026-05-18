@@ -81,7 +81,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onClose }) => {
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
       {message && (
-        <div className={'p-3 rounded-lg text-sm bg-red-100 text-red-800'}>
+        <div className={'p-3 rounded-lg text-sm bg-red-500/10 border border-red-500/30 text-red-400'}>
           {message.text}
         </div>
       )}
@@ -100,8 +100,8 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onClose }) => {
             },
           })}
         />
-        {errors.username && <p className="text-red-500 text-xs">{errors.username.message}</p>}
-        <p className="text-[11px] text-gray-500">※3文字以上、英数字とアンダーバーのみ／小文字に置き換えて管理します</p>
+        {errors.username && <p className="text-red-400 text-xs">{errors.username.message}</p>}
+        <p className="text-[11px] text-[#8b949e]">※3文字以上、英数字とアンダーバーのみ／小文字に置き換えて管理します</p>
       </div>
 
       <Input
@@ -114,7 +114,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onClose }) => {
           maxLength: { value: 30, message: '30文字以内で入力してください' },
         })}
       />
-      {errors.displayName && <p className="text-red-500 text-xs mt-1">{errors.displayName.message}</p>}
+      {errors.displayName && <p className="text-red-400 text-xs mt-1">{errors.displayName.message}</p>}
 
       <div className="space-y-2">
         <Input
@@ -127,7 +127,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onClose }) => {
             minLength: { value: 8, message: 'パスワードは8文字以上です' },
           })}
         />
-        {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password.message}</p>}
+        {errors.password && <p className="text-red-400 text-xs mt-1">{errors.password.message}</p>}
 
         <Input
           id="confirmPassword"
@@ -139,39 +139,35 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onClose }) => {
             validate: (value) => value === password || 'パスワードが一致しません',
           })}
         />
-        {errors.confirmPassword && <p className="text-red-500 text-xs mt-1">{errors.confirmPassword.message}</p>}
+        {errors.confirmPassword && <p className="text-red-400 text-xs mt-1">{errors.confirmPassword.message}</p>}
       </div>
 
-      <div className="space-y-2 text-sm text-gray-700">
+      <div className="space-y-2 text-sm text-[#e6edf3]">
         <label className="flex items-start gap-2">
           <input
             type="checkbox"
-            className="mt-1 h-4 w-4 rounded border-gray-300 text-rose-500 focus:ring-rose-400"
+            className="mt-1 h-4 w-4 rounded border-[#30363d] bg-[#161b22] accent-violet-600 focus:ring-violet-500"
             {...register('isAdult', { required: '18歳以上のみ登録できます' })}
           />
           <span>私は18歳以上です。</span>
         </label>
-        {errors.isAdult && <p className="text-red-500 text-xs">{errors.isAdult.message}</p>}
-        <p className="text-xs text-gray-500">
+        {errors.isAdult && <p className="text-red-400 text-xs">{errors.isAdult.message}</p>}
+        <p className="text-xs text-[#8b949e]">
           利用規約は{' '}
-          <button type="button" onClick={() => setIsTermsOpen(true)} className="text-rose-500 underline">
+          <button type="button" onClick={() => setIsTermsOpen(true)} className="text-violet-400 underline">
             こちら
           </button>
           {' '}から確認できます。
         </p>
       </div>
 
-      <div className={`rounded-full bg-gradient-to-r ${CTA_GRADIENT_CLASS} p-[2px]`}>
-        <button
-          type="submit"
-          className="w-full py-3 px-4 font-bold rounded-full transition-all duration-300 shadow-sm hover:shadow-md disabled:opacity-60 disabled:cursor-not-allowed bg-white hover:bg-gradient-to-r hover:from-[#ADB4E3]/15 hover:via-[#F7BECE]/15 hover:to-[#F9B1C4]/15"
-          disabled={isLoading}
-        >
-          <span className={`bg-gradient-to-r ${CTA_GRADIENT_CLASS} bg-clip-text text-transparent`}>
-            {isLoading ? '登録中...' : '利用規約に同意して登録'}
-          </span>
-        </button>
-      </div>
+      <button
+        type="submit"
+        className="w-full py-3 px-4 font-bold rounded-lg transition-colors bg-violet-600 hover:bg-violet-500 text-white disabled:opacity-60 disabled:cursor-not-allowed"
+        disabled={isLoading}
+      >
+        {isLoading ? '登録中...' : '利用規約に同意して登録'}
+      </button>
 
       <TermsModal open={isTermsOpen} onClose={() => setIsTermsOpen(false)} />
     </form>
