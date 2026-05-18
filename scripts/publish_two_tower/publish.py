@@ -185,6 +185,16 @@ def build_upload_plan(
                 True,
             )
         )
+    item_cat_vocab_path = artifacts_dir / "item_cat_vocab.json"
+    if item_cat_vocab_path.exists():
+        plan.append(
+            (
+                item_cat_vocab_path,
+                f"{prefix}/{run_id}/item_cat_vocab.json",
+                "application/json",
+                False,
+            )
+        )
     if summary_path:
         plan.append((summary_path, f"{prefix}/{run_id}/summary.md", "text/markdown", False))
     return plan
@@ -299,6 +309,7 @@ def cmd_activate(args: argparse.Namespace) -> None:
     # ローカルファイルの有無に関わらずStorageパスを記録（activate時にrunnerにローカルファイルがない場合もある）
     current_entry["item_features_path"] = f"{artifacts_prefix}/{run_id}/item_features.parquet.gz"
     current_entry["user_features_path"] = f"{artifacts_prefix}/{run_id}/user_features.parquet.gz"
+    current_entry["item_cat_vocab_path"] = f"{artifacts_prefix}/{run_id}/item_cat_vocab.json"
 
     manifest["model_name"] = args.model_name
     manifest["current"] = current_entry
@@ -366,6 +377,8 @@ def cmd_fetch(args: argparse.Namespace) -> None:
         downloads.append(("item_features_path", "item_features.parquet", True, True))
     if entry.get("user_features_path"):
         downloads.append(("user_features_path", "user_features.parquet", True, False))
+    if entry.get("item_cat_vocab_path"):
+        downloads.append(("item_cat_vocab_path", "item_cat_vocab.json", False, False))
 
     written: List[Dict[str, str]] = []
     for key, filename, decompress, required in downloads:

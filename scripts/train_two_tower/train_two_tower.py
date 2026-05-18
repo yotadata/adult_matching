@@ -373,7 +373,7 @@ def build_feature_vectors(
             item_vectors[str(getattr(row, item_key))] = vec
     item_dim = item_space.base_dim + len(item_numeric_fields)
 
-    return user_vectors, item_vectors, user_dim, item_dim, user_space.multi_vocab, item_space.multi_vocab
+    return user_vectors, item_vectors, user_dim, item_dim, user_space.multi_vocab, item_space.multi_vocab, item_space.cat_vocab
 
 
 def compute_embeddings(model: TwoTower, vectors: Dict[str, np.ndarray], encode_fn, device: torch.device, id_key: str) -> pd.DataFrame:
@@ -515,7 +515,7 @@ def main() -> None:
 
         item_key = args.item_key if args.item_key in item_df.columns else "video_id"
 
-        user_vectors, item_vectors, user_dim, item_dim, user_multi_vocab, item_multi_vocab = build_feature_vectors(
+        user_vectors, item_vectors, user_dim, item_dim, user_multi_vocab, item_multi_vocab, item_cat_vocab = build_feature_vectors(
             user_df=user_df,
             item_df=item_df,
             item_key=item_key,
@@ -630,6 +630,15 @@ def main() -> None:
         meta_path = cfg.run_dir / "model_meta.json"
         with meta_path.open("w") as f:
             json.dump(meta, f, ensure_ascii=False, indent=2)
+
+        # 訓練時の categorical vocab をそのまま保存（推論時に語彙再構築のズレを防ぐ）
+        cat_vocab_path = cfg.run_dir / "item_cat_vocab.json"
+        with cat_vocab_path.open("w") as f:
+            json.dump(
+                {field: sorted(vocab.keys()) for field, vocab in item_cat_vocab.items()},
+                f,
+                ensure_ascii=False,
+            )
 
         # Copy item_features.parquet to the run directory
         shutil.copy(cfg.item_features_path, cfg.run_dir / "item_features.parquet")
