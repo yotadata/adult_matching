@@ -65,6 +65,12 @@ def parse_args() -> argparse.Namespace:
         default=Path("ml/artifacts/latest/user_features.parquet"),
         help="Training-time user_features parquet used to include preferred_tag_ids in tag vocab.",
     )
+    parser.add_argument(
+        "--item-cat-vocab",
+        type=Path,
+        default=Path("ml/artifacts/latest/item_cat_vocab.json"),
+        help="訓練時に保存した categorical field vocab JSON。存在する場合はparquetからの再構築より優先される。",
+    )
     parser.add_argument("--output-dir", type=Path, default=Path("ml/artifacts/live/video_embeddings"), help="Directory to write embeddings.")
     parser.add_argument("--output-name", type=str, default="video_embeddings.parquet", help="Output parquet filename.")
     parser.add_argument("--limit", type=int, default=None, help="Optional maximum number of videos to encode (for debugging).")
@@ -340,13 +346,18 @@ def build_item_feature_space(
     max_tag_features: Optional[int],
     max_performer_features: Optional[int],
     user_df: Optional[pd.DataFrame] = None,
+    item_cat_vocab: Optional[Dict[str, List[str]]] = None,
 ) -> ItemFeatureBundle:
-    cat_vocabs = {
-        "source": reference_df.get("source", []).astype(str),
-        "maker": reference_df.get("maker", []).astype(str),
-        "label": reference_df.get("label", []).astype(str),
-        "series": reference_df.get("series", []).astype(str),
-    }
+    if item_cat_vocab is not None:
+        # 訓練時に保存した vocab をそのまま使用（再構築のズレを完全排除）
+        cat_vocabs = item_cat_vocab
+    else:
+        cat_vocabs = {
+            "source": reference_df.get("source", []).astype(str),
+            "maker": reference_df.get("maker", []).astype(str),
+            "label": reference_df.get("label", []).astype(str),
+            "series": reference_df.get("series", []).astype(str),
+        }
 
     tag_counter: Counter[str] = Counter()
     for values in reference_df.get("tag_ids", []):
@@ -463,12 +474,20 @@ def main() -> None:
     user_ref_df: Optional[pd.DataFrame] = None
     if args.reference_user_features and args.reference_user_features.exists():
         user_ref_df = pd.read_parquet(args.reference_user_features)
+    item_cat_vocab: Optional[Dict[str, List[str]]] = None
+    if args.item_cat_vocab and args.item_cat_vocab.exists():
+        with args.item_cat_vocab.open() as f:
+            item_cat_vocab = json.load(f)
+        print(json.dumps({"info": "item_cat_vocab_loaded", "path": str(args.item_cat_vocab)}, ensure_ascii=False))
+    else:
+        print(json.dumps({"warn": "item_cat_vocab_not_found_rebuilding_from_parquet", "path": str(args.item_cat_vocab)}, ensure_ascii=False))
     bundle = build_item_feature_space(
         reference_df,
         use_price_feature=use_price_feature,
         max_tag_features=max_tag_features,
         max_performer_features=max_performer_features,
         user_df=user_ref_df,
+        item_cat_vocab=item_cat_vocab,
     )
 
     cat_field_sizes = {f: len(v) for f, v in bundle.item_space.cat_vocab.items()}
