@@ -1,13 +1,15 @@
 -- decision_type に surface を含める
 -- like/nope → swipe_like/grid_like/swipe_nope
 
--- 1. 既存データを更新（全て swipe 由来とみなす）
+-- 1. CHECK 制約を先に外す（UPDATE が通るように）
+alter table public.user_video_decisions
+  drop constraint if exists user_video_decisions_decision_type_check;
+
+-- 2. 既存データを更新（全て swipe 由来とみなす）
 update public.user_video_decisions set decision_type = 'swipe_like' where decision_type = 'like';
 update public.user_video_decisions set decision_type = 'swipe_nope' where decision_type = 'nope';
 
--- 2. CHECK 制約を更新
-alter table public.user_video_decisions
-  drop constraint if exists user_video_decisions_decision_type_check;
+-- 3. 新しい CHECK 制約を追加
 alter table public.user_video_decisions
   add constraint user_video_decisions_decision_type_check
   check (decision_type in ('swipe_like', 'swipe_nope', 'grid_like'));

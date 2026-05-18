@@ -533,6 +533,40 @@ async function ingestSource(
   return { success: successCount, failure: failureCount, fetched: fetchedCount };
 }
 
+async function updateRankings() {
+  console.log('[ingest_fanza] === Starting ranking update ===');
+  const rankingSources = [
+    { service: 'digital', floor: 'videoa' },
+    { service: 'digital', floor: 'anime' },
+  ];
+  const hits = 100;
+  const maxRank = 500;
+
+  for (const { service, floor } of rankingSources) {
+    console.log(`\n[ingest_fanza] Fetching rankings: ${service}/${floor}`);
+    let rank = 1;
+
+    for (let offset = 1; offset <= maxRank; offset += hits) {
+      const result = await fetchFanzaApiItems({ hits, offset, sort: 'rank' }, service, floor);
+      if (!result?.items?.length) break;
+
+      for (const item of result.items) {
+        if (!item.content_id) { rank++; continue; }
+        const { error } = await supabase
+          .from('videos')
+          .update({ fanza_rank: rank, fanza_rank_updated_at: new Date().toISOString() })
+          .eq('external_id', item.content_id);
+        if (error) {
+          console.warn(`[rank] update failed external_id=${item.content_id}: ${error.message}`);
+        }
+        rank++;
+      }
+    }
+    console.log(`[ingest_fanza] Rankings updated for ${service}/${floor} (${rank - 1} items)`);
+  }
+  console.log('[ingest_fanza] === Ranking update complete ===');
+}
+
 async function main() {
   const today = new Date();
   const formatDate = (date: Date) => date.toISOString().split('T')[0];
@@ -555,6 +589,13 @@ async function main() {
   }
 
   console.log(`Fetching videos released between ${gteReleaseDate} and ${lteReleaseDate}...`);
+
+  // ランキング更新モード
+  const rankingOnly = process.env.RANKING_ONLY === 'true';
+  if (rankingOnly) {
+    await updateRankings();
+    return;
+  }
 
   const sources = [
     { service: 'digital', floor: 'videoa', source: 'FANZA' },

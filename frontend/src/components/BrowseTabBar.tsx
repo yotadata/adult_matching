@@ -185,7 +185,7 @@ function BrowseTabBarInner() {
             {lv && (
               <div
                 className="flex items-center gap-1 px-2 py-0.5 rounded-full border bg-[#0d1117]/80"
-                style={{ borderColor: lv.borderColor, boxShadow: `0 0 8px 1px ${lv.borderColor}` }}
+                style={{ borderColor: lv.borderColor }}
               >
                 <lv.Icon size={12} className={lv.iconColor} strokeWidth={2} />
                 <span className={`text-[10px] font-extrabold bg-gradient-to-r ${lv.color} bg-clip-text text-transparent whitespace-nowrap`}>
