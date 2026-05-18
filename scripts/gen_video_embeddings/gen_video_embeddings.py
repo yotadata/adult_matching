@@ -416,14 +416,16 @@ def build_item_vectors(
         print(
             json.dumps(
                 {
-                    "warn": "item_feature_dim_mismatch",
+                    "error": "item_feature_dim_mismatch",
                     "expected": expected_dim,
                     "computed": computed_dim,
+                    "hint": "reference_item_features と reference_user_features の両方が訓練時と一致しているか確認してください",
                 },
                 ensure_ascii=False,
             ),
             file=sys.stderr,
         )
+        sys.exit(1)
     return vectors
 
 

@@ -197,31 +197,98 @@ function GridPage() {
   }, [likedIds]);
 
   return (
-    <div className="min-h-screen bg-[#0d1117] pt-[52px]">
+    <div className="min-h-screen bg-[#0d1117]" style={{ paddingTop: isDebug ? '84px' : '52px' }}>
       {/* ゲスト向けログイン nudge トースト */}
       {showLoginNudge && isLoggedIn === false && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 bg-[#1c1f26] border border-violet-500/50 rounded-2xl px-4 py-3 shadow-2xl shadow-violet-900/30 max-w-[320px] w-[90vw]">
-          <Heart size={18} className="text-pink-400 flex-shrink-0" fill="currentColor" />
-          <div className="flex-1 min-w-0">
-            <p className="text-white text-[12px] font-bold leading-snug">いいね履歴を保存しませんか？</p>
-            <p className="text-[#8b949e] text-[10px] mt-0.5">ログインするとAIがあなたの好みを学習します</p>
+        <>
+          {/* モバイル: 小さいトースト */}
+          <div className="sm:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 bg-[#1c1f26] border border-violet-500/50 rounded-2xl px-4 py-3 shadow-2xl shadow-violet-900/30 max-w-[320px] w-[90vw]">
+            <Heart size={18} className="text-pink-400 flex-shrink-0" fill="currentColor" />
+            <div className="flex-1 min-w-0">
+              <p className="text-white text-[12px] font-bold leading-snug">いいね履歴を保存しませんか？</p>
+              <p className="text-[#8b949e] text-[10px] mt-0.5">ログインするとAIがあなたの好みを学習します</p>
+            </div>
+            <div className="flex flex-col gap-1 flex-shrink-0">
+              <button
+                onClick={() => { setShowLoginNudge(false); window.dispatchEvent(new Event('open-auth-modal')); }}
+                className="px-3 py-1 rounded-lg bg-violet-600 hover:bg-violet-500 text-white text-[11px] font-bold transition-colors"
+              >
+                登録
+              </button>
+              <button
+                onClick={() => setShowLoginNudge(false)}
+                className="px-3 py-1 rounded-lg text-[#8b949e] hover:text-white text-[11px] transition-colors text-center"
+              >
+                後で
+              </button>
+            </div>
           </div>
-          <div className="flex flex-col gap-1 flex-shrink-0">
-            <button
-              onClick={() => { setShowLoginNudge(false); window.dispatchEvent(new Event('open-auth-modal')); }}
-              className="px-3 py-1 rounded-lg bg-violet-600 hover:bg-violet-500 text-white text-[11px] font-bold transition-colors"
-            >
-              登録
-            </button>
-            <button
-              onClick={() => setShowLoginNudge(false)}
-              className="px-3 py-1 rounded-lg text-[#8b949e] hover:text-white text-[11px] transition-colors text-center"
-            >
-              後で
-            </button>
+          {/* PC: 画面下部の幅広バナー */}
+          <div className="hidden sm:flex fixed bottom-0 left-0 right-0 z-50 items-center justify-between gap-6 bg-gradient-to-r from-violet-950/95 via-[#1c1f26]/98 to-violet-950/95 border-t border-violet-500/40 px-8 py-4 shadow-2xl shadow-violet-900/40 backdrop-blur-sm">
+            <div className="flex items-center gap-4">
+              <div className="w-10 h-10 rounded-full bg-pink-500/20 border border-pink-500/40 flex items-center justify-center flex-shrink-0">
+                <Heart size={20} className="text-pink-400" fill="currentColor" />
+              </div>
+              <div>
+                <p className="text-white text-sm font-bold">いいね履歴を保存しませんか？</p>
+                <p className="text-[#8b949e] text-xs mt-0.5">ログインするとAIがあなたの性癖を学習し、より精度の高いおすすめが届きます</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3 flex-shrink-0">
+              <button
+                onClick={() => setShowLoginNudge(false)}
+                className="px-4 py-2 rounded-lg text-[#8b949e] hover:text-white text-sm transition-colors"
+              >
+                後で
+              </button>
+              <button
+                onClick={() => { setShowLoginNudge(false); window.dispatchEvent(new Event('open-auth-modal')); }}
+                className="px-6 py-2 rounded-lg bg-violet-600 hover:bg-violet-500 text-white text-sm font-bold transition-colors shadow-lg shadow-violet-900/50"
+              >
+                無料で登録
+              </button>
+            </div>
           </div>
-        </div>
+        </>
       )}
+      {/* デバッグパネル */}
+      {isDebug && videos.length > 0 && (() => {
+        const counts: Record<string, number> = {};
+        const scores: Record<string, number[]> = {};
+        for (const v of videos) {
+          counts[v.source] = (counts[v.source] ?? 0) + 1;
+          if (v.score != null) {
+            if (!scores[v.source]) scores[v.source] = [];
+            scores[v.source].push(v.score);
+          }
+        }
+        const total = videos.length;
+        const entries = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+        return (
+          <div className="fixed top-[52px] left-0 right-0 z-40 bg-[#0d1117]/95 border-b border-[#30363d] px-3 py-2 text-[11px] font-mono">
+            <div className="max-w-4xl mx-auto flex flex-wrap gap-x-4 gap-y-1 items-center">
+              <span className="text-[#8b949e]">total: {total}</span>
+              {entries.map(([src, cnt]) => {
+                const avg = scores[src]?.length
+                  ? (scores[src].reduce((a, b) => a + b, 0) / scores[src].length).toFixed(3)
+                  : '–';
+                const max = scores[src]?.length
+                  ? Math.max(...scores[src]).toFixed(3)
+                  : '–';
+                const badgeClass = SOURCE_BADGE_COLORS[src] ?? 'bg-gray-600 text-white';
+                return (
+                  <span key={src} className="flex items-center gap-1.5">
+                    <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${badgeClass}`}>{src}</span>
+                    <span className="text-[#e6edf3]">{cnt} ({((cnt / total) * 100).toFixed(0)}%)</span>
+                    <span className="text-yellow-300">avg:{avg}</span>
+                    <span className="text-yellow-500">max:{max}</span>
+                  </span>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })()}
       {/* 説明バナー */}
       <div className="max-w-4xl mx-auto px-3 pt-4">
       <div className="mt-3 mb-5 rounded-xl border border-violet-500/40 bg-gradient-to-br from-violet-950/60 to-[#161b22] overflow-hidden shadow-lg shadow-violet-900/20">
