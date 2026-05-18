@@ -513,6 +513,9 @@ export default function Home() {
       }
     }
 
+    if (decisionType === 'like') {
+      window.dispatchEvent(new Event('like-added'));
+    }
     emitDecisionEvents(card, decisionType);
     trackEvent('swipe_action', {
       direction,
