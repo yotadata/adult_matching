@@ -22,7 +22,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const to = from + PAGE_SIZE - 1;
 
     const { data, error } = await supabase
-      .from('books')
+      .from('videos')
       .select('id, created_at')
       .order('created_at', { ascending: false })
       .range(from, to);
@@ -31,7 +31,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
     for (const v of data) {
       entries.push({
-        url: `${SITE_URL}/books/${v.id}`,
+        url: `${SITE_URL}/videos/${v.id}`,
         lastModified: v.created_at ? new Date(v.created_at) : new Date(),
         changeFrequency: 'monthly',
         priority: 0.7,
