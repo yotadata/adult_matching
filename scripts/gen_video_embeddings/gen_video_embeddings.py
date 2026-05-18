@@ -416,18 +416,16 @@ def build_item_vectors(
         print(
             json.dumps(
                 {
-                    "warn": "item_feature_dim_mismatch",
+                    "error": "item_feature_dim_mismatch",
                     "expected": expected_dim,
                     "computed": computed_dim,
+                    "hint": "reference_item_features と reference_user_features の両方が訓練時と一致しているか確認してください",
                 },
                 ensure_ascii=False,
             ),
             file=sys.stderr,
         )
-        # 不足分をゼロパディング（ユーザーのみ持つタグ等、動画側では常に0になる次元）
-        if computed_dim < expected_dim:
-            for vid in vectors:
-                vectors[vid] = np.pad(vectors[vid], (0, expected_dim - computed_dim))
+        sys.exit(1)
     return vectors
 
 
