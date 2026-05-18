@@ -558,6 +558,7 @@ async function main() {
 
   const sources = [
     { service: 'digital', floor: 'videoa', source: 'FANZA' },
+    { service: 'digital', floor: 'anime',  source: 'FANZA_ANIME' },
   ];
 
   let totalSuccess = 0;
