@@ -22,6 +22,7 @@ type VideoItem = {
 };
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 const FANZA_AFFILIATE_ID = process.env.NEXT_PUBLIC_FANZA_AFFILIATE_ID ?? 'yotadata2-001';
 const EMBED_USER_INTERVAL = 10; // N回いいねするたびにembed-userを呼ぶ
 
@@ -71,10 +72,13 @@ function GridPage() {
     setLoading(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-      if (session?.access_token) {
-        headers['Authorization'] = `Bearer ${session.access_token}`;
-      }
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': session?.access_token
+          ? `Bearer ${session.access_token}`
+          : `Bearer ${SUPABASE_ANON_KEY}`,
+      };
       const res = await fetch(`${SUPABASE_URL}/functions/v1/videos-grid`, {
         method: 'POST',
         headers,
