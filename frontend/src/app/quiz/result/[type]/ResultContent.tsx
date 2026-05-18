@@ -496,7 +496,60 @@ export function ResultContent({ typeKey }: { typeKey: QuizTypeKey }) {
 
           <h2 className="text-[28px] font-black leading-tight mb-1" style={{ color: '#f0e6d3' }}>{quizType.name}</h2>
           <p className="text-sm font-bold mb-4" style={{ color: quizType.color }}>{quizType.tagline}</p>
-          <p className="text-sm leading-relaxed mb-6" style={{ color: 'rgba(200,180,140,0.7)' }}>{quizType.description}</p>
+          <p className="text-sm leading-relaxed mb-4" style={{ color: 'rgba(200,180,140,0.7)' }}>{quizType.description}</p>
+
+          {/* アコーディオン: このタイプの性癖 */}
+          <div className="mb-6">
+            <button
+              onClick={() => setShowDetail(v => !v)}
+              className="w-full flex items-center justify-between rounded-2xl px-4 py-3 active:scale-[0.98] transition-transform"
+              style={{
+                background: showDetail ? `${quizType.color}20` : 'rgba(180,150,80,0.08)',
+                border: `1px solid ${showDetail ? quizType.color + '50' : 'rgba(180,150,80,0.2)'}`,
+              }}
+            >
+              <span className="text-[13px] font-black" style={{ color: showDetail ? quizType.color : 'rgba(200,180,140,0.7)' }}>
+                🔞 このタイプの性癖
+              </span>
+              <span
+                className="text-[11px] transition-transform duration-200"
+                style={{ color: 'rgba(180,150,80,0.5)', transform: showDetail ? 'rotate(180deg)' : 'rotate(0deg)', display: 'inline-block' }}
+              >▼</span>
+            </button>
+
+            {showDetail && (
+              <div className="mt-3 space-y-4">
+                <p className="text-sm leading-relaxed px-1" style={{ color: 'rgba(200,180,140,0.8)' }}>
+                  {quizType.detailDescription}
+                </p>
+
+                <div>
+                  <p className="text-[10px] font-black tracking-widest uppercase mb-2 px-1" style={{ color: 'rgba(180,150,80,0.5)' }}>好きなプレイ</p>
+                  <div className="flex flex-wrap gap-2 px-1">
+                    {quizType.favPlay.map((play, i) => (
+                      <span
+                        key={i}
+                        className="text-[11px] font-bold px-2.5 py-1 rounded-full"
+                        style={{ background: `${quizType.color}18`, color: quizType.color, border: `1px solid ${quizType.color}45` }}
+                      >
+                        {play}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                <div
+                  className="rounded-2xl p-4"
+                  style={{ background: `${quizType.color}12`, border: `1px solid ${quizType.color}30` }}
+                >
+                  <p className="text-[10px] font-black tracking-widest uppercase mb-2" style={{ color: 'rgba(180,150,80,0.5)' }}>あるある</p>
+                  <p className="text-sm leading-relaxed" style={{ color: 'rgba(200,180,140,0.8)' }}>
+                    {quizType.trivia}
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
 
           <div className="space-y-4 pt-5" style={{ borderTop: '1px solid rgba(180,150,80,0.2)' }}>
             <p className="text-[10px] font-black tracking-widest uppercase" style={{ color: 'rgba(180,150,80,0.5)' }}>✦ あなたの傾向 ✦</p>
@@ -539,52 +592,6 @@ export function ResultContent({ typeKey }: { typeKey: QuizTypeKey }) {
                 </div>
               );
             })}
-          </div>
-
-          {/* アコーディオン: もっと詳しく */}
-          <div className="mt-5" style={{ borderTop: '1px solid rgba(180,150,80,0.2)' }}>
-            <button
-              onClick={() => setShowDetail(v => !v)}
-              className="w-full flex items-center justify-between pt-4 pb-2"
-            >
-              <span className="text-[11px] font-black tracking-widest uppercase" style={{ color: 'rgba(180,150,80,0.6)' }}>
-                ✦ もっと詳しく見る ✦
-              </span>
-              <span className="text-[13px] transition-transform duration-200" style={{ color: 'rgba(180,150,80,0.5)', transform: showDetail ? 'rotate(180deg)' : 'rotate(0deg)', display: 'inline-block' }}>▼</span>
-            </button>
-
-            {showDetail && (
-              <div className="space-y-5 pb-2">
-                <p className="text-sm leading-relaxed" style={{ color: 'rgba(200,180,140,0.75)' }}>
-                  {quizType.detailDescription}
-                </p>
-
-                <div>
-                  <p className="text-[10px] font-black tracking-widest uppercase mb-2" style={{ color: 'rgba(180,150,80,0.5)' }}>好きなプレイ</p>
-                  <div className="flex flex-wrap gap-2">
-                    {quizType.favPlay.map((play, i) => (
-                      <span
-                        key={i}
-                        className="text-[11px] font-bold px-2.5 py-1 rounded-full"
-                        style={{ background: `${quizType.color}18`, color: quizType.color, border: `1px solid ${quizType.color}45` }}
-                      >
-                        {play}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-
-                <div
-                  className="rounded-2xl p-4"
-                  style={{ background: `${quizType.color}12`, border: `1px solid ${quizType.color}30` }}
-                >
-                  <p className="text-[10px] font-black tracking-widest uppercase mb-2" style={{ color: 'rgba(180,150,80,0.5)' }}>あるある</p>
-                  <p className="text-sm leading-relaxed" style={{ color: 'rgba(200,180,140,0.8)' }}>
-                    {quizType.trivia}
-                  </p>
-                </div>
-              </div>
-            )}
           </div>
 
           <p className="text-[10px] font-bold tracking-widest mt-5 text-right" style={{ color: 'rgba(180,150,80,0.35)' }}>✦ 偏愛16診断 ✦</p>
