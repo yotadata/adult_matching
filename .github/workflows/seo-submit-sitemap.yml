@@ -1,0 +1,45 @@
+name: "[SEO] Submit Sitemap"
+
+on:
+  workflow_run:
+    workflows: ["[AppRelease] Ops - Deploy Frontend to Vercel"]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  submit:
+    name: Ping Sitemap to Search Engines
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    env:
+      SITEMAP_URL: "https://seihekilab.com/sitemap.xml"
+    steps:
+      - name: Ping Google
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+            "https://www.google.com/ping?sitemap=${SITEMAP_URL}")
+          echo "Google ping status: $STATUS"
+          if [ "$STATUS" -ge 400 ]; then
+            echo "::warning::Google ping returned $STATUS"
+          fi
+
+      - name: Ping Bing
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+            "https://www.bing.com/ping?sitemap=${SITEMAP_URL}")
+          echo "Bing ping status: $STATUS"
+          if [ "$STATUS" -ge 400 ]; then
+            echo "::warning::Bing ping returned $STATUS"
+          fi
+
+      - name: Notify Discord
+        if: always()
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: |
+          if [ -n "$DISCORD_WEBHOOK_URL" ]; then
+            curl -s -X POST -H "Content-Type: application/json" \
+              -d "{\"content\": \"[SEO] サイトマップ送信完了: ${SITEMAP_URL}\"}" \
+              "$DISCORD_WEBHOOK_URL"
+          fi
