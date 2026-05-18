@@ -6,6 +6,7 @@ import { X } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
 import { isUpcomingRelease } from '@/lib/videoMeta';
+import { trackEvent } from '@/lib/analytics';
 
 type Performer = { id: string; name: string };
 type Tag = { id: string; name: string };
@@ -161,7 +162,12 @@ export default function VideoDetailModal({ isOpen, onClose, videoId }: { isOpen:
                       <div>
                         <div className="border rounded-lg p-3">
                           <div className="text-sm text-gray-700 mb-2">外部サイトで見る</div>
-                          <Link href={video.product_url || '#'} target="_blank" className="block w-full text-center bg-amber-500 text-white font-bold rounded-lg py-2">
+                          <Link
+                            href={video.product_url || '#'}
+                            target="_blank"
+                            onClick={() => trackEvent('fanza_link_click', { video_id: video.id, source: 'modal' })}
+                            className="block w-full text-center bg-amber-500 text-white font-bold rounded-lg py-2"
+                          >
                             商品ページへ
                           </Link>
                         </div>
