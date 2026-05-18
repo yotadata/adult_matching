@@ -36,7 +36,7 @@ jobs:
       - name: Repair failed migrations
         working-directory: supabase
         run: |
-          for v in 20260517020453 20260517020512 20260517020530 20260517111741 20260518200000 20260518300000; do
+          for v in 20260517020453 20260517020512 20260517020530 20260517111741 20260518100000 20260518200000 20260518300000 20260518400000; do
             supabase migration repair --status reverted "$v" || true
           done
 
