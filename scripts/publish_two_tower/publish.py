@@ -295,17 +295,9 @@ def cmd_activate(args: argparse.Namespace) -> None:
     if onnx_data_path:
         current_entry["onnx_data_path"] = onnx_data_path
 
-    item_features_path = None
-    if (artifacts_dir / "item_features.parquet").exists():
-        item_features_path = f"{artifacts_prefix}/{run_id}/item_features.parquet.gz"
-    if item_features_path:
-        current_entry["item_features_path"] = item_features_path
-
-    user_features_path = None
-    if (artifacts_dir / "user_features.parquet").exists():
-        user_features_path = f"{artifacts_prefix}/{run_id}/user_features.parquet.gz"
-    if user_features_path:
-        current_entry["user_features_path"] = user_features_path
+    # ローカルファイルの有無に関わらずStorageパスを記録（activate時にrunnerにローカルファイルがない場合もある）
+    current_entry["item_features_path"] = f"{artifacts_prefix}/{run_id}/item_features.parquet.gz"
+    current_entry["user_features_path"] = f"{artifacts_prefix}/{run_id}/user_features.parquet.gz"
 
     manifest["model_name"] = args.model_name
     manifest["current"] = current_entry
