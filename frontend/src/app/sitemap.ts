@@ -22,7 +22,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const to = from + PAGE_SIZE - 1;
 
     const { data, error } = await supabase
-      .from('books')
+      .from('videos')
       .select('id, created_at')
       .order('created_at', { ascending: false })
       .range(from, to);
@@ -31,7 +31,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
     for (const v of data) {
       entries.push({
-        url: `${SITE_URL}/books/${v.id}`,
+        url: `${SITE_URL}/videos/${v.id}`,
         lastModified: v.created_at ? new Date(v.created_at) : new Date(),
         changeFrequency: 'monthly',
         priority: 0.7,
@@ -52,6 +52,19 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: new Date(),
       changeFrequency: 'weekly',
       priority: 0.8,
+    });
+  }
+
+  // 女優LPを全件追加
+  const { data: performers } = await supabase
+    .from('performers')
+    .select('id');
+  for (const p of performers ?? []) {
+    entries.push({
+      url: `${SITE_URL}/performers/${p.id}`,
+      lastModified: new Date(),
+      changeFrequency: 'weekly',
+      priority: 0.7,
     });
   }
 
