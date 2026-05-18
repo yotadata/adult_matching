@@ -557,8 +557,7 @@ async function main() {
   console.log(`Fetching videos released between ${gteReleaseDate} and ${lteReleaseDate}...`);
 
   const sources = [
-    { service: 'digital', floor: 'videoa',         source: 'FANZA' },
-    { service: 'doujin',  floor: 'digital_doujin', source: 'FANZA_DOUJIN' },
+    { service: 'digital', floor: 'videoa', source: 'FANZA' },
   ];
 
   let totalSuccess = 0;
