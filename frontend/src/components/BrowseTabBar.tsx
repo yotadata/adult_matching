@@ -19,15 +19,16 @@ type Level = {
   Icon: LucideIcon;
   color: string;
   iconColor: string;
+  borderColor: string;
 };
 
 const LEVELS: Level[] = [
-  { min: 0,   max: 1,   label: '未診断',       Icon: Snail,   color: 'from-gray-500 to-gray-400',     iconColor: 'text-gray-400' },
-  { min: 1,   max: 10,  label: '学習中',       Icon: Rabbit,  color: 'from-blue-500 to-cyan-400',     iconColor: 'text-cyan-400' },
-  { min: 10,  max: 30,  label: '性癖覚醒中',   Icon: Cat,     color: 'from-yellow-500 to-amber-400',  iconColor: 'text-amber-400' },
-  { min: 30,  max: 100, label: '性癖確立',     Icon: Dog,     color: 'from-orange-500 to-red-400',    iconColor: 'text-orange-400' },
-  { min: 100, max: 200, label: '性癖マスター', Icon: Bird,    color: 'from-violet-500 to-purple-400', iconColor: 'text-violet-400' },
-  { min: 200, max: 400, label: '変態紳士',     Icon: Crown,   color: 'from-yellow-400 to-pink-400',   iconColor: 'text-yellow-400' },
+  { min: 0,   max: 1,   label: '未診断',       Icon: Snail,   color: 'from-gray-500 to-gray-400',     iconColor: 'text-gray-400',   borderColor: 'rgba(156,163,175,0.4)' },
+  { min: 1,   max: 10,  label: '学習中',       Icon: Rabbit,  color: 'from-blue-500 to-cyan-400',     iconColor: 'text-cyan-400',   borderColor: 'rgba(34,211,238,0.4)'  },
+  { min: 10,  max: 30,  label: '性癖覚醒中',   Icon: Cat,     color: 'from-yellow-500 to-amber-400',  iconColor: 'text-amber-400',  borderColor: 'rgba(251,191,36,0.4)'  },
+  { min: 30,  max: 100, label: '性癖確立',     Icon: Dog,     color: 'from-orange-500 to-red-400',    iconColor: 'text-orange-400', borderColor: 'rgba(251,146,60,0.4)'  },
+  { min: 100, max: 200, label: '性癖マスター', Icon: Bird,    color: 'from-violet-500 to-purple-400', iconColor: 'text-violet-400', borderColor: 'rgba(167,139,250,0.4)' },
+  { min: 200, max: 400, label: '変態紳士',     Icon: Crown,   color: 'from-yellow-400 to-pink-400',   iconColor: 'text-yellow-400', borderColor: 'rgba(250,204,21,0.4)'  },
 ];
 
 function getLevel(count: number): Level {
@@ -180,9 +181,12 @@ function BrowseTabBarInner() {
           </div>
 
           {/* 中央: レベル表示 */}
-          <div className="flex items-center justify-center gap-1">
+          <div className="flex items-center justify-center">
             {lv && (
-              <>
+              <div
+                className="flex items-center gap-1 px-2 py-0.5 rounded-full border bg-[#0d1117]/80"
+                style={{ borderColor: lv.borderColor }}
+              >
                 <lv.Icon size={12} className={lv.iconColor} strokeWidth={2} />
                 <span className={`text-[10px] font-extrabold bg-gradient-to-r ${lv.color} bg-clip-text text-transparent whitespace-nowrap`}>
                   {lv.label}
@@ -192,7 +196,7 @@ function BrowseTabBarInner() {
                   <span className="text-[#e6edf3] font-bold">{likeCount ?? 0}</span>
                   {nextLv && <span>/{nextLv.min}</span>}
                 </span>
-              </>
+              </div>
             )}
           </div>
 
