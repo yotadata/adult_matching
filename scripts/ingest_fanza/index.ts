@@ -536,14 +536,18 @@ async function ingestSource(
 async function updateRankings() {
   console.log('[ingest_fanza] === Starting ranking update ===');
   const rankingSources = [
-    { service: 'digital', floor: 'videoa' },
-    { service: 'digital', floor: 'anime' },
+    { service: 'digital', floor: 'videoa', source: 'fanza_videoa' },
+    { service: 'digital', floor: 'anime',  source: 'fanza_anime'  },
   ];
   const hits = 100;
   const maxRank = 500;
+  const updatedAt = new Date().toISOString();
 
-  for (const { service, floor } of rankingSources) {
+  for (const { service, floor, source } of rankingSources) {
     console.log(`\n[ingest_fanza] Fetching rankings: ${service}/${floor}`);
+
+    // 今回取得したランキングデータを収集
+    const rows: { source: string; rank: number; external_id: string; video_id: string | null; updated_at: string }[] = [];
     let rank = 1;
 
     for (let offset = 1; offset <= maxRank; offset += hits) {
@@ -552,17 +556,43 @@ async function updateRankings() {
 
       for (const item of result.items) {
         if (!item.content_id) { rank++; continue; }
-        const { error } = await supabase
+
+        // video_id を external_id から解決
+        const { data: video } = await supabase
           .from('videos')
-          .update({ fanza_rank: rank, fanza_rank_updated_at: new Date().toISOString() })
-          .eq('external_id', item.content_id);
-        if (error) {
-          console.warn(`[rank] update failed external_id=${item.content_id}: ${error.message}`);
-        }
+          .select('id')
+          .eq('external_id', item.content_id)
+          .maybeSingle();
+
+        rows.push({
+          source,
+          rank,
+          external_id: item.content_id,
+          video_id: video?.id ?? null,
+          updated_at: updatedAt,
+        });
         rank++;
       }
     }
-    console.log(`[ingest_fanza] Rankings updated for ${service}/${floor} (${rank - 1} items)`);
+
+    // 対象ソースを全削除してから挿入（圏外落ちを自動的に除去）
+    const { error: delError } = await supabase
+      .from('fanza_rankings')
+      .delete()
+      .eq('source', source);
+    if (delError) {
+      console.warn(`[rank] delete failed for source=${source}: ${delError.message}`);
+      continue;
+    }
+
+    if (rows.length > 0) {
+      const { error: insError } = await supabase.from('fanza_rankings').insert(rows);
+      if (insError) {
+        console.warn(`[rank] insert failed for source=${source}: ${insError.message}`);
+      }
+    }
+
+    console.log(`[ingest_fanza] Rankings refreshed for ${source}: ${rows.length} items`);
   }
   console.log('[ingest_fanza] === Ranking update complete ===');
 }
