@@ -9,8 +9,8 @@ on:
         default: 'false'
         type: boolean
       run_id:
-        description: "任意の識別子（省略時は UTC timestamp）"
-        required: false
+        description: "リリースする train の run_id（ml-train-model で出力されたもの）"
+        required: true
       lookback_days:
         description: "VIDEO 埋め込み生成の遡り日数"
         required: false
@@ -22,7 +22,7 @@ on:
 
 jobs:
   release:
-    name: Sync Embeddings & Publish
+    name: Activate & Sync Embeddings
     runs-on: ubuntu-latest
     if: ${{ github.event.inputs.approved == 'true' }}
     env:
@@ -38,41 +38,17 @@ jobs:
       FANZA_API_AFFILIATE_ID: ${{ secrets.FANZA_API_AFFILIATE_ID }}
       FANZA_LINK_AFFILIATE_ID: ${{ secrets.FANZA_LINK_AFFILIATE_ID }}
       SUPABASE_CA_CERT: ${{ secrets.SUPABASE_CA_CERT }}
+      RELEASE_RUN_ID: ${{ github.event.inputs.run_id }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Download trained model artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: two_tower_model
-          path: ml/artifacts/runs
-
-      - name: Link latest artifacts
-        run: |
-          RUN_DIR=$(ls -td ml/artifacts/runs/*/ 2>/dev/null | head -1)
-          if [ -z "$RUN_DIR" ]; then
-            echo "No model artifacts found in ml/artifacts/runs/" >&2
-            exit 1
-          fi
-          echo "Using model from: $RUN_DIR"
-          rm -rf ml/artifacts/latest
-          cp -r "$RUN_DIR" ml/artifacts/latest
-
-      - name: Determine release run id
-        run: |
-          if [ -n "${{ github.event.inputs.run_id }}" ]; then
-            echo "RELEASE_RUN_ID=${{ github.event.inputs.run_id }}" >> $GITHUB_ENV
-          else
-            echo "RELEASE_RUN_ID=$(date -u +'%Y%m%dT%H%M%SZ')" >> $GITHUB_ENV
-          fi
 
       - name: Prepare runtime env
         run: |
           mkdir -p docker/env
           {
             echo "SUPABASE_URL=${SUPABASE_URL}"
-            echo "NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL:-${SUPABASE_URL}}"
+            echo "NEXT_PUBLIC_SUPABASE_URL=${SUPABASE_URL}"
             echo "SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY:-${NEXT_PUBLIC_SUPABASE_ANON_KEY}}"
             echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY:-${SUPABASE_ANON_KEY}}"
             echo "SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}"
@@ -97,41 +73,38 @@ jobs:
             echo "sslmode=require" >> docker/env/prd.ci.env
           fi
 
-      - name: Upload model to Storage
-        run: |
-          bash scripts/publish_two_tower/run.sh --env-file docker/env/prd.ci.env upload --artifacts-dir ml/artifacts/latest --run-id "$RELEASE_RUN_ID"
-
       - name: Activate model manifest
         run: |
-          bash scripts/publish_two_tower/run.sh --env-file docker/env/prd.ci.env activate --run-id "$RELEASE_RUN_ID"
+          bash scripts/publish_two_tower/run.sh --env-file docker/env/prd.ci.env \
+            activate --run-id "$RELEASE_RUN_ID"
 
       - name: Sync video embeddings
         env:
           SYNC_VIDEO_ENV_FILE: docker/env/prd.ci.env
           SYNC_VIDEO_LOOKBACK_DAYS: ${{ github.event.inputs.lookback_days }}
         run: |
-          bash scripts/sync_video_embeddings/run.sh --skip-fetch --lookback-days "${SYNC_VIDEO_LOOKBACK_DAYS}"
+          bash scripts/sync_video_embeddings/run.sh \
+            --skip-ingest \
+            --lookback-days "${SYNC_VIDEO_LOOKBACK_DAYS}"
 
       - name: Sync user embeddings
         env:
           SYNC_USER_ENV_FILE: docker/env/prd.ci.env
           SYNC_USER_RUN_ID: "${{ github.run_id }}-${{ github.run_attempt }}"
         run: |
-          bash scripts/sync_user_embeddings/run.sh --run-id "$SYNC_USER_RUN_ID" --recent-hours "${{ github.event.inputs.recent_hours }}"
+          bash scripts/sync_user_embeddings/run.sh \
+            --run-id "$SYNC_USER_RUN_ID" \
+            --recent-hours "${{ github.event.inputs.recent_hours }}"
 
       - name: Notify Discord (release)
         if: always()
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          JOB_STATUS: ${{ job.status }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
-          if [ -n "$DISCORD_WEBHOOK_URL" ]; then
-            STATUS="✅ Success"
-            if [ "${{ job.status }}" != "success" ]; then
-              STATUS="❌ Failed"
-            fi
-            curl -X POST -H "Content-Type: application/json" -d "
-            {
-              \"content\": \"[TwoTower Release] $STATUS\\nRun ID: $RELEASE_RUN_ID\"
-            }
-            " "$DISCORD_WEBHOOK_URL"
-          fi
+          [ -z "$DISCORD_WEBHOOK_URL" ] && exit 0
+          if [ "$JOB_STATUS" = "success" ]; then ICON="✅"; else ICON="❌"; fi
+          curl -fsSL -X POST -H "Content-Type: application/json" \
+            -d "{\"content\":\"${ICON} TwoTower Release: ${JOB_STATUS} run_id=${RELEASE_RUN_ID} <${RUN_URL}>\"}" \
+            "$DISCORD_WEBHOOK_URL"
