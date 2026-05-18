@@ -85,6 +85,7 @@ function BrowseTabBarInner() {
   const isDebug = searchParams.get('debug') === '1';
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [likeCount, setLikeCount] = useState<number | null>(null);
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
   const [particles, setParticles] = useState<number[]>([]);
   const [levelUpLevel, setLevelUpLevel] = useState<Level | null>(null);
   const prevLevelRef = useRef<Level | null>(null);
@@ -99,7 +100,8 @@ function BrowseTabBarInner() {
   useEffect(() => {
     const fetchCount = async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { setLikeCount(0); return; }
+      if (!user) { setLikeCount(0); setIsLoggedIn(false); return; }
+      setIsLoggedIn(true);
       const { count } = await supabase
         .from('user_video_decisions')
         .select('*', { count: 'exact', head: true })
@@ -110,6 +112,11 @@ function BrowseTabBarInner() {
       prevLevelRef.current = getLevel(c);
     };
     fetchCount();
+
+    const { data: authListener } = supabase.auth.onAuthStateChange((_e, session) => {
+      setIsLoggedIn(Boolean(session?.user));
+      if (!session?.user) setLikeCount(0);
+    });
 
     const handler = () => {
       setParticles((prev) => [...prev, ++particleIdRef.current]);
@@ -124,7 +131,10 @@ function BrowseTabBarInner() {
       });
     };
     window.addEventListener('like-added', handler);
-    return () => window.removeEventListener('like-added', handler);
+    return () => {
+      window.removeEventListener('like-added', handler);
+      authListener.subscription.unsubscribe();
+    };
   }, []);
 
   void isDebug;
@@ -142,7 +152,7 @@ function BrowseTabBarInner() {
       {levelUpLevel && <LevelUpOverlay level={levelUpLevel} onDone={() => setLevelUpLevel(null)} />}
 
       <div className="fixed top-0 left-0 right-0 z-40 bg-[#0d1117]/95 backdrop-blur flex flex-col">
-        {/* メインヘッダー: 左(ロゴ+タブ) / 中央(レベル) / 右(リスト) */}
+        {/* メインヘッダー: 左(ロゴ+タブ) / 中央(レベル) / 右(アクション) */}
         <div className="grid grid-cols-3 items-center px-3 h-11">
           {/* 左: ロゴ＋タブ */}
           <div className="flex items-center gap-1.5">
@@ -169,33 +179,42 @@ function BrowseTabBarInner() {
             </Link>
           </div>
 
-          {/* 中央: レベルアイコン＋名前＋いいね数 */}
-          <div className="flex items-center justify-center gap-1.5">
-            {lv && (
+          {/* 中央: ログイン時のみレベル表示 */}
+          <div className="flex items-center justify-center gap-1">
+            {isLoggedIn && lv && (
               <>
-                <lv.Icon size={13} className={lv.iconColor} strokeWidth={2} />
-                <span className={`text-[11px] font-extrabold bg-gradient-to-r ${lv.color} bg-clip-text text-transparent`}>
+                <lv.Icon size={12} className={lv.iconColor} strokeWidth={2} />
+                <span className={`text-[10px] font-extrabold bg-gradient-to-r ${lv.color} bg-clip-text text-transparent whitespace-nowrap`}>
                   {lv.label}
                 </span>
-                <span className="text-[11px] text-[#8b949e]">
-                  <Heart size={9} className="inline mr-0.5 text-pink-400" fill="currentColor" />
+                <span className="text-[10px] text-[#8b949e] whitespace-nowrap">
+                  <Heart size={8} className="inline mr-0.5 text-pink-400" fill="currentColor" />
                   <span className="text-[#e6edf3] font-bold">{likeCount ?? 0}</span>
-                  {nextLv && <span> / {nextLv.min}</span>}
+                  {nextLv && <span>/{nextLv.min}</span>}
                 </span>
               </>
             )}
           </div>
 
-          {/* 右: リストボタン */}
+          {/* 右: ログイン時=リストボタン、未ログイン時=ログインボタン */}
           <div className="flex justify-end">
-            <button
-              onClick={() => setIsDrawerOpen(true)}
-              className="flex items-center gap-1 px-2 py-1 rounded-md text-[#8b949e] hover:text-pink-400 hover:bg-[#161b22] transition-colors text-[11px] font-bold"
-              title="気になるリスト"
-            >
-              <Heart size={13} />
-              リスト
-            </button>
+            {isLoggedIn === false ? (
+              <button
+                onClick={() => window.dispatchEvent(new Event('open-auth-modal'))}
+                className="flex items-center gap-1 px-2.5 py-1 rounded-md bg-violet-600 hover:bg-violet-500 text-white transition-colors text-[11px] font-bold"
+              >
+                ログイン
+              </button>
+            ) : (
+              <button
+                onClick={() => setIsDrawerOpen(true)}
+                className="flex items-center gap-1 px-2 py-1 rounded-md text-[#8b949e] hover:text-pink-400 hover:bg-[#161b22] transition-colors text-[11px] font-bold"
+                title="気になるリスト"
+              >
+                <Heart size={13} />
+                リスト
+              </button>
+            )}
           </div>
         </div>
 
