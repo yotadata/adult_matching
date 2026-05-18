@@ -192,12 +192,13 @@ export default async function VideoPage(
                 <div className="text-xs text-[#656d76] mb-2">出演者</div>
                 <div className="flex flex-wrap gap-2">
                   {performers.map(p => (
-                    <span
+                    <Link
                       key={p.id}
-                      className="px-3 py-1 rounded-full bg-[#21262d] border border-[#30363d] text-xs text-[#c9d1d9]"
+                      href={`/performers/${p.id}`}
+                      className="px-3 py-1 rounded-full bg-[#21262d] border border-[#30363d] text-xs text-[#c9d1d9] hover:border-[#8b949e] transition-colors"
                     >
                       {p.name}
-                    </span>
+                    </Link>
                   ))}
                 </div>
               </div>
