@@ -538,15 +538,6 @@ export function ResultContent({ typeKey }: { typeKey: QuizTypeKey }) {
                   </div>
                 </div>
 
-                <div
-                  className="rounded-2xl p-4"
-                  style={{ background: `${quizType.color}12`, border: `1px solid ${quizType.color}30` }}
-                >
-                  <p className="text-[10px] font-black tracking-widest uppercase mb-2" style={{ color: 'rgba(180,150,80,0.5)' }}>あるある</p>
-                  <p className="text-sm leading-relaxed" style={{ color: 'rgba(200,180,140,0.8)' }}>
-                    {quizType.trivia}
-                  </p>
-                </div>
               </div>
             )}
           </div>
