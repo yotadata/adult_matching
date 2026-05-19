@@ -12,9 +12,10 @@ interface MobileVideoLayoutProps {
   skipButtonRef?: RefObject<HTMLButtonElement | null>;
   likeButtonRef?: RefObject<HTMLButtonElement | null>;
   likedListButtonRef?: RefObject<HTMLButtonElement | null>;
+  isDebug?: boolean;
 }
 
-const MobileVideoLayout: React.FC<MobileVideoLayoutProps> = ({ cardData, onSkip, onLike, onSamplePlay, skipButtonRef, likeButtonRef, likedListButtonRef }) => {
+const MobileVideoLayout: React.FC<MobileVideoLayoutProps> = ({ cardData, onSkip, onLike, onSamplePlay, skipButtonRef, likeButtonRef, likedListButtonRef, isDebug }) => {
   const [showVideo, setShowVideo] = useState(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [showOverlay, setShowOverlay] = useState(true);
@@ -71,6 +72,23 @@ const MobileVideoLayout: React.FC<MobileVideoLayoutProps> = ({ cardData, onSkip,
 
         {/* メインカード（白背景・角丸・影） */}
         <div className="relative z-10 bg-white rounded-2xl overflow-hidden shadow-xl">
+          {isDebug && (
+            <div className="absolute top-2 right-2 z-50 flex flex-col items-end gap-0.5 pointer-events-none">
+              <span className="bg-black/70 text-white text-[10px] font-mono px-1.5 py-0.5 rounded">
+                {cardData.recommendationSource ?? 'unknown'}
+              </span>
+              {typeof cardData.recommendationScore === 'number' && (
+                <span className="bg-black/70 text-yellow-300 text-[10px] font-mono px-1.5 py-0.5 rounded">
+                  {cardData.recommendationScore.toFixed(4)}
+                </span>
+              )}
+              {cardData.recommendationModelVersion && (
+                <span className="bg-black/70 text-cyan-300 text-[10px] font-mono px-1.5 py-0.5 rounded">
+                  {cardData.recommendationModelVersion}
+                </span>
+              )}
+            </div>
+          )}
           {/* 動画表示エリア（4:3） */}
           <div className="w-full p-3">
             <div className="w-full overflow-hidden relative aspect-[4/3] bg-black flex items-center justify-center rounded-xl">

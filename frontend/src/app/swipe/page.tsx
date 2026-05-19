@@ -598,6 +598,7 @@ function SwipePage() {
                 skipButtonRef={skipButtonRef}
                 likeButtonRef={likeButtonRef}
                 likedListButtonRef={likedListButtonRef}
+                isDebug={isDebug}
               />
             ) : (
               <SwipeCard
@@ -610,6 +611,7 @@ function SwipePage() {
                 cardWidth={cardWidth}
                 canSwipe={true}
                 onSamplePlay={(card) => handleSamplePlay(card, 'desktop')}
+                isDebug={isDebug}
               />
             )
           ) : (
