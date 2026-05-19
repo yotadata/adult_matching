@@ -202,7 +202,7 @@ function GridPage() {
   }, [likedIds]);
 
   return (
-    <div className="min-h-screen bg-[#0d1117]" style={{ paddingTop: isDebug ? '84px' : '52px' }}>
+    <div className="min-h-screen bg-[#0d1117]" style={{ paddingTop: '52px' }}>
       {/* ゲスト向けログイン nudge トースト */}
       {showLoginNudge && isLoggedIn === false && (
         <>
@@ -256,7 +256,7 @@ function GridPage() {
           </div>
         </>
       )}
-      {/* デバッグパネル */}
+      {/* デバッグ: 左上オーバーレイ（セッション集計） */}
       {isDebug && videos.length > 0 && (() => {
         const counts: Record<string, number> = {};
         const scores: Record<string, number[]> = {};
@@ -268,29 +268,26 @@ function GridPage() {
           }
         }
         const total = videos.length;
-        const entries = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+        const COLORS: Record<string, string> = {
+          exploitation: 'text-violet-400',
+          popularity: 'text-blue-400',
+          exploration: 'text-green-400',
+        };
         return (
-          <div className="fixed top-[52px] left-0 right-0 z-40 bg-[#0d1117]/95 border-b border-[#30363d] px-3 py-2 text-[11px] font-mono">
-            <div className="max-w-4xl mx-auto flex flex-wrap gap-x-4 gap-y-1 items-center">
-              <span className="text-[#8b949e]">total: {total}</span>
-              {entries.map(([src, cnt]) => {
-                const avg = scores[src]?.length
-                  ? (scores[src].reduce((a, b) => a + b, 0) / scores[src].length).toFixed(3)
-                  : '–';
-                const max = scores[src]?.length
-                  ? Math.max(...scores[src]).toFixed(3)
-                  : '–';
-                const badgeClass = SOURCE_BADGE_COLORS[src] ?? 'bg-gray-600 text-white';
-                return (
-                  <span key={src} className="flex items-center gap-1.5">
-                    <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${badgeClass}`}>{src}</span>
-                    <span className="text-[#e6edf3]">{cnt} ({((cnt / total) * 100).toFixed(0)}%)</span>
-                    <span className="text-yellow-300">avg:{avg}</span>
-                    <span className="text-yellow-500">max:{max}</span>
-                  </span>
-                );
-              })}
-            </div>
+          <div className="fixed top-[60px] left-2 z-50 bg-black/80 backdrop-blur-sm border border-white/10 rounded-xl px-3 py-2 text-[10px] font-mono flex flex-col gap-1 min-w-[160px]">
+            <span className="text-[#8b949e]">total:{total}</span>
+            {Object.entries(counts).sort((a, b) => b[1] - a[1]).map(([src, cnt]) => {
+              const avg = scores[src]?.length
+                ? (scores[src].reduce((a, b) => a + b, 0) / scores[src].length).toFixed(3)
+                : '–';
+              const max = scores[src]?.length ? Math.max(...scores[src]).toFixed(3) : '–';
+              return (
+                <div key={src} className="flex flex-col gap-0">
+                  <span className={`font-bold ${COLORS[src] ?? 'text-white'}`}>{src} {cnt} ({((cnt / total) * 100).toFixed(0)}%)</span>
+                  <span className="text-yellow-300 pl-1">avg:{avg} max:{max}</span>
+                </div>
+              );
+            })}
           </div>
         );
       })()}
