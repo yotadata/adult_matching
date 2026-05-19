@@ -394,12 +394,18 @@ function GridPage() {
                 onLoad={() => setLoadedIds((prev) => new Set([...prev, video.id]))}
               />
               {/* 既読オーバーレイ（いいね済みでない場合のみ） */}
-              {viewedIds.has(video.id) && !likedIds.has(video.id) && (
+              {viewedIds.has(video.id) && !likedIds.has(video.id) && !nopedIds.has(video.id) && (
                 <div className="absolute inset-0 bg-black/60 pointer-events-none" />
               )}
               {/* いいね済みオーバーレイ */}
               {likedIds.has(video.id) && (
                 <div className="absolute inset-0 bg-pink-500/40 pointer-events-none" />
+              )}
+              {/* 興味なしオーバーレイ */}
+              {nopedIds.has(video.id) && (
+                <div className="absolute inset-0 bg-black/70 pointer-events-none flex items-center justify-center">
+                  <X size={36} className="text-white/60" strokeWidth={2.5} />
+                </div>
               )}
               {/* 常時表示: 下部グラデーション + アクションヒント */}
               <div className="absolute inset-x-0 bottom-0 h-14 bg-gradient-to-t from-black/70 to-transparent pointer-events-none" />
