@@ -61,6 +61,7 @@ function GridPage() {
   const [loadedIds, setLoadedIds] = useState<Set<string>>(new Set());
   const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
   const [showLoginNudge, setShowLoginNudge] = useState(false);
+  const [nopedIds, setNopedIds] = useState<Set<string>>(new Set());
   const guestLikeCountRef = useRef(0);
   const guestLikeCountTotalRef = useRef(0);
   const overlayHideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -201,6 +202,21 @@ function GridPage() {
       }
     }
   }, [likedIds]);
+
+  const handleNope = useCallback(async (video: VideoItem) => {
+    if (nopedIds.has(video.id)) return;
+    setNopedIds((prev) => new Set([...prev, video.id]));
+    setSelected(null);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    await supabase.from('user_video_decisions').insert({
+      user_id: user.id,
+      video_id: video.id,
+      decision_type: 'grid_nope',
+    }).then(({ error }) => {
+      if (error) console.error('Error inserting nope:', error.message);
+    });
+  }, [nopedIds]);
 
   return (
     <div className="min-h-screen bg-[#0d1117]" style={{ paddingTop: '52px' }}>
@@ -533,17 +549,27 @@ function GridPage() {
               )}
               {/* アクションボタン */}
               <div className="flex flex-col gap-2 mt-1">
-                <button
-                  onClick={() => handleLike(selected)}
-                  className={`flex items-center gap-1.5 justify-center w-full py-2.5 rounded-lg text-sm font-bold transition-colors border ${
-                    likedIds.has(selected.id)
-                      ? 'bg-pink-500 border-pink-500 text-white'
-                      : 'bg-white border-gray-300 text-gray-700 hover:bg-pink-50 hover:border-pink-300'
-                  }`}
-                >
-                  <Heart size={15} fill={likedIds.has(selected.id) ? 'white' : 'none'} />
-                  {likedIds.has(selected.id) ? 'いいね済み' : 'いいね'}
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handleNope(selected)}
+                    disabled={nopedIds.has(selected.id)}
+                    className="flex items-center gap-1.5 justify-center flex-1 py-2.5 rounded-lg text-sm font-bold transition-colors border border-gray-300 bg-white text-gray-400 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <X size={15} />
+                    {nopedIds.has(selected.id) ? '除外済み' : '興味なし'}
+                  </button>
+                  <button
+                    onClick={() => handleLike(selected)}
+                    className={`flex items-center gap-1.5 justify-center flex-1 py-2.5 rounded-lg text-sm font-bold transition-colors border ${
+                      likedIds.has(selected.id)
+                        ? 'bg-pink-500 border-pink-500 text-white'
+                        : 'bg-white border-gray-300 text-gray-700 hover:bg-pink-50 hover:border-pink-300'
+                    }`}
+                  >
+                    <Heart size={15} fill={likedIds.has(selected.id) ? 'white' : 'none'} />
+                    {likedIds.has(selected.id) ? 'いいね済み' : 'いいね'}
+                  </button>
+                </div>
                 {likedIds.has(selected.id) && selected.product_url && (
                   <a
                     href={toAffiliateUrl(selected.product_url)}
