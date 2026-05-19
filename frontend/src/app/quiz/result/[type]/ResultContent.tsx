@@ -227,6 +227,7 @@ function SaveImageButton({
   charDataUrl,
   qrDataUrl,
   onCharDataUrlReady,
+  small,
 }: {
   typeKey: QuizTypeKey;
   quizType: QuizType;
@@ -234,6 +235,7 @@ function SaveImageButton({
   charDataUrl: string;
   qrDataUrl: string;
   onCharDataUrlReady: (url: string) => void;
+  small?: boolean;
 }) {
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
@@ -299,14 +301,16 @@ function SaveImageButton({
       <button
         onClick={handleSave}
         disabled={loading}
-        className="w-full rounded-2xl py-4 font-black flex items-center justify-center gap-2 text-[15px] active:translate-y-[1px] transition-all"
+        className={`${small ? 'flex-1 rounded-xl py-2.5 text-[13px]' : 'w-full rounded-2xl py-4 text-[15px]'} font-bold flex items-center justify-center gap-1.5 active:translate-y-[1px] transition-all`}
         style={
           loading
-            ? { background: '#e0c090', color: '#c8a080', cursor: 'not-allowed' }
-            : { background: 'linear-gradient(90deg, #6c3483, #e84393)', color: '#fff', boxShadow: '0 4px 0 #4a235a' }
+            ? { background: 'rgba(180,150,80,0.05)', color: 'rgba(180,150,80,0.4)', cursor: 'not-allowed', border: '1px solid rgba(180,150,80,0.15)' }
+            : small
+              ? { background: 'rgba(180,150,80,0.08)', border: '1px solid rgba(180,150,80,0.25)', color: 'rgba(180,150,80,0.7)' }
+              : { background: 'linear-gradient(90deg, #6c3483, #e84393)', color: '#fff', boxShadow: '0 4px 0 #4a235a' }
         }
       >
-        {loading ? '生成中…' : '🖼️ 画像を保存してシェア'}
+        {loading ? '生成中…' : '🖼️ 画像を保存'}
       </button>
     </>
   );
@@ -395,15 +399,25 @@ export function ResultContent({ typeKey }: { typeKey: QuizTypeKey }) {
   const quizType = QUIZ_TYPES[typeKey] ?? QUIZ_TYPES['senc'];
   const scoresParam = searchParams.get('scores') ?? '';
   const versionParam = searchParams.get('v') ?? shareVersion;
-  const shareUrl = scoresParam
+  const baseUrl = scoresParam
     ? `https://www.seihekilab.com/quiz/result/${typeKey}?scores=${encodeURIComponent(scoresParam)}&v=${encodeURIComponent(versionParam)}`
     : `https://www.seihekilab.com/quiz/result/${typeKey}?v=${encodeURIComponent(versionParam)}`;
-  const shareText = `私の偏愛タイプは ${typeKey.toUpperCase()}「${quizType.name}」でした。\n#偏愛16 #性癖ラボ\n\n${shareUrl}`;
+
+  const buildShareUrl = (utmSource: string) =>
+    `${baseUrl}&utm_source=${utmSource}&utm_medium=social&utm_campaign=quiz_share`;
 
   const axes: { axis: Axis; pct: number }[] = AXES.map((axis) => ({
     axis,
     pct: typeof rawScores[axis] === 'number' ? rawScores[axis] : 50,
   }));
+
+  const axisLine = axes.map(({ axis, pct }) => {
+    const meta = AXIS_META[axis];
+    return pct >= 50 ? meta.labelHigh : meta.labelLow;
+  }).join('｜');
+
+  const buildShareText = (utmSource: string) =>
+    `偏愛16診断やってみた🔍\n私のタイプは「${quizType.name}」${quizType.emoji}\n${axisLine}\n\n#偏愛16\n${buildShareUrl(utmSource)}`;
 
   useEffect(() => {
     trackEvent('quiz_result_view', { type: typeKey, gender });
@@ -428,17 +442,13 @@ export function ResultContent({ typeKey }: { typeKey: QuizTypeKey }) {
   const shareToX = () => {
     trackEvent('quiz_share', { method: 'x', type: typeKey });
     window.open(
-      `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}`,
+      `https://twitter.com/intent/tweet?text=${encodeURIComponent(buildShareText('x'))}`,
       '_blank', 'noopener'
     );
   };
-  const shareToLine = () => {
-    trackEvent('quiz_share', { method: 'line', type: typeKey });
-    window.open(`https://line.me/R/msg/text/?${encodeURIComponent(shareText)}`, '_blank', 'noopener');
-  };
   const copyLink = async () => {
     trackEvent('quiz_share', { method: 'copy_link', type: typeKey });
-    await navigator.clipboard.writeText(shareText);
+    await navigator.clipboard.writeText(buildShareText('copy'));
   };
 
   return (
@@ -592,29 +602,24 @@ export function ResultContent({ typeKey }: { typeKey: QuizTypeKey }) {
       </div>
 
       {/* シェアボタン */}
-      <div className="w-full max-w-sm space-y-3 mb-6">
-        <SaveImageButton typeKey={typeKey} quizType={quizType} axes={axes} charDataUrl={charDataUrl} qrDataUrl={qrDataUrl} onCharDataUrlReady={setCharDataUrl} />
+      <div className="w-full max-w-sm mb-6 space-y-2">
         <button
           onClick={shareToX}
-          className="w-full rounded-2xl py-4 font-black text-white flex items-center justify-center gap-2 text-[15px] active:translate-y-[1px] transition-transform"
-          style={{ background: 'rgba(255,255,255,0.08)', boxShadow: '0 4px 0 rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.2)', color: '#f0e6d3' }}
+          className="w-full rounded-2xl py-4 font-black text-white flex items-center justify-center gap-2 text-[17px] active:translate-y-[1px] transition-transform"
+          style={{ background: 'linear-gradient(135deg, #1a1a2e, #16213e)', boxShadow: '0 5px 0 rgba(0,0,0,0.5)', border: '2px solid rgba(255,255,255,0.25)', color: '#f0e6d3' }}
         >
-          <span className="text-lg">𝕏</span> ポストして友だちに教える
+          <span className="text-xl">𝕏</span> ポストして友だちに教える
         </button>
-        <button
-          onClick={shareToLine}
-          className="w-full rounded-2xl py-4 font-black text-white flex items-center justify-center gap-2 text-[15px] active:translate-y-[1px] transition-transform"
-          style={{ background: '#06C755', boxShadow: '0 4px 0 #04a344', border: '1px solid #08e060' }}
-        >
-          <span className="text-lg">💬</span> LINEで送る
-        </button>
-        <button
-          onClick={copyLink}
-          className="w-full rounded-2xl py-4 font-black flex items-center justify-center gap-2 text-[15px] active:translate-y-[1px] transition-transform"
-          style={{ background: 'rgba(180,150,80,0.1)', border: '1px solid rgba(180,150,80,0.35)', color: '#e8d5a0' }}
-        >
-          🔗 リンクをコピー
-        </button>
+        <div className="flex gap-2">
+          <SaveImageButton typeKey={typeKey} quizType={quizType} axes={axes} charDataUrl={charDataUrl} qrDataUrl={qrDataUrl} onCharDataUrlReady={setCharDataUrl} small />
+          <button
+            onClick={copyLink}
+            className="flex-1 rounded-xl py-2.5 font-bold flex items-center justify-center gap-1.5 text-[13px] active:translate-y-[1px] transition-transform"
+            style={{ background: 'rgba(180,150,80,0.08)', border: '1px solid rgba(180,150,80,0.25)', color: 'rgba(180,150,80,0.7)' }}
+          >
+            🔗 リンクをコピー
+          </button>
+        </div>
       </div>
 
       {/* 男性向けCTA（インライン） */}
