@@ -10,7 +10,6 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { DecisionCountProvider } from '@/hooks/useDecisionCount';
 import { setGTagUserId } from '@/lib/analytics';
-import AgeGate from '@/app/quiz/AgeGate';
 
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -67,7 +66,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
     const requiresLogin = !(isSwipePath || isGridPath || isAboutPage || isSearchPage || isVideoPage || isPerformerPage || isTagPage);
 
     if (requiresLogin && isLoggedIn === false) {
-      router.replace('/swipe');
+      router.replace('/grid');
     }
   }, [authInitialized, isLoggedIn, pathname, router]);
 
@@ -78,7 +77,6 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
 
   return (
     <DecisionCountProvider>
-      <AgeGate />
       <div className="min-h-screen w-full" style={{ background: isHome ? homeGradient : nonHomeGradient }}>
         {!isMobile && !isBrowsePath && <DesktopSidebar />}
         <div className={!isMobile && !isBrowsePath ? 'pl-56' : ''}>

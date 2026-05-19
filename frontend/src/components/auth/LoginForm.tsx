@@ -50,7 +50,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onClose }) => {
 
       toast.success('ログインしました！');
       onClose();
-      router.push('/swipe');
+      router.push('/grid');
     } catch (error: unknown) {
       let errorMessage = 'ログインに失敗しました。時間をおいて再度お試しください。';
       if (error instanceof Error) {
