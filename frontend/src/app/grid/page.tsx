@@ -111,6 +111,7 @@ function GridPage() {
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setIsLoggedIn(Boolean(session?.user));
+      trackEvent('recommend_session_start', { source: 'grid' });
     });
     const { data: listener } = supabase.auth.onAuthStateChange((_e, session) => {
       setIsLoggedIn(Boolean(session?.user));
