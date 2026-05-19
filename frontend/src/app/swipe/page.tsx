@@ -11,8 +11,6 @@ import { trackEvent, generateSessionId } from "@/lib/analytics";
 import { ChevronsLeft, Heart, List } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useDecisionCount } from "@/hooks/useDecisionCount";
-import OnboardingSlides from "@/components/OnboardingSlides";
-import SpotlightTutorial from "@/components/SpotlightTutorial";
 
 interface VideoFromApi {
   id: number;
@@ -50,8 +48,6 @@ interface VideosFeedMetadata {
 const ORIGINAL_GRADIENT = 'linear-gradient(90deg, #C4C8E3 0%, #D7D1E3 33.333%, #F7D7E0 66.666%, #F9C9D6 100%)';
 const LEFT_SWIPE_GRADIENT = ORIGINAL_GRADIENT;
 const RIGHT_SWIPE_GRADIENT = ORIGINAL_GRADIENT;
-const ONBOARDING_STORAGE_KEY = 'seihekiLab_hasSeenOnboardingSlides';
-const SPOTLIGHT_STORAGE_KEY = 'seihekiLab_hasSeenSpotlightTutorial';
 function SwipePage() {
 
   const searchParams = useSearchParams();
@@ -81,85 +77,7 @@ function SwipePage() {
   const currentPositionRef = useRef<number>(0);
   const likeButtonRef = useRef<HTMLButtonElement | null>(null);
   const skipButtonRef = useRef<HTMLButtonElement | null>(null);
-  const [showOnboarding, setShowOnboarding] = useState(false);
-  const [showSpotlight, setShowSpotlight] = useState(false);
-  const [spotlightReady, setSpotlightReady] = useState(false);
   const likedListButtonRef = useRef<HTMLButtonElement | null>(null);
-  const onboardingStartedRef = useRef(false);
-  const spotlightStartedRef = useRef(false);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const seenOnboarding = localStorage.getItem(ONBOARDING_STORAGE_KEY) === 'true';
-    const seenSpotlight = localStorage.getItem(SPOTLIGHT_STORAGE_KEY) === 'true';
-    if (!seenOnboarding) {
-      setShowOnboarding(true);
-    } else if (!seenSpotlight) {
-      setShowSpotlight(true);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!showSpotlight) {
-      setSpotlightReady(false);
-      return;
-    }
-    if (typeof window === 'undefined') return;
-    let rafId: number | null = null;
-    const checkReady = () => {
-      if (likeButtonRef.current && skipButtonRef.current && likedListButtonRef.current) {
-        setSpotlightReady(true);
-        return;
-      }
-      rafId = window.requestAnimationFrame(checkReady);
-    };
-    checkReady();
-    return () => {
-      if (rafId) {
-        window.cancelAnimationFrame(rafId);
-      }
-    };
-  }, [showSpotlight]);
-
-  useEffect(() => {
-    if (showOnboarding) {
-      if (!onboardingStartedRef.current) {
-        trackEvent('onboarding_slides_start');
-        onboardingStartedRef.current = true;
-      }
-    } else {
-      onboardingStartedRef.current = false;
-    }
-  }, [showOnboarding]);
-
-  useEffect(() => {
-    const visible = showSpotlight && spotlightReady && !showOnboarding;
-    if (visible) {
-      if (!spotlightStartedRef.current) {
-        trackEvent('spotlight_tutorial_start');
-        spotlightStartedRef.current = true;
-      }
-    } else if (!showSpotlight) {
-      spotlightStartedRef.current = false;
-    }
-  }, [showSpotlight, spotlightReady, showOnboarding]);
-
-  const handleFinishOnboarding = useCallback(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem(ONBOARDING_STORAGE_KEY, 'true');
-    }
-    trackEvent('onboarding_slides_complete');
-    setShowOnboarding(false);
-    setTimeout(() => setShowSpotlight(true), 0);
-  }, []);
-
-  const handleFinishSpotlight = useCallback(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem(SPOTLIGHT_STORAGE_KEY, 'true');
-    }
-    trackEvent('spotlight_tutorial_complete');
-    setShowSpotlight(false);
-  }, []);
 
   const toIsoString = useCallback((ms: number | null) => (ms != null ? new Date(ms).toISOString() : undefined), []);
 
@@ -750,14 +668,7 @@ function SwipePage() {
           )}
         </footer>
       )}
-      <OnboardingSlides open={showOnboarding} onFinish={handleFinishOnboarding} />
-      <SpotlightTutorial
-        likeButtonRef={likeButtonRef}
-        skipButtonRef={skipButtonRef}
-        likedListButtonRef={likedListButtonRef}
-        visible={showSpotlight && spotlightReady && !showOnboarding}
-        onFinish={handleFinishSpotlight}
-      />
+
     </motion.div>
   );
 }

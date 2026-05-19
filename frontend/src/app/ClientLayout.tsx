@@ -66,7 +66,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
     const requiresLogin = !(isSwipePath || isGridPath || isAboutPage || isSearchPage || isVideoPage || isPerformerPage || isTagPage);
 
     if (requiresLogin && isLoggedIn === false) {
-      router.replace('/swipe');
+      router.replace('/grid');
     }
   }, [authInitialized, isLoggedIn, pathname, router]);
 
