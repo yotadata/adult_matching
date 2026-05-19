@@ -133,6 +133,40 @@ jobs:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
         run: |
           if [ -n "$DISCORD_WEBHOOK_URL" ]; then
-            SUMMARY="db:${{ needs.db_migrate.result }}, functions:${{ needs.functions_deploy.result }}, frontend:${{ needs.frontend_deploy.result }}"
-            curl -X POST -H "Content-Type: application/json" -d "{\"content\":\"[AppRelease] ${SUMMARY}\"}" "$DISCORD_WEBHOOK_URL"
+            DB="${{ needs.db_migrate.result }}"
+            FUNCTIONS="${{ needs.functions_deploy.result }}"
+            FRONTEND="${{ needs.frontend_deploy.result }}"
+
+            icon() { [ "$1" = "success" ] && echo "✅" || echo "❌"; }
+            DB_ICON=$(icon "$DB")
+            FUNCTIONS_ICON=$(icon "$FUNCTIONS")
+            FRONTEND_ICON=$(icon "$FRONTEND")
+
+            if [ "$DB" = "success" ] && [ "$FUNCTIONS" = "success" ] && [ "$FRONTEND" = "success" ]; then
+              COLOR=3066993
+              TITLE="🚀 Release 完了"
+            else
+              COLOR=15158332
+              TITLE="⚠️ Release 一部失敗"
+            fi
+
+            RUN_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+            PAYLOAD=$(cat <<EOF
+          {
+            "embeds": [{
+              "title": "${TITLE}",
+              "color": ${COLOR},
+              "fields": [
+                { "name": "DB migrate", "value": "${DB_ICON} ${DB}", "inline": true },
+                { "name": "Functions", "value": "${FUNCTIONS_ICON} ${FUNCTIONS}", "inline": true },
+                { "name": "Frontend", "value": "${FRONTEND_ICON} ${FRONTEND}", "inline": true }
+              ],
+              "footer": { "text": "GitHub Actions" },
+              "url": "${RUN_URL}"
+            }]
+          }
+          EOF
+            )
+            curl -X POST -H "Content-Type: application/json" -d "$PAYLOAD" "$DISCORD_WEBHOOK_URL"
           fi
