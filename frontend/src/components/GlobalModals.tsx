@@ -18,11 +18,13 @@ export default function GlobalModals() {
       setAuthInitialTab('login');
       setShowRegisterNotice(false);
       setIsAuthOpen(true);
+      trackEvent('auth_modal_open', { tab: 'login' });
     };
     const registerHandler = () => {
       setAuthInitialTab('register');
       setShowRegisterNotice(true);
       setIsAuthOpen(true);
+      trackEvent('auth_modal_open', { tab: 'register' });
       trackEvent('signup_modal_shown');
     };
     const likedHandler = () => setIsLikedOpen(true);
