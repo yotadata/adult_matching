@@ -33,8 +33,8 @@ interface SwipeCardProps {
   onSwipe: (direction: 'left' | 'right') => void;
   onDrag?: (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => void;
   onDragEnd?: (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => void;
-  cardWidth: number | undefined; // cardWidth propを追加
-  canSwipe?: boolean; // 追加: ゲスト制限時にスワイプを抑制
+  cardWidth: number | undefined;
+  canSwipe?: boolean;
   onSamplePlay?: (card: CardData) => void;
 }
 
