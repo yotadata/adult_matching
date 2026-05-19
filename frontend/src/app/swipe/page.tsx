@@ -66,6 +66,7 @@ function SwipePage() {
   const [authReady, setAuthReady] = useState<boolean>(false);
   const [showLoginNudge, setShowLoginNudge] = useState(false);
   const guestLikeCountRef = useRef(0);
+  const guestSwipeCountRef = useRef(0);
   const mainRef = useRef<HTMLDivElement | null>(null);
   const sessionIdRef = useRef<string | null>(null);
   const sessionStartRef = useRef<number | null>(null);
@@ -426,10 +427,13 @@ function SwipePage() {
         recommendation_params: card.recommendationParams ?? null,
       });
       setGuestDecisions(current);
+      guestSwipeCountRef.current += 1;
+      trackEvent('guest_swipe', { swipe_count: guestSwipeCountRef.current, decision_type: decisionType });
       if (decisionType === 'swipe_like') {
         guestLikeCountRef.current += 1;
         if (guestLikeCountRef.current === 3 || guestLikeCountRef.current % 10 === 0) {
           setShowLoginNudge(true);
+          trackEvent('login_nudge_shown', { swipe_count: guestSwipeCountRef.current, like_count: guestLikeCountRef.current });
         }
       }
     }
@@ -564,13 +568,13 @@ function SwipePage() {
           </div>
           <div className="flex flex-col gap-1 flex-shrink-0">
             <button
-              onClick={() => { setShowLoginNudge(false); window.dispatchEvent(new Event('open-auth-modal')); }}
+              onClick={() => { setShowLoginNudge(false); trackEvent('login_nudge_clicked', { swipe_count: guestSwipeCountRef.current }); window.dispatchEvent(new Event('open-auth-modal')); }}
               className="px-3 py-1 rounded-lg bg-violet-600 hover:bg-violet-500 text-white text-[11px] font-bold transition-colors"
             >
               登録
             </button>
             <button
-              onClick={() => setShowLoginNudge(false)}
+              onClick={() => { setShowLoginNudge(false); trackEvent('login_nudge_dismissed', { swipe_count: guestSwipeCountRef.current }); }}
               className="px-3 py-1 rounded-lg text-[#8b949e] hover:text-white text-[11px] transition-colors text-center"
             >
               後で

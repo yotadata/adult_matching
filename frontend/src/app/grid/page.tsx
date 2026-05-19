@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { X, Play, Heart, Eye, ChevronDown, ChevronUp, Brain, Hand, Bot, Target, LockOpen, ExternalLink, type LucideIcon } from 'lucide-react';
+import { trackEvent } from '@/lib/analytics';
 
 type VideoItem = {
   id: string;
@@ -61,6 +62,7 @@ function GridPage() {
   const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
   const [showLoginNudge, setShowLoginNudge] = useState(false);
   const guestLikeCountRef = useRef(0);
+  const guestLikeCountTotalRef = useRef(0);
   const overlayHideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const loaderRef = useRef<HTMLDivElement>(null);
   const OVERLAY_HIDE_DELAY_MS = 700;
@@ -169,8 +171,11 @@ function GridPage() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       guestLikeCountRef.current += 1;
+      guestLikeCountTotalRef.current += 1;
+      trackEvent('guest_swipe', { swipe_count: guestLikeCountTotalRef.current, decision_type: 'grid_like' });
       if (guestLikeCountRef.current === 3 || guestLikeCountRef.current % 10 === 0) {
         setShowLoginNudge(true);
+        trackEvent('login_nudge_shown', { like_count: guestLikeCountRef.current });
       }
       return;
     }
@@ -210,13 +215,13 @@ function GridPage() {
             </div>
             <div className="flex flex-col gap-1 flex-shrink-0">
               <button
-                onClick={() => { setShowLoginNudge(false); window.dispatchEvent(new Event('open-auth-modal')); }}
+                onClick={() => { setShowLoginNudge(false); trackEvent('login_nudge_clicked', { like_count: guestLikeCountRef.current }); window.dispatchEvent(new Event('open-auth-modal')); }}
                 className="px-3 py-1 rounded-lg bg-violet-600 hover:bg-violet-500 text-white text-[11px] font-bold transition-colors"
               >
                 登録
               </button>
               <button
-                onClick={() => setShowLoginNudge(false)}
+                onClick={() => { setShowLoginNudge(false); trackEvent('login_nudge_dismissed', { like_count: guestLikeCountRef.current }); }}
                 className="px-3 py-1 rounded-lg text-[#8b949e] hover:text-white text-[11px] transition-colors text-center"
               >
                 後で
@@ -236,13 +241,13 @@ function GridPage() {
             </div>
             <div className="flex items-center gap-3 flex-shrink-0">
               <button
-                onClick={() => setShowLoginNudge(false)}
+                onClick={() => { setShowLoginNudge(false); trackEvent('login_nudge_dismissed', { like_count: guestLikeCountRef.current }); }}
                 className="px-4 py-2 rounded-lg text-[#8b949e] hover:text-white text-sm transition-colors"
               >
                 後で
               </button>
               <button
-                onClick={() => { setShowLoginNudge(false); window.dispatchEvent(new Event('open-auth-modal')); }}
+                onClick={() => { setShowLoginNudge(false); trackEvent('login_nudge_clicked', { like_count: guestLikeCountRef.current }); window.dispatchEvent(new Event('open-auth-modal')); }}
                 className="px-6 py-2 rounded-lg bg-violet-600 hover:bg-violet-500 text-white text-sm font-bold transition-colors shadow-lg shadow-violet-900/50"
               >
                 無料で登録
