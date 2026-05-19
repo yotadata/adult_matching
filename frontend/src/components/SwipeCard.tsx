@@ -36,10 +36,9 @@ interface SwipeCardProps {
   cardWidth: number | undefined;
   canSwipe?: boolean;
   onSamplePlay?: (card: CardData) => void;
-  isDebug?: boolean;
 }
 
-const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwipe, onDrag, onDragEnd, cardWidth, canSwipe = true, onSamplePlay, isDebug }, ref) => {
+const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwipe, onDrag, onDragEnd, cardWidth, canSwipe = true, onSamplePlay }, ref) => {
   const controls = useAnimation();
   
   const [showVideo, setShowVideo] = useState(false);
@@ -144,23 +143,6 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwi
       >
       {/* 上部: 動画エリア（PC版は4:3のアスペクト比） */}
       <div className="relative w-full aspect-[4/3] bg-black/90 flex items-center justify-center rounded-xl overflow-hidden">
-        {isDebug && (
-          <div className="absolute top-2 right-2 z-50 flex flex-col items-end gap-0.5 pointer-events-none">
-            <span className="bg-black/70 text-white text-[10px] font-mono px-1.5 py-0.5 rounded">
-              {cardData.recommendationSource ?? 'unknown'}
-            </span>
-            {typeof cardData.recommendationScore === 'number' && (
-              <span className="bg-black/70 text-yellow-300 text-[10px] font-mono px-1.5 py-0.5 rounded">
-                {cardData.recommendationScore.toFixed(4)}
-              </span>
-            )}
-            {cardData.recommendationModelVersion && (
-              <span className="bg-black/70 text-cyan-300 text-[10px] font-mono px-1.5 py-0.5 rounded">
-                {cardData.recommendationModelVersion}
-              </span>
-            )}
-          </div>
-        )}
         {showOverlay && (
           <div
             className="absolute inset-0 w-full h-full bg-contain bg-no-repeat bg-center flex items-center justify-center z-10"

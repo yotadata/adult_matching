@@ -510,54 +510,56 @@ function SwipePage() {
       style={{ background: currentGradient }}
       transition={{ duration: 0.3 }}
     >
-      {/* デバッグパネル */}
+      {/* デバッグ: 左上オーバーレイ（セッション集計） */}
       {isDebug && cards.length > 0 && (() => {
         const relevant = cards.slice(activeIndex);
         const all = cards;
-        const countFor = (arr: CardData[]) => {
-          const counts: Record<string, number> = {};
-          const scores: Record<string, number[]> = {};
-          for (const c of arr) {
-            const src = c.recommendationSource ?? 'unknown';
-            counts[src] = (counts[src] ?? 0) + 1;
-            if (c.recommendationScore != null) {
-              if (!scores[src]) scores[src] = [];
-              scores[src].push(c.recommendationScore);
-            }
+        const counts: Record<string, number> = {};
+        const scores: Record<string, number[]> = {};
+        for (const c of all) {
+          const src = c.recommendationSource ?? 'unknown';
+          counts[src] = (counts[src] ?? 0) + 1;
+          if (c.recommendationScore != null) {
+            if (!scores[src]) scores[src] = [];
+            scores[src].push(c.recommendationScore);
           }
-          return { counts, scores };
-        };
-        const { counts, scores } = countFor(all);
+        }
         const total = all.length;
         const COLORS: Record<string, string> = {
-          exploitation: 'bg-violet-600 text-white',
-          popularity: 'bg-blue-600 text-white',
-          exploration: 'bg-green-700 text-white',
+          exploitation: 'text-violet-400',
+          popularity: 'text-blue-400',
+          exploration: 'text-green-400',
         };
         return (
-          <div className="fixed top-[52px] left-0 right-0 z-50 bg-[#0d1117]/95 border-b border-[#30363d] px-3 py-2 text-[11px] font-mono">
-            <div className="flex flex-wrap gap-x-4 gap-y-1 items-center">
-              <span className="text-[#8b949e]">loaded:{total} remaining:{relevant.length}</span>
-              {Object.entries(counts).sort((a, b) => b[1] - a[1]).map(([src, cnt]) => {
-                const avg = scores[src]?.length
-                  ? (scores[src].reduce((a, b) => a + b, 0) / scores[src].length).toFixed(3)
-                  : '–';
-                const max = scores[src]?.length
-                  ? Math.max(...scores[src]).toFixed(3)
-                  : '–';
-                return (
-                  <span key={src} className="flex items-center gap-1.5">
-                    <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${COLORS[src] ?? 'bg-gray-600 text-white'}`}>{src}</span>
-                    <span className="text-[#e6edf3]">{cnt} ({((cnt / total) * 100).toFixed(0)}%)</span>
-                    <span className="text-yellow-300">avg:{avg}</span>
-                    <span className="text-yellow-500">max:{max}</span>
-                  </span>
-                );
-              })}
-            </div>
+          <div className="fixed top-[60px] left-2 z-50 bg-black/80 backdrop-blur-sm border border-white/10 rounded-xl px-3 py-2 text-[10px] font-mono flex flex-col gap-1 min-w-[160px]">
+            <span className="text-[#8b949e]">loaded:{total} rem:{relevant.length}</span>
+            {Object.entries(counts).sort((a, b) => b[1] - a[1]).map(([src, cnt]) => {
+              const avg = scores[src]?.length
+                ? (scores[src].reduce((a, b) => a + b, 0) / scores[src].length).toFixed(3)
+                : '–';
+              const max = scores[src]?.length ? Math.max(...scores[src]).toFixed(3) : '–';
+              return (
+                <div key={src} className="flex flex-col gap-0">
+                  <span className={`font-bold ${COLORS[src] ?? 'text-white'}`}>{src} {cnt} ({((cnt / total) * 100).toFixed(0)}%)</span>
+                  <span className="text-yellow-300 pl-1">avg:{avg} max:{max}</span>
+                </div>
+              );
+            })}
           </div>
         );
       })()}
+      {/* デバッグ: 右上オーバーレイ（現在のカード情報） */}
+      {isDebug && activeCard && (
+        <div className="fixed top-[60px] right-2 z-50 bg-black/80 backdrop-blur-sm border border-white/10 rounded-xl px-3 py-2 text-[10px] font-mono flex flex-col gap-0.5 min-w-[140px] items-end">
+          <span className="text-white font-bold">{activeCard.recommendationSource ?? 'unknown'}</span>
+          {typeof activeCard.recommendationScore === 'number' && (
+            <span className="text-yellow-300">score: {activeCard.recommendationScore.toFixed(4)}</span>
+          )}
+          {activeCard.recommendationModelVersion && (
+            <span className="text-cyan-300">{activeCard.recommendationModelVersion}</span>
+          )}
+        </div>
+      )}
       {/* ゲスト向けログイン nudge トースト */}
       {showLoginNudge && !isLoggedIn && (
         <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 bg-[#1c1f26] border border-violet-500/50 rounded-2xl px-4 py-3 shadow-2xl shadow-violet-900/30 max-w-[320px] w-[90vw]">
@@ -598,7 +600,6 @@ function SwipePage() {
                 skipButtonRef={skipButtonRef}
                 likeButtonRef={likeButtonRef}
                 likedListButtonRef={likedListButtonRef}
-                isDebug={isDebug}
               />
             ) : (
               <SwipeCard
@@ -611,7 +612,6 @@ function SwipePage() {
                 cardWidth={cardWidth}
                 canSwipe={true}
                 onSamplePlay={(card) => handleSamplePlay(card, 'desktop')}
-                isDebug={isDebug}
               />
             )
           ) : (
