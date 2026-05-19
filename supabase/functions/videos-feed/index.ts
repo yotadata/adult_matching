@@ -36,14 +36,6 @@ function clampLimit(limit?: number): number {
   return Math.min(limit, MAX_LIMIT)
 }
 
-function shuffle<T>(arr: T[]): T[] {
-  const clone = [...arr]
-  for (let i = clone.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1))
-    ;[clone[i], clone[j]] = [clone[j], clone[i]]
-  }
-  return clone
-}
 
 async function fetchModelVersions(
   client: SupabaseClient<any>,
@@ -140,8 +132,7 @@ Deno.serve(async (req) => {
       if (recError) {
         console.error('get_videos_recommendations error:', recError.message)
       } else if (recs && recs.length > 0) {
-        const shuffled = shuffle(recs as Record<string, unknown>[]) 
-        for (const item of shuffled) {
+        for (const item of recs as Record<string, unknown>[]) {
           const id = String(item.id)
           if (seen.has(id)) continue
           exploitation.push({
