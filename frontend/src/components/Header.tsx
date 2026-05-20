@@ -9,7 +9,7 @@ import useMediaQuery from '@/hooks/useMediaQuery';
 import { supabase } from '@/lib/supabase';
 import { User as SupabaseUser } from '@supabase/supabase-js';
 import { Dialog, Transition } from '@headlessui/react';
-import { UserPlus, Menu as MenuIcon, X, Home as HomeIcon, Sparkles, BarChart2, List } from 'lucide-react';
+import { UserPlus, Menu as MenuIcon, X, Home as HomeIcon } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import LikedVideosDrawer from './LikedVideosDrawer'; // ドロワーコンポーネントをインポート
 
@@ -41,15 +41,11 @@ const Header = ({ cardWidth, mobileGauge }: { cardWidth: number | undefined; mob
 
   const primaryNavItems: NavItem[] = [
     { label: 'スワイプ', href: '/swipe', icon: HomeIcon, requiresLogin: false },
-    { label: '気になるリスト', href: '/lists', icon: List, requiresLogin: true },
-    { label: 'AIで探す', href: '/search', icon: Sparkles, requiresLogin: false, withGauge: true },
-    { label: 'あなたの性癖', href: '/insights', icon: BarChart2, requiresLogin: true },
   ];
 
   const secondaryNavItems: NavItem[] = [
-    { label: 'お問い合わせ', href: '/contact', icon: Sparkles, requiresLogin: true },
-    { label: 'アカウント設定', href: '/account-management', icon: UserPlus, requiresLogin: true },
-    { label: 'このサイトについて', href: '/about', icon: BarChart2, requiresLogin: false },
+    { label: 'お問い合わせ', href: '/contact', icon: UserPlus, requiresLogin: true },
+    { label: 'このサイトについて', href: '/about', icon: UserPlus, requiresLogin: false },
   ];
 
   useEffect(() => {
