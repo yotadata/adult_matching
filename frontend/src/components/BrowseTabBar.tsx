@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useState, useEffect, useRef, Suspense } from 'react';
 import {
-  LayoutGrid, Layers, Heart,
+  LayoutGrid, Layers, Heart, Tag, Users, X,
   Snail, Rabbit, Cat, Dog, Bird, Crown,
   type LucideIcon,
 } from 'lucide-react';
@@ -57,21 +57,83 @@ function HeartParticle({ id, onDone }: { id: number; onDone: (id: number) => voi
   );
 }
 
-function LevelUpOverlay({ level, onDone }: { level: Level; onDone: () => void }) {
-  useEffect(() => {
-    const t = setTimeout(onDone, 2800);
-    return () => clearTimeout(t);
-  }, [onDone]);
+type InsightTag = { id: string; name: string; cnt: number };
+type InsightPerformer = { id: string; name: string; cnt: number };
+
+function LevelUpOverlay({ level, likeCount, onDone, onOpenList }: { level: Level; likeCount: number; onDone: () => void; onOpenList: () => void }) {
   const { Icon } = level;
+  const [tags, setTags] = useState<InsightTag[]>([]);
+  const [performers, setPerformers] = useState<InsightPerformer[]>([]);
+
+  useEffect(() => {
+    (async () => {
+      const [{ data: t }, { data: p }] = await Promise.all([
+        supabase.rpc('get_user_liked_tags'),
+        supabase.rpc('get_user_liked_performers'),
+      ]);
+      setTags(((t as InsightTag[] | null) ?? []).slice(0, 3));
+      setPerformers(((p as InsightPerformer[] | null) ?? []).slice(0, 3));
+    })();
+  }, []);
+
   return (
-    <div className="pointer-events-none fixed inset-0 z-[9998] flex items-center justify-center">
-      <div className="animate-level-up bg-[#0d1117]/90 border border-violet-500/60 rounded-2xl px-8 py-6 text-center shadow-2xl shadow-violet-500/20">
-        <div className={`flex justify-center mb-3 ${level.iconColor}`}>
-          <Icon size={48} strokeWidth={1.5} />
+    <div className="fixed inset-0 z-[9998] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
+      <div className="bg-[#0d1117] border border-violet-500/60 rounded-2xl w-full max-w-sm shadow-2xl shadow-violet-500/20 overflow-hidden">
+        {/* ヘッダー */}
+        <div className="relative px-6 pt-6 pb-4 text-center">
+          <button onClick={onDone} className="absolute top-3 right-3 text-gray-500 hover:text-white transition-colors">
+            <X size={18} />
+          </button>
+          <div className={`flex justify-center mb-2 ${level.iconColor}`}>
+            <Icon size={40} strokeWidth={1.5} />
+          </div>
+          <div className="text-white text-lg font-extrabold tracking-wide">LEVEL UP!</div>
+          <div className={`bg-gradient-to-r ${level.color} bg-clip-text text-transparent text-base font-bold`}>
+            {level.label}
+          </div>
         </div>
-        <div className="text-white text-xl font-extrabold tracking-wide">LEVEL UP!</div>
-        <div className={`bg-gradient-to-r ${level.color} bg-clip-text text-transparent text-lg font-bold mt-1`}>
-          {level.label}
+
+        {/* インサイト */}
+        <div className="px-6 pb-4 space-y-4 border-t border-white/10 pt-4">
+          <div className="text-center">
+            <span className="text-gray-400 text-xs">累計いいね数</span>
+            <div className="text-white text-3xl font-extrabold">{likeCount.toLocaleString('ja-JP')}</div>
+          </div>
+          {tags.length > 0 && (
+            <div>
+              <p className="text-gray-400 text-[11px] mb-2 flex items-center gap-1"><Tag size={10} />よく見るタグ</p>
+              <div className="flex flex-wrap gap-1.5">
+                {tags.map((tag) => (
+                  <span key={tag.id} className="px-2.5 py-1 rounded-full bg-white/10 text-white text-xs font-semibold">
+                    {tag.name} <span className="text-gray-400 font-normal">{tag.cnt}</span>
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+          {performers.length > 0 && (
+            <div>
+              <p className="text-gray-400 text-[11px] mb-2 flex items-center gap-1"><Users size={10} />お気に入り女優</p>
+              <div className="flex flex-wrap gap-1.5">
+                {performers.map((p) => (
+                  <span key={p.id} className="px-2.5 py-1 rounded-full bg-pink-500/20 text-pink-300 text-xs font-semibold">
+                    {p.name} <span className="text-pink-400/60 font-normal">{p.cnt}</span>
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* CTA */}
+        <div className="px-6 pb-6">
+          <button
+            onClick={() => { onDone(); onOpenList(); }}
+            className="w-full py-3 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-sm font-bold transition-colors flex items-center justify-center gap-2"
+          >
+            <Heart size={14} fill="currentColor" />
+            いいねした作品を見る
+          </button>
         </div>
       </div>
     </div>
@@ -150,7 +212,7 @@ function BrowseTabBarInner() {
       {particles.map((id) => (
         <HeartParticle key={id} id={id} onDone={(rid) => setParticles((p) => p.filter((x) => x !== rid))} />
       ))}
-      {levelUpLevel && <LevelUpOverlay level={levelUpLevel} onDone={() => setLevelUpLevel(null)} />}
+      {levelUpLevel && <LevelUpOverlay level={levelUpLevel} likeCount={likeCount ?? 0} onDone={() => setLevelUpLevel(null)} onOpenList={() => setIsDrawerOpen(true)} />}
 
       <div className="fixed top-0 left-0 right-0 z-40 bg-[#0d1117]/95 backdrop-blur flex flex-col">
         {/* メインヘッダー: 左(ロゴ+タブ) / 中央(レベル) / 右(アクション) */}

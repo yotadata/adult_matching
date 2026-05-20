@@ -5,6 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import { X, Filter, Tag, Users, ExternalLink } from 'lucide-react';
+import { trackEvent } from '@/lib/analytics';
 
 export interface VideoRecord {
   id?: string;
@@ -375,6 +376,46 @@ export default function VideoListDrawer({
                 </aside>
 
                 <section className="flex flex-col overflow-y-auto">
+                  {(tagOptions.length > 0 || performerOptions.length > 0) && selectedTagIds.length === 0 && selectedPerformerIds.length === 0 && (
+                    <div className="px-4 pt-4 pb-3 space-y-3 bg-white border-b border-gray-100">
+                      {tagOptions.length > 0 && (
+                        <div>
+                          <p className="text-[11px] text-gray-500 font-semibold mb-2">よく見るタグ</p>
+                          <div className="flex flex-wrap gap-2">
+                            {[...tagOptions].sort((a, b) => (b.cnt ?? 0) - (a.cnt ?? 0)).slice(0, 3).map((tag) => (
+                              <button
+                                key={tag.id}
+                                onClick={() => onToggleTag(tag.id)}
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gray-900 text-white text-xs font-semibold hover:bg-gray-700 transition-colors border border-gray-700"
+                              >
+                                <Tag size={11} />
+                                {tag.name}
+                                <span className="text-gray-400 font-normal">{tag.cnt}</span>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {performerOptions.length > 0 && (
+                        <div>
+                          <p className="text-[11px] text-gray-500 font-semibold mb-2">お気に入り女優</p>
+                          <div className="flex flex-wrap gap-2">
+                            {[...performerOptions].sort((a, b) => (b.cnt ?? 0) - (a.cnt ?? 0)).slice(0, 3).map((perf) => (
+                              <button
+                                key={perf.id}
+                                onClick={() => onTogglePerformer(perf.id)}
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-pink-600 text-white text-xs font-semibold hover:bg-pink-500 transition-colors"
+                              >
+                                <Users size={11} />
+                                {perf.name}
+                                <span className="text-pink-200 font-normal">{perf.cnt}</span>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
                   <div className="sticky top-0 z-10 bg-white/50 backdrop-blur px-4 py-3 border-b border-white/40 text-xs sm:text-sm text-gray-700 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                     <span>
                       表示中: <strong>{videos.length.toLocaleString('ja-JP')}</strong> 件
@@ -400,18 +441,18 @@ export default function VideoListDrawer({
                       {videos.map((video) => (
                         <article
                           key={video.external_id}
-                          className="rounded-2xl border border-gray-200 bg-white text-gray-900 overflow-hidden flex flex-row gap-3 p-3 shadow-sm"
+                          className="rounded-2xl border border-gray-200 bg-white text-gray-900 overflow-hidden shadow-sm flex flex-col sm:flex-row"
                         >
-                          <div className="relative w-60 aspect-[5/4] rounded-xl overflow-hidden bg-slate-200">
+                          <div className="relative w-full aspect-[5/3] sm:w-52 sm:aspect-[5/4] flex-shrink-0 bg-slate-200">
                             {video.thumbnail_url ? (
                               <Image src={video.thumbnail_url} alt={video.title} fill className="object-cover" />
                             ) : (
                               <div className="w-full h-full flex items-center justify-center text-sm text-gray-500">No Image</div>
                             )}
                           </div>
-                          <div className="flex flex-col gap-3 flex-1 min-w-0">
-                            <h2 className="text-base font-semibold leading-tight line-clamp-2">{video.title}</h2>
-                            <div className="text-xs text-gray-600 space-y-1">
+                          <div className="flex flex-col gap-2 flex-1 min-w-0 p-3">
+                            <h2 className="text-sm sm:text-base font-semibold leading-tight line-clamp-2">{video.title}</h2>
+                            <div className="text-xs text-gray-600 space-y-0.5">
                               <p>{formatPrice(video.price)}</p>
                               <p>リリース日: {formatDate(video.product_released_at)}</p>
                             </div>
@@ -429,12 +470,13 @@ export default function VideoListDrawer({
                                 </span>
                               ))}
                             </div>
-                            <div className="mt-auto flex gap-2">
+                            <div className="mt-auto pt-1">
                               <Link
                                 href={buildAffiliateHref(video.product_url) ?? '#'}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-full bg-rose-500 text-white text-sm font-semibold hover:bg-rose-400 transition"
+                                onClick={() => trackEvent('liked_list_product_click', { video_id: video.id, external_id: video.external_id })}
                               >
                                 作品ページへ
                                 <ExternalLink size={14} />
