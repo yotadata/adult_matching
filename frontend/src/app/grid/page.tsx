@@ -401,6 +401,10 @@ function GridPage() {
               {likedIds.has(video.id) && (
                 <div className="absolute inset-0 bg-pink-500/40 pointer-events-none" />
               )}
+              {/* 興味なしオーバーレイ */}
+              {nopedIds.has(video.id) && (
+                <div className="absolute inset-0 bg-black/70 pointer-events-none" />
+              )}
               {/* 常時表示: 下部グラデーション + アクションヒント */}
               <div className="absolute inset-x-0 bottom-0 h-14 bg-gradient-to-t from-black/70 to-transparent pointer-events-none" />
               {/* 再生ボタン（モバイル: 常時表示、PC: hover時のみ） */}
@@ -409,18 +413,24 @@ function GridPage() {
                   <Play size={16} className="text-white/80 ml-0.5" fill="currentColor" />
                 </div>
               </div>
-              {/* いいねボタン（常時・右下） */}
-              <button
-                className={`absolute bottom-1.5 right-1.5 w-7 h-7 rounded-full flex items-center justify-center transition-colors shadow-md ${
-                  likedIds.has(video.id)
-                    ? 'bg-pink-500'
-                    : 'bg-black/40 hover:bg-pink-500/80'
-                }`}
-                onClick={(e) => { e.stopPropagation(); handleLike(video); }}
-                aria-label="いいね"
-              >
-                <Heart size={13} className="text-white" fill={likedIds.has(video.id) ? 'white' : 'none'} strokeWidth={2} />
-              </button>
+              {/* いいね/興味なしボタン（常時・右下） */}
+              {nopedIds.has(video.id) ? (
+                <div className="absolute bottom-1.5 right-1.5 w-7 h-7 rounded-full bg-white/20 flex items-center justify-center shadow-md pointer-events-none">
+                  <X size={13} className="text-white/80" strokeWidth={2.5} />
+                </div>
+              ) : (
+                <button
+                  className={`absolute bottom-1.5 right-1.5 w-7 h-7 rounded-full flex items-center justify-center transition-colors shadow-md ${
+                    likedIds.has(video.id)
+                      ? 'bg-pink-500'
+                      : 'bg-black/40 hover:bg-pink-500/80'
+                  }`}
+                  onClick={(e) => { e.stopPropagation(); handleLike(video); }}
+                  aria-label="いいね"
+                >
+                  <Heart size={13} className="text-white" fill={likedIds.has(video.id) ? 'white' : 'none'} strokeWidth={2} />
+                </button>
+              )}
               {/* 既読バッジ（いいね済みでない場合のみ・左上） */}
               {viewedIds.has(video.id) && !likedIds.has(video.id) && (
                 <div className="absolute top-1.5 left-1.5 w-5 h-5 rounded-full bg-black/60 border border-white/20 flex items-center justify-center pointer-events-none">
