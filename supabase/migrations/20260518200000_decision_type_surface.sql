@@ -12,7 +12,7 @@ update public.user_video_decisions set decision_type = 'swipe_nope' where decisi
 -- 3. 新しい CHECK 制約を追加
 alter table public.user_video_decisions
   add constraint user_video_decisions_decision_type_check
-  check (decision_type in ('swipe_like', 'swipe_nope', 'grid_like'));
+  check (decision_type in ('swipe_like', 'swipe_nope', 'grid_like', 'grid_nope'));
 
 -- 3. matview 再作成（like → swipe_like OR grid_like）
 drop materialized view if exists public.video_popularity_daily cascade;
