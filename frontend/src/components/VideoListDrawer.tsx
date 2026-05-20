@@ -377,7 +377,7 @@ export default function VideoListDrawer({
 
                 <section className="flex flex-col overflow-y-auto">
                   {(tagOptions.length > 0 || performerOptions.length > 0) && selectedTagIds.length === 0 && selectedPerformerIds.length === 0 && (
-                    <div className="px-4 pt-4 pb-2 space-y-3">
+                    <div className="px-4 pt-4 pb-3 space-y-3 bg-white border-b border-gray-100">
                       {tagOptions.length > 0 && (
                         <div>
                           <p className="text-[11px] text-gray-500 font-semibold mb-2">よく見るタグ</p>
@@ -386,7 +386,7 @@ export default function VideoListDrawer({
                               <button
                                 key={tag.id}
                                 onClick={() => onToggleTag(tag.id)}
-                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gray-800 text-white text-xs font-semibold hover:bg-gray-700 transition-colors"
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gray-900 text-white text-xs font-semibold hover:bg-gray-700 transition-colors border border-gray-700"
                               >
                                 <Tag size={11} />
                                 {tag.name}
