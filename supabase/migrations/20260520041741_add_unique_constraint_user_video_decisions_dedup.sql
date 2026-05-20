@@ -1,3 +1,4 @@
+-- Applied directly via Supabase MCP. Stub for migration history alignment.
 -- 重複行を削除（最新のものを残す）
 DELETE FROM public.user_video_decisions
 WHERE id NOT IN (
