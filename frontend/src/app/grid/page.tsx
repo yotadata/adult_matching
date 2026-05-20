@@ -363,7 +363,7 @@ function GridPage() {
 
       {/* Pinterest グリッド */}
       <div className="px-3 py-4">
-      <div className="columns-2 sm:columns-3 md:columns-4 lg:columns-5 gap-2 space-y-2">
+      <div className="columns-1 sm:columns-2 md:columns-3 lg:columns-4 xl:columns-5 gap-2 space-y-2">
         {videos.map((video) => (
           <div
             key={video.id}
