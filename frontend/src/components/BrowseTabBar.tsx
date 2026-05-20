@@ -4,11 +4,12 @@ import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useState, useEffect, useRef, Suspense } from 'react';
 import {
-  LayoutGrid, Layers, Heart, Tag, Users, X,
+  LayoutGrid, Layers, Heart, Tag, Users, X, UserCircle,
   Snail, Rabbit, Cat, Dog, Bird, Crown,
   type LucideIcon,
 } from 'lucide-react';
 import LikedVideosDrawer from '@/components/LikedVideosDrawer';
+import AccountManagementDrawer from '@/components/AccountManagementDrawer';
 import Image from 'next/image';
 import { supabase } from '@/lib/supabase';
 
@@ -147,6 +148,7 @@ function BrowseTabBarInner() {
   const isGrid = pathname.startsWith('/grid');
   const isDebug = searchParams.get('debug') === '1';
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [isAccountOpen, setIsAccountOpen] = useState(false);
   const [likeCount, setLikeCount] = useState<number | null>(null);
   const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
   const [particles, setParticles] = useState<number[]>([]);
@@ -262,8 +264,8 @@ function BrowseTabBarInner() {
             )}
           </div>
 
-          {/* 右: ログイン時=リストボタン、未ログイン時=ログインボタン */}
-          <div className="flex justify-end">
+          {/* 右: ログイン時=リスト+設定、未ログイン時=ログインボタン */}
+          <div className="flex justify-end items-center gap-0.5">
             {isLoggedIn === false ? (
               <button
                 onClick={() => window.dispatchEvent(new Event('open-auth-modal'))}
@@ -272,14 +274,22 @@ function BrowseTabBarInner() {
                 ログイン
               </button>
             ) : (
-              <button
-                onClick={() => setIsDrawerOpen(true)}
-                className="flex items-center gap-1 px-2 py-1 rounded-md text-[#8b949e] hover:text-pink-400 hover:bg-[#161b22] transition-colors text-[11px] font-bold"
-                title="気になるリスト"
-              >
-                <Heart size={13} />
-                リスト
-              </button>
+              <>
+                <button
+                  onClick={() => setIsDrawerOpen(true)}
+                  className="flex items-center justify-center w-7 h-7 rounded-md text-[#8b949e] hover:text-pink-400 hover:bg-[#161b22] transition-colors"
+                  title="気になるリスト"
+                >
+                  <Heart size={14} />
+                </button>
+                <button
+                  onClick={() => setIsAccountOpen(true)}
+                  className="flex items-center justify-center w-7 h-7 rounded-md text-[#8b949e] hover:text-[#e6edf3] hover:bg-[#161b22] transition-colors"
+                  title="設定"
+                >
+                  <UserCircle size={14} />
+                </button>
+              </>
             )}
           </div>
         </div>
@@ -296,6 +306,7 @@ function BrowseTabBarInner() {
       </div>
 
       <LikedVideosDrawer isOpen={isDrawerOpen} onClose={() => setIsDrawerOpen(false)} />
+      <AccountManagementDrawer isOpen={isAccountOpen} onClose={() => setIsAccountOpen(false)} />
     </>
   );
 }
