@@ -403,8 +403,10 @@ function GridPage() {
               )}
               {/* 興味なしオーバーレイ */}
               {nopedIds.has(video.id) && (
-                <div className="absolute inset-0 bg-black/70 pointer-events-none flex items-center justify-center">
-                  <X size={36} className="text-white/60" strokeWidth={2.5} />
+                <div className="absolute inset-0 bg-black/70 pointer-events-none">
+                  <div className="absolute top-2 left-2 w-7 h-7 rounded-full bg-white/20 flex items-center justify-center">
+                    <X size={16} className="text-white/80" strokeWidth={2.5} />
+                  </div>
                 </div>
               )}
               {/* 常時表示: 下部グラデーション + アクションヒント */}
