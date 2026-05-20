@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
+import { trackEvent } from '@/lib/analytics';
 import VideoListDrawer, {
   VideoRecord,
   TagFilterWithGroup,
@@ -38,6 +39,7 @@ const LikedVideosDrawer: React.FC<LikedVideosDrawerProps> = ({ isOpen, onClose }
 
   useEffect(() => {
     if (!isOpen) return;
+    trackEvent('liked_list_open');
 
     (async () => {
       try {

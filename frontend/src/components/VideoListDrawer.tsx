@@ -5,6 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import { X, Filter, Tag, Users, ExternalLink } from 'lucide-react';
+import { trackEvent } from '@/lib/analytics';
 
 export interface VideoRecord {
   id?: string;
@@ -435,6 +436,7 @@ export default function VideoListDrawer({
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-full bg-rose-500 text-white text-sm font-semibold hover:bg-rose-400 transition"
+                                onClick={() => trackEvent('liked_list_product_click', { video_id: video.id, external_id: video.external_id })}
                               >
                                 作品ページへ
                                 <ExternalLink size={14} />
