@@ -400,18 +400,18 @@ export default function VideoListDrawer({
                       {videos.map((video) => (
                         <article
                           key={video.external_id}
-                          className="rounded-2xl border border-gray-200 bg-white text-gray-900 overflow-hidden flex flex-row gap-3 p-3 shadow-sm"
+                          className="rounded-2xl border border-gray-200 bg-white text-gray-900 overflow-hidden shadow-sm flex flex-col sm:flex-row"
                         >
-                          <div className="relative w-60 aspect-[5/4] rounded-xl overflow-hidden bg-slate-200">
+                          <div className="relative w-full aspect-[5/3] sm:w-52 sm:aspect-[5/4] flex-shrink-0 bg-slate-200">
                             {video.thumbnail_url ? (
                               <Image src={video.thumbnail_url} alt={video.title} fill className="object-cover" />
                             ) : (
                               <div className="w-full h-full flex items-center justify-center text-sm text-gray-500">No Image</div>
                             )}
                           </div>
-                          <div className="flex flex-col gap-3 flex-1 min-w-0">
-                            <h2 className="text-base font-semibold leading-tight line-clamp-2">{video.title}</h2>
-                            <div className="text-xs text-gray-600 space-y-1">
+                          <div className="flex flex-col gap-2 flex-1 min-w-0 p-3">
+                            <h2 className="text-sm sm:text-base font-semibold leading-tight line-clamp-2">{video.title}</h2>
+                            <div className="text-xs text-gray-600 space-y-0.5">
                               <p>{formatPrice(video.price)}</p>
                               <p>リリース日: {formatDate(video.product_released_at)}</p>
                             </div>
@@ -429,7 +429,7 @@ export default function VideoListDrawer({
                                 </span>
                               ))}
                             </div>
-                            <div className="mt-auto flex gap-2">
+                            <div className="mt-auto pt-1">
                               <Link
                                 href={buildAffiliateHref(video.product_url) ?? '#'}
                                 target="_blank"
