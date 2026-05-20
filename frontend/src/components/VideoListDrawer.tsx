@@ -376,22 +376,44 @@ export default function VideoListDrawer({
                 </aside>
 
                 <section className="flex flex-col overflow-y-auto">
-                  {tagOptions.length > 0 && selectedTagIds.length === 0 && selectedPerformerIds.length === 0 && (
-                    <div className="px-4 pt-4 pb-2">
-                      <p className="text-[11px] text-gray-400 font-semibold mb-2">あなたのよく見るタグ</p>
-                      <div className="flex flex-wrap gap-2">
-                        {[...tagOptions].sort((a, b) => (b.cnt ?? 0) - (a.cnt ?? 0)).slice(0, 3).map((tag) => (
-                          <button
-                            key={tag.id}
-                            onClick={() => onToggleTag(tag.id)}
-                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-violet-50 border border-violet-200 text-violet-700 text-xs font-semibold hover:bg-violet-100 transition-colors"
-                          >
-                            <Tag size={11} />
-                            {tag.name}
-                            <span className="text-violet-400 font-normal">{tag.cnt}</span>
-                          </button>
-                        ))}
-                      </div>
+                  {(tagOptions.length > 0 || performerOptions.length > 0) && selectedTagIds.length === 0 && selectedPerformerIds.length === 0 && (
+                    <div className="px-4 pt-4 pb-2 space-y-3">
+                      {tagOptions.length > 0 && (
+                        <div>
+                          <p className="text-[11px] text-gray-500 font-semibold mb-2">よく見るタグ</p>
+                          <div className="flex flex-wrap gap-2">
+                            {[...tagOptions].sort((a, b) => (b.cnt ?? 0) - (a.cnt ?? 0)).slice(0, 3).map((tag) => (
+                              <button
+                                key={tag.id}
+                                onClick={() => onToggleTag(tag.id)}
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gray-800 text-white text-xs font-semibold hover:bg-gray-700 transition-colors"
+                              >
+                                <Tag size={11} />
+                                {tag.name}
+                                <span className="text-gray-400 font-normal">{tag.cnt}</span>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {performerOptions.length > 0 && (
+                        <div>
+                          <p className="text-[11px] text-gray-500 font-semibold mb-2">お気に入り女優</p>
+                          <div className="flex flex-wrap gap-2">
+                            {[...performerOptions].sort((a, b) => (b.cnt ?? 0) - (a.cnt ?? 0)).slice(0, 3).map((perf) => (
+                              <button
+                                key={perf.id}
+                                onClick={() => onTogglePerformer(perf.id)}
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-pink-600 text-white text-xs font-semibold hover:bg-pink-500 transition-colors"
+                              >
+                                <Users size={11} />
+                                {perf.name}
+                                <span className="text-pink-200 font-normal">{perf.cnt}</span>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                   <div className="sticky top-0 z-10 bg-white/50 backdrop-blur px-4 py-3 border-b border-white/40 text-xs sm:text-sm text-gray-700 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
