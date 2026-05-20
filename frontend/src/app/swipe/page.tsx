@@ -344,8 +344,10 @@ function SwipePage() {
     const items = getGuestDecisions();
     if (!items.length) return;
     const batchSize = 100;
-    for (let i = 0; i < items.length; i += batchSize) {
-      const chunk = items.slice(i, i + batchSize).map((d) => ({
+    const VALID_TYPES = new Set(['swipe_like', 'swipe_nope', 'grid_like', 'grid_nope']);
+    const validItems = items.filter((d) => VALID_TYPES.has(d.decision_type));
+    for (let i = 0; i < validItems.length; i += batchSize) {
+      const chunk = validItems.slice(i, i + batchSize).map((d) => ({
         user_id: user.id,
         video_id: d.video_id,
         decision_type: d.decision_type,
