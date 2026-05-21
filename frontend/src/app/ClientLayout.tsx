@@ -52,17 +52,19 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
 
   const isQuizPath = pathname?.startsWith('/quiz') ?? false;
   const isBrowsePath = (pathname?.startsWith('/grid') || pathname?.startsWith('/swipe') || pathname?.startsWith('/browse')) ?? false;
+  const noSidebarPath = pathname === '/' || pathname?.startsWith('/performers') || pathname?.startsWith('/tags');
 
   useEffect(() => {
     if (!authInitialized || isLoggedIn === null || !pathname) return;
     if (pathname.startsWith('/quiz')) return; // 診断ページは認証不要・リダイレクトなし
     const isSwipePath = pathname.startsWith('/swipe');
     const isGridPath = pathname.startsWith('/grid');
+    const isHomePage = pathname === '/';
     const isAboutPage = pathname === '/about';
     const isVideoPage = pathname.startsWith('/videos/');
     const isPerformerPage = pathname.startsWith('/performers');
     const isTagPage = pathname.startsWith('/tags');
-    const requiresLogin = !(isSwipePath || isGridPath || isAboutPage || isVideoPage || isPerformerPage || isTagPage);
+    const requiresLogin = !(isHomePage || isSwipePath || isGridPath || isAboutPage || isVideoPage || isPerformerPage || isTagPage);
 
     if (requiresLogin && isLoggedIn === false) {
       router.replace('/grid');
@@ -77,8 +79,8 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
   return (
     <DecisionCountProvider>
       <div className="min-h-screen w-full" style={{ background: isHome ? homeGradient : nonHomeGradient }}>
-        {!isMobile && !isBrowsePath && <DesktopSidebar />}
-        <div className={!isMobile && !isBrowsePath ? 'pl-56' : ''}>
+        {!isMobile && !isBrowsePath && !noSidebarPath && <DesktopSidebar />}
+        <div className={!isMobile && !isBrowsePath && !noSidebarPath ? 'pl-56' : ''}>
           {!isBrowsePath && (isMobile ? <Header cardWidth={undefined} /> : <GlobalModals />)}
           {isBrowsePath && <BrowseTabBar />}
           {isBrowsePath && <GlobalModals />}
