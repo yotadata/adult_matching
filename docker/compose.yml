@@ -6,7 +6,7 @@ services:
       dockerfile: docker/frontend.dev.Dockerfile
     container_name: adult_matching_frontend
     ports:
-      - "3002:3000"
+      - "3000:3000"
     volumes:
       - ../frontend:/app:delegated
       - frontend_node_modules:/app/node_modules
@@ -28,7 +28,7 @@ services:
     container_name: supabase_db
     restart: unless-stopped
     ports:
-      - "54332:5432"
+      - "54322:5432"
     env_file:
       - ./env/dev.env
     environment:
@@ -108,7 +108,7 @@ services:
       - ./env/dev.env
     environment:
       # External URL where Auth API is exposed via Kong (used in magic links, redirects)
-      - API_EXTERNAL_URL=http://localhost:54331/auth/v1
+      - API_EXTERNAL_URL=http://localhost:54321/auth/v1
       - GOTRUE_API_HOST=0.0.0.0
       - GOTRUE_API_PORT=9999
       - GOTRUE_SITE_URL=http://localhost:3000
@@ -190,7 +190,7 @@ services:
       - realtime
       - storage
     ports:
-      - "54331:8000"
+      - "54321:8000"
     env_file:
       - ./env/dev.env
     environment:
@@ -210,7 +210,7 @@ services:
       - kong
       - meta
     ports:
-      - "54333:3000"
+      - "54323:3000"
     env_file:
       - ./env/dev.env
     environment:
