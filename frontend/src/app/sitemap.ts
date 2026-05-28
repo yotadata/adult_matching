@@ -1,6 +1,9 @@
 import { MetadataRoute } from 'next';
 import { supabase } from '@/lib/supabase';
 
+// 24時間ごとに再生成
+export const revalidate = 86400;
+
 const SITE_URL = 'https://www.seihekilab.com';
 
 const PAGE_SIZE = 1000;
