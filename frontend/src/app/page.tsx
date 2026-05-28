@@ -5,7 +5,6 @@ import LpCtaButton from '@/components/LpCtaButton';
 export const metadata: Metadata = {
   title: '性癖ラボ | AIがあなたの好みを学ぶアダルト動画サービス',
   description: 'スワイプするほどAIがあなたの性癖を学習し、好みにぴったりのアダルト動画を提案します。登録不要・無料で今すぐ利用できます。',
-  robots: { index: false, follow: true },
   alternates: { canonical: 'https://www.seihekilab.com' },
   openGraph: {
     title: '性癖ラボ | AIがあなたの好みを学ぶアダルト動画サービス',
