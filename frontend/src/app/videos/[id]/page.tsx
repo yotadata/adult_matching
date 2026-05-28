@@ -6,7 +6,7 @@ import { supabase } from '@/lib/supabase';
 import { isUpcomingRelease } from '@/lib/videoMeta';
 import FanzaLinkButton from '@/components/FanzaLinkButton';
 
-const SITE_URL = 'https://seihekilab.com';
+const SITE_URL = 'https://www.seihekilab.com';
 const SITE_NAME = '性癖ラボ';
 
 type Performer = { id: string; name: string };

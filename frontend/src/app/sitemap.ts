@@ -1,7 +1,7 @@
 import { MetadataRoute } from 'next';
 import { supabase } from '@/lib/supabase';
 
-const SITE_URL = 'https://seihekilab.com';
+const SITE_URL = 'https://www.seihekilab.com';
 
 const PAGE_SIZE = 1000;
 

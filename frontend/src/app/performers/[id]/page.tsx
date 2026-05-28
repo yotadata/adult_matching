@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 
-const SITE_URL = 'https://seihekilab.com';
+const SITE_URL = 'https://www.seihekilab.com';
 const SITE_NAME = '性癖ラボ';
 const PAGE_SIZE = 24;
 
