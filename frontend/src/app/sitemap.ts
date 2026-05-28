@@ -1,6 +1,9 @@
 import { MetadataRoute } from 'next';
 import { supabase } from '@/lib/supabase';
 
+// 24時間ごとに再生成
+export const revalidate = 86400;
+
 const SITE_URL = 'https://www.seihekilab.com';
 
 const PAGE_SIZE = 1000;
@@ -42,30 +45,46 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     page++;
   }
 
-  // タグLPを全件追加
-  const { data: tags } = await supabase
-    .from('tags')
-    .select('id');
-  for (const t of tags ?? []) {
-    entries.push({
-      url: `${SITE_URL}/tags/${t.id}`,
-      lastModified: new Date(),
-      changeFrequency: 'weekly',
-      priority: 0.8,
-    });
+  // タグLPを全件追加（ページネーション）
+  let tagPage = 0;
+  while (true) {
+    const from = tagPage * PAGE_SIZE;
+    const { data: tags, error } = await supabase
+      .from('tags')
+      .select('id')
+      .range(from, from + PAGE_SIZE - 1);
+    if (error || !tags || tags.length === 0) break;
+    for (const t of tags) {
+      entries.push({
+        url: `${SITE_URL}/tags/${t.id}`,
+        lastModified: new Date(),
+        changeFrequency: 'weekly',
+        priority: 0.8,
+      });
+    }
+    if (tags.length < PAGE_SIZE) break;
+    tagPage++;
   }
 
-  // 女優LPを全件追加
-  const { data: performers } = await supabase
-    .from('performers')
-    .select('id');
-  for (const p of performers ?? []) {
-    entries.push({
-      url: `${SITE_URL}/performers/${p.id}`,
-      lastModified: new Date(),
-      changeFrequency: 'weekly',
-      priority: 0.7,
-    });
+  // 女優LPを全件追加（ページネーション）
+  let performerPage = 0;
+  while (true) {
+    const from = performerPage * PAGE_SIZE;
+    const { data: performers, error } = await supabase
+      .from('performers')
+      .select('id')
+      .range(from, from + PAGE_SIZE - 1);
+    if (error || !performers || performers.length === 0) break;
+    for (const p of performers) {
+      entries.push({
+        url: `${SITE_URL}/performers/${p.id}`,
+        lastModified: new Date(),
+        changeFrequency: 'weekly',
+        priority: 0.7,
+      });
+    }
+    if (performers.length < PAGE_SIZE) break;
+    performerPage++;
   }
 
   return entries;
