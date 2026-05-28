@@ -5,6 +5,7 @@ import DesktopSidebar from '@/components/DesktopSidebar';
 import useMediaQuery from '@/hooks/useMediaQuery';
 import GlobalModals from '@/components/GlobalModals';
 import BrowseTabBar from '@/components/BrowseTabBar';
+import Footer from '@/components/Footer';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
@@ -85,6 +86,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
           {isBrowsePath && <BrowseTabBar />}
           {isBrowsePath && <GlobalModals />}
           {children}
+          {!isBrowsePath && <Footer />}
         </div>
       </div>
     </DecisionCountProvider>
