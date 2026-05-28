@@ -2,7 +2,7 @@ import { Metadata } from 'next';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 
-const SITE_URL = 'https://seihekilab.com';
+const SITE_URL = 'https://www.seihekilab.com';
 const SITE_NAME = '性癖ラボ';
 
 export const metadata: Metadata = {

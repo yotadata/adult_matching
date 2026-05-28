@@ -8,9 +8,9 @@ export const metadata: Metadata = {
   openGraph: {
     title: '性癖ラボとは | AIがあなたの性癖を学ぶアダルト動画サービス',
     description: '性癖ラボは、スワイプするほどAIがあなたの好みを学習するアダルト動画サービスです。',
-    url: 'https://seihekilab.com/about',
+    url: 'https://www.seihekilab.com/about',
   },
-  alternates: { canonical: 'https://seihekilab.com/about' },
+  alternates: { canonical: 'https://www.seihekilab.com/about' },
 };
 
 const jsonLd = {
@@ -18,8 +18,8 @@ const jsonLd = {
   '@type': 'WebPage',
   name: '性癖ラボとは',
   description: '性癖ラボは、スワイプするほどAIがあなたの好みを学習するアダルト動画サービスです。',
-  url: 'https://seihekilab.com/about',
-  isPartOf: { '@type': 'WebSite', name: '性癖ラボ', url: 'https://seihekilab.com' },
+  url: 'https://www.seihekilab.com/about',
+  isPartOf: { '@type': 'WebSite', name: '性癖ラボ', url: 'https://www.seihekilab.com' },
   mainEntity: {
     '@type': 'FAQPage',
     mainEntity: [

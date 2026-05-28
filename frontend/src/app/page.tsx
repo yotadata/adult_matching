@@ -5,11 +5,12 @@ import LpCtaButton from '@/components/LpCtaButton';
 export const metadata: Metadata = {
   title: '性癖ラボ | AIがあなたの好みを学ぶアダルト動画サービス',
   description: 'スワイプするほどAIがあなたの性癖を学習し、好みにぴったりのアダルト動画を提案します。登録不要・無料で今すぐ利用できます。',
-  alternates: { canonical: 'https://seihekilab.com' },
+  robots: { index: false, follow: true },
+  alternates: { canonical: 'https://www.seihekilab.com' },
   openGraph: {
     title: '性癖ラボ | AIがあなたの好みを学ぶアダルト動画サービス',
     description: 'スワイプするほどAIがあなたの性癖を学習し、好みにぴったりのアダルト動画を提案します。',
-    url: 'https://seihekilab.com',
+    url: 'https://www.seihekilab.com',
   },
 };
 
@@ -17,11 +18,11 @@ const jsonLd = {
   '@context': 'https://schema.org',
   '@type': 'WebSite',
   name: '性癖ラボ',
-  url: 'https://seihekilab.com',
+  url: 'https://www.seihekilab.com',
   description: 'スワイプするほどAIがあなたの性癖を学習し、好みにぴったりのアダルト動画を提案するサービス。',
   potentialAction: {
     '@type': 'SearchAction',
-    target: 'https://seihekilab.com/tags',
+    target: 'https://www.seihekilab.com/tags',
     'query-input': 'required name=search_term_string',
   },
 };
