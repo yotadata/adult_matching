@@ -5,6 +5,16 @@ const nextConfig: NextConfig = {
   images: {
     domains: ['pics.dmm.co.jp'],
   },
+  async redirects() {
+    return [
+      {
+        source: '/:path*',
+        has: [{ type: 'host', value: 'seihekilab.com' }],
+        destination: 'https://www.seihekilab.com/:path*',
+        permanent: true,
+      },
+    ];
+  },
 };
 
 export default withSentryConfig(nextConfig, {
