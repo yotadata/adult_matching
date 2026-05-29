@@ -13,12 +13,12 @@ const PAGE_SIZE = 1000;
 // /sitemap/2 = タグページ
 // /sitemap/3 = 女優ページ
 export function generateSitemaps() {
-  return [{ id: 0 }, { id: 1 }, { id: 2 }, { id: 3 }];
+  return [{ id: '0' }, { id: '1' }, { id: '2' }, { id: '3' }];
 }
 
-export default async function sitemap({ id }: { id: number }): Promise<MetadataRoute.Sitemap> {
+export default async function sitemap({ id }: { id: string }): Promise<MetadataRoute.Sitemap> {
   // 静的ページ
-  if (id === 0) {
+  if (id === '0') {
     return [
       { url: `${SITE_URL}/grid`, lastModified: new Date(), changeFrequency: 'daily', priority: 1.0 },
       { url: `${SITE_URL}/swipe`, lastModified: new Date(), changeFrequency: 'daily', priority: 0.9 },
@@ -31,7 +31,7 @@ export default async function sitemap({ id }: { id: number }): Promise<MetadataR
   }
 
   // 動画ページ
-  if (id === 1) {
+  if (id === '1') {
     const entries: MetadataRoute.Sitemap = [];
     let page = 0;
     while (true) {
@@ -57,7 +57,7 @@ export default async function sitemap({ id }: { id: number }): Promise<MetadataR
   }
 
   // タグページ
-  if (id === 2) {
+  if (id === '2') {
     const entries: MetadataRoute.Sitemap = [];
     let page = 0;
     while (true) {
@@ -82,7 +82,7 @@ export default async function sitemap({ id }: { id: number }): Promise<MetadataR
   }
 
   // 女優ページ
-  if (id === 3) {
+  if (id === '3') {
     const entries: MetadataRoute.Sitemap = [];
     let page = 0;
     while (true) {
