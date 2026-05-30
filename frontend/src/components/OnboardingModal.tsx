@@ -55,7 +55,7 @@ export default function OnboardingModal({ onComplete }: Props) {
         const sorted = Array.from(groupMap.values())
           .map((g) => ({
             ...g,
-            tags: g.tags.sort((a, b) => b.video_count - a.video_count).slice(0, 15),
+            tags: g.tags.sort((a, b) => b.video_count - a.video_count),
           }))
           .filter((g) => g.tags.length > 0)
           .sort((a, b) => b.tags[0].video_count - a.tags[0].video_count);
