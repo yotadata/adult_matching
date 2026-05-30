@@ -20,6 +20,7 @@ type Video = {
 type TagStat = { tag_name: string; cnt: number };
 
 type ListData = {
+  display_name: string | null;
   title: string | null;
   videos: Video[];
   tags: TagStat[];
@@ -89,8 +90,11 @@ export default async function PublicListPage(
           <Link href="/" className="text-xs text-[#656d76] hover:text-[#8b949e] transition-colors mb-4 inline-block">
             ← 性癖ラボ
           </Link>
-          <h1 className="text-2xl font-black text-[#e6edf3] mb-2">{title}</h1>
-          <p className="text-sm text-[#8b949e]">{data.videos.length}作品のいいねリスト</p>
+          {data.display_name && (
+            <p className="text-sm text-[#656d76] mb-1">{data.display_name} のリスト</p>
+          )}
+          <h1 className="text-2xl font-black text-[#e6edf3] mb-1">{title}</h1>
+          <p className="text-sm text-[#8b949e]">{data.videos.length}作品</p>
           <div className="mt-3">
             <CopyLinkButton url={pageUrl} />
           </div>
