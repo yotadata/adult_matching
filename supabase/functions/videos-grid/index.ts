@@ -55,6 +55,7 @@ Deno.serve(async (req) => {
     const pageLimit = clampLimit(typeof requestJson.limit === 'number' ? requestJson.limit : undefined)
     // cursor: 既取得動画IDのセット（クライアントが送る）
     const excludeIds: string[] = Array.isArray(requestJson.exclude_ids) ? requestJson.exclude_ids : []
+    const preferredTagIds: string[] = Array.isArray(requestJson.preferred_tag_ids) ? requestJson.preferred_tag_ids : []
     const popularLookbackDays = typeof requestJson.popularity_days === 'number'
       ? Math.max(1, requestJson.popularity_days)
       : DEFAULT_POPULAR_LOOKBACK_DAYS
@@ -175,9 +176,35 @@ Deno.serve(async (req) => {
     )
 
     if (explorationNeeded > 0) {
-      const { data: randomData, error: randomError } = await supabase.rpc('get_videos_feed', {
-        page_limit: Math.max(explorationNeeded * CANDIDATE_MULTIPLIER, DEFAULT_LIMIT),
-      })
+      // preferredTagIds がある場合（オンボーディング直後）はタグ一致動画を優先取得
+      let randomData: Record<string, unknown>[] | null = null
+      let randomError: { message: string } | null = null
+
+      if (preferredTagIds.length > 0 && decisionCount === 0) {
+        const { data, error } = await supabase
+          .from('videos')
+          .select(`
+            id, title, external_id, thumbnail_url, thumbnail_vertical_url,
+            sample_video_url, product_url, product_released_at,
+            performers:video_performers(performers(id, name)),
+            tags:video_tags(tags(id, name)),
+            video_tags!inner(tag_id)
+          `)
+          .in('video_tags.tag_id', preferredTagIds)
+          .not('id', 'in', `(${excludeIds.length > 0 ? excludeIds.join(',') : 'null'})`)
+          .limit(Math.max(explorationNeeded * CANDIDATE_MULTIPLIER, DEFAULT_LIMIT))
+        randomData = (data as unknown as Record<string, unknown>[] | null)
+        randomError = error
+      }
+
+      // フォールバック: タグ指定なし or 取得失敗時はランダム取得
+      if (!randomData || randomData.length === 0) {
+        const { data, error } = await supabase.rpc('get_videos_feed', {
+          page_limit: Math.max(explorationNeeded * CANDIDATE_MULTIPLIER, DEFAULT_LIMIT),
+        })
+        randomData = data
+        randomError = error
+      }
       if (randomError) {
         console.error('get_videos_feed error:', randomError.message)
       } else {

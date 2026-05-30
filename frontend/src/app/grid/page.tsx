@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { X, Play, Heart, Eye, ChevronDown, ChevronUp, Brain, Hand, Bot, Target, LockOpen, ExternalLink, type LucideIcon } from 'lucide-react';
 import { trackEvent } from '@/lib/analytics';
+import OnboardingModal from '@/components/OnboardingModal';
 
 type VideoItem = {
   id: string;
@@ -62,6 +63,8 @@ function GridPage() {
   const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
   const [showLoginNudge, setShowLoginNudge] = useState(false);
   const [nopedIds, setNopedIds] = useState<Set<string>>(new Set());
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const preferredTagIds = useRef<string[]>([]);
   const guestLikeCountRef = useRef(0);
   const guestLikeCountTotalRef = useRef(0);
   const overlayHideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -88,6 +91,7 @@ function GridPage() {
         body: JSON.stringify({
           limit: 30,
           exclude_ids: Array.from(loadedVideoIds.current),
+          preferred_tag_ids: preferredTagIds.current.length > 0 ? preferredTagIds.current : undefined,
         }),
       });
       if (!res.ok) return;
@@ -120,6 +124,19 @@ function GridPage() {
     return () => listener.subscription.unsubscribe();
   }, []);
 
+  // オンボーディング表示チェック
+  useEffect(() => {
+    const done = localStorage.getItem('onboarding_done');
+    if (!done) {
+      setShowOnboarding(true);
+    } else {
+      const saved = localStorage.getItem('onboarding_tags');
+      if (saved) {
+        try { preferredTagIds.current = JSON.parse(saved); } catch { /* ignore */ }
+      }
+    }
+  }, []);
+
   // DBからいいね済みIDを取得
   useEffect(() => {
     (async () => {
@@ -136,9 +153,11 @@ function GridPage() {
     })();
   }, []);
 
-  // 初回ロード
+  // 初回ロード（オンボーディング未完了の場合はスキップ、完了後に手動で呼ぶ）
   useEffect(() => {
-    fetchVideos();
+    if (localStorage.getItem('onboarding_done')) {
+      fetchVideos();
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -218,8 +237,19 @@ function GridPage() {
     });
   }, [nopedIds]);
 
+  const handleOnboardingComplete = (tagIds: string[]) => {
+    preferredTagIds.current = tagIds;
+    setShowOnboarding(false);
+    // onboarding完了後にフィードを初回取得
+    fetchVideos();
+  };
+
   return (
     <div className="min-h-screen bg-[#0d1117]" style={{ paddingTop: '52px' }}>
+      {/* オンボーディングモーダル */}
+      {showOnboarding && (
+        <OnboardingModal onComplete={handleOnboardingComplete} />
+      )}
       {/* ゲスト向けログイン nudge トースト */}
       {showLoginNudge && isLoggedIn === false && (
         <>
