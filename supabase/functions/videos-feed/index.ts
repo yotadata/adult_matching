@@ -13,7 +13,7 @@ type VideoEntry = {
   tags: unknown
   score: number | null
   model_version: string | null
-  source: 'exploitation' | 'popularity' | 'exploration'
+  source: 'exploitation' | 'exploitation_tag' | 'popularity' | 'exploration'
 }
 
 const corsHeaders = {
@@ -66,6 +66,7 @@ Deno.serve(async (req) => {
     const authHeader = req.headers.get('Authorization') ?? ''
     const requestJson = await req.json().catch(() => ({}))
     const pageLimit = clampLimit(typeof requestJson.limit === 'number' ? requestJson.limit : undefined)
+    const preferredTagIds: string[] = Array.isArray(requestJson.preferred_tag_ids) ? requestJson.preferred_tag_ids : []
     const popularLookbackDays = typeof requestJson.popularity_days === 'number'
       ? Math.max(1, requestJson.popularity_days)
       : DEFAULT_POPULAR_LOOKBACK_DAYS
@@ -119,12 +120,51 @@ Deno.serve(async (req) => {
     const popularityTarget = Math.max(1, Math.floor(adjustedPageLimit * adjustedPopularityRatio))
     const explorationTarget = Math.max(0, adjustedPageLimit - exploitationTarget - popularityTarget)
 
+    // コールドスタート時のタグ推薦: exploitation=50%, popularity=30%, exploration=20%
+    const useTagMode = preferredTagIds.length > 0 && decisionCount === 0
+    const tagExploitationTarget = Math.floor(adjustedPageLimit * 0.5)
+    const tagPopularityTarget   = Math.floor(adjustedPageLimit * 0.3)
+    const tagExplorationTarget  = adjustedPageLimit - tagExploitationTarget - tagPopularityTarget
+    const effectiveExploitationTarget = useTagMode ? tagExploitationTarget : exploitationTarget
+    const effectivePopularityTarget   = useTagMode ? tagPopularityTarget   : popularityTarget
+    const effectiveExplorationTarget  = useTagMode ? tagExplorationTarget  : explorationTarget
+
     const seen = new Set<string>()
     const exploitation: VideoEntry[] = []
     const popularity: VideoEntry[] = []
     const exploration: VideoEntry[] = []
 
-    if (userId && adjustedExploitationRatio > 0) {
+    if (useTagMode) {
+      const { data: tagRecs, error: tagError } = await supabase.rpc('get_videos_by_tags', {
+        tag_ids: preferredTagIds,
+        exclude_ids: [],
+        p_limit: Math.max(tagExploitationTarget * CANDIDATE_MULTIPLIER, 60),
+      })
+      if (tagError) {
+        console.error('get_videos_by_tags error:', tagError.message)
+      } else {
+        for (const item of (tagRecs ?? []) as Record<string, unknown>[]) {
+          const id = String(item.id)
+          if (seen.has(id)) continue
+          exploitation.push({
+            id,
+            title: (item.title ?? null) as string | null,
+            description: null,
+            external_id: (item.external_id ?? null) as string | null,
+            thumbnail_url: (item.thumbnail_url ?? null) as string | null,
+            sample_video_url: (item.sample_video_url ?? null) as string | null,
+            product_released_at: (item.product_released_at ?? null) as string | null,
+            performers: (item.performers ?? []) as unknown,
+            tags: (item.tags ?? []) as unknown,
+            score: null,
+            model_version: null,
+            source: 'exploitation_tag',
+          })
+          seen.add(id)
+          if (exploitation.length >= tagExploitationTarget) break
+        }
+      }
+    } else if (userId && adjustedExploitationRatio > 0) {
       const { data: recs, error: recError } = await supabase.rpc('get_videos_recommendations', {
         user_uuid: userId,
         page_limit: Math.max(adjustedPageLimit * CANDIDATE_MULTIPLIER, 100),
@@ -155,10 +195,10 @@ Deno.serve(async (req) => {
       }
     }
 
-    if (popularityTarget > 0) {
+    if (effectivePopularityTarget > 0) {
       const { data: popData, error: popError } = await supabase.rpc('get_popular_videos', {
         user_uuid: userId,
-        limit_count: popularityTarget * CANDIDATE_MULTIPLIER,
+        limit_count: effectivePopularityTarget * CANDIDATE_MULTIPLIER,
         lookback_days: popularLookbackDays,
       })
       if (popError) {
@@ -184,13 +224,13 @@ Deno.serve(async (req) => {
             source: 'popularity',
           })
           seen.add(id)
-          if (popularity.length >= popularityTarget) break
+          if (popularity.length >= effectivePopularityTarget) break
         }
       }
     }
 
     const explorationNeeded = Math.max(0,
-      explorationTarget + (exploitationTarget - exploitation.length) + (popularityTarget - popularity.length),
+      effectiveExplorationTarget + (effectiveExploitationTarget - exploitation.length) + (effectivePopularityTarget - popularity.length),
     )
 
     if (explorationNeeded > 0) {

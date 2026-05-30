@@ -207,7 +207,12 @@ function SwipePage() {
       if (session?.access_token) headers.Authorization = `Bearer ${session.access_token}`;
       const timeoutMs = 12000;
       const timeoutPromise = new Promise<never>((_, reject) => setTimeout(() => reject(new Error('videos-feed timeout')), timeoutMs));
-      const invokePromise = supabase.functions.invoke('videos-feed', { headers, body: {} });
+      const savedTags = localStorage.getItem('onboarding_tags');
+      const preferredTagIds = savedTags ? (() => { try { return JSON.parse(savedTags); } catch { return []; } })() : [];
+      const invokePromise = supabase.functions.invoke('videos-feed', {
+        headers,
+        body: preferredTagIds.length > 0 ? { preferred_tag_ids: preferredTagIds } : {},
+      });
       const { data, error } = await Promise.race([invokePromise, timeoutPromise]);
       if (error) {
         console.error('Error from videos-feed invoke:', error);

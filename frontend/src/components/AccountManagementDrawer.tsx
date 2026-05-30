@@ -2,7 +2,7 @@
 
 import { Dialog, Transition } from '@headlessui/react';
 import { Fragment, useEffect, useState, useCallback } from 'react';
-import { X, Heart, Tag, Users, TrendingUp } from 'lucide-react';
+import { X, Heart, Tag, Users, TrendingUp, Link2, Check, Loader2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
 interface AccountManagementDrawerProps {
@@ -20,6 +20,9 @@ const AccountManagementDrawer: React.FC<AccountManagementDrawerProps> = ({ isOpe
   const [tags, setTags] = useState<TagItem[]>([]);
   const [performers, setPerformers] = useState<PerformerItem[]>([]);
   const [loading, setLoading] = useState(false);
+  const [publicToken, setPublicToken] = useState<string | null>(null);
+  const [tokenLoading, setTokenLoading] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     const checkLoginStatus = async () => {
@@ -56,8 +59,45 @@ const AccountManagementDrawer: React.FC<AccountManagementDrawerProps> = ({ isOpe
   }, []);
 
   useEffect(() => {
-    if (isOpen && isLoggedIn) fetchInsights();
+    if (isOpen && isLoggedIn) {
+      fetchInsights();
+      // 既存の公開トークンを取得
+      supabase.from('public_lists').select('token').eq('is_active', true).maybeSingle()
+        .then(({ data }) => { if (data) setPublicToken(data.token); });
+    }
   }, [isOpen, isLoggedIn, fetchInsights]);
+
+  const handleCreatePublicList = async () => {
+    setTokenLoading(true);
+    try {
+      const { data: existing } = await supabase
+        .from('public_lists').select('token').eq('is_active', true).maybeSingle();
+      if (existing) {
+        setPublicToken(existing.token);
+      } else {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+        const { data } = await supabase
+          .from('public_lists').insert({ user_id: user.id }).select('token').single();
+        if (data) setPublicToken(data.token);
+      }
+    } finally {
+      setTokenLoading(false);
+    }
+  };
+
+  const handleCopyLink = async () => {
+    if (!publicToken) return;
+    await navigator.clipboard.writeText(`${window.location.origin}/list/${publicToken}`);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleDeletePublicList = async () => {
+    if (!publicToken) return;
+    await supabase.from('public_lists').update({ is_active: false }).eq('token', publicToken);
+    setPublicToken(null);
+  };
 
   const handleLogout = async () => {
     try {
@@ -172,6 +212,49 @@ const AccountManagementDrawer: React.FC<AccountManagementDrawerProps> = ({ isOpe
                           </section>
 
                           <div className="border-t border-white/10" />
+                        </>
+                      )}
+
+                      {/* 公開リスト */}
+                      {isLoggedIn && (
+                        <>
+                          <div className="border-t border-white/10" />
+                          <section className="space-y-3">
+                            <p className="text-[11px] text-[#8b949e] font-semibold uppercase tracking-wider">公開リスト</p>
+                            <p className="text-xs text-[#656d76]">いいねリストを URL で公開・シェアできます。</p>
+                            {publicToken ? (
+                              <div className="space-y-2">
+                                <div className="flex items-center gap-2 p-2.5 rounded-lg bg-[#161b22] border border-[#30363d] text-xs text-[#8b949e] truncate">
+                                  <Link2 size={12} className="shrink-0" />
+                                  <span className="truncate">{typeof window !== 'undefined' ? window.location.host : 'seihekilab.com'}/list/{publicToken}</span>
+                                </div>
+                                <div className="flex gap-2">
+                                  <button
+                                    onClick={handleCopyLink}
+                                    className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold transition-colors"
+                                  >
+                                    {copied ? <><Check size={12} />コピー済み</> : <><Link2 size={12} />リンクをコピー</>}
+                                  </button>
+                                  <button
+                                    onClick={handleDeletePublicList}
+                                    className="px-3 py-2 rounded-lg bg-red-500/20 text-red-400 border border-red-500/30 text-xs font-bold hover:bg-red-500/30 transition-colors"
+                                  >
+                                    削除
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              <button
+                                onClick={handleCreatePublicList}
+                                disabled={tokenLoading}
+                                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-[#161b22] border border-[#30363d] hover:border-violet-500/50 text-[#8b949e] hover:text-[#e6edf3] text-sm font-bold transition-all disabled:opacity-50"
+                              >
+                                {tokenLoading
+                                  ? <><Loader2 size={14} className="animate-spin" />作成中…</>
+                                  : <><Link2 size={14} />公開リンクを作成</>}
+                              </button>
+                            )}
+                          </section>
                         </>
                       )}
 

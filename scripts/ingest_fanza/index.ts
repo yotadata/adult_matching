@@ -537,7 +537,8 @@ async function updateRankings() {
   console.log('[ingest_fanza] === Starting ranking update ===');
   const rankingSources = [
     { service: 'digital', floor: 'videoa', source: 'fanza_videoa' },
-    { service: 'digital', floor: 'anime',  source: 'fanza_anime'  },
+    // アニメはランキングからも除外
+    // { service: 'digital', floor: 'anime',  source: 'fanza_anime'  },
   ];
   const hits = 100;
   const maxRank = 500;
@@ -629,7 +630,8 @@ async function main() {
 
   const sources = [
     { service: 'digital', floor: 'videoa', source: 'FANZA' },
-    { service: 'digital', floor: 'anime',  source: 'FANZA_ANIME' },
+    // アニメは取り込まない（非実写コンテンツ除外）
+    // { service: 'digital', floor: 'anime',  source: 'FANZA_ANIME' },
   ];
 
   let totalSuccess = 0;

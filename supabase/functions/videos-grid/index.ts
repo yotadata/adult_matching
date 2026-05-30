@@ -14,7 +14,7 @@ type VideoEntry = {
   tags: unknown
   score: number | null
   model_version: string | null
-  source: 'exploitation' | 'popularity' | 'exploration'
+  source: 'exploitation' | 'exploitation_tag' | 'popularity' | 'exploration'
 }
 
 const corsHeaders = {
@@ -97,13 +97,61 @@ Deno.serve(async (req) => {
     const exploitationTarget = Math.max(1, Math.floor(pageLimit * adjustedExploitationRatio))
     const popularityTarget = Math.max(1, Math.floor(pageLimit * adjustedPopularityRatio))
     const explorationTarget = Math.max(0, pageLimit - exploitationTarget - popularityTarget)
+    // コールドスタート時のタグ推薦: exploitation=50%, popularity=30%, exploration=20% に上書き
+    const useTagMode = preferredTagIds.length > 0 && decisionCount === 0
+    const tagExploitationTarget = Math.floor(pageLimit * 0.5)  // 15
+    const tagPopularityTarget   = Math.floor(pageLimit * 0.3)  // 9
+    const tagExplorationTarget  = pageLimit - tagExploitationTarget - tagPopularityTarget  // 6
 
     const seen = new Set<string>(excludeIds)
     const exploitation: VideoEntry[] = []
     const popularity: VideoEntry[] = []
     const exploration: VideoEntry[] = []
 
-    if (userId && adjustedExploitationRatio > 0) {
+    // コールドスタート時（decisionCount=0 + タグ選択済み）は
+    // exploitation 枠をタグ一致動画で埋める（推薦モデルの代替）
+    let tagRecsCount = -1
+    let tagRecsFirstId: string | null = null
+    if (preferredTagIds.length > 0 && decisionCount === 0) {
+      const { data: tagRecs, error: tagError } = await supabase.rpc('get_videos_by_tags', {
+        tag_ids: preferredTagIds,
+        exclude_ids: excludeIds.length > 0 ? excludeIds : [],
+        p_limit: Math.max(tagExploitationTarget * CANDIDATE_MULTIPLIER, 60),
+      })
+      tagRecsCount = (tagRecs ?? []).length
+      tagRecsFirstId = String(((tagRecs ?? []) as Record<string, unknown>[])[0]?.id ?? null)
+      const first = (tagRecs ?? [])[0] as Record<string, unknown> | undefined
+      console.log('[tag] first item keys:', JSON.stringify(first ? Object.keys(first) : []))
+      console.log('[tag] first item id:', first?.id, 'type:', typeof first?.id)
+      const first5ids = (tagRecs ?? [] as Record<string, unknown>[]).slice(0, 5).map((r: Record<string, unknown>) => String(r.id))
+      console.log('[tag] first5 ids:', JSON.stringify(first5ids))
+      if (tagError) {
+        console.error('get_videos_by_tags error:', tagError.message)
+      } else {
+        for (const item of (tagRecs ?? []) as Record<string, unknown>[]) {
+          const id = String(item.id)
+          if (seen.has(id)) continue
+          exploitation.push({
+            id,
+            title: (item.title ?? null) as string | null,
+            external_id: (item.external_id ?? null) as string | null,
+            thumbnail_url: (item.thumbnail_url ?? null) as string | null,
+            thumbnail_vertical_url: (item.thumbnail_vertical_url ?? null) as string | null,
+            sample_video_url: (item.sample_video_url ?? null) as string | null,
+            embed_url: toEmbedUrl((item.external_id ?? null) as string | null),
+            product_url: (item.product_url ?? null) as string | null,
+            product_released_at: (item.product_released_at ?? null) as string | null,
+            performers: (item.performers ?? []) as unknown,
+            tags: (item.tags ?? []) as unknown,
+            score: null,
+            model_version: null,
+            source: 'exploitation_tag',
+          })
+          seen.add(id)
+          if (exploitation.length >= tagExploitationTarget) break
+        }
+      }
+    } else if (userId && adjustedExploitationRatio > 0) {
       const { data: recs, error: recError } = await supabase.rpc('get_videos_recommendations', {
         user_uuid: userId,
         page_limit: Math.max(pageLimit * CANDIDATE_MULTIPLIER, 100),
@@ -136,10 +184,11 @@ Deno.serve(async (req) => {
       }
     }
 
-    if (popularityTarget > 0) {
+    const effectivePopularityTarget = useTagMode ? tagPopularityTarget : popularityTarget
+    if (effectivePopularityTarget > 0) {
       const { data: popData, error: popError } = await supabase.rpc('get_popular_videos', {
         user_uuid: userId,
-        limit_count: popularityTarget * CANDIDATE_MULTIPLIER,
+        limit_count: effectivePopularityTarget * CANDIDATE_MULTIPLIER,
         lookback_days: popularLookbackDays,
       })
       if (popError) {
@@ -165,46 +214,27 @@ Deno.serve(async (req) => {
             source: 'popularity',
           })
           seen.add(id)
-          if (popularity.length >= popularityTarget) break
+          if (popularity.length >= effectivePopularityTarget) break
         }
       }
     }
 
+    const effectiveExploitationTarget = useTagMode ? tagExploitationTarget : exploitationTarget
+    const effectiveExplorationTarget  = useTagMode ? tagExplorationTarget  : explorationTarget
     const explorationNeeded = Math.max(
       0,
-      explorationTarget + (exploitationTarget - exploitation.length) + (popularityTarget - popularity.length),
+      effectiveExplorationTarget + (effectiveExploitationTarget - exploitation.length) + (effectivePopularityTarget - popularity.length),
     )
 
     if (explorationNeeded > 0) {
-      // preferredTagIds がある場合（オンボーディング直後）はタグ一致動画を優先取得
       let randomData: Record<string, unknown>[] | null = null
       let randomError: { message: string } | null = null
 
-      if (preferredTagIds.length > 0 && decisionCount === 0) {
-        const { data, error } = await supabase
-          .from('videos')
-          .select(`
-            id, title, external_id, thumbnail_url, thumbnail_vertical_url,
-            sample_video_url, product_url, product_released_at,
-            performers:video_performers(performers(id, name)),
-            tags:video_tags(tags(id, name)),
-            video_tags!inner(tag_id)
-          `)
-          .in('video_tags.tag_id', preferredTagIds)
-          .not('id', 'in', `(${excludeIds.length > 0 ? excludeIds.join(',') : 'null'})`)
-          .limit(Math.max(explorationNeeded * CANDIDATE_MULTIPLIER, DEFAULT_LIMIT))
-        randomData = (data as unknown as Record<string, unknown>[] | null)
-        randomError = error
-      }
-
-      // フォールバック: タグ指定なし or 取得失敗時はランダム取得
-      if (!randomData || randomData.length === 0) {
-        const { data, error } = await supabase.rpc('get_videos_feed', {
-          page_limit: Math.max(explorationNeeded * CANDIDATE_MULTIPLIER, DEFAULT_LIMIT),
-        })
-        randomData = data
-        randomError = error
-      }
+      const { data, error } = await supabase.rpc('get_videos_feed', {
+        page_limit: Math.max(explorationNeeded * CANDIDATE_MULTIPLIER, DEFAULT_LIMIT),
+      })
+      randomData = data
+      randomError = error
       if (randomError) {
         console.error('get_videos_feed error:', randomError.message)
       } else {
@@ -245,7 +275,20 @@ Deno.serve(async (req) => {
       if (ei >= exploitation.length && pi >= popularity.length && xi >= exploration.length) break
     }
 
-    return new Response(JSON.stringify({ videos: final.slice(0, pageLimit) }), {
+    return new Response(JSON.stringify({
+      videos: final.slice(0, pageLimit),
+      _debug: {
+        preferredTagIds_count: preferredTagIds.length,
+        preferredTagIds_first: preferredTagIds[0] ?? null,
+        decisionCount,
+        tagRecs_count: tagRecsCount,
+        excludeIds_count: excludeIds.length,
+        tagRecs_firstId: tagRecsFirstId,
+        exploitation_count: exploitation.length,
+        popularity_count: popularity.length,
+        exploration_count: exploration.length,
+      },
+    }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     })

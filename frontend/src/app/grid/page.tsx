@@ -35,12 +35,14 @@ function toFanzaEmbedUrl(externalId: string | null): string {
 
 const SOURCE_BADGE_COLORS: Record<string, string> = {
   exploitation: 'bg-violet-600 text-white',
+  exploitation_tag: 'bg-orange-500 text-white',
   popularity: 'bg-blue-600 text-white',
   exploration: 'bg-green-700 text-white',
 };
 
 const SOURCE_BORDER_COLORS: Record<string, string> = {
   exploitation: 'border-violet-500',
+  exploitation_tag: 'border-orange-400',
   popularity: 'border-blue-500',
   exploration: 'border-green-600',
 };
@@ -96,6 +98,7 @@ function GridPage() {
       });
       if (!res.ok) return;
       const data = await res.json();
+      if (isDebug && data._debug) console.log('[grid debug]', JSON.stringify(data._debug));
       const newVideos: VideoItem[] = (data.videos ?? []).filter(
         (v: VideoItem) => !loadedVideoIds.current.has(v.id)
       );
@@ -129,11 +132,6 @@ function GridPage() {
     const done = localStorage.getItem('onboarding_done');
     if (!done) {
       setShowOnboarding(true);
-    } else {
-      const saved = localStorage.getItem('onboarding_tags');
-      if (saved) {
-        try { preferredTagIds.current = JSON.parse(saved); } catch { /* ignore */ }
-      }
     }
   }, []);
 
@@ -156,6 +154,11 @@ function GridPage() {
   // 初回ロード（オンボーディング未完了の場合はスキップ、完了後に手動で呼ぶ）
   useEffect(() => {
     if (localStorage.getItem('onboarding_done')) {
+      // preferredTagIds を fetchVideos より先に読み込む
+      const saved = localStorage.getItem('onboarding_tags');
+      if (saved) {
+        try { preferredTagIds.current = JSON.parse(saved); } catch { /* ignore */ }
+      }
       fetchVideos();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -164,7 +167,11 @@ function GridPage() {
   // 無限スクロール
   useEffect(() => {
     const observer = new IntersectionObserver(
-      (entries) => { if (entries[0].isIntersecting) fetchVideos(); },
+      (entries) => {
+        // オンボーディング未完了の場合はスキップ
+        if (!localStorage.getItem('onboarding_done')) return;
+        if (entries[0].isIntersecting) fetchVideos();
+      },
       { threshold: 0.1 }
     );
     if (loaderRef.current) observer.observe(loaderRef.current);
@@ -391,9 +398,89 @@ function GridPage() {
       </div>
       </div>{/* /max-w-4xl */}
 
-      {/* Pinterest グリッド */}
-      <div className="px-3 py-4">
-      <div className="columns-1 sm:columns-2 md:columns-3 lg:columns-4 xl:columns-5 gap-2 space-y-2">
+      {/* グリッド: モバイル=2カラム縦長、PC=Pinterestスタイル */}
+      <div className="px-2 sm:px-3 py-4">
+      {/* モバイル: 2カラム masonry（columns） */}
+      <div className="columns-2 gap-2 space-y-2 sm:hidden">
+        {videos.map((video) => (
+          <div
+            key={video.id}
+            className={`break-inside-avoid rounded-xl overflow-hidden cursor-pointer bg-[#161b22] border transition-all shadow-md ${
+              loadedIds.has(video.id) ? 'opacity-100' : 'opacity-0'
+            } ${
+              likedIds.has(video.id)
+                ? 'border-pink-500/60'
+                : isDebug
+                  ? (SOURCE_BORDER_COLORS[video.source] ?? 'border-[#30363d]')
+                  : 'border-[#30363d] hover:border-violet-500/60'
+            }`}
+            onClick={() => {
+              if (overlayHideTimer.current) clearTimeout(overlayHideTimer.current);
+              setShowVideo(false);
+              setSelected(video);
+              setViewedIds((prev) => new Set([...prev, video.id]));
+            }}
+          >
+            {/* サムネイル */}
+            <div className="w-full bg-black relative aspect-[7/10]">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={video.thumbnail_url ?? ''}
+                alt={video.title ?? ''}
+                className="w-full h-full object-cover object-right"
+                loading="lazy"
+                onLoad={() => setLoadedIds((prev) => new Set([...prev, video.id]))}
+              />
+              {viewedIds.has(video.id) && !likedIds.has(video.id) && <div className="absolute inset-0 bg-black/60 pointer-events-none" />}
+              {likedIds.has(video.id) && <div className="absolute inset-0 bg-pink-500/30 pointer-events-none" />}
+              {nopedIds.has(video.id) && <div className="absolute inset-0 bg-black/70 pointer-events-none" />}
+              <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/80 to-transparent pointer-events-none" />
+              {/* 再生ボタン（中央・常時表示） */}
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <div className="w-10 h-10 rounded-full bg-black/50 border border-white/30 flex items-center justify-center">
+                  <Play size={18} className="text-white ml-0.5" fill="currentColor" />
+                </div>
+              </div>
+              {/* ハートボタン（右下） */}
+              {nopedIds.has(video.id) ? (
+                <div className="absolute bottom-2 right-2 w-8 h-8 rounded-full bg-white/20 flex items-center justify-center shadow-md pointer-events-none">
+                  <X size={14} className="text-white/80" strokeWidth={2.5} />
+                </div>
+              ) : (
+                <button
+                  className={`absolute bottom-2 right-2 w-8 h-8 rounded-full flex items-center justify-center transition-colors shadow-lg ${likedIds.has(video.id) ? 'bg-pink-500' : 'bg-black/50 hover:bg-pink-500/80'}`}
+                  onClick={(e) => { e.stopPropagation(); handleLike(video); }}
+                  aria-label="いいね"
+                >
+                  <Heart size={15} className="text-white" fill={likedIds.has(video.id) ? 'white' : 'none'} strokeWidth={2} />
+                </button>
+              )}
+              {isDebug && (
+                <div className="absolute bottom-1 left-1">
+                  <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${SOURCE_BADGE_COLORS[video.source] ?? 'bg-gray-600 text-white'}`}>{video.source}</span>
+                </div>
+              )}
+            </div>
+            {/* タイトル・タグ */}
+            <div className="px-2 pt-1.5 pb-2">
+              <p className="text-[11px] font-semibold text-[#e6edf3] leading-snug mb-1">
+                {video.title}
+              </p>
+              {(video.tags as { id: string; name: string }[])?.length > 0 && (
+                <div className="flex flex-wrap gap-1">
+                  {(video.tags as { id: string; name: string }[]).slice(0, 2).map((t) => (
+                    <span key={t.id} className="text-[9px] bg-violet-900/40 border border-violet-700/40 text-violet-300 rounded-full px-1.5 py-0.5">
+                      {t.name}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+      {/* PC: Pinterestスタイル */}
+      <div className="hidden sm:block columns-2 md:columns-3 lg:columns-4 xl:columns-5 gap-2 space-y-2">
         {videos.map((video) => (
           <div
             key={video.id}
@@ -445,20 +532,20 @@ function GridPage() {
               </div>
               {/* いいね/興味なしボタン（常時・右下） */}
               {nopedIds.has(video.id) ? (
-                <div className="absolute bottom-1.5 right-1.5 w-7 h-7 rounded-full bg-white/20 flex items-center justify-center shadow-md pointer-events-none">
-                  <X size={13} className="text-white/80" strokeWidth={2.5} />
+                <div className="absolute bottom-2 right-2 w-8 h-8 rounded-full bg-white/20 flex items-center justify-center shadow-md pointer-events-none">
+                  <X size={14} className="text-white/80" strokeWidth={2.5} />
                 </div>
               ) : (
                 <button
-                  className={`absolute bottom-1.5 right-1.5 w-7 h-7 rounded-full flex items-center justify-center transition-colors shadow-md ${
+                  className={`absolute bottom-2 right-2 w-8 h-8 rounded-full flex items-center justify-center transition-colors shadow-lg ${
                     likedIds.has(video.id)
                       ? 'bg-pink-500'
-                      : 'bg-black/40 hover:bg-pink-500/80'
+                      : 'bg-black/50 hover:bg-pink-500/80'
                   }`}
                   onClick={(e) => { e.stopPropagation(); handleLike(video); }}
                   aria-label="いいね"
                 >
-                  <Heart size={13} className="text-white" fill={likedIds.has(video.id) ? 'white' : 'none'} strokeWidth={2} />
+                  <Heart size={15} className="text-white" fill={likedIds.has(video.id) ? 'white' : 'none'} strokeWidth={2} />
                 </button>
               )}
               {/* 既読バッジ（いいね済みでない場合のみ・左上） */}
@@ -502,8 +589,7 @@ function GridPage() {
           </div>
         ))}
       </div>
-
-      </div>{/* columns */}
+      </div>{/* PC columns / モバイルgrid wrapper */}
 
       {/* ローダー */}
       <div ref={loaderRef} className="h-16 flex items-center justify-center">
@@ -618,7 +704,7 @@ function GridPage() {
                     className="flex items-center gap-1.5 justify-center w-full py-2 rounded-lg bg-[#f0f0f0] hover:bg-[#e0e0e0] text-gray-500 text-xs font-medium transition-colors"
                   >
                     <ExternalLink size={12} />
-                    FANZAで購入・詳細を見る
+                    本編を見る
                   </a>
                 )}
               </div>
