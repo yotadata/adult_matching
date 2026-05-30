@@ -167,7 +167,11 @@ function GridPage() {
   // 無限スクロール
   useEffect(() => {
     const observer = new IntersectionObserver(
-      (entries) => { if (entries[0].isIntersecting) fetchVideos(); },
+      (entries) => {
+        // オンボーディング未完了の場合はスキップ
+        if (!localStorage.getItem('onboarding_done')) return;
+        if (entries[0].isIntersecting) fetchVideos();
+      },
       { threshold: 0.1 }
     );
     if (loaderRef.current) observer.observe(loaderRef.current);

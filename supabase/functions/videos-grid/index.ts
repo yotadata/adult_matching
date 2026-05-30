@@ -97,6 +97,8 @@ Deno.serve(async (req) => {
     const exploitationTarget = Math.max(1, Math.floor(pageLimit * adjustedExploitationRatio))
     const popularityTarget = Math.max(1, Math.floor(pageLimit * adjustedPopularityRatio))
     const explorationTarget = Math.max(0, pageLimit - exploitationTarget - popularityTarget)
+    // コールドスタート時のタグ推薦ターゲット（ゲスト含め50%を確保）
+    const tagExploitationTarget = Math.floor(pageLimit * 0.5)
 
     const seen = new Set<string>(excludeIds)
     const exploitation: VideoEntry[] = []
@@ -105,14 +107,21 @@ Deno.serve(async (req) => {
 
     // コールドスタート時（decisionCount=0 + タグ選択済み）は
     // exploitation 枠をタグ一致動画で埋める（推薦モデルの代替）
+    let tagRecsCount = -1
+    let tagRecsFirstId: string | null = null
     if (preferredTagIds.length > 0 && decisionCount === 0) {
-      console.log('[tag] preferredTagIds count:', preferredTagIds.length, 'first:', preferredTagIds[0])
       const { data: tagRecs, error: tagError } = await supabase.rpc('get_videos_by_tags', {
         tag_ids: preferredTagIds,
         exclude_ids: excludeIds.length > 0 ? excludeIds : [],
-        p_limit: Math.max(exploitationTarget * CANDIDATE_MULTIPLIER, 60),
+        p_limit: Math.max(tagExploitationTarget * CANDIDATE_MULTIPLIER, 60),
       })
-      console.log('[tag] tagRecs count:', (tagRecs ?? []).length, 'error:', tagError?.message)
+      tagRecsCount = (tagRecs ?? []).length
+      tagRecsFirstId = String(((tagRecs ?? []) as Record<string, unknown>[])[0]?.id ?? null)
+      const first = (tagRecs ?? [])[0] as Record<string, unknown> | undefined
+      console.log('[tag] first item keys:', JSON.stringify(first ? Object.keys(first) : []))
+      console.log('[tag] first item id:', first?.id, 'type:', typeof first?.id)
+      const first5ids = (tagRecs ?? [] as Record<string, unknown>[]).slice(0, 5).map((r: Record<string, unknown>) => String(r.id))
+      console.log('[tag] first5 ids:', JSON.stringify(first5ids))
       if (tagError) {
         console.error('get_videos_by_tags error:', tagError.message)
       } else {
@@ -136,7 +145,7 @@ Deno.serve(async (req) => {
             source: 'exploitation_tag',
           })
           seen.add(id)
-          if (exploitation.length >= exploitationTarget) break
+          if (exploitation.length >= tagExploitationTarget) break
         }
       }
     } else if (userId && adjustedExploitationRatio > 0) {
@@ -266,6 +275,9 @@ Deno.serve(async (req) => {
         preferredTagIds_count: preferredTagIds.length,
         preferredTagIds_first: preferredTagIds[0] ?? null,
         decisionCount,
+        tagRecs_count: tagRecsCount,
+        excludeIds_count: excludeIds.length,
+        tagRecs_firstId: tagRecsFirstId,
         exploitation_count: exploitation.length,
         popularity_count: popularity.length,
         exploration_count: exploration.length,
