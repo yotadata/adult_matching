@@ -91,11 +91,12 @@ export default function OnboardingModal({ onComplete }: Props) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{ background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(4px)' }}>
-      <div className="w-full max-w-lg max-h-[85vh] flex flex-col rounded-2xl border border-[#30363d] bg-[#0d1117] overflow-hidden">
+      style={{ background: 'rgba(0,0,0,0.55)' }}>
+      <div className="w-full max-w-lg max-h-[85vh] flex flex-col rounded-2xl border border-white/10 overflow-hidden"
+        style={{ background: 'rgba(13,17,23,0.75)', backdropFilter: 'blur(16px)' }}>
 
         {/* ヘッダー */}
-        <div className="px-6 pt-6 pb-4 border-b border-[#21262d] shrink-0">
+        <div className="px-6 pt-6 pb-4 border-b border-white/10 shrink-0">
           <p className="text-xs font-bold tracking-widest uppercase text-violet-400 mb-2">はじめに</p>
           <h2 className="text-xl font-black text-[#e6edf3] mb-1">好きなジャンルを選んでください</h2>
           <p className="text-sm text-[#8b949e]">
@@ -144,7 +145,7 @@ export default function OnboardingModal({ onComplete }: Props) {
         </div>
 
         {/* フッター */}
-        <div className="px-6 py-4 border-t border-[#21262d] shrink-0">
+        <div className="px-6 py-4 border-t border-white/10 shrink-0">
           <div className="flex items-center justify-between gap-3">
             <button
               onClick={handleSkip}
