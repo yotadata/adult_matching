@@ -1,0 +1,2 @@
+-- Remote-only migration stub
+-- Applied directly via MCP: get_videos_by_tags (text[] version), get_videos_feed and get_videos_recommendations FANZA_ANIME exclusion

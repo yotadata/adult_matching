@@ -1,0 +1,2 @@
+-- Remote-only migration stub
+-- Applied directly via MCP: get_videos_by_tags RPC (uuid[] version, superseded by text[] version in later migration)
