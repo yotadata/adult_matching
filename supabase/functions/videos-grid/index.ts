@@ -97,8 +97,11 @@ Deno.serve(async (req) => {
     const exploitationTarget = Math.max(1, Math.floor(pageLimit * adjustedExploitationRatio))
     const popularityTarget = Math.max(1, Math.floor(pageLimit * adjustedPopularityRatio))
     const explorationTarget = Math.max(0, pageLimit - exploitationTarget - popularityTarget)
-    // コールドスタート時のタグ推薦ターゲット（ゲスト含め50%を確保）
-    const tagExploitationTarget = Math.floor(pageLimit * 0.5)
+    // コールドスタート時のタグ推薦: exploitation=50%, popularity=30%, exploration=20% に上書き
+    const useTagMode = preferredTagIds.length > 0 && decisionCount === 0
+    const tagExploitationTarget = Math.floor(pageLimit * 0.5)  // 15
+    const tagPopularityTarget   = Math.floor(pageLimit * 0.3)  // 9
+    const tagExplorationTarget  = pageLimit - tagExploitationTarget - tagPopularityTarget  // 6
 
     const seen = new Set<string>(excludeIds)
     const exploitation: VideoEntry[] = []
@@ -181,10 +184,11 @@ Deno.serve(async (req) => {
       }
     }
 
-    if (popularityTarget > 0) {
+    const effectivePopularityTarget = useTagMode ? tagPopularityTarget : popularityTarget
+    if (effectivePopularityTarget > 0) {
       const { data: popData, error: popError } = await supabase.rpc('get_popular_videos', {
         user_uuid: userId,
-        limit_count: popularityTarget * CANDIDATE_MULTIPLIER,
+        limit_count: effectivePopularityTarget * CANDIDATE_MULTIPLIER,
         lookback_days: popularLookbackDays,
       })
       if (popError) {
@@ -210,14 +214,16 @@ Deno.serve(async (req) => {
             source: 'popularity',
           })
           seen.add(id)
-          if (popularity.length >= popularityTarget) break
+          if (popularity.length >= effectivePopularityTarget) break
         }
       }
     }
 
+    const effectiveExploitationTarget = useTagMode ? tagExploitationTarget : exploitationTarget
+    const effectiveExplorationTarget  = useTagMode ? tagExplorationTarget  : explorationTarget
     const explorationNeeded = Math.max(
       0,
-      explorationTarget + (exploitationTarget - exploitation.length) + (popularityTarget - popularity.length),
+      effectiveExplorationTarget + (effectiveExploitationTarget - exploitation.length) + (effectivePopularityTarget - popularity.length),
     )
 
     if (explorationNeeded > 0) {
