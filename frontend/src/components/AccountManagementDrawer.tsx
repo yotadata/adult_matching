@@ -88,7 +88,7 @@ const AccountManagementDrawer: React.FC<AccountManagementDrawerProps> = ({ isOpe
 
   const handleCopyLink = async () => {
     if (!publicToken) return;
-    await navigator.clipboard.writeText(`https://www.seihekilab.com/list/${publicToken}`);
+    await navigator.clipboard.writeText(`${window.location.origin}/list/${publicToken}`);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -226,7 +226,7 @@ const AccountManagementDrawer: React.FC<AccountManagementDrawerProps> = ({ isOpe
                               <div className="space-y-2">
                                 <div className="flex items-center gap-2 p-2.5 rounded-lg bg-[#161b22] border border-[#30363d] text-xs text-[#8b949e] truncate">
                                   <Link2 size={12} className="shrink-0" />
-                                  <span className="truncate">seihekilab.com/list/{publicToken}</span>
+                                  <span className="truncate">{typeof window !== 'undefined' ? window.location.host : 'seihekilab.com'}/list/{publicToken}</span>
                                 </div>
                                 <div className="flex gap-2">
                                   <button
