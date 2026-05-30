@@ -423,11 +423,11 @@ function GridPage() {
           >
             <div className="w-full bg-black relative group aspect-[2/3]">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              {/* 縦長サムネイル: pl.jpg → pt.jpg でパッケージ表紙（縦長）を使用 */}
+              {/* 横長画像の右半分をトリミングして縦長表示 */}
               <img
-                src={video.thumbnail_url?.replace('pl.jpg', 'pt.jpg') ?? ''}
+                src={video.thumbnail_url ?? ''}
                 alt={video.title ?? ''}
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover object-right"
                 loading="lazy"
                 onLoad={() => setLoadedIds((prev) => new Set([...prev, video.id]))}
               />
