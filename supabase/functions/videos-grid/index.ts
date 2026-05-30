@@ -103,7 +103,43 @@ Deno.serve(async (req) => {
     const popularity: VideoEntry[] = []
     const exploration: VideoEntry[] = []
 
-    if (userId && adjustedExploitationRatio > 0) {
+    // decisionCount=0 かつ preferredTagIds がある場合はタグ一致動画で exploitation を埋める
+    const useTagExploitation = preferredTagIds.length > 0 && decisionCount === 0
+
+    if (useTagExploitation) {
+      const { data: tagRecs, error: tagError } = await supabase
+        .from('videos')
+        .select('id, title, external_id, thumbnail_url, thumbnail_vertical_url, sample_video_url, product_url, product_released_at, performers:video_performers(performers(id, name)), tags:video_tags(tags(id, name)), video_tags!inner(tag_id)')
+        .in('video_tags.tag_id', preferredTagIds)
+        .not('id', 'in', `(${excludeIds.length > 0 ? excludeIds.join(',') : '00000000-0000-0000-0000-000000000000'})`)
+        .limit(Math.max(exploitationTarget * CANDIDATE_MULTIPLIER, 60))
+      if (tagError) {
+        console.error('tag exploitation error:', tagError.message)
+      } else {
+        for (const item of (tagRecs ?? []) as Record<string, unknown>[]) {
+          const id = String(item.id)
+          if (seen.has(id)) continue
+          exploitation.push({
+            id,
+            title: (item.title ?? null) as string | null,
+            external_id: (item.external_id ?? null) as string | null,
+            thumbnail_url: (item.thumbnail_url ?? null) as string | null,
+            thumbnail_vertical_url: (item.thumbnail_vertical_url ?? null) as string | null,
+            sample_video_url: (item.sample_video_url ?? null) as string | null,
+            embed_url: toEmbedUrl((item.external_id ?? null) as string | null),
+            product_url: (item.product_url ?? null) as string | null,
+            product_released_at: (item.product_released_at ?? null) as string | null,
+            performers: item.performers ?? [],
+            tags: item.tags ?? [],
+            score: null,
+            model_version: null,
+            source: 'exploitation',
+          })
+          seen.add(id)
+          if (exploitation.length >= exploitationTarget) break
+        }
+      }
+    } else if (userId && adjustedExploitationRatio > 0) {
       const { data: recs, error: recError } = await supabase.rpc('get_videos_recommendations', {
         user_uuid: userId,
         page_limit: Math.max(pageLimit * CANDIDATE_MULTIPLIER, 100),
@@ -176,35 +212,14 @@ Deno.serve(async (req) => {
     )
 
     if (explorationNeeded > 0) {
-      // preferredTagIds がある場合（オンボーディング直後）はタグ一致動画を優先取得
       let randomData: Record<string, unknown>[] | null = null
       let randomError: { message: string } | null = null
 
-      if (preferredTagIds.length > 0 && decisionCount === 0) {
-        const { data, error } = await supabase
-          .from('videos')
-          .select(`
-            id, title, external_id, thumbnail_url, thumbnail_vertical_url,
-            sample_video_url, product_url, product_released_at,
-            performers:video_performers(performers(id, name)),
-            tags:video_tags(tags(id, name)),
-            video_tags!inner(tag_id)
-          `)
-          .in('video_tags.tag_id', preferredTagIds)
-          .not('id', 'in', `(${excludeIds.length > 0 ? excludeIds.join(',') : 'null'})`)
-          .limit(Math.max(explorationNeeded * CANDIDATE_MULTIPLIER, DEFAULT_LIMIT))
-        randomData = (data as unknown as Record<string, unknown>[] | null)
-        randomError = error
-      }
-
-      // フォールバック: タグ指定なし or 取得失敗時はランダム取得
-      if (!randomData || randomData.length === 0) {
-        const { data, error } = await supabase.rpc('get_videos_feed', {
-          page_limit: Math.max(explorationNeeded * CANDIDATE_MULTIPLIER, DEFAULT_LIMIT),
-        })
-        randomData = data
-        randomError = error
-      }
+      const { data, error } = await supabase.rpc('get_videos_feed', {
+        page_limit: Math.max(explorationNeeded * CANDIDATE_MULTIPLIER, DEFAULT_LIMIT),
+      })
+      randomData = data
+      randomError = error
       if (randomError) {
         console.error('get_videos_feed error:', randomError.message)
       } else {
