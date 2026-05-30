@@ -128,8 +128,9 @@ Deno.serve(async (req) => {
             embed_url: toEmbedUrl((item.external_id ?? null) as string | null),
             product_url: (item.product_url ?? null) as string | null,
             product_released_at: (item.product_released_at ?? null) as string | null,
-            performers: item.performers ?? [],
-            tags: item.tags ?? [],
+            // video_performers(performers(id,name)) の二重ネストをフラット化
+            performers: ((item.performers as {performers: {id:string;name:string}}[]) ?? []).map(p => p.performers).filter(Boolean),
+            tags: ((item.tags as {tags: {id:string;name:string}}[]) ?? []).map(t => t.tags).filter(Boolean),
             score: null,
             model_version: null,
             source: 'exploitation_tag',
