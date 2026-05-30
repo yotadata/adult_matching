@@ -421,9 +421,9 @@ function GridPage() {
               setViewedIds((prev) => new Set([...prev, video.id]));
             }}
           >
-            <div className="w-full bg-black relative group aspect-[7/10]">
+            {/* サムネイル */}
+            <div className="w-full bg-black relative aspect-[7/10]">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              {/* 横長画像の右半分をトリミングして縦長表示 */}
               <img
                 src={video.thumbnail_url ?? ''}
                 alt={video.title ?? ''}
@@ -432,9 +432,16 @@ function GridPage() {
                 onLoad={() => setLoadedIds((prev) => new Set([...prev, video.id]))}
               />
               {viewedIds.has(video.id) && !likedIds.has(video.id) && <div className="absolute inset-0 bg-black/60 pointer-events-none" />}
-              {likedIds.has(video.id) && <div className="absolute inset-0 bg-pink-500/40 pointer-events-none" />}
+              {likedIds.has(video.id) && <div className="absolute inset-0 bg-pink-500/30 pointer-events-none" />}
               {nopedIds.has(video.id) && <div className="absolute inset-0 bg-black/70 pointer-events-none" />}
-              <div className="absolute inset-x-0 bottom-0 h-14 bg-gradient-to-t from-black/70 to-transparent pointer-events-none" />
+              <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/80 to-transparent pointer-events-none" />
+              {/* 再生ボタン（中央・常時表示） */}
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <div className="w-10 h-10 rounded-full bg-black/50 border border-white/30 flex items-center justify-center">
+                  <Play size={18} className="text-white ml-0.5" fill="currentColor" />
+                </div>
+              </div>
+              {/* ハートボタン（右下） */}
               {nopedIds.has(video.id) ? (
                 <div className="absolute bottom-2 right-2 w-8 h-8 rounded-full bg-white/20 flex items-center justify-center shadow-md pointer-events-none">
                   <X size={14} className="text-white/80" strokeWidth={2.5} />
@@ -448,14 +455,24 @@ function GridPage() {
                   <Heart size={15} className="text-white" fill={likedIds.has(video.id) ? 'white' : 'none'} strokeWidth={2} />
                 </button>
               )}
-              {viewedIds.has(video.id) && !likedIds.has(video.id) && (
-                <div className="absolute top-1.5 left-1.5 w-5 h-5 rounded-full bg-black/60 border border-white/20 flex items-center justify-center pointer-events-none">
-                  <Eye size={10} className="text-white/70" />
-                </div>
-              )}
               {isDebug && (
                 <div className="absolute bottom-1 left-1">
                   <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${SOURCE_BADGE_COLORS[video.source] ?? 'bg-gray-600 text-white'}`}>{video.source}</span>
+                </div>
+              )}
+            </div>
+            {/* タイトル・タグ */}
+            <div className="px-2 pt-1.5 pb-2">
+              <p className="text-[11px] font-semibold text-[#e6edf3] line-clamp-2 leading-snug mb-1">
+                {video.title}
+              </p>
+              {(video.tags as { id: string; name: string }[])?.length > 0 && (
+                <div className="flex flex-wrap gap-1">
+                  {(video.tags as { id: string; name: string }[]).slice(0, 2).map((t) => (
+                    <span key={t.id} className="text-[9px] bg-violet-900/40 border border-violet-700/40 text-violet-300 rounded-full px-1.5 py-0.5">
+                      {t.name}
+                    </span>
+                  ))}
                 </div>
               )}
             </div>
