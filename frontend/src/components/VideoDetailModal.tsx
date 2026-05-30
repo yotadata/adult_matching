@@ -161,14 +161,13 @@ export default function VideoDetailModal({ isOpen, onClose, videoId }: { isOpen:
                       </div>
                       <div>
                         <div className="border rounded-lg p-3">
-                          <div className="text-sm text-gray-700 mb-2">外部サイトで見る</div>
                           <Link
                             href={video.product_url || '#'}
                             target="_blank"
                             onClick={() => trackEvent('fanza_link_click', { video_id: video.id, source: 'modal' })}
                             className="block w-full text-center bg-amber-500 text-white font-bold rounded-lg py-2"
                           >
-                            商品ページへ
+                            本編を見る
                           </Link>
                         </div>
                       </div>

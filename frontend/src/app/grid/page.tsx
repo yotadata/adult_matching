@@ -704,7 +704,7 @@ function GridPage() {
                     className="flex items-center gap-1.5 justify-center w-full py-2 rounded-lg bg-[#f0f0f0] hover:bg-[#e0e0e0] text-gray-500 text-xs font-medium transition-colors"
                   >
                     <ExternalLink size={12} />
-                    FANZAで購入・詳細を見る
+                    本編を見る
                   </a>
                 )}
               </div>

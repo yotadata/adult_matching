@@ -18,7 +18,7 @@ export default function FanzaLinkButton({ href, videoId, source = 'video_page' }
       onClick={() => trackEvent('fanza_link_click', { video_id: videoId, source })}
       className="block w-full text-center bg-amber-500 hover:bg-amber-400 text-white font-bold rounded-lg py-3 text-sm transition-colors"
     >
-      FANZAで見る
+      本編を見る
     </Link>
   );
 }
