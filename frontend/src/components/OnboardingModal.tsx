@@ -20,32 +20,38 @@ export default function OnboardingModal({ onComplete }: Props) {
 
   useEffect(() => {
     (async () => {
-      // タグを動画数（人気順）で取得
-      const { data, error } = await supabase
+      // ① タグとグループを取得
+      const { data: tagData, error: tagError } = await supabase
         .from('tags')
-        .select(`
-          id, name,
-          tag_group_id,
-          tag_groups!inner(id, name, show_in_ui),
-          video_tags(count)
-        `)
+        .select('id, name, tag_group_id, tag_groups!inner(id, name, show_in_ui)')
         .eq('tag_groups.show_in_ui', true);
 
-      if (!error && data) {
-        // グループごとに集約・動画数で降順ソート・上位15件に絞る
+      // ② tag_video_counts ビューからタグ別動画数を取得
+      const { data: countData, error: countError } = await supabase
+        .from('tag_video_counts')
+        .select('tag_id, video_count');
+
+      if (!tagError && !countError && tagData) {
+        // カウントを Map に変換
+        const countMap = new Map<string, number>();
+        for (const row of (countData ?? []) as { tag_id: string; video_count: number }[]) {
+          countMap.set(row.tag_id, row.video_count);
+        }
+
+        // グループごとに集約
         const groupMap = new Map<string, TagGroup>();
-        for (const row of data as unknown as {
+        for (const row of tagData as unknown as {
           id: string; name: string; tag_group_id: string;
           tag_groups: { id: string; name: string };
-          video_tags: { count: number }[];
         }[]) {
           const gId = row.tag_groups.id;
           const gName = row.tag_groups.name;
-          const count = row.video_tags?.[0]?.count ?? 0;
+          const count = countMap.get(row.id) ?? 0;
           if (!groupMap.has(gId)) groupMap.set(gId, { id: gId, name: gName, tags: [] });
           groupMap.get(gId)!.tags.push({ id: row.id, name: row.name, video_count: count });
         }
-        // カテゴリ内を人気順・上位15件に絞り、グループをタグ数が多い順に並べる
+
+        // カテゴリ内を人気順・上位15件に絞り、グループをトップタグの動画数順に並べる
         const sorted = Array.from(groupMap.values())
           .map((g) => ({
             ...g,
