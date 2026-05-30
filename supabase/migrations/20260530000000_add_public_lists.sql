@@ -200,3 +200,32 @@ BEGIN
   );
 END;
 $$;
+
+-- タグ指定動画取得 RPC（コールドスタート用）
+CREATE OR REPLACE FUNCTION public.get_videos_by_tags(
+  tag_ids uuid[],
+  exclude_ids uuid[],
+  p_limit int DEFAULT 60
+)
+RETURNS TABLE (
+  id uuid, title text, external_id text,
+  thumbnail_url text, thumbnail_vertical_url text,
+  sample_video_url text, product_url text, product_released_at timestamptz,
+  performers jsonb, tags jsonb
+)
+LANGUAGE plpgsql SECURITY DEFINER AS $$
+BEGIN
+  RETURN QUERY
+  SELECT v.id, v.title, v.external_id,
+    v.thumbnail_url, v.thumbnail_vertical_url, v.sample_video_url,
+    coalesce(v.affiliate_url, v.product_url), v.product_released_at,
+    coalesce((SELECT jsonb_agg(jsonb_build_object('id', p.id, 'name', p.name)) FROM public.video_performers vp JOIN public.performers p ON p.id = vp.performer_id WHERE vp.video_id = v.id), '[]'::jsonb),
+    coalesce((SELECT jsonb_agg(jsonb_build_object('id', t.id, 'name', t.name)) FROM public.video_tags vt JOIN public.tags t ON t.id = vt.tag_id LEFT JOIN public.tag_groups tg ON tg.id = t.tag_group_id WHERE vt.video_id = v.id AND coalesce(tg.show_in_ui, true)), '[]'::jsonb)
+  FROM public.videos v
+  WHERE v.sample_video_url IS NOT NULL
+    AND (array_length(exclude_ids, 1) IS NULL OR v.id != ALL(exclude_ids))
+    AND EXISTS (SELECT 1 FROM public.video_tags vt WHERE vt.video_id = v.id AND vt.tag_id = ANY(tag_ids))
+  ORDER BY random()
+  LIMIT p_limit;
+END;
+$$;

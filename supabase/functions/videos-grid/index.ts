@@ -106,52 +106,35 @@ Deno.serve(async (req) => {
     // コールドスタート時（decisionCount=0 + タグ選択済み）は
     // exploitation 枠をタグ一致動画で埋める（推薦モデルの代替）
     if (preferredTagIds.length > 0 && decisionCount === 0) {
-      // step1: タグに一致するユニークな video_id を取得
-      const { data: tagMatches, error: tagMatchError } = await supabase
-        .from('video_tags')
-        .select('video_id')
-        .in('tag_id', preferredTagIds)
-        .limit(500)
-      if (tagMatchError) {
-        console.error('tag match error:', tagMatchError.message)
+      const { data: tagRecs, error: tagError } = await supabase.rpc('get_videos_by_tags', {
+        tag_ids: preferredTagIds,
+        exclude_ids: excludeIds.length > 0 ? excludeIds : [],
+        p_limit: Math.max(exploitationTarget * CANDIDATE_MULTIPLIER, 60),
+      })
+      if (tagError) {
+        console.error('get_videos_by_tags error:', tagError.message)
       } else {
-        const candidateIds = [...new Set(
-          (tagMatches ?? []).map(r => String(r.video_id))
-        )].filter(id => !seen.has(id)).slice(0, Math.max(exploitationTarget * CANDIDATE_MULTIPLIER, 60))
-
-        if (candidateIds.length > 0) {
-          // step2: video_id リストで動画詳細を取得
-          const { data: tagRecs, error: tagRecsError } = await supabase
-            .from('videos')
-            .select('id, title, external_id, thumbnail_url, thumbnail_vertical_url, sample_video_url, product_url, product_released_at, performers:video_performers(performers(id, name)), tags:video_tags(tags(id, name))')
-            .in('id', candidateIds)
-            .limit(candidateIds.length)
-          if (tagRecsError) {
-            console.error('tag recs error:', tagRecsError.message)
-          } else {
-            for (const item of (tagRecs ?? []) as Record<string, unknown>[]) {
-              const id = String(item.id)
-              if (seen.has(id)) continue
-              exploitation.push({
-                id,
-                title: (item.title ?? null) as string | null,
-                external_id: (item.external_id ?? null) as string | null,
-                thumbnail_url: (item.thumbnail_url ?? null) as string | null,
-                thumbnail_vertical_url: (item.thumbnail_vertical_url ?? null) as string | null,
-                sample_video_url: (item.sample_video_url ?? null) as string | null,
-                embed_url: toEmbedUrl((item.external_id ?? null) as string | null),
-                product_url: (item.product_url ?? null) as string | null,
-                product_released_at: (item.product_released_at ?? null) as string | null,
-                performers: ((item.performers as {performers:{id:string;name:string}}[]) ?? []).map(p => p.performers).filter(Boolean),
-                tags: ((item.tags as {tags:{id:string;name:string}}[]) ?? []).map(t => t.tags).filter(Boolean),
-                score: null,
-                model_version: null,
-                source: 'exploitation_tag',
-              })
-              seen.add(id)
-              if (exploitation.length >= exploitationTarget) break
-            }
-          }
+        for (const item of (tagRecs ?? []) as Record<string, unknown>[]) {
+          const id = String(item.id)
+          if (seen.has(id)) continue
+          exploitation.push({
+            id,
+            title: (item.title ?? null) as string | null,
+            external_id: (item.external_id ?? null) as string | null,
+            thumbnail_url: (item.thumbnail_url ?? null) as string | null,
+            thumbnail_vertical_url: (item.thumbnail_vertical_url ?? null) as string | null,
+            sample_video_url: (item.sample_video_url ?? null) as string | null,
+            embed_url: toEmbedUrl((item.external_id ?? null) as string | null),
+            product_url: (item.product_url ?? null) as string | null,
+            product_released_at: (item.product_released_at ?? null) as string | null,
+            performers: (item.performers ?? []) as unknown,
+            tags: (item.tags ?? []) as unknown,
+            score: null,
+            model_version: null,
+            source: 'exploitation_tag',
+          })
+          seen.add(id)
+          if (exploitation.length >= exploitationTarget) break
         }
       }
     } else if (userId && adjustedExploitationRatio > 0) {
