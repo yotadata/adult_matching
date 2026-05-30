@@ -398,13 +398,13 @@ function GridPage() {
       </div>
       </div>{/* /max-w-4xl */}
 
-      {/* Pinterest グリッド */}
-      <div className="px-3 py-4">
-      <div className="columns-1 sm:columns-2 md:columns-3 lg:columns-4 xl:columns-5 gap-2 space-y-2">
+      {/* グリッド: モバイル2カラム・縦長サムネイル */}
+      <div className="px-2 py-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
         {videos.map((video) => (
           <div
             key={video.id}
-            className={`break-inside-avoid rounded-2xl overflow-hidden cursor-pointer bg-[#161b22] border transition-all shadow-md ${
+            className={`rounded-xl overflow-hidden cursor-pointer bg-[#161b22] border transition-all shadow-md ${
               loadedIds.has(video.id) ? 'opacity-100' : 'opacity-0'
             } ${
               likedIds.has(video.id)
@@ -420,13 +420,13 @@ function GridPage() {
               setViewedIds((prev) => new Set([...prev, video.id]));
             }}
           >
-            {/* サムネイル */}
-            <div className="w-full bg-black relative group">
+            {/* サムネイル: 縦長固定比率 */}
+            <div className="w-full bg-black relative group aspect-[2/3]">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={(video.thumbnail_vertical_url?.replace('ps.jpg', 'pl.jpg')) || video.thumbnail_url || ''}
                 alt={video.title ?? ''}
-                className="w-full object-cover"
+                className="w-full h-full object-cover"
                 loading="lazy"
                 onLoad={() => setLoadedIds((prev) => new Set([...prev, video.id]))}
               />
@@ -452,20 +452,20 @@ function GridPage() {
               </div>
               {/* いいね/興味なしボタン（常時・右下） */}
               {nopedIds.has(video.id) ? (
-                <div className="absolute bottom-1.5 right-1.5 w-7 h-7 rounded-full bg-white/20 flex items-center justify-center shadow-md pointer-events-none">
-                  <X size={13} className="text-white/80" strokeWidth={2.5} />
+                <div className="absolute bottom-2 right-2 w-8 h-8 rounded-full bg-white/20 flex items-center justify-center shadow-md pointer-events-none">
+                  <X size={14} className="text-white/80" strokeWidth={2.5} />
                 </div>
               ) : (
                 <button
-                  className={`absolute bottom-1.5 right-1.5 w-7 h-7 rounded-full flex items-center justify-center transition-colors shadow-md ${
+                  className={`absolute bottom-2 right-2 w-8 h-8 rounded-full flex items-center justify-center transition-colors shadow-lg ${
                     likedIds.has(video.id)
                       ? 'bg-pink-500'
-                      : 'bg-black/40 hover:bg-pink-500/80'
+                      : 'bg-black/50 hover:bg-pink-500/80'
                   }`}
                   onClick={(e) => { e.stopPropagation(); handleLike(video); }}
                   aria-label="いいね"
                 >
-                  <Heart size={13} className="text-white" fill={likedIds.has(video.id) ? 'white' : 'none'} strokeWidth={2} />
+                  <Heart size={15} className="text-white" fill={likedIds.has(video.id) ? 'white' : 'none'} strokeWidth={2} />
                 </button>
               )}
               {/* 既読バッジ（いいね済みでない場合のみ・左上） */}
