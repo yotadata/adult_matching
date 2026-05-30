@@ -13,7 +13,6 @@ type RegisterFormInputs = {
   displayName: string;
   password: string;
   confirmPassword: string;
-  isAdult: boolean;
 };
 
 interface RegisterFormProps {
@@ -22,7 +21,7 @@ interface RegisterFormProps {
 
 const RegisterForm: React.FC<RegisterFormProps> = ({ onClose }) => {
   const { register, handleSubmit, watch, formState: { errors } } = useForm<RegisterFormInputs>({
-    defaultValues: { isAdult: false },
+    defaultValues: {},
   });
   const password = watch('password');
   const [message, setMessage] = useState<{ type: 'error'; text: string } | null>(null);
@@ -140,32 +139,21 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onClose }) => {
         {errors.confirmPassword && <p className="text-red-400 text-xs mt-1">{errors.confirmPassword.message}</p>}
       </div>
 
-      <div className="space-y-2 text-sm text-[#e6edf3]">
-        <label className="flex items-start gap-2">
-          <input
-            type="checkbox"
-            className="mt-1 h-4 w-4 rounded border-[#30363d] bg-[#161b22] accent-violet-600 focus:ring-violet-500"
-            {...register('isAdult', { required: '18歳以上のみ登録できます' })}
-          />
-          <span>私は18歳以上です。</span>
-        </label>
-        {errors.isAdult && <p className="text-red-400 text-xs">{errors.isAdult.message}</p>}
-        <p className="text-xs text-[#8b949e]">
-          利用規約は{' '}
-          <button type="button" onClick={() => setIsTermsOpen(true)} className="text-violet-400 underline">
-            こちら
-          </button>
-          {' '}から確認できます。
-        </p>
-      </div>
-
       <button
         type="submit"
         className="w-full py-3 px-4 font-bold rounded-lg transition-colors bg-violet-600 hover:bg-violet-500 text-white disabled:opacity-60 disabled:cursor-not-allowed"
         disabled={isLoading}
       >
-        {isLoading ? '登録中...' : '利用規約に同意して登録'}
+        {isLoading ? '登録中...' : '登録する'}
       </button>
+
+      <p className="text-xs text-[#656d76] text-center">
+        登録することで
+        <button type="button" onClick={() => setIsTermsOpen(true)} className="text-[#8b949e] underline mx-1">
+          利用規約
+        </button>
+        に同意したものとみなします。
+      </p>
 
       <TermsModal open={isTermsOpen} onClose={() => setIsTermsOpen(false)} />
     </form>
