@@ -103,10 +103,9 @@ Deno.serve(async (req) => {
     const popularity: VideoEntry[] = []
     const exploration: VideoEntry[] = []
 
-    // decisionCount=0 かつ preferredTagIds がある場合はタグ一致動画で exploitation を埋める
-    const useTagExploitation = preferredTagIds.length > 0 && decisionCount === 0
-
-    if (useTagExploitation) {
+    // コールドスタート時（decisionCount=0 + タグ選択済み）は
+    // exploitation 枠をタグ一致動画で埋める（推薦モデルの代替）
+    if (preferredTagIds.length > 0 && decisionCount === 0) {
       const { data: tagRecs, error: tagError } = await supabase
         .from('videos')
         .select('id, title, external_id, thumbnail_url, thumbnail_vertical_url, sample_video_url, product_url, product_released_at, performers:video_performers(performers(id, name)), tags:video_tags(tags(id, name)), video_tags!inner(tag_id)')
