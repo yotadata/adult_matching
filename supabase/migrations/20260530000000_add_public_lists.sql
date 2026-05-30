@@ -39,24 +39,19 @@ CREATE INDEX IF NOT EXISTS idx_public_list_videos_list ON public.public_list_vid
 ALTER TABLE public.public_lists        ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.public_list_videos  ENABLE ROW LEVEL SECURITY;
 
--- public_lists: token を知っていれば誰でも読める
+-- public_lists ポリシー（冪等）
+DROP POLICY IF EXISTS "public_lists_select" ON public.public_lists;
 CREATE POLICY "public_lists_select"
   ON public.public_lists FOR SELECT
   USING (is_active = true);
 
-CREATE POLICY "public_lists_insert"
-  ON public.public_lists FOR INSERT
-  WITH CHECK (auth.uid() = user_id);
-
+DROP POLICY IF EXISTS "public_lists_update" ON public.public_lists;
 CREATE POLICY "public_lists_update"
   ON public.public_lists FOR UPDATE
   USING (auth.uid() = user_id);
 
-CREATE POLICY "public_lists_delete"
-  ON public.public_lists FOR DELETE
-  USING (auth.uid() = user_id);
-
--- public_list_videos: リストが公開中なら誰でも読める
+-- public_list_videos ポリシー（冪等）
+DROP POLICY IF EXISTS "public_list_videos_select" ON public.public_list_videos;
 CREATE POLICY "public_list_videos_select"
   ON public.public_list_videos FOR SELECT
   USING (
@@ -66,15 +61,7 @@ CREATE POLICY "public_list_videos_select"
     )
   );
 
-CREATE POLICY "public_list_videos_insert"
-  ON public.public_list_videos FOR INSERT
-  WITH CHECK (
-    EXISTS (
-      SELECT 1 FROM public.public_lists pl
-      WHERE pl.id = list_id AND pl.user_id = auth.uid()
-    )
-  );
-
+DROP POLICY IF EXISTS "public_list_videos_update" ON public.public_list_videos;
 CREATE POLICY "public_list_videos_update"
   ON public.public_list_videos FOR UPDATE
   USING (
@@ -84,6 +71,7 @@ CREATE POLICY "public_list_videos_update"
     )
   );
 
+DROP POLICY IF EXISTS "public_list_videos_delete" ON public.public_list_videos;
 CREATE POLICY "public_list_videos_delete"
   ON public.public_list_videos FOR DELETE
   USING (

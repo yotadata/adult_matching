@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { trackEvent } from '@/lib/analytics';
 
-type Tag = { id: string; name: string };
+type Tag = { id: string; name: string; video_count: number };
 type TagGroup = { id: string; name: string; tags: Tag[] };
 
 const MIN_SELECT = 3;
@@ -20,19 +20,46 @@ export default function OnboardingModal({ onComplete }: Props) {
 
   useEffect(() => {
     (async () => {
-      // show_in_ui=true のカテゴリとそのタグを取得
-      const { data, error } = await supabase
-        .from('tag_groups')
-        .select('id, name, tags(id, name)')
-        .eq('show_in_ui', true)
-        .order('name');
+      // ① タグとグループを取得
+      const { data: tagData, error: tagError } = await supabase
+        .from('tags')
+        .select('id, name, tag_group_id, tag_groups!inner(id, name, show_in_ui)')
+        .eq('tag_groups.show_in_ui', true);
 
-      if (!error && data) {
-        // タグが存在するカテゴリのみ表示
-        const filtered = (data as unknown as TagGroup[]).filter(
-          (g) => g.tags && g.tags.length > 0
-        );
-        setGroups(filtered);
+      // ② tag_video_counts ビューからタグ別動画数を取得
+      const { data: countData, error: countError } = await supabase
+        .from('tag_video_counts')
+        .select('tag_id, video_count');
+
+      if (!tagError && !countError && tagData) {
+        // カウントを Map に変換
+        const countMap = new Map<string, number>();
+        for (const row of (countData ?? []) as { tag_id: string; video_count: number }[]) {
+          countMap.set(row.tag_id, row.video_count);
+        }
+
+        // グループごとに集約
+        const groupMap = new Map<string, TagGroup>();
+        for (const row of tagData as unknown as {
+          id: string; name: string; tag_group_id: string;
+          tag_groups: { id: string; name: string };
+        }[]) {
+          const gId = row.tag_groups.id;
+          const gName = row.tag_groups.name;
+          const count = countMap.get(row.id) ?? 0;
+          if (!groupMap.has(gId)) groupMap.set(gId, { id: gId, name: gName, tags: [] });
+          groupMap.get(gId)!.tags.push({ id: row.id, name: row.name, video_count: count });
+        }
+
+        // カテゴリ内を人気順・上位15件に絞り、グループをトップタグの動画数順に並べる
+        const sorted = Array.from(groupMap.values())
+          .map((g) => ({
+            ...g,
+            tags: g.tags.filter((t) => t.video_count >= 50).sort((a, b) => b.video_count - a.video_count),
+          }))
+          .filter((g) => g.tags.length > 0)
+          .sort((a, b) => b.tags[0].video_count - a.tags[0].video_count);
+        setGroups(sorted);
       }
       setLoading(false);
     })();
@@ -64,11 +91,12 @@ export default function OnboardingModal({ onComplete }: Props) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{ background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(4px)' }}>
-      <div className="w-full max-w-lg max-h-[85vh] flex flex-col rounded-2xl border border-[#30363d] bg-[#0d1117] overflow-hidden">
+      style={{ background: 'rgba(0,0,0,0.55)' }}>
+      <div className="w-full max-w-lg max-h-[85vh] flex flex-col rounded-2xl border border-white/10 overflow-hidden"
+        style={{ background: 'rgba(13,17,23,0.75)', backdropFilter: 'blur(16px)' }}>
 
         {/* ヘッダー */}
-        <div className="px-6 pt-6 pb-4 border-b border-[#21262d] shrink-0">
+        <div className="px-6 pt-6 pb-4 border-b border-white/10 shrink-0">
           <p className="text-xs font-bold tracking-widest uppercase text-violet-400 mb-2">はじめに</p>
           <h2 className="text-xl font-black text-[#e6edf3] mb-1">好きなジャンルを選んでください</h2>
           <p className="text-sm text-[#8b949e]">
@@ -95,13 +123,18 @@ export default function OnboardingModal({ onComplete }: Props) {
                       <button
                         key={tag.id}
                         onClick={() => toggle(tag.id)}
-                        className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
+                        className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all flex items-center gap-1.5 ${
                           isSelected
                             ? 'bg-violet-600 text-white border border-violet-500'
                             : 'bg-[#161b22] text-[#8b949e] border border-[#30363d] hover:border-violet-500/50 hover:text-[#e6edf3]'
                         }`}
                       >
                         {tag.name}
+                        <span className={`text-[10px] ${isSelected ? 'text-violet-200' : 'text-[#484f58]'}`}>
+                          {tag.video_count >= 1000
+                            ? `${Math.floor(tag.video_count / 1000)}k`
+                            : tag.video_count}
+                        </span>
                       </button>
                     );
                   })}
@@ -112,7 +145,7 @@ export default function OnboardingModal({ onComplete }: Props) {
         </div>
 
         {/* フッター */}
-        <div className="px-6 py-4 border-t border-[#21262d] shrink-0">
+        <div className="px-6 py-4 border-t border-white/10 shrink-0">
           <div className="flex items-center justify-between gap-3">
             <button
               onClick={handleSkip}
