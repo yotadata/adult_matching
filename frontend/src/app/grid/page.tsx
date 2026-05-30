@@ -421,7 +421,7 @@ function GridPage() {
               setViewedIds((prev) => new Set([...prev, video.id]));
             }}
           >
-            <div className="w-full bg-black relative group aspect-[5/7]">
+            <div className="w-full bg-black relative group aspect-[7/10]">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               {/* 横長画像の右半分をトリミングして縦長表示 */}
               <img
