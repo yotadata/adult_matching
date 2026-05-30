@@ -427,7 +427,7 @@ function GridPage() {
               <img
                 src={video.thumbnail_url ?? ''}
                 alt={video.title ?? ''}
-                className="w-full h-full object-cover object-right"
+                className="w-full h-full object-cover object-[80%_50%]"
                 loading="lazy"
                 onLoad={() => setLoadedIds((prev) => new Set([...prev, video.id]))}
               />
