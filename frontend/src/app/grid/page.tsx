@@ -400,12 +400,12 @@ function GridPage() {
 
       {/* グリッド: モバイル=2カラム縦長、PC=Pinterestスタイル */}
       <div className="px-2 sm:px-3 py-4">
-      {/* モバイル: 2カラムグリッド */}
-      <div className="grid grid-cols-2 gap-2 sm:hidden">
+      {/* モバイル: 2カラム masonry（columns） */}
+      <div className="columns-2 gap-2 space-y-2 sm:hidden">
         {videos.map((video) => (
           <div
             key={video.id}
-            className={`rounded-xl overflow-hidden cursor-pointer bg-[#161b22] border transition-all shadow-md ${
+            className={`break-inside-avoid rounded-xl overflow-hidden cursor-pointer bg-[#161b22] border transition-all shadow-md ${
               loadedIds.has(video.id) ? 'opacity-100' : 'opacity-0'
             } ${
               likedIds.has(video.id)
@@ -463,7 +463,7 @@ function GridPage() {
             </div>
             {/* タイトル・タグ */}
             <div className="px-2 pt-1.5 pb-2">
-              <p className="text-[11px] font-semibold text-[#e6edf3] line-clamp-2 leading-snug mb-1">
+              <p className="text-[11px] font-semibold text-[#e6edf3] leading-snug mb-1">
                 {video.title}
               </p>
               {(video.tags as { id: string; name: string }[])?.length > 0 && (
