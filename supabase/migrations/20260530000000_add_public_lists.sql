@@ -45,19 +45,9 @@ CREATE POLICY "public_lists_select"
   ON public.public_lists FOR SELECT
   USING (is_active = true);
 
-DROP POLICY IF EXISTS "public_lists_insert" ON public.public_lists;
-CREATE POLICY "public_lists_insert"
-  ON public.public_lists FOR INSERT
-  WITH CHECK (auth.uid() = user_id);
-
 DROP POLICY IF EXISTS "public_lists_update" ON public.public_lists;
 CREATE POLICY "public_lists_update"
   ON public.public_lists FOR UPDATE
-  USING (auth.uid() = user_id);
-
-DROP POLICY IF EXISTS "public_lists_delete" ON public.public_lists;
-CREATE POLICY "public_lists_delete"
-  ON public.public_lists FOR DELETE
   USING (auth.uid() = user_id);
 
 -- public_list_videos ポリシー（冪等）
@@ -68,16 +58,6 @@ CREATE POLICY "public_list_videos_select"
     EXISTS (
       SELECT 1 FROM public.public_lists pl
       WHERE pl.id = list_id AND pl.is_active = true
-    )
-  );
-
-DROP POLICY IF EXISTS "public_list_videos_insert" ON public.public_list_videos;
-CREATE POLICY "public_list_videos_insert"
-  ON public.public_list_videos FOR INSERT
-  WITH CHECK (
-    EXISTS (
-      SELECT 1 FROM public.public_lists pl
-      WHERE pl.id = list_id AND pl.user_id = auth.uid()
     )
   );
 
@@ -112,13 +92,14 @@ LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
 DECLARE
-  v_list_id   uuid;
-  v_user_id   uuid;
-  v_title     text;
-  v_desc      text;
-  v_list_type text;
-  v_videos    json;
-  v_tags      json;
+  v_list_id      uuid;
+  v_user_id      uuid;
+  v_title        text;
+  v_desc         text;
+  v_list_type    text;
+  v_display_name text;
+  v_videos       json;
+  v_tags         json;
 BEGIN
   SELECT id, user_id, title, description, list_type
   INTO v_list_id, v_user_id, v_title, v_desc, v_list_type
@@ -167,7 +148,6 @@ BEGIN
         AND uvd.decision_type IN ('swipe_like', 'grid_like')
         AND vi.external_id IS NOT NULL
       ORDER BY uvd.created_at DESC
-      LIMIT 100
     ) v;
   END IF;
 
@@ -199,12 +179,16 @@ BEGIN
     ) t;
   END IF;
 
+  SELECT display_name INTO v_display_name
+  FROM public.profiles WHERE user_id = v_user_id;
+
   RETURN json_build_object(
-    'title',     v_title,
-    'description', v_desc,
-    'list_type', v_list_type,
-    'videos',    COALESCE(v_videos, '[]'::json),
-    'tags',      COALESCE(v_tags,   '[]'::json)
+    'display_name', v_display_name,
+    'title',        v_title,
+    'description',  v_desc,
+    'list_type',    v_list_type,
+    'videos',       COALESCE(v_videos, '[]'::json),
+    'tags',         COALESCE(v_tags,   '[]'::json)
   );
 END;
 $$;
