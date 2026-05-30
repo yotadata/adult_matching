@@ -106,11 +106,13 @@ Deno.serve(async (req) => {
     // コールドスタート時（decisionCount=0 + タグ選択済み）は
     // exploitation 枠をタグ一致動画で埋める（推薦モデルの代替）
     if (preferredTagIds.length > 0 && decisionCount === 0) {
+      console.log('[tag] preferredTagIds count:', preferredTagIds.length, 'first:', preferredTagIds[0])
       const { data: tagRecs, error: tagError } = await supabase.rpc('get_videos_by_tags', {
         tag_ids: preferredTagIds,
         exclude_ids: excludeIds.length > 0 ? excludeIds : [],
         p_limit: Math.max(exploitationTarget * CANDIDATE_MULTIPLIER, 60),
       })
+      console.log('[tag] tagRecs count:', (tagRecs ?? []).length, 'error:', tagError?.message)
       if (tagError) {
         console.error('get_videos_by_tags error:', tagError.message)
       } else {
@@ -258,7 +260,17 @@ Deno.serve(async (req) => {
       if (ei >= exploitation.length && pi >= popularity.length && xi >= exploration.length) break
     }
 
-    return new Response(JSON.stringify({ videos: final.slice(0, pageLimit) }), {
+    return new Response(JSON.stringify({
+      videos: final.slice(0, pageLimit),
+      _debug: {
+        preferredTagIds_count: preferredTagIds.length,
+        preferredTagIds_first: preferredTagIds[0] ?? null,
+        decisionCount,
+        exploitation_count: exploitation.length,
+        popularity_count: popularity.length,
+        exploration_count: exploration.length,
+      },
+    }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     })

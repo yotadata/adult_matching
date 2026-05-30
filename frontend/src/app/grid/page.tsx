@@ -98,6 +98,7 @@ function GridPage() {
       });
       if (!res.ok) return;
       const data = await res.json();
+      if (isDebug && data._debug) console.log('[grid debug]', JSON.stringify(data._debug));
       const newVideos: VideoItem[] = (data.videos ?? []).filter(
         (v: VideoItem) => !loadedVideoIds.current.has(v.id)
       );
@@ -131,11 +132,6 @@ function GridPage() {
     const done = localStorage.getItem('onboarding_done');
     if (!done) {
       setShowOnboarding(true);
-    } else {
-      const saved = localStorage.getItem('onboarding_tags');
-      if (saved) {
-        try { preferredTagIds.current = JSON.parse(saved); } catch { /* ignore */ }
-      }
     }
   }, []);
 
@@ -158,6 +154,11 @@ function GridPage() {
   // 初回ロード（オンボーディング未完了の場合はスキップ、完了後に手動で呼ぶ）
   useEffect(() => {
     if (localStorage.getItem('onboarding_done')) {
+      // preferredTagIds を fetchVideos より先に読み込む
+      const saved = localStorage.getItem('onboarding_tags');
+      if (saved) {
+        try { preferredTagIds.current = JSON.parse(saved); } catch { /* ignore */ }
+      }
       fetchVideos();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
