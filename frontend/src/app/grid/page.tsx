@@ -423,8 +423,9 @@ function GridPage() {
           >
             <div className="w-full bg-black relative group aspect-[2/3]">
               {/* eslint-disable-next-line @next/next/no-img-element */}
+              {/* 縦長サムネイル（全件保持済み）*/}
               <img
-                src={(video.thumbnail_vertical_url?.replace('ps.jpg', 'pl.jpg')) || video.thumbnail_url || ''}
+                src={video.thumbnail_vertical_url?.replace('ps.jpg', 'pl.jpg') ?? ''}
                 alt={video.title ?? ''}
                 className="w-full h-full object-cover"
                 loading="lazy"
