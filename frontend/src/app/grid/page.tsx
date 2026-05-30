@@ -421,13 +421,13 @@ function GridPage() {
               setViewedIds((prev) => new Set([...prev, video.id]));
             }}
           >
-            <div className="w-full bg-black relative group aspect-[2/3]">
+            <div className="w-full bg-black relative group aspect-[3/4]">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               {/* 横長画像の右半分をトリミングして縦長表示 */}
               <img
                 src={video.thumbnail_url ?? ''}
                 alt={video.title ?? ''}
-                className="w-full h-full object-cover object-[80%_50%]"
+                className="w-full h-full object-cover object-right"
                 loading="lazy"
                 onLoad={() => setLoadedIds((prev) => new Set([...prev, video.id]))}
               />
