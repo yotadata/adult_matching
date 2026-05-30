@@ -104,7 +104,7 @@ export default function AccountManagementPage() {
       await supabase.auth.signOut({ scope: 'global' });
       toast.success('ログアウトしました');
       closeModal();
-      router.push('/swipe');
+      router.push('/grid');
       router.refresh();
     } catch {
       toast.error('ログアウトに失敗しました');

@@ -112,7 +112,7 @@ const AccountManagementDrawer: React.FC<AccountManagementDrawerProps> = ({ isOpe
       console.error('logout exception', e);
     }
     onClose();
-    try { if (typeof window !== 'undefined') window.location.assign('/swipe'); } catch {}
+    try { if (typeof window !== 'undefined') window.location.assign('/grid'); } catch {}
   };
 
   const likeRate = likeCount !== null && totalCount ? Math.round((likeCount / totalCount) * 100) : null;
