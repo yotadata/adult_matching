@@ -35,12 +35,14 @@ function toFanzaEmbedUrl(externalId: string | null): string {
 
 const SOURCE_BADGE_COLORS: Record<string, string> = {
   exploitation: 'bg-violet-600 text-white',
+  exploitation_tag: 'bg-orange-500 text-white',
   popularity: 'bg-blue-600 text-white',
   exploration: 'bg-green-700 text-white',
 };
 
 const SOURCE_BORDER_COLORS: Record<string, string> = {
   exploitation: 'border-violet-500',
+  exploitation_tag: 'border-orange-400',
   popularity: 'border-blue-500',
   exploration: 'border-green-600',
 };

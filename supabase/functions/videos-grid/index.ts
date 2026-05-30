@@ -14,7 +14,7 @@ type VideoEntry = {
   tags: unknown
   score: number | null
   model_version: string | null
-  source: 'exploitation' | 'popularity' | 'exploration'
+  source: 'exploitation' | 'exploitation_tag' | 'popularity' | 'exploration'
 }
 
 const corsHeaders = {
@@ -132,7 +132,7 @@ Deno.serve(async (req) => {
             tags: item.tags ?? [],
             score: null,
             model_version: null,
-            source: 'exploitation',
+            source: 'exploitation_tag',
           })
           seen.add(id)
           if (exploitation.length >= exploitationTarget) break
