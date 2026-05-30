@@ -160,7 +160,6 @@ BEGIN
         AND uvd.decision_type IN ('swipe_like', 'grid_like')
         AND vi.external_id IS NOT NULL
       ORDER BY uvd.created_at DESC
-      LIMIT 100
     ) v;
   END IF;
 
