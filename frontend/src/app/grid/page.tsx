@@ -398,9 +398,10 @@ function GridPage() {
       </div>
       </div>{/* /max-w-4xl */}
 
-      {/* グリッド: モバイル2カラム・縦長サムネイル */}
-      <div className="px-2 py-4">
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
+      {/* グリッド: モバイル=2カラム縦長、PC=Pinterestスタイル */}
+      <div className="px-2 sm:px-3 py-4">
+      {/* モバイル: 2カラムグリッド */}
+      <div className="grid grid-cols-2 gap-2 sm:hidden">
         {videos.map((video) => (
           <div
             key={video.id}
@@ -420,13 +421,74 @@ function GridPage() {
               setViewedIds((prev) => new Set([...prev, video.id]));
             }}
           >
-            {/* サムネイル: 縦長固定比率 */}
             <div className="w-full bg-black relative group aspect-[2/3]">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={(video.thumbnail_vertical_url?.replace('ps.jpg', 'pl.jpg')) || video.thumbnail_url || ''}
                 alt={video.title ?? ''}
                 className="w-full h-full object-cover"
+                loading="lazy"
+                onLoad={() => setLoadedIds((prev) => new Set([...prev, video.id]))}
+              />
+              {viewedIds.has(video.id) && !likedIds.has(video.id) && <div className="absolute inset-0 bg-black/60 pointer-events-none" />}
+              {likedIds.has(video.id) && <div className="absolute inset-0 bg-pink-500/40 pointer-events-none" />}
+              {nopedIds.has(video.id) && <div className="absolute inset-0 bg-black/70 pointer-events-none" />}
+              <div className="absolute inset-x-0 bottom-0 h-14 bg-gradient-to-t from-black/70 to-transparent pointer-events-none" />
+              {nopedIds.has(video.id) ? (
+                <div className="absolute bottom-2 right-2 w-8 h-8 rounded-full bg-white/20 flex items-center justify-center shadow-md pointer-events-none">
+                  <X size={14} className="text-white/80" strokeWidth={2.5} />
+                </div>
+              ) : (
+                <button
+                  className={`absolute bottom-2 right-2 w-8 h-8 rounded-full flex items-center justify-center transition-colors shadow-lg ${likedIds.has(video.id) ? 'bg-pink-500' : 'bg-black/50 hover:bg-pink-500/80'}`}
+                  onClick={(e) => { e.stopPropagation(); handleLike(video); }}
+                  aria-label="いいね"
+                >
+                  <Heart size={15} className="text-white" fill={likedIds.has(video.id) ? 'white' : 'none'} strokeWidth={2} />
+                </button>
+              )}
+              {viewedIds.has(video.id) && !likedIds.has(video.id) && (
+                <div className="absolute top-1.5 left-1.5 w-5 h-5 rounded-full bg-black/60 border border-white/20 flex items-center justify-center pointer-events-none">
+                  <Eye size={10} className="text-white/70" />
+                </div>
+              )}
+              {isDebug && (
+                <div className="absolute bottom-1 left-1">
+                  <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${SOURCE_BADGE_COLORS[video.source] ?? 'bg-gray-600 text-white'}`}>{video.source}</span>
+                </div>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+      {/* PC: Pinterestスタイル */}
+      <div className="hidden sm:block columns-2 md:columns-3 lg:columns-4 xl:columns-5 gap-2 space-y-2">
+        {videos.map((video) => (
+          <div
+            key={video.id}
+            className={`break-inside-avoid rounded-2xl overflow-hidden cursor-pointer bg-[#161b22] border transition-all shadow-md ${
+              loadedIds.has(video.id) ? 'opacity-100' : 'opacity-0'
+            } ${
+              likedIds.has(video.id)
+                ? 'border-pink-500/60'
+                : isDebug
+                  ? (SOURCE_BORDER_COLORS[video.source] ?? 'border-[#30363d]')
+                  : 'border-[#30363d] hover:border-violet-500/60'
+            }`}
+            onClick={() => {
+              if (overlayHideTimer.current) clearTimeout(overlayHideTimer.current);
+              setShowVideo(false);
+              setSelected(video);
+              setViewedIds((prev) => new Set([...prev, video.id]));
+            }}
+          >
+            {/* サムネイル */}
+            <div className="w-full bg-black relative group">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={(video.thumbnail_vertical_url?.replace('ps.jpg', 'pl.jpg')) || video.thumbnail_url || ''}
+                alt={video.title ?? ''}
+                className="w-full object-cover"
                 loading="lazy"
                 onLoad={() => setLoadedIds((prev) => new Set([...prev, video.id]))}
               />
@@ -509,8 +571,7 @@ function GridPage() {
           </div>
         ))}
       </div>
-
-      </div>{/* columns */}
+      </div>{/* PC columns / モバイルgrid wrapper */}
 
       {/* ローダー */}
       <div ref={loaderRef} className="h-16 flex items-center justify-center">
