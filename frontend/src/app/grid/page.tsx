@@ -151,16 +151,13 @@ function GridPage() {
     })();
   }, []);
 
-  // 初回ロード（オンボーディング未完了の場合はスキップ、完了後に手動で呼ぶ）
+  // 初回ロード（オンボーディング中でも背景で読み込む）
   useEffect(() => {
-    if (localStorage.getItem('onboarding_done')) {
-      // preferredTagIds を fetchVideos より先に読み込む
-      const saved = localStorage.getItem('onboarding_tags');
-      if (saved) {
-        try { preferredTagIds.current = JSON.parse(saved); } catch { /* ignore */ }
-      }
-      fetchVideos();
+    const saved = localStorage.getItem('onboarding_tags');
+    if (saved) {
+      try { preferredTagIds.current = JSON.parse(saved); } catch { /* ignore */ }
     }
+    fetchVideos();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -168,8 +165,6 @@ function GridPage() {
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
-        // オンボーディング未完了の場合はスキップ
-        if (!localStorage.getItem('onboarding_done')) return;
         if (entries[0].isIntersecting) fetchVideos();
       },
       { threshold: 0.1 }
