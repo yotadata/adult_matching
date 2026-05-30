@@ -61,22 +61,27 @@ const AccountManagementDrawer: React.FC<AccountManagementDrawerProps> = ({ isOpe
   useEffect(() => {
     if (isOpen && isLoggedIn) {
       fetchInsights();
-      // 既存の公開トークンを取得
-      supabase.from('public_lists').select('token').eq('is_active', true).maybeSingle()
-        .then(({ data }) => { if (data) setPublicToken(data.token); });
+      // 自分の公開トークンを取得（user_id フィルタ必須）
+      supabase.auth.getUser().then(({ data: { user } }) => {
+        if (!user) return;
+        supabase.from('public_lists').select('token')
+          .eq('user_id', user.id).eq('is_active', true).maybeSingle()
+          .then(({ data }) => { if (data) setPublicToken(data.token); });
+      });
     }
   }, [isOpen, isLoggedIn, fetchInsights]);
 
   const handleCreatePublicList = async () => {
     setTokenLoading(true);
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
       const { data: existing } = await supabase
-        .from('public_lists').select('token').eq('is_active', true).maybeSingle();
+        .from('public_lists').select('token')
+        .eq('user_id', user.id).eq('is_active', true).maybeSingle();
       if (existing) {
         setPublicToken(existing.token);
       } else {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
         const { data } = await supabase
           .from('public_lists').insert({ user_id: user.id }).select('token').single();
         if (data) setPublicToken(data.token);
