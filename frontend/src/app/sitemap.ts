@@ -1,5 +1,5 @@
 import { MetadataRoute } from 'next';
-import { supabase } from '@/lib/supabase';
+import { supabaseAdmin } from '@/lib/supabaseAdmin';
 
 // 24時間ごとに再生成
 export const revalidate = 86400;
@@ -36,7 +36,7 @@ export default async function sitemap({ id }: { id: string }): Promise<MetadataR
     let page = 0;
     while (true) {
       const from = page * PAGE_SIZE;
-      const { data, error } = await supabase
+      const { data, error } = await supabaseAdmin
         .from('videos')
         .select('id, created_at')
         .order('created_at', { ascending: false })
@@ -62,7 +62,7 @@ export default async function sitemap({ id }: { id: string }): Promise<MetadataR
     let page = 0;
     while (true) {
       const from = page * PAGE_SIZE;
-      const { data, error } = await supabase
+      const { data, error } = await supabaseAdmin
         .from('tags')
         .select('id')
         .range(from, from + PAGE_SIZE - 1);
@@ -87,7 +87,7 @@ export default async function sitemap({ id }: { id: string }): Promise<MetadataR
     let page = 0;
     while (true) {
       const from = page * PAGE_SIZE;
-      const { data, error } = await supabase
+      const { data, error } = await supabaseAdmin
         .from('performers')
         .select('id')
         .range(from, from + PAGE_SIZE - 1);
