@@ -97,8 +97,8 @@ Deno.serve(async (req) => {
     const exploitationTarget = Math.max(1, Math.floor(pageLimit * adjustedExploitationRatio))
     const popularityTarget = Math.max(1, Math.floor(pageLimit * adjustedPopularityRatio))
     const explorationTarget = Math.max(0, pageLimit - exploitationTarget - popularityTarget)
-    // コールドスタート時のタグ推薦: exploitation=50%, popularity=30%, exploration=20% に上書き
-    const useTagMode = preferredTagIds.length > 0 && decisionCount === 0
+    // タグ指定時はタグ優先モード: exploitation=50%, popularity=30%, exploration=20% に上書き
+    const useTagMode = preferredTagIds.length > 0
     const tagExploitationTarget = Math.floor(pageLimit * 0.5)  // 15
     const tagPopularityTarget   = Math.floor(pageLimit * 0.3)  // 9
     const tagExplorationTarget  = pageLimit - tagExploitationTarget - tagPopularityTarget  // 6
@@ -112,7 +112,7 @@ Deno.serve(async (req) => {
     // exploitation 枠をタグ一致動画で埋める（推薦モデルの代替）
     let tagRecsCount = -1
     let tagRecsFirstId: string | null = null
-    if (preferredTagIds.length > 0 && decisionCount === 0) {
+    if (useTagMode) {
       const { data: tagRecs, error: tagError } = await supabase.rpc('get_videos_by_tags', {
         tag_ids: preferredTagIds,
         exclude_ids: excludeIds.length > 0 ? excludeIds : [],
