@@ -45,23 +45,16 @@ function toLgThumb(url: string | null | undefined): string | null {
   return url.replace('ps.jpg', 'pl.jpg');
 }
 
-const TYPE_MAP: { keywords: string[]; typeName: string; color: string }[] = [
-  { keywords: ['美少女', 'ロリ', '制服', '女子校生', '妹'], typeName: '清楚ロリ系', color: '#f9a8d4' },
-  { keywords: ['巨乳', '爆乳', 'お姉さん', 'むちむち', '痴女'], typeName: '巨乳お姉さん系', color: '#fbbf24' },
-  { keywords: ['人妻', '不倫', '寝取られ', 'NTR', '禁断'], typeName: '背徳NTR系', color: '#a78bfa' },
-  { keywords: ['ギャル', '日焼け', 'ビッチ', 'パリピ'], typeName: 'ギラギラギャル系', color: '#34d399' },
-  { keywords: ['SM', '拘束', '調教', '支配', '主従'], typeName: '刺激スパイス系', color: '#f87171' },
-  { keywords: ['単体作品', '王道', 'ノーマル'], typeName: '王道単体派', color: '#60a5fa' },
+// ランク(0始まり)に応じたチップサイズ設定
+const CHIP_SIZES = [
+  { text: 'text-base', px: 'px-4', py: 'py-2', badge: 'text-[11px] px-1.5 py-0.5' },
+  { text: 'text-sm',   px: 'px-3.5', py: 'py-1.5', badge: 'text-[10px] px-1.5 py-0.5' },
+  { text: 'text-sm',   px: 'px-3',   py: 'py-1.5', badge: 'text-[10px] px-1 py-0.5' },
+  { text: 'text-xs',   px: 'px-3',   py: 'py-1',   badge: 'text-[9px]  px-1 py-0.5' },
+  { text: 'text-xs',   px: 'px-2.5', py: 'py-1',   badge: 'text-[9px]  px-1 py-0.5' },
 ];
-
-function deriveType(tags: TagStat[]): { typeName: string; color: string } {
-  const tagNames = tags.map((t) => t.tag_name);
-  for (const profile of TYPE_MAP) {
-    if (profile.keywords.some((kw) => tagNames.some((n) => n.includes(kw)))) {
-      return { typeName: profile.typeName, color: profile.color };
-    }
-  }
-  return { typeName: 'バランス型', color: '#8b949e' };
+function chipSize(i: number) {
+  return CHIP_SIZES[Math.min(i, CHIP_SIZES.length - 1)];
 }
 
 async function fetchListData(token: string): Promise<ListData | null> {
@@ -77,17 +70,17 @@ export async function generateMetadata(
   const data = await fetchListData(token);
   if (!data) return { title: 'リストが見つかりません | 性癖ラボ' };
 
-  const title = data.title ?? '私のお気に入りリスト';
+  const name = data.display_name ?? 'あなた';
   const topTags = data.tags.slice(0, 3).map((t) => t.tag_name).join('・');
   const description = topTags
     ? `好きなジャンル: ${topTags}。${data.videos.length}作品のいいねリスト。`
     : `${data.videos.length}作品のいいねリスト。`;
 
   return {
-    title: `${title} | 性癖ラボ`,
+    title: `${name}のお気に入りリスト | 性癖ラボ`,
     description,
     openGraph: {
-      title: `${title} | 性癖ラボ`,
+      title: `${name}のお気に入りリスト | 性癖ラボ`,
       description,
       url: `${SITE_URL}/list/${token}`,
       siteName: '性癖ラボ',
@@ -104,11 +97,8 @@ export default async function PublicListPage(
   const data = await fetchListData(token);
   if (!data) notFound();
 
-  const title = data.title ?? 'お気に入りリスト';
+  const name = data.display_name;
   const pageUrl = `${SITE_URL}/list/${token}`;
-  const typeProfile = deriveType(data.tags);
-  const totalLikes = data.tags.reduce((sum, t) => sum + t.cnt, 0);
-  const totalPerformerLikes = (data.performers ?? []).reduce((sum, p) => sum + p.cnt, 0);
 
   return (
     <div className="min-h-screen bg-[#0d1117] text-[#e6edf3]">
@@ -119,108 +109,71 @@ export default async function PublicListPage(
           ← 性癖ラボへ戻る
         </Link>
 
-        {/* 性癖ステータスカード */}
-        <div
-          className="mb-8 rounded-2xl overflow-hidden border border-white/10"
-          style={{ background: 'linear-gradient(135deg, #1a1040 0%, #0d1117 60%, #1a0d24 100%)' }}
-        >
-          {/* カードヘッダー */}
-          <div className="px-6 pt-6 pb-4 border-b border-white/10 flex items-center justify-between gap-4">
-            <div>
-              <p className="text-[10px] font-bold tracking-[0.35em] uppercase mb-1" style={{ color: typeProfile.color }}>
-                性癖ステータス
-              </p>
-              {data.display_name ? (
-                <h1 className="text-2xl font-black text-[#e6edf3]">
-                  <span style={{ color: typeProfile.color }}>{data.display_name}</span>
-                  <span className="text-[#8b949e] font-semibold text-lg"> の</span>
-                  <span>{title}</span>
-                </h1>
-              ) : (
-                <h1 className="text-2xl font-black text-[#e6edf3]">{title}</h1>
-              )}
-            </div>
-            <div
-              className="shrink-0 px-4 py-2 rounded-xl text-sm font-black border"
-              style={{ color: typeProfile.color, borderColor: `${typeProfile.color}40`, background: `${typeProfile.color}15` }}
-            >
-              {typeProfile.typeName}
+        {/* ヘッダー */}
+        <div className="mb-8">
+          <h1 className="text-2xl font-black text-[#e6edf3] mb-1">
+            {name ? (
+              <><span className="text-violet-400">{name}</span>のお気に入りリスト</>
+            ) : 'お気に入りリスト'}
+          </h1>
+          <p className="text-sm text-[#656d76]">いいね {data.videos.length}作品</p>
+        </div>
+
+        {/* 好きなジャンルランキング */}
+        {data.tags.length > 0 && (
+          <div className="mb-8">
+            <p className="text-xs font-semibold text-[#656d76] uppercase tracking-wider mb-3">好きなジャンルランキング</p>
+            <div className="flex flex-wrap gap-2 items-end">
+              {data.tags.slice(0, 8).map((t, i) => {
+                const sz = chipSize(i);
+                return (
+                  <span
+                    key={t.tag_name}
+                    className={`inline-flex items-center gap-1.5 ${sz.px} ${sz.py} rounded-full border font-semibold ${sz.text} bg-[#161b22] border-[#30363d] text-[#c9d1d9]`}
+                  >
+                    <span className={`font-black text-violet-400 ${sz.badge}`}>{i + 1}</span>
+                    {t.tag_name}
+                  </span>
+                );
+              })}
             </div>
           </div>
+        )}
 
-          {/* タグステータス */}
-          {data.tags.length > 0 && (
-            <div className="px-6 py-5">
-              <p className="text-[10px] font-bold tracking-[0.3em] uppercase text-[#656d76] mb-4">好きなジャンル — TOP {Math.min(data.tags.length, 8)}</p>
-              <div className="flex flex-col gap-3">
-                {data.tags.slice(0, 8).map((t, i) => {
-                  const ratio = totalLikes > 0 ? (t.cnt / totalLikes) * 100 : 0;
-                  const rankColors = ['#f9a8d4', '#fbbf24', '#a78bfa', '#60a5fa', '#34d399'];
-                  const barColor = rankColors[i] ?? '#8b949e';
-                  return (
-                    <div key={t.tag_name} className="flex items-center gap-3">
-                      <span className="w-5 text-right text-[11px] font-bold shrink-0" style={{ color: i < 3 ? barColor : '#656d76' }}>
-                        {i + 1}
-                      </span>
-                      <span className="w-24 text-sm font-semibold text-[#c9d1d9] truncate shrink-0">{t.tag_name}</span>
-                      <div className="flex-1 h-2 rounded-full bg-white/5 overflow-hidden">
-                        <div
-                          className="h-full rounded-full transition-all"
-                          style={{ width: `${Math.max(ratio, 2)}%`, background: `linear-gradient(90deg, ${barColor}cc, ${barColor}66)` }}
-                        />
-                      </div>
-                      <span className="text-xs text-[#656d76] shrink-0 w-10 text-right">{t.cnt}件</span>
-                    </div>
-                  );
-                })}
-              </div>
+        {/* 推し女優ランキング */}
+        {(data.performers ?? []).length > 0 && (
+          <div className="mb-8">
+            <p className="text-xs font-semibold text-[#656d76] uppercase tracking-wider mb-3">推し女優ランキング</p>
+            <div className="flex flex-wrap gap-2 items-end">
+              {(data.performers ?? []).slice(0, 8).map((p, i) => {
+                const sz = chipSize(i);
+                return (
+                  <span
+                    key={p.performer_name}
+                    className={`inline-flex items-center gap-1.5 ${sz.px} ${sz.py} rounded-full border font-semibold ${sz.text} bg-[#161b22] border-[#30363d] text-[#c9d1d9]`}
+                  >
+                    <span className={`font-black text-pink-400 ${sz.badge}`}>{i + 1}</span>
+                    {p.performer_name}
+                  </span>
+                );
+              })}
             </div>
-          )}
-
-          {/* 女優ステータス */}
-          {(data.performers ?? []).length > 0 && (
-            <div className="px-6 py-5 border-t border-white/10">
-              <p className="text-[10px] font-bold tracking-[0.3em] uppercase text-[#656d76] mb-4">推し女優 — TOP {Math.min((data.performers ?? []).length, 8)}</p>
-              <div className="flex flex-col gap-3">
-                {(data.performers ?? []).slice(0, 8).map((p, i) => {
-                  const ratio = totalPerformerLikes > 0 ? (p.cnt / totalPerformerLikes) * 100 : 0;
-                  const rankColors = ['#fb7185', '#f472b6', '#c084fc', '#818cf8', '#60a5fa'];
-                  const barColor = rankColors[i] ?? '#8b949e';
-                  return (
-                    <div key={p.performer_name} className="flex items-center gap-3">
-                      <span className="w-5 text-right text-[11px] font-bold shrink-0" style={{ color: i < 3 ? barColor : '#656d76' }}>
-                        {i + 1}
-                      </span>
-                      <span className="w-28 text-sm font-semibold text-[#c9d1d9] truncate shrink-0">{p.performer_name}</span>
-                      <div className="flex-1 h-2 rounded-full bg-white/5 overflow-hidden">
-                        <div
-                          className="h-full rounded-full"
-                          style={{ width: `${Math.max(ratio, 2)}%`, background: `linear-gradient(90deg, ${barColor}cc, ${barColor}66)` }}
-                        />
-                      </div>
-                      <span className="text-xs text-[#656d76] shrink-0 w-10 text-right">{p.cnt}件</span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* フッター情報 */}
-          <div className="px-6 pb-5 flex items-center justify-between gap-4 border-t border-white/10 pt-4">
-            <p className="text-xs text-[#484f58]">いいね作品 {data.videos.length}本</p>
-            <CopyLinkButton url={pageUrl} />
           </div>
+        )}
+
+        {/* リンクコピー */}
+        <div className="mb-8">
+          <CopyLinkButton url={pageUrl} />
         </div>
 
         {/* 作品グリッド */}
         {data.videos.length === 0 ? (
           <p className="text-center text-[#656d76] py-20">まだいいねした作品がありません。</p>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
             {data.videos.map((video) => {
               const affiliateUrl = toAffiliateUrl(video.product_url);
-              const thumb = toLgThumb(video.thumbnail_vertical_url) ?? toLgThumb(video.thumbnail_url);
+              const thumb = toLgThumb(video.thumbnail_url);
               return (
                 <a
                   key={video.id}
@@ -234,11 +187,11 @@ export default async function PublicListPage(
                     <img
                       src={thumb}
                       alt={video.title ?? ''}
-                      className="w-full aspect-[3/4] object-cover group-hover:opacity-90 transition-opacity"
+                      className="w-full aspect-video object-cover group-hover:opacity-90 transition-opacity"
                       loading="lazy"
                     />
                   ) : (
-                    <div className="w-full aspect-[3/4] bg-[#21262d] flex items-center justify-center">
+                    <div className="w-full aspect-video bg-[#21262d] flex items-center justify-center">
                       <span className="text-[#484f58] text-xs">No Image</span>
                     </div>
                   )}
