@@ -2,7 +2,7 @@
 
 import { Dialog, Transition } from '@headlessui/react';
 import { Fragment, useEffect, useState, useCallback } from 'react';
-import { X, Heart, Tag, Users, TrendingUp, Link2, Check, Loader2 } from 'lucide-react';
+import { X, Heart, Tag, Users, TrendingUp, Link2, Check, Loader2, ExternalLink } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
 interface AccountManagementDrawerProps {
@@ -247,6 +247,15 @@ const AccountManagementDrawer: React.FC<AccountManagementDrawerProps> = ({ isOpe
                                     削除
                                   </button>
                                 </div>
+                                <a
+                                  href={`/list/${publicToken}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg bg-[#161b22] border border-[#30363d] hover:border-violet-500/50 text-[#8b949e] hover:text-[#e6edf3] text-xs font-bold transition-all"
+                                >
+                                  <ExternalLink size={12} />
+                                  自分のリストを確認
+                                </a>
                               </div>
                             ) : (
                               <button

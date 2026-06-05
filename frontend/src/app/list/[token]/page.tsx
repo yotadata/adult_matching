@@ -115,8 +115,8 @@ export default async function PublicListPage(
       <div className="max-w-4xl mx-auto px-4 py-10">
 
         {/* ナビ */}
-        <Link href="/" className="text-xs text-[#656d76] hover:text-[#8b949e] transition-colors mb-6 inline-block">
-          ← 性癖ラボ
+        <Link href="/grid" className="text-xs text-[#656d76] hover:text-[#8b949e] transition-colors mb-6 inline-block">
+          ← 性癖ラボへ戻る
         </Link>
 
         {/* 性癖ステータスカード */}
@@ -130,10 +130,15 @@ export default async function PublicListPage(
               <p className="text-[10px] font-bold tracking-[0.35em] uppercase mb-1" style={{ color: typeProfile.color }}>
                 性癖ステータス
               </p>
-              {data.display_name && (
-                <p className="text-sm text-[#8b949e] mb-0.5">{data.display_name}</p>
+              {data.display_name ? (
+                <h1 className="text-2xl font-black text-[#e6edf3]">
+                  <span style={{ color: typeProfile.color }}>{data.display_name}</span>
+                  <span className="text-[#8b949e] font-semibold text-lg"> の</span>
+                  <span>{title}</span>
+                </h1>
+              ) : (
+                <h1 className="text-2xl font-black text-[#e6edf3]">{title}</h1>
               )}
-              <h1 className="text-2xl font-black text-[#e6edf3]">{title}</h1>
             </div>
             <div
               className="shrink-0 px-4 py-2 rounded-xl text-sm font-black border"
