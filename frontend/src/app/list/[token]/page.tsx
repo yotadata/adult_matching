@@ -175,28 +175,28 @@ export default async function PublicListPage(
           </div>
         )}
 
-        {/* 作品グリッド */}
+        {/* 作品グリッド（Pinterest風マソンリー） */}
         {data.videos.length === 0 ? (
           <p className="text-center text-[#656d76] py-20">まだいいねした作品がありません。</p>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          <div className="[column-count:2] sm:[column-count:3] [column-gap:12px]">
             {data.videos.map((video) => {
               const affiliateUrl = toAffiliateUrl(video.product_url);
-              const thumb = toLgThumb(video.thumbnail_url);
+              const thumb = toLgThumb(video.thumbnail_url) ?? toLgThumb(video.thumbnail_vertical_url);
               return (
                 <a
                   key={video.id}
                   href={affiliateUrl || '#'}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="group block rounded-lg overflow-hidden border border-[#21262d] hover:border-violet-500/50 transition-colors bg-[#161b22]"
+                  className="group block rounded-lg overflow-hidden border border-[#21262d] hover:border-violet-500/50 transition-colors bg-[#161b22] mb-3 break-inside-avoid"
                 >
                   {thumb ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
                       src={thumb}
                       alt={video.title ?? ''}
-                      className="w-full aspect-video object-cover group-hover:opacity-90 transition-opacity"
+                      className="w-full h-auto group-hover:opacity-90 transition-opacity"
                       loading="lazy"
                     />
                   ) : (
