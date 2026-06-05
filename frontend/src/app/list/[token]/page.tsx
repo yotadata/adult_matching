@@ -55,25 +55,17 @@ const CHIP_SIZES = [
 ];
 function chipSize(i: number) { return CHIP_SIZES[Math.min(i, CHIP_SIZES.length - 1)]; }
 
-// タグ用カラー（violet系グラデーション）
-const TAG_COLORS = [
-  { bg: 'bg-violet-500/20', border: 'border-violet-500/50', text: 'text-violet-200', num: 'text-violet-400' },
-  { bg: 'bg-fuchsia-500/20', border: 'border-fuchsia-500/50', text: 'text-fuchsia-200', num: 'text-fuchsia-400' },
-  { bg: 'bg-purple-500/20', border: 'border-purple-500/50', text: 'text-purple-200', num: 'text-purple-400' },
-  { bg: 'bg-indigo-500/15', border: 'border-indigo-500/40', text: 'text-indigo-200', num: 'text-indigo-400' },
-  { bg: 'bg-blue-500/15', border: 'border-blue-500/40', text: 'text-blue-200', num: 'text-blue-400' },
-];
-function tagColor(i: number) { return TAG_COLORS[Math.min(i, TAG_COLORS.length - 1)]; }
+const TAG_COLOR  = { bg: 'bg-violet-500/20', border: 'border-violet-500/40', text: 'text-violet-200', num: 'text-violet-400' };
+const PERF_COLOR = { bg: 'bg-pink-500/20',   border: 'border-pink-500/40',   text: 'text-pink-200',   num: 'text-pink-400' };
 
-// 女優用カラー（pink系グラデーション）
-const PERF_COLORS = [
-  { bg: 'bg-pink-500/20', border: 'border-pink-500/50', text: 'text-pink-200', num: 'text-pink-400' },
-  { bg: 'bg-rose-500/20', border: 'border-rose-500/50', text: 'text-rose-200', num: 'text-rose-400' },
-  { bg: 'bg-fuchsia-500/20', border: 'border-fuchsia-500/50', text: 'text-fuchsia-200', num: 'text-fuchsia-400' },
-  { bg: 'bg-red-500/15', border: 'border-red-500/40', text: 'text-red-200', num: 'text-red-400' },
-  { bg: 'bg-orange-500/15', border: 'border-orange-500/40', text: 'text-orange-200', num: 'text-orange-400' },
-];
-function perfColor(i: number) { return PERF_COLORS[Math.min(i, PERF_COLORS.length - 1)]; }
+// 技術的・流通系タグ（嗜好を表さないもの）は除外
+const EXCLUDED_TAGS = new Set([
+  '独占配信', 'ハイビジョン', '単体作品', '4K', '8K', 'VR', 'Ultra HD',
+  '無修正', '高画質', 'フルHD', 'DVD', 'Blu-ray', '収録時間4時間以上',
+]);
+function filterTags(tags: TagStat[]): TagStat[] {
+  return tags.filter((t) => !EXCLUDED_TAGS.has(t.tag_name));
+}
 
 async function fetchListData(token: string): Promise<ListData | null> {
   const { data, error } = await supabase.rpc('get_public_list_data', { p_token: token });
@@ -117,6 +109,7 @@ export default async function PublicListPage(
 
   const name = data.display_name;
   const pageUrl = `${SITE_URL}/list/${token}`;
+  const filteredTags = filterTags(data.tags);
 
   return (
     <div className="min-h-screen bg-[#0d1117] text-[#e6edf3]">
@@ -141,19 +134,18 @@ export default async function PublicListPage(
         </div>
 
         {/* 好きなジャンルランキング */}
-        {data.tags.length > 0 && (
+        {filteredTags.length > 0 && (
           <div className="mb-8">
             <p className="text-xs font-semibold text-[#656d76] uppercase tracking-wider mb-3">好きなジャンルランキング</p>
             <div className="flex flex-wrap gap-2 items-end">
-              {data.tags.slice(0, 8).map((t, i) => {
+              {filteredTags.slice(0, 8).map((t, i) => {
                 const sz = chipSize(i);
-                const cl = tagColor(i);
                 return (
                   <span
                     key={t.tag_name}
-                    className={`inline-flex items-center gap-1.5 ${sz.px} ${sz.py} rounded-full border font-semibold ${sz.text} ${cl.bg} ${cl.border}`}
+                    className={`inline-flex items-center gap-1.5 ${sz.px} ${sz.py} rounded-full border font-semibold ${sz.text} ${TAG_COLOR.bg} ${TAG_COLOR.border}`}
                   >
-                    <span className={`font-black ${cl.num} text-[10px]`}>{i + 1}</span>
+                    <span className={`font-black ${TAG_COLOR.num} text-[10px]`}>{i + 1}</span>
                     {t.tag_name}
                   </span>
                 );
@@ -169,13 +161,12 @@ export default async function PublicListPage(
             <div className="flex flex-wrap gap-2 items-end">
               {(data.performers ?? []).slice(0, 8).map((p, i) => {
                 const sz = chipSize(i);
-                const cl = perfColor(i);
                 return (
                   <span
                     key={p.performer_name}
-                    className={`inline-flex items-center gap-1.5 ${sz.px} ${sz.py} rounded-full border font-semibold ${sz.text} ${cl.bg} ${cl.border}`}
+                    className={`inline-flex items-center gap-1.5 ${sz.px} ${sz.py} rounded-full border font-semibold ${sz.text} ${PERF_COLOR.bg} ${PERF_COLOR.border}`}
                   >
-                    <span className={`font-black ${cl.num} text-[10px]`}>{i + 1}</span>
+                    <span className={`font-black ${PERF_COLOR.num} text-[10px]`}>{i + 1}</span>
                     {p.performer_name}
                   </span>
                 );
