@@ -18,12 +18,14 @@ type Video = {
 };
 
 type TagStat = { tag_name: string; cnt: number };
+type PerformerStat = { performer_name: string; cnt: number };
 
 type ListData = {
   display_name: string | null;
   title: string | null;
   videos: Video[];
   tags: TagStat[];
+  performers: PerformerStat[];
 };
 
 function toAffiliateUrl(raw?: string | null): string {
@@ -106,6 +108,7 @@ export default async function PublicListPage(
   const pageUrl = `${SITE_URL}/list/${token}`;
   const typeProfile = deriveType(data.tags);
   const totalLikes = data.tags.reduce((sum, t) => sum + t.cnt, 0);
+  const totalPerformerLikes = (data.performers ?? []).reduce((sum, p) => sum + p.cnt, 0);
 
   return (
     <div className="min-h-screen bg-[#0d1117] text-[#e6edf3]">
@@ -169,8 +172,37 @@ export default async function PublicListPage(
             </div>
           )}
 
+          {/* 女優ステータス */}
+          {(data.performers ?? []).length > 0 && (
+            <div className="px-6 py-5 border-t border-white/10">
+              <p className="text-[10px] font-bold tracking-[0.3em] uppercase text-[#656d76] mb-4">推し女優 — TOP {Math.min((data.performers ?? []).length, 8)}</p>
+              <div className="flex flex-col gap-3">
+                {(data.performers ?? []).slice(0, 8).map((p, i) => {
+                  const ratio = totalPerformerLikes > 0 ? (p.cnt / totalPerformerLikes) * 100 : 0;
+                  const rankColors = ['#fb7185', '#f472b6', '#c084fc', '#818cf8', '#60a5fa'];
+                  const barColor = rankColors[i] ?? '#8b949e';
+                  return (
+                    <div key={p.performer_name} className="flex items-center gap-3">
+                      <span className="w-5 text-right text-[11px] font-bold shrink-0" style={{ color: i < 3 ? barColor : '#656d76' }}>
+                        {i + 1}
+                      </span>
+                      <span className="w-28 text-sm font-semibold text-[#c9d1d9] truncate shrink-0">{p.performer_name}</span>
+                      <div className="flex-1 h-2 rounded-full bg-white/5 overflow-hidden">
+                        <div
+                          className="h-full rounded-full"
+                          style={{ width: `${Math.max(ratio, 2)}%`, background: `linear-gradient(90deg, ${barColor}cc, ${barColor}66)` }}
+                        />
+                      </div>
+                      <span className="text-xs text-[#656d76] shrink-0 w-10 text-right">{p.cnt}件</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {/* フッター情報 */}
-          <div className="px-6 pb-5 flex items-center justify-between gap-4">
+          <div className="px-6 pb-5 flex items-center justify-between gap-4 border-t border-white/10 pt-4">
             <p className="text-xs text-[#484f58]">いいね作品 {data.videos.length}本</p>
             <CopyLinkButton url={pageUrl} />
           </div>
