@@ -45,17 +45,35 @@ function toLgThumb(url: string | null | undefined): string | null {
   return url.replace('ps.jpg', 'pl.jpg');
 }
 
-// ランク(0始まり)に応じたチップサイズ設定
+// ランク(0始まり)に応じたチップサイズ
 const CHIP_SIZES = [
-  { text: 'text-base', px: 'px-4', py: 'py-2', badge: 'text-[11px] px-1.5 py-0.5' },
-  { text: 'text-sm',   px: 'px-3.5', py: 'py-1.5', badge: 'text-[10px] px-1.5 py-0.5' },
-  { text: 'text-sm',   px: 'px-3',   py: 'py-1.5', badge: 'text-[10px] px-1 py-0.5' },
-  { text: 'text-xs',   px: 'px-3',   py: 'py-1',   badge: 'text-[9px]  px-1 py-0.5' },
-  { text: 'text-xs',   px: 'px-2.5', py: 'py-1',   badge: 'text-[9px]  px-1 py-0.5' },
+  { text: 'text-base', px: 'px-4',   py: 'py-2' },
+  { text: 'text-sm',   px: 'px-3.5', py: 'py-1.5' },
+  { text: 'text-sm',   px: 'px-3',   py: 'py-1.5' },
+  { text: 'text-xs',   px: 'px-3',   py: 'py-1' },
+  { text: 'text-xs',   px: 'px-2.5', py: 'py-1' },
 ];
-function chipSize(i: number) {
-  return CHIP_SIZES[Math.min(i, CHIP_SIZES.length - 1)];
-}
+function chipSize(i: number) { return CHIP_SIZES[Math.min(i, CHIP_SIZES.length - 1)]; }
+
+// タグ用カラー（violet系グラデーション）
+const TAG_COLORS = [
+  { bg: 'bg-violet-500/20', border: 'border-violet-500/50', text: 'text-violet-200', num: 'text-violet-400' },
+  { bg: 'bg-fuchsia-500/20', border: 'border-fuchsia-500/50', text: 'text-fuchsia-200', num: 'text-fuchsia-400' },
+  { bg: 'bg-purple-500/20', border: 'border-purple-500/50', text: 'text-purple-200', num: 'text-purple-400' },
+  { bg: 'bg-indigo-500/15', border: 'border-indigo-500/40', text: 'text-indigo-200', num: 'text-indigo-400' },
+  { bg: 'bg-blue-500/15', border: 'border-blue-500/40', text: 'text-blue-200', num: 'text-blue-400' },
+];
+function tagColor(i: number) { return TAG_COLORS[Math.min(i, TAG_COLORS.length - 1)]; }
+
+// 女優用カラー（pink系グラデーション）
+const PERF_COLORS = [
+  { bg: 'bg-pink-500/20', border: 'border-pink-500/50', text: 'text-pink-200', num: 'text-pink-400' },
+  { bg: 'bg-rose-500/20', border: 'border-rose-500/50', text: 'text-rose-200', num: 'text-rose-400' },
+  { bg: 'bg-fuchsia-500/20', border: 'border-fuchsia-500/50', text: 'text-fuchsia-200', num: 'text-fuchsia-400' },
+  { bg: 'bg-red-500/15', border: 'border-red-500/40', text: 'text-red-200', num: 'text-red-400' },
+  { bg: 'bg-orange-500/15', border: 'border-orange-500/40', text: 'text-orange-200', num: 'text-orange-400' },
+];
+function perfColor(i: number) { return PERF_COLORS[Math.min(i, PERF_COLORS.length - 1)]; }
 
 async function fetchListData(token: string): Promise<ListData | null> {
   const { data, error } = await supabase.rpc('get_public_list_data', { p_token: token });
@@ -110,13 +128,16 @@ export default async function PublicListPage(
         </Link>
 
         {/* ヘッダー */}
-        <div className="mb-8">
-          <h1 className="text-2xl font-black text-[#e6edf3] mb-1">
-            {name ? (
-              <><span className="text-violet-400">{name}</span>のお気に入りリスト</>
-            ) : 'お気に入りリスト'}
-          </h1>
-          <p className="text-sm text-[#656d76]">いいね {data.videos.length}作品</p>
+        <div className="mb-8 flex items-start justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-black text-[#e6edf3] mb-1">
+              {name ? (
+                <><span className="text-violet-400">{name}</span>のお気に入りリスト</>
+              ) : 'お気に入りリスト'}
+            </h1>
+            <p className="text-sm text-[#656d76]">いいね {data.videos.length}作品</p>
+          </div>
+          <CopyLinkButton url={pageUrl} />
         </div>
 
         {/* 好きなジャンルランキング */}
@@ -126,12 +147,13 @@ export default async function PublicListPage(
             <div className="flex flex-wrap gap-2 items-end">
               {data.tags.slice(0, 8).map((t, i) => {
                 const sz = chipSize(i);
+                const cl = tagColor(i);
                 return (
                   <span
                     key={t.tag_name}
-                    className={`inline-flex items-center gap-1.5 ${sz.px} ${sz.py} rounded-full border font-semibold ${sz.text} bg-[#161b22] border-[#30363d] text-[#c9d1d9]`}
+                    className={`inline-flex items-center gap-1.5 ${sz.px} ${sz.py} rounded-full border font-semibold ${sz.text} ${cl.bg} ${cl.border}`}
                   >
-                    <span className={`font-black text-violet-400 ${sz.badge}`}>{i + 1}</span>
+                    <span className={`font-black ${cl.num} text-[10px]`}>{i + 1}</span>
                     {t.tag_name}
                   </span>
                 );
@@ -147,12 +169,13 @@ export default async function PublicListPage(
             <div className="flex flex-wrap gap-2 items-end">
               {(data.performers ?? []).slice(0, 8).map((p, i) => {
                 const sz = chipSize(i);
+                const cl = perfColor(i);
                 return (
                   <span
                     key={p.performer_name}
-                    className={`inline-flex items-center gap-1.5 ${sz.px} ${sz.py} rounded-full border font-semibold ${sz.text} bg-[#161b22] border-[#30363d] text-[#c9d1d9]`}
+                    className={`inline-flex items-center gap-1.5 ${sz.px} ${sz.py} rounded-full border font-semibold ${sz.text} ${cl.bg} ${cl.border}`}
                   >
-                    <span className={`font-black text-pink-400 ${sz.badge}`}>{i + 1}</span>
+                    <span className={`font-black ${cl.num} text-[10px]`}>{i + 1}</span>
                     {p.performer_name}
                   </span>
                 );
@@ -160,11 +183,6 @@ export default async function PublicListPage(
             </div>
           </div>
         )}
-
-        {/* リンクコピー */}
-        <div className="mb-8">
-          <CopyLinkButton url={pageUrl} />
-        </div>
 
         {/* 作品グリッド */}
         {data.videos.length === 0 ? (
