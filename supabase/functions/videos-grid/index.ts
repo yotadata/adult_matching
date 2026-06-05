@@ -97,8 +97,9 @@ Deno.serve(async (req) => {
     const exploitationTarget = Math.max(1, Math.floor(pageLimit * adjustedExploitationRatio))
     const popularityTarget = Math.max(1, Math.floor(pageLimit * adjustedPopularityRatio))
     const explorationTarget = Math.max(0, pageLimit - exploitationTarget - popularityTarget)
-    // タグ指定時はタグ優先モード: exploitation=50%, popularity=30%, exploration=20% に上書き
-    const useTagMode = preferredTagIds.length > 0
+    // 判定が少ない間はタグ優先モード（コールドスタート）、十分学習したらモデルに切り替え
+    const TAG_MODE_THRESHOLD = 20
+    const useTagMode = preferredTagIds.length > 0 && decisionCount < TAG_MODE_THRESHOLD
     const tagExploitationTarget = Math.floor(pageLimit * 0.5)  // 15
     const tagPopularityTarget   = Math.floor(pageLimit * 0.3)  // 9
     const tagExplorationTarget  = pageLimit - tagExploitationTarget - tagPopularityTarget  // 6
