@@ -191,19 +191,21 @@ export default async function PublicListPage(
                   rel="noopener noreferrer"
                   className="group block rounded-lg overflow-hidden border border-[#21262d] hover:border-violet-500/50 transition-colors bg-[#161b22]"
                 >
-                  {thumb ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={thumb}
-                      alt={video.title ?? ''}
-                      className="w-full aspect-video object-cover group-hover:opacity-90 transition-opacity"
-                      loading="lazy"
-                    />
-                  ) : (
-                    <div className="w-full aspect-video bg-[#21262d] flex items-center justify-center">
-                      <span className="text-[#484f58] text-xs">No Image</span>
-                    </div>
-                  )}
+                  <div className="w-full aspect-video bg-[#21262d] overflow-hidden">
+                    {thumb ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={thumb}
+                        alt={video.title ?? ''}
+                        className="w-full h-full object-cover group-hover:opacity-90 transition-opacity"
+                        loading="lazy"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <span className="text-[#484f58] text-xs">No Image</span>
+                      </div>
+                    )}
+                  </div>
                   <div className="p-2">
                     <p className="text-xs text-[#8b949e] leading-tight line-clamp-2">
                       {video.title ?? ''}
