@@ -53,7 +53,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
 
   const isQuizPath = pathname?.startsWith('/quiz') ?? false;
   const isBrowsePath = (pathname?.startsWith('/grid') || pathname?.startsWith('/swipe') || pathname?.startsWith('/browse')) ?? false;
-  const noSidebarPath = pathname === '/' || pathname?.startsWith('/performers') || pathname?.startsWith('/tags');
+  const noSidebarPath = pathname === '/' || pathname?.startsWith('/performers') || pathname?.startsWith('/tags') || pathname?.startsWith('/list');
 
   useEffect(() => {
     if (!authInitialized || isLoggedIn === null || !pathname) return;
@@ -65,7 +65,8 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
     const isVideoPage = pathname.startsWith('/videos/');
     const isPerformerPage = pathname.startsWith('/performers');
     const isTagPage = pathname.startsWith('/tags');
-    const requiresLogin = !(isHomePage || isSwipePath || isGridPath || isAboutPage || isVideoPage || isPerformerPage || isTagPage);
+    const isListPage = pathname.startsWith('/list');
+    const requiresLogin = !(isHomePage || isSwipePath || isGridPath || isAboutPage || isVideoPage || isPerformerPage || isTagPage || isListPage);
 
     if (requiresLogin && isLoggedIn === false) {
       router.replace('/grid');

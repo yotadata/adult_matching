@@ -97,61 +97,17 @@ Deno.serve(async (req) => {
     const exploitationTarget = Math.max(1, Math.floor(pageLimit * adjustedExploitationRatio))
     const popularityTarget = Math.max(1, Math.floor(pageLimit * adjustedPopularityRatio))
     const explorationTarget = Math.max(0, pageLimit - exploitationTarget - popularityTarget)
-    // コールドスタート時のタグ推薦: exploitation=50%, popularity=30%, exploration=20% に上書き
-    const useTagMode = preferredTagIds.length > 0 && decisionCount === 0
-    const tagExploitationTarget = Math.floor(pageLimit * 0.5)  // 15
-    const tagPopularityTarget   = Math.floor(pageLimit * 0.3)  // 9
-    const tagExplorationTarget  = pageLimit - tagExploitationTarget - tagPopularityTarget  // 6
+    // スコアがこの値を下回る exploitation 枠をタグ動画で差し替える
+    const SCORE_THRESHOLD = 0.5
 
     const seen = new Set<string>(excludeIds)
     const exploitation: VideoEntry[] = []
     const popularity: VideoEntry[] = []
     const exploration: VideoEntry[] = []
 
-    // コールドスタート時（decisionCount=0 + タグ選択済み）は
-    // exploitation 枠をタグ一致動画で埋める（推薦モデルの代替）
-    let tagRecsCount = -1
-    let tagRecsFirstId: string | null = null
-    if (preferredTagIds.length > 0 && decisionCount === 0) {
-      const { data: tagRecs, error: tagError } = await supabase.rpc('get_videos_by_tags', {
-        tag_ids: preferredTagIds,
-        exclude_ids: excludeIds.length > 0 ? excludeIds : [],
-        p_limit: Math.max(tagExploitationTarget * CANDIDATE_MULTIPLIER, 60),
-      })
-      tagRecsCount = (tagRecs ?? []).length
-      tagRecsFirstId = String(((tagRecs ?? []) as Record<string, unknown>[])[0]?.id ?? null)
-      const first = (tagRecs ?? [])[0] as Record<string, unknown> | undefined
-      console.log('[tag] first item keys:', JSON.stringify(first ? Object.keys(first) : []))
-      console.log('[tag] first item id:', first?.id, 'type:', typeof first?.id)
-      const first5ids = (tagRecs ?? [] as Record<string, unknown>[]).slice(0, 5).map((r: Record<string, unknown>) => String(r.id))
-      console.log('[tag] first5 ids:', JSON.stringify(first5ids))
-      if (tagError) {
-        console.error('get_videos_by_tags error:', tagError.message)
-      } else {
-        for (const item of (tagRecs ?? []) as Record<string, unknown>[]) {
-          const id = String(item.id)
-          if (seen.has(id)) continue
-          exploitation.push({
-            id,
-            title: (item.title ?? null) as string | null,
-            external_id: (item.external_id ?? null) as string | null,
-            thumbnail_url: (item.thumbnail_url ?? null) as string | null,
-            thumbnail_vertical_url: (item.thumbnail_vertical_url ?? null) as string | null,
-            sample_video_url: (item.sample_video_url ?? null) as string | null,
-            embed_url: toEmbedUrl((item.external_id ?? null) as string | null),
-            product_url: (item.product_url ?? null) as string | null,
-            product_released_at: (item.product_released_at ?? null) as string | null,
-            performers: (item.performers ?? []) as unknown,
-            tags: (item.tags ?? []) as unknown,
-            score: null,
-            model_version: null,
-            source: 'exploitation_tag',
-          })
-          seen.add(id)
-          if (exploitation.length >= tagExploitationTarget) break
-        }
-      }
-    } else if (userId && adjustedExploitationRatio > 0) {
+    // モデル exploitation → スコア閾値未満の枠をタグ動画で差し替え
+    // モデル結果ゼロ（真のコールドスタート）はタグ動画で全枠埋める
+    if (userId && adjustedExploitationRatio > 0) {
       const { data: recs, error: recError } = await supabase.rpc('get_videos_recommendations', {
         user_uuid: userId,
         page_limit: Math.max(pageLimit * CANDIDATE_MULTIPLIER, 100),
@@ -182,13 +138,71 @@ Deno.serve(async (req) => {
           if (exploitation.length >= exploitationTarget) break
         }
       }
+
+      // タグが指定されている場合、スコア閾値未満の枠をタグ動画で差し替える
+      if (preferredTagIds.length > 0) {
+        const lowScoreIndices = exploitation
+          .map((v, i) => ({ i, score: v.score }))
+          .filter(({ score }) => score === null || score < SCORE_THRESHOLD)
+          .map(({ i }) => i)
+
+        // モデル結果ゼロ（コールドスタート）の場合は全枠をタグで埋める
+        const needCount = lowScoreIndices.length > 0
+          ? lowScoreIndices.length
+          : exploitationTarget - exploitation.length
+
+        if (needCount > 0) {
+          const { data: tagRecs, error: tagError } = await supabase.rpc('get_videos_by_tags', {
+            tag_ids: preferredTagIds,
+            exclude_ids: Array.from(seen),
+            p_limit: Math.max(needCount * CANDIDATE_MULTIPLIER, 30),
+          })
+          if (tagError) {
+            console.error('get_videos_by_tags error:', tagError.message)
+          } else {
+            const tagEntries: VideoEntry[] = []
+            for (const item of (tagRecs ?? []) as Record<string, unknown>[]) {
+              const id = String(item.id)
+              if (seen.has(id)) continue
+              tagEntries.push({
+                id,
+                title: (item.title ?? null) as string | null,
+                external_id: (item.external_id ?? null) as string | null,
+                thumbnail_url: (item.thumbnail_url ?? null) as string | null,
+                thumbnail_vertical_url: (item.thumbnail_vertical_url ?? null) as string | null,
+                sample_video_url: (item.sample_video_url ?? null) as string | null,
+                embed_url: toEmbedUrl((item.external_id ?? null) as string | null),
+                product_url: (item.product_url ?? null) as string | null,
+                product_released_at: (item.product_released_at ?? null) as string | null,
+                performers: (item.performers ?? []) as unknown,
+                tags: (item.tags ?? []) as unknown,
+                score: null,
+                model_version: null,
+                source: 'exploitation_tag',
+              })
+              seen.add(id)
+              if (tagEntries.length >= needCount) break
+            }
+            // 低スコア枠を差し替え、残りは末尾に追加
+            let tagIdx = 0
+            for (const idx of lowScoreIndices) {
+              if (tagIdx >= tagEntries.length) break
+              seen.delete(exploitation[idx].id)
+              exploitation[idx] = tagEntries[tagIdx++]
+            }
+            // モデル結果不足分を末尾に追加
+            while (tagIdx < tagEntries.length && exploitation.length < exploitationTarget) {
+              exploitation.push(tagEntries[tagIdx++])
+            }
+          }
+        }
+      }
     }
 
-    const effectivePopularityTarget = useTagMode ? tagPopularityTarget : popularityTarget
-    if (effectivePopularityTarget > 0) {
+    if (popularityTarget > 0) {
       const { data: popData, error: popError } = await supabase.rpc('get_popular_videos', {
         user_uuid: userId,
-        limit_count: effectivePopularityTarget * CANDIDATE_MULTIPLIER,
+        limit_count: popularityTarget * CANDIDATE_MULTIPLIER,
         lookback_days: popularLookbackDays,
       })
       if (popError) {
@@ -214,16 +228,14 @@ Deno.serve(async (req) => {
             source: 'popularity',
           })
           seen.add(id)
-          if (popularity.length >= effectivePopularityTarget) break
+          if (popularity.length >= popularityTarget) break
         }
       }
     }
 
-    const effectiveExploitationTarget = useTagMode ? tagExploitationTarget : exploitationTarget
-    const effectiveExplorationTarget  = useTagMode ? tagExplorationTarget  : explorationTarget
     const explorationNeeded = Math.max(
       0,
-      effectiveExplorationTarget + (effectiveExploitationTarget - exploitation.length) + (effectivePopularityTarget - popularity.length),
+      explorationTarget + (exploitationTarget - exploitation.length) + (popularityTarget - popularity.length),
     )
 
     if (explorationNeeded > 0) {
@@ -281,9 +293,7 @@ Deno.serve(async (req) => {
         preferredTagIds_count: preferredTagIds.length,
         preferredTagIds_first: preferredTagIds[0] ?? null,
         decisionCount,
-        tagRecs_count: tagRecsCount,
         excludeIds_count: excludeIds.length,
-        tagRecs_firstId: tagRecsFirstId,
         exploitation_count: exploitation.length,
         popularity_count: popularity.length,
         exploration_count: exploration.length,
