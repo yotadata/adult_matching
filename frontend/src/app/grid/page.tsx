@@ -241,8 +241,11 @@ function GridPage() {
 
   const handleOnboardingComplete = (tagIds: string[]) => {
     preferredTagIds.current = tagIds;
+    // タグ付きで最初からフェッチし直す
+    setVideos([]);
+    loadedVideoIds.current = new Set();
+    setHasMore(true);
     setShowOnboarding(false);
-    // onboarding完了後にフィードを初回取得
     fetchVideos();
   };
 

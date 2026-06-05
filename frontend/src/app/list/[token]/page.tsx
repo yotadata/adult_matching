@@ -38,6 +38,30 @@ function toAffiliateUrl(raw?: string | null): string {
   return `https://al.fanza.co.jp/?lurl=${encodeURIComponent(raw)}&af_id=${encodeURIComponent(AF_ID)}&ch=link_tool&ch_id=link`;
 }
 
+function toLgThumb(url: string | null | undefined): string | null {
+  if (!url) return null;
+  return url.replace('ps.jpg', 'pl.jpg');
+}
+
+const TYPE_MAP: { keywords: string[]; typeName: string; color: string }[] = [
+  { keywords: ['美少女', 'ロリ', '制服', '女子校生', '妹'], typeName: '清楚ロリ系', color: '#f9a8d4' },
+  { keywords: ['巨乳', '爆乳', 'お姉さん', 'むちむち', '痴女'], typeName: '巨乳お姉さん系', color: '#fbbf24' },
+  { keywords: ['人妻', '不倫', '寝取られ', 'NTR', '禁断'], typeName: '背徳NTR系', color: '#a78bfa' },
+  { keywords: ['ギャル', '日焼け', 'ビッチ', 'パリピ'], typeName: 'ギラギラギャル系', color: '#34d399' },
+  { keywords: ['SM', '拘束', '調教', '支配', '主従'], typeName: '刺激スパイス系', color: '#f87171' },
+  { keywords: ['単体作品', '王道', 'ノーマル'], typeName: '王道単体派', color: '#60a5fa' },
+];
+
+function deriveType(tags: TagStat[]): { typeName: string; color: string } {
+  const tagNames = tags.map((t) => t.tag_name);
+  for (const profile of TYPE_MAP) {
+    if (profile.keywords.some((kw) => tagNames.some((n) => n.includes(kw)))) {
+      return { typeName: profile.typeName, color: profile.color };
+    }
+  }
+  return { typeName: 'バランス型', color: '#8b949e' };
+}
+
 async function fetchListData(token: string): Promise<ListData | null> {
   const { data, error } = await supabase.rpc('get_public_list_data', { p_token: token });
   if (error || !data || data.error === 'not_found') return null;
@@ -80,43 +104,77 @@ export default async function PublicListPage(
 
   const title = data.title ?? 'お気に入りリスト';
   const pageUrl = `${SITE_URL}/list/${token}`;
+  const typeProfile = deriveType(data.tags);
+  const totalLikes = data.tags.reduce((sum, t) => sum + t.cnt, 0);
 
   return (
     <div className="min-h-screen bg-[#0d1117] text-[#e6edf3]">
       <div className="max-w-4xl mx-auto px-4 py-10">
 
-        {/* ヘッダー */}
-        <div className="mb-8">
-          <Link href="/" className="text-xs text-[#656d76] hover:text-[#8b949e] transition-colors mb-4 inline-block">
-            ← 性癖ラボ
-          </Link>
-          {data.display_name && (
-            <p className="text-sm text-[#656d76] mb-1">{data.display_name} のリスト</p>
+        {/* ナビ */}
+        <Link href="/" className="text-xs text-[#656d76] hover:text-[#8b949e] transition-colors mb-6 inline-block">
+          ← 性癖ラボ
+        </Link>
+
+        {/* 性癖ステータスカード */}
+        <div
+          className="mb-8 rounded-2xl overflow-hidden border border-white/10"
+          style={{ background: 'linear-gradient(135deg, #1a1040 0%, #0d1117 60%, #1a0d24 100%)' }}
+        >
+          {/* カードヘッダー */}
+          <div className="px-6 pt-6 pb-4 border-b border-white/10 flex items-center justify-between gap-4">
+            <div>
+              <p className="text-[10px] font-bold tracking-[0.35em] uppercase mb-1" style={{ color: typeProfile.color }}>
+                性癖ステータス
+              </p>
+              {data.display_name && (
+                <p className="text-sm text-[#8b949e] mb-0.5">{data.display_name}</p>
+              )}
+              <h1 className="text-2xl font-black text-[#e6edf3]">{title}</h1>
+            </div>
+            <div
+              className="shrink-0 px-4 py-2 rounded-xl text-sm font-black border"
+              style={{ color: typeProfile.color, borderColor: `${typeProfile.color}40`, background: `${typeProfile.color}15` }}
+            >
+              {typeProfile.typeName}
+            </div>
+          </div>
+
+          {/* タグステータス */}
+          {data.tags.length > 0 && (
+            <div className="px-6 py-5">
+              <p className="text-[10px] font-bold tracking-[0.3em] uppercase text-[#656d76] mb-4">好きなジャンル — TOP {Math.min(data.tags.length, 8)}</p>
+              <div className="flex flex-col gap-3">
+                {data.tags.slice(0, 8).map((t, i) => {
+                  const ratio = totalLikes > 0 ? (t.cnt / totalLikes) * 100 : 0;
+                  const rankColors = ['#f9a8d4', '#fbbf24', '#a78bfa', '#60a5fa', '#34d399'];
+                  const barColor = rankColors[i] ?? '#8b949e';
+                  return (
+                    <div key={t.tag_name} className="flex items-center gap-3">
+                      <span className="w-5 text-right text-[11px] font-bold shrink-0" style={{ color: i < 3 ? barColor : '#656d76' }}>
+                        {i + 1}
+                      </span>
+                      <span className="w-24 text-sm font-semibold text-[#c9d1d9] truncate shrink-0">{t.tag_name}</span>
+                      <div className="flex-1 h-2 rounded-full bg-white/5 overflow-hidden">
+                        <div
+                          className="h-full rounded-full transition-all"
+                          style={{ width: `${Math.max(ratio, 2)}%`, background: `linear-gradient(90deg, ${barColor}cc, ${barColor}66)` }}
+                        />
+                      </div>
+                      <span className="text-xs text-[#656d76] shrink-0 w-10 text-right">{t.cnt}件</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           )}
-          <h1 className="text-2xl font-black text-[#e6edf3] mb-1">{title}</h1>
-          <p className="text-sm text-[#8b949e]">{data.videos.length}作品</p>
-          <div className="mt-3">
+
+          {/* フッター情報 */}
+          <div className="px-6 pb-5 flex items-center justify-between gap-4">
+            <p className="text-xs text-[#484f58]">いいね作品 {data.videos.length}本</p>
             <CopyLinkButton url={pageUrl} />
           </div>
         </div>
-
-        {/* タグまとめ */}
-        {data.tags.length > 0 && (
-          <div className="mb-8 p-4 rounded-xl border border-[#21262d] bg-[#161b22]">
-            <p className="text-xs font-semibold text-[#656d76] uppercase tracking-wider mb-3">好きなジャンル</p>
-            <div className="flex flex-wrap gap-2">
-              {data.tags.map((t) => (
-                <span
-                  key={t.tag_name}
-                  className="px-3 py-1 rounded-full text-sm bg-violet-900/40 text-violet-300 border border-violet-500/30"
-                >
-                  {t.tag_name}
-                  <span className="ml-1.5 text-xs text-violet-400/60">{t.cnt}</span>
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
 
         {/* 作品グリッド */}
         {data.videos.length === 0 ? (
@@ -125,7 +183,7 @@ export default async function PublicListPage(
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
             {data.videos.map((video) => {
               const affiliateUrl = toAffiliateUrl(video.product_url);
-              const thumb = video.thumbnail_vertical_url ?? video.thumbnail_url;
+              const thumb = toLgThumb(video.thumbnail_vertical_url) ?? toLgThumb(video.thumbnail_url);
               return (
                 <a
                   key={video.id}
