@@ -28,7 +28,7 @@ function toLgThumb(url: string | null | undefined): string | null {
 
 async function fetchUserLists(username: string): Promise<UserListsData | null> {
   const { data, error } = await supabase.rpc('get_user_public_lists', {
-    p_display_name: decodeURIComponent(username),
+    p_user_id: username,
   });
   if (error || !data || data.error === 'not_found') return null;
   return data as UserListsData;
