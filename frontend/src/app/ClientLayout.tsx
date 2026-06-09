@@ -1,11 +1,7 @@
 'use client';
 
-import Header from '@/components/Header';
-import DesktopSidebar from '@/components/DesktopSidebar';
-import useMediaQuery from '@/hooks/useMediaQuery';
 import GlobalModals from '@/components/GlobalModals';
 import BrowseTabBar from '@/components/BrowseTabBar';
-import Footer from '@/components/Footer';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
@@ -18,7 +14,6 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
   const isHome = pathname === '/';
   const nonHomeGradient = '#0d1117';
   const homeGradient = 'linear-gradient(135deg, #1a0d2e 0%, #160d25 33%, #2a1020 66%, #1e0d1a 100%)';
-  const isMobile = useMediaQuery('(max-width: 639px)');
   const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
   const [authInitialized, setAuthInitialized] = useState(false);
 
@@ -52,28 +47,18 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
   }, []);
 
   const isQuizPath = pathname?.startsWith('/quiz') ?? false;
-  const isBrowsePath = (pathname?.startsWith('/grid') || pathname?.startsWith('/swipe') || pathname?.startsWith('/browse')) ?? false;
-  const noSidebarPath = pathname === '/' || pathname?.startsWith('/performers') || pathname?.startsWith('/tags') || pathname?.startsWith('/list');
 
   useEffect(() => {
     if (!authInitialized || isLoggedIn === null || !pathname) return;
-    if (pathname.startsWith('/quiz')) return; // 診断ページは認証不要・リダイレクトなし
-    const isSwipePath = pathname.startsWith('/swipe');
-    const isGridPath = pathname.startsWith('/grid');
-    const isHomePage = pathname === '/';
-    const isAboutPage = pathname === '/about';
-    const isVideoPage = pathname.startsWith('/videos/');
-    const isPerformerPage = pathname.startsWith('/performers');
-    const isTagPage = pathname.startsWith('/tags');
-    const isListPage = pathname.startsWith('/list');
-    const requiresLogin = !(isHomePage || isSwipePath || isGridPath || isAboutPage || isVideoPage || isPerformerPage || isTagPage || isListPage);
-
-    if (requiresLogin && isLoggedIn === false) {
+    if (pathname.startsWith('/quiz')) return;
+    const publicPaths = ['/', '/swipe', '/grid', '/explore', '/about', '/videos/', '/performers', '/tags', '/list', '/u/'];
+    const isPublic = publicPaths.some((p) => pathname === p || pathname.startsWith(p));
+    if (!isPublic && isLoggedIn === false) {
       router.replace('/grid');
     }
   }, [authInitialized, isLoggedIn, pathname, router]);
 
-  // 診断ページは完全独立レイアウト（サイドバー・ヘッダーなし）
+  // 診断ページは完全独立レイアウト
   if (isQuizPath) {
     return <>{children}</>;
   }
@@ -81,13 +66,10 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
   return (
     <DecisionCountProvider>
       <div className="min-h-screen w-full" style={{ background: isHome ? homeGradient : nonHomeGradient }}>
-        {!isMobile && !isBrowsePath && !noSidebarPath && <DesktopSidebar />}
-        <div className={!isMobile && !isBrowsePath && !noSidebarPath ? 'pl-56' : ''}>
-          {!isBrowsePath && (isMobile ? <Header cardWidth={undefined} /> : <GlobalModals />)}
-          {isBrowsePath && <BrowseTabBar />}
-          {isBrowsePath && <GlobalModals />}
+        <BrowseTabBar />
+        <GlobalModals />
+        <div className="pt-[75px] sm:pt-[43px]">
           {children}
-          {!isBrowsePath && <Footer />}
         </div>
       </div>
     </DecisionCountProvider>

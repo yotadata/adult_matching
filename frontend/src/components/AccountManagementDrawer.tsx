@@ -2,7 +2,7 @@
 
 import { Dialog, Transition } from '@headlessui/react';
 import { Fragment, useEffect, useState, useCallback } from 'react';
-import { X, Heart, Tag, Users, TrendingUp, Link2, Check, Loader2, ExternalLink } from 'lucide-react';
+import { X, Heart, Tag, Users, TrendingUp, Link2, Check, Loader2, ExternalLink, ListVideo } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
 interface AccountManagementDrawerProps {
@@ -268,6 +268,23 @@ const AccountManagementDrawer: React.FC<AccountManagementDrawerProps> = ({ isOpe
                                   : <><Link2 size={14} />公開リンクを作成</>}
                               </button>
                             )}
+                          </section>
+                        </>
+                      )}
+
+                      {/* マイリスト */}
+                      {isLoggedIn && (
+                        <>
+                          <div className="border-t border-white/10" />
+                          <section className="space-y-2">
+                            <p className="text-[11px] text-[#8b949e] font-semibold uppercase tracking-wider mb-3">マイリスト</p>
+                            <a
+                              href="/my/lists"
+                              className="w-full flex items-center gap-2 py-2.5 px-4 rounded-xl bg-[#161b22] border border-[#30363d] hover:border-violet-500/50 text-[#8b949e] hover:text-[#e6edf3] text-sm font-bold transition-all"
+                            >
+                              <ListVideo size={14} />
+                              リストを管理する
+                            </a>
                           </section>
                         </>
                       )}

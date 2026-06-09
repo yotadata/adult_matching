@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useState, useEffect, useRef, Suspense } from 'react';
 import {
-  LayoutGrid, Layers, Heart, Tag, Users, X, UserCircle,
+  LayoutGrid, Layers, Heart, Tag, Users, X, UserCircle, ListVideo,
   Snail, Rabbit, Cat, Dog, Bird, Crown,
   type LucideIcon,
 } from 'lucide-react';
@@ -145,7 +145,9 @@ function BrowseTabBarInner() {
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const isGrid = pathname.startsWith('/grid');
+  const isGrid = pathname.startsWith('/grid') || pathname.startsWith('/explore');
+  const isSwipe = pathname.startsWith('/swipe');
+  const isMyLists = pathname.startsWith('/my/lists') || pathname.startsWith('/u/');
   const isDebug = searchParams.get('debug') === '1';
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isAccountOpen, setIsAccountOpen] = useState(false);
@@ -217,44 +219,33 @@ function BrowseTabBarInner() {
       {levelUpLevel && <LevelUpOverlay level={levelUpLevel} likeCount={likeCount ?? 0} onDone={() => setLevelUpLevel(null)} onOpenList={() => setIsDrawerOpen(true)} />}
 
       <div className="fixed top-0 left-0 right-0 z-40 bg-[#0d1117]/95 backdrop-blur flex flex-col">
-        {/* メインヘッダー: 左(ロゴ+タブ) / 中央(レベル) / 右(アクション) */}
-        <div className="grid grid-cols-3 items-center px-3 h-11">
-          {/* 左: ロゴ＋タブ */}
-          <div className="flex items-center gap-1.5">
-            <Link href="/" className="flex-shrink-0">
+        {/* PC: 1行 / SP: 2行 */}
+        <div className="grid grid-cols-3 items-center px-3 h-10">
+          {/* 左: ロゴ＋PC用ナビ */}
+          <div className="flex items-center gap-1">
+            <Link href="/swipe" className="flex-shrink-0 mr-1">
               <Image src="/seiheki_lab.png" alt="性癖ラボ" width={72} height={22} className="h-5 w-auto" />
             </Link>
-            <Link
-              href="/grid"
-              className={`flex items-center justify-center w-7 h-7 rounded-md transition-colors ${
-                isGrid ? 'bg-violet-600 text-white' : 'text-[#8b949e] hover:text-[#e6edf3] hover:bg-[#161b22]'
-              }`}
-              title="グリッド"
-            >
-              <LayoutGrid size={14} />
-            </Link>
-            <Link
-              href="/swipe"
-              className={`flex items-center justify-center w-7 h-7 rounded-md transition-colors ${
-                !isGrid ? 'bg-violet-600 text-white' : 'text-[#8b949e] hover:text-[#e6edf3] hover:bg-[#161b22]'
-              }`}
-              title="スワイプ"
-            >
-              <Layers size={14} />
-            </Link>
+            {/* PCのみ表示 */}
+            <div className="hidden sm:flex items-center gap-1">
+              <Link href="/swipe" className={`flex items-center gap-1 px-2 py-1 rounded-md transition-colors text-[11px] font-bold whitespace-nowrap ${isSwipe ? 'text-violet-400' : 'text-[#8b949e] hover:text-[#e6edf3]'}`}>
+                <Layers size={13} /><span>スワイプ</span>
+              </Link>
+              <Link href="/explore" className={`flex items-center gap-1 px-2 py-1 rounded-md transition-colors text-[11px] font-bold whitespace-nowrap ${isGrid ? 'text-violet-400' : 'text-[#8b949e] hover:text-[#e6edf3]'}`}>
+                <LayoutGrid size={13} /><span>さがす</span>
+              </Link>
+              <Link href="/my/lists" className={`flex items-center gap-1 px-2 py-1 rounded-md transition-colors text-[11px] font-bold whitespace-nowrap ${isMyLists ? 'text-violet-400' : 'text-[#8b949e] hover:text-[#e6edf3]'}`}>
+                <ListVideo size={13} /><span>リスト</span>
+              </Link>
+            </div>
           </div>
 
           {/* 中央: レベル表示 */}
           <div className="flex items-center justify-center">
             {lv && (
-              <div
-                className="flex items-center gap-1 px-2 py-0.5 rounded-full border bg-[#0d1117]/80"
-                style={{ borderColor: lv.borderColor }}
-              >
+              <div className="flex items-center gap-1 px-2 py-0.5 rounded-full border bg-[#0d1117]/80" style={{ borderColor: lv.borderColor }}>
                 <lv.Icon size={12} className={lv.iconColor} strokeWidth={2} />
-                <span className={`text-[10px] font-extrabold bg-gradient-to-r ${lv.color} bg-clip-text text-transparent whitespace-nowrap`}>
-                  {lv.label}
-                </span>
+                <span className={`text-[10px] font-extrabold bg-gradient-to-r ${lv.color} bg-clip-text text-transparent whitespace-nowrap`}>{lv.label}</span>
                 <span className="text-[10px] text-[#8b949e] whitespace-nowrap">
                   <Heart size={8} className="inline mr-0.5 text-pink-400" fill="currentColor" />
                   <span className="text-[#e6edf3] font-bold">{likeCount ?? 0}</span>
@@ -264,29 +255,18 @@ function BrowseTabBarInner() {
             )}
           </div>
 
-          {/* 右: ログイン時=リスト+設定、未ログイン時=ログインボタン */}
+          {/* 右: アクション */}
           <div className="flex justify-end items-center gap-0.5">
             {isLoggedIn === false ? (
-              <button
-                onClick={() => window.dispatchEvent(new Event('open-auth-modal'))}
-                className="flex items-center gap-1 px-2.5 py-1 rounded-md bg-violet-600 hover:bg-violet-500 text-white transition-colors text-[11px] font-bold"
-              >
+              <button onClick={() => window.dispatchEvent(new Event('open-auth-modal'))} className="flex items-center gap-1 px-2.5 py-1 rounded-md bg-violet-600 hover:bg-violet-500 text-white transition-colors text-[11px] font-bold">
                 ログイン
               </button>
             ) : (
               <>
-                <button
-                  onClick={() => setIsDrawerOpen(true)}
-                  className="flex items-center justify-center w-7 h-7 rounded-md text-[#8b949e] hover:text-pink-400 hover:bg-[#161b22] transition-colors"
-                  title="気になるリスト"
-                >
+                <button onClick={() => setIsDrawerOpen(true)} className="flex items-center justify-center w-7 h-7 rounded-md text-[#8b949e] hover:text-pink-400 hover:bg-[#161b22] transition-colors" title="気になるリスト">
                   <Heart size={14} />
                 </button>
-                <button
-                  onClick={() => setIsAccountOpen(true)}
-                  className="flex items-center justify-center w-7 h-7 rounded-md text-[#8b949e] hover:text-[#e6edf3] hover:bg-[#161b22] transition-colors"
-                  title="設定"
-                >
+                <button onClick={() => setIsAccountOpen(true)} className="flex items-center justify-center w-7 h-7 rounded-md text-[#8b949e] hover:text-[#e6edf3] hover:bg-[#161b22] transition-colors" title="設定">
                   <UserCircle size={14} />
                 </button>
               </>
@@ -294,13 +274,26 @@ function BrowseTabBarInner() {
           </div>
         </div>
 
-        {/* 光るゲージバー（ヘッダー下端ライン） */}
+        {/* SPのみ: 2行目ナビ */}
+        <div className="flex sm:hidden items-center gap-1 px-3 pb-1">
+          <Link href="/swipe" className={`flex flex-col items-center gap-0.5 px-3 py-0.5 rounded-md transition-colors ${isSwipe ? 'text-violet-400' : 'text-[#8b949e]'}`}>
+            <Layers size={15} />
+            <span className="text-[9px] font-bold whitespace-nowrap">スワイプ</span>
+          </Link>
+          <Link href="/explore" className={`flex flex-col items-center gap-0.5 px-3 py-0.5 rounded-md transition-colors ${isGrid ? 'text-violet-400' : 'text-[#8b949e]'}`}>
+            <LayoutGrid size={15} />
+            <span className="text-[9px] font-bold whitespace-nowrap">さがす</span>
+          </Link>
+          <Link href="/my/lists" className={`flex flex-col items-center gap-0.5 px-3 py-0.5 rounded-md transition-colors ${isMyLists ? 'text-violet-400' : 'text-[#8b949e]'}`}>
+            <ListVideo size={15} />
+            <span className="text-[9px] font-bold whitespace-nowrap">リスト</span>
+          </Link>
+        </div>
+
+        {/* 光るゲージバー */}
         <div className="relative h-[3px] w-full bg-[#30363d]">
           {lv && (
-            <div
-              className={`absolute inset-y-0 left-0 bg-gradient-to-r ${lv.color} transition-all duration-700 ease-out`}
-              style={{ width: `${progress}%`, boxShadow: '0 0 10px 2px rgba(167,139,250,0.6)' }}
-            />
+            <div className={`absolute inset-y-0 left-0 bg-gradient-to-r ${lv.color} transition-all duration-700 ease-out`} style={{ width: `${progress}%`, boxShadow: '0 0 10px 2px rgba(167,139,250,0.6)' }} />
           )}
         </div>
       </div>
