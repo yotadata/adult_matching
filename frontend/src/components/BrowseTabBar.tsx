@@ -145,7 +145,7 @@ function BrowseTabBarInner() {
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const isGrid = pathname.startsWith('/grid');
+  const isGrid = pathname.startsWith('/grid') || pathname.startsWith('/explore');
   const isSwipe = pathname.startsWith('/swipe');
   const isMyLists = pathname.startsWith('/my/lists') || pathname.startsWith('/u/');
   const isDebug = searchParams.get('debug') === '1';
@@ -231,7 +231,7 @@ function BrowseTabBarInner() {
               <Link href="/swipe" className={`flex items-center gap-1 px-2 py-1 rounded-md transition-colors text-[11px] font-bold whitespace-nowrap ${isSwipe ? 'text-violet-400' : 'text-[#8b949e] hover:text-[#e6edf3]'}`}>
                 <Layers size={13} /><span>スワイプ</span>
               </Link>
-              <Link href="/grid" className={`flex items-center gap-1 px-2 py-1 rounded-md transition-colors text-[11px] font-bold whitespace-nowrap ${isGrid ? 'text-violet-400' : 'text-[#8b949e] hover:text-[#e6edf3]'}`}>
+              <Link href="/explore" className={`flex items-center gap-1 px-2 py-1 rounded-md transition-colors text-[11px] font-bold whitespace-nowrap ${isGrid ? 'text-violet-400' : 'text-[#8b949e] hover:text-[#e6edf3]'}`}>
                 <LayoutGrid size={13} /><span>さがす</span>
               </Link>
               <Link href="/my/lists" className={`flex items-center gap-1 px-2 py-1 rounded-md transition-colors text-[11px] font-bold whitespace-nowrap ${isMyLists ? 'text-violet-400' : 'text-[#8b949e] hover:text-[#e6edf3]'}`}>
@@ -280,7 +280,7 @@ function BrowseTabBarInner() {
             <Layers size={15} />
             <span className="text-[9px] font-bold whitespace-nowrap">スワイプ</span>
           </Link>
-          <Link href="/grid" className={`flex flex-col items-center gap-0.5 px-3 py-0.5 rounded-md transition-colors ${isGrid ? 'text-violet-400' : 'text-[#8b949e]'}`}>
+          <Link href="/explore" className={`flex flex-col items-center gap-0.5 px-3 py-0.5 rounded-md transition-colors ${isGrid ? 'text-violet-400' : 'text-[#8b949e]'}`}>
             <LayoutGrid size={15} />
             <span className="text-[9px] font-bold whitespace-nowrap">さがす</span>
           </Link>
