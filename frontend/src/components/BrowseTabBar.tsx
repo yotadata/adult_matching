@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useState, useEffect, useRef, Suspense } from 'react';
 import {
-  LayoutGrid, Layers, Heart, Tag, Users, X, UserCircle,
+  LayoutGrid, Layers, Heart, Tag, Users, X, UserCircle, ListVideo,
   Snail, Rabbit, Cat, Dog, Bird, Crown,
   type LucideIcon,
 } from 'lucide-react';
@@ -146,6 +146,8 @@ function BrowseTabBarInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const isGrid = pathname.startsWith('/grid');
+  const isSwipe = pathname.startsWith('/swipe');
+  const isMyLists = pathname.startsWith('/my/lists') || pathname.startsWith('/u/');
   const isDebug = searchParams.get('debug') === '1';
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isAccountOpen, setIsAccountOpen] = useState(false);
@@ -221,8 +223,17 @@ function BrowseTabBarInner() {
         <div className="grid grid-cols-3 items-center px-3 h-11">
           {/* 左: ロゴ＋タブ */}
           <div className="flex items-center gap-1.5">
-            <Link href="/" className="flex-shrink-0">
+            <Link href="/swipe" className="flex-shrink-0">
               <Image src="/seiheki_lab.png" alt="性癖ラボ" width={72} height={22} className="h-5 w-auto" />
+            </Link>
+            <Link
+              href="/swipe"
+              className={`flex items-center justify-center w-7 h-7 rounded-md transition-colors ${
+                isSwipe ? 'bg-violet-600 text-white' : 'text-[#8b949e] hover:text-[#e6edf3] hover:bg-[#161b22]'
+              }`}
+              title="スワイプ"
+            >
+              <Layers size={14} />
             </Link>
             <Link
               href="/grid"
@@ -234,13 +245,13 @@ function BrowseTabBarInner() {
               <LayoutGrid size={14} />
             </Link>
             <Link
-              href="/swipe"
+              href="/my/lists"
               className={`flex items-center justify-center w-7 h-7 rounded-md transition-colors ${
-                !isGrid ? 'bg-violet-600 text-white' : 'text-[#8b949e] hover:text-[#e6edf3] hover:bg-[#161b22]'
+                isMyLists ? 'bg-violet-600 text-white' : 'text-[#8b949e] hover:text-[#e6edf3] hover:bg-[#161b22]'
               }`}
-              title="スワイプ"
+              title="マイリスト"
             >
-              <Layers size={14} />
+              <ListVideo size={14} />
             </Link>
           </div>
 
