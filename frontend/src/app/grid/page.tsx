@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-import { X, Play, Heart, Eye, ChevronDown, ChevronUp, Brain, Hand, Bot, Target, LockOpen, ExternalLink, type LucideIcon } from 'lucide-react';
+import { X, Play, Heart, Eye, ChevronDown, ChevronUp, Brain, Hand, Bot, Target, LockOpen, ExternalLink, Sparkles, Compass, type LucideIcon } from 'lucide-react';
 import { trackEvent } from '@/lib/analytics';
 import OnboardingModal from '@/components/OnboardingModal';
 
@@ -49,6 +49,7 @@ const SOURCE_BORDER_COLORS: Record<string, string> = {
 
 function GridPage() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const isDebug = searchParams.get('debug') === '1';
   const [bannerOpen, setBannerOpen] = useState(() => {
     if (typeof window === 'undefined') return true;
@@ -250,7 +251,22 @@ function GridPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0d1117]" style={{ paddingTop: '52px' }}>
+    <div className="min-h-screen bg-[#0d1117]">
+      {/* タブ */}
+      <div className="flex gap-1 px-4 pt-3 pb-0">
+        <button className="flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-bold transition-colors bg-violet-600 text-white">
+          <Sparkles size={14} />
+          おすすめ
+        </button>
+        <button
+          onClick={() => router.push('/explore')}
+          className="flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-bold transition-colors text-[#8b949e] hover:text-[#e6edf3] hover:bg-white/5"
+        >
+          <Compass size={14} />
+          さがす
+        </button>
+      </div>
+
       {/* オンボーディングモーダル */}
       {showOnboarding && (
         <OnboardingModal onComplete={handleOnboardingComplete} />

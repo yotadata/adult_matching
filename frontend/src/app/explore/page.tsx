@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Search, Heart, Plus, Check, Loader2, X, ChevronDown } from 'lucide-react';
+import { Search, Heart, Plus, Check, Loader2, X, ChevronDown, Sparkles, Compass } from 'lucide-react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-import VideoSearchModal from '@/components/lists/VideoSearchModal';
 
 type Video = {
   id: string;
@@ -156,6 +156,10 @@ function VideoCard({
 }
 
 export default function ExplorePage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const tab = searchParams.get('tab') === 'recommend' ? 'recommend' : 'browse';
+
   const [videos, setVideos] = useState<Video[]>([]);
   const [loading, setLoading] = useState(false);
   const [query, setQuery] = useState('');
@@ -236,10 +240,32 @@ export default function ExplorePage() {
     window.dispatchEvent(new Event('like-added'));
   };
 
+  // recommendタブのときはgridにリダイレクト
+  useEffect(() => {
+    if (tab === 'recommend') router.replace('/grid');
+  }, [tab, router]);
+
   return (
     <div className="min-h-screen bg-[#0d1117] text-[#e6edf3]">
+      {/* タブ */}
+      <div className="flex gap-1 px-4 pt-3 pb-0">
+        <button
+          onClick={() => router.push('/grid')}
+          className="flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-bold transition-colors text-[#8b949e] hover:text-[#e6edf3] hover:bg-white/5"
+        >
+          <Sparkles size={14} />
+          おすすめ
+        </button>
+        <button
+          className="flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-bold transition-colors bg-violet-600 text-white"
+        >
+          <Compass size={14} />
+          さがす
+        </button>
+      </div>
+
       {/* フィルターバー */}
-      <div className="sticky top-[calc(var(--header-h,80px))] z-30 bg-[#0d1117]/95 backdrop-blur border-b border-[#21262d] px-4 py-3 space-y-2">
+      <div className="sticky top-[43px] sm:top-[43px] z-30 bg-[#0d1117]/95 backdrop-blur border-b border-[#21262d] px-4 py-3 space-y-2">
         {/* 検索 */}
         <div className="flex items-center gap-2 bg-[#161b22] border border-[#30363d] rounded-lg px-3 py-2 focus-within:border-violet-500/50">
           <Search size={14} className="text-[#656d76] shrink-0" />
