@@ -220,7 +220,7 @@ function BrowseTabBarInner() {
 
       <div className="fixed top-0 left-0 right-0 z-40 bg-[#0d1117]/95 backdrop-blur flex flex-col">
         {/* メインヘッダー: 左(ロゴ+タブ) / 中央(レベル) / 右(アクション) */}
-        <div className="grid grid-cols-3 items-center px-3 h-11">
+        <div className="grid grid-cols-3 items-center px-3 h-14">
           {/* 左: ロゴ＋タブ */}
           <div className="flex items-center gap-0.5">
             <Link href="/swipe" className="flex-shrink-0 mr-1">
@@ -228,30 +228,30 @@ function BrowseTabBarInner() {
             </Link>
             <Link
               href="/swipe"
-              className={`flex items-center gap-1 px-2 py-1 rounded-md transition-colors text-[11px] font-bold whitespace-nowrap ${
-                isSwipe ? 'bg-violet-600 text-white' : 'text-[#8b949e] hover:text-[#e6edf3] hover:bg-[#161b22]'
+              className={`flex flex-col items-center gap-0.5 px-2.5 py-1 rounded-md transition-colors ${
+                isSwipe ? 'text-violet-400' : 'text-[#8b949e] hover:text-[#e6edf3]'
               }`}
             >
-              <Layers size={12} className="shrink-0" />
-              <span>スワイプ</span>
+              <Layers size={16} className="shrink-0" />
+              <span className="text-[9px] font-bold whitespace-nowrap">スワイプ</span>
             </Link>
             <Link
               href="/grid"
-              className={`flex items-center gap-1 px-2 py-1 rounded-md transition-colors text-[11px] font-bold whitespace-nowrap ${
-                isGrid ? 'bg-violet-600 text-white' : 'text-[#8b949e] hover:text-[#e6edf3] hover:bg-[#161b22]'
+              className={`flex flex-col items-center gap-0.5 px-2.5 py-1 rounded-md transition-colors ${
+                isGrid ? 'text-violet-400' : 'text-[#8b949e] hover:text-[#e6edf3]'
               }`}
             >
-              <LayoutGrid size={12} className="shrink-0" />
-              <span>さがす</span>
+              <LayoutGrid size={16} className="shrink-0" />
+              <span className="text-[9px] font-bold whitespace-nowrap">さがす</span>
             </Link>
             <Link
               href="/my/lists"
-              className={`flex items-center gap-1 px-2 py-1 rounded-md transition-colors text-[11px] font-bold whitespace-nowrap ${
-                isMyLists ? 'bg-violet-600 text-white' : 'text-[#8b949e] hover:text-[#e6edf3] hover:bg-[#161b22]'
+              className={`flex flex-col items-center gap-0.5 px-2.5 py-1 rounded-md transition-colors ${
+                isMyLists ? 'text-violet-400' : 'text-[#8b949e] hover:text-[#e6edf3]'
               }`}
             >
-              <ListVideo size={12} className="shrink-0" />
-              <span>リスト</span>
+              <ListVideo size={16} className="shrink-0" />
+              <span className="text-[9px] font-bold whitespace-nowrap">リスト</span>
             </Link>
           </div>
 
