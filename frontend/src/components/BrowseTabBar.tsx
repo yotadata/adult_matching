@@ -228,29 +228,29 @@ function BrowseTabBarInner() {
             </Link>
             <Link
               href="/swipe"
-              className={`flex items-center gap-1 px-2 py-1 rounded-md transition-colors text-[11px] font-bold ${
+              className={`flex items-center gap-1 px-2 py-1 rounded-md transition-colors text-[11px] font-bold whitespace-nowrap ${
                 isSwipe ? 'bg-violet-600 text-white' : 'text-[#8b949e] hover:text-[#e6edf3] hover:bg-[#161b22]'
               }`}
             >
-              <Layers size={12} />
+              <Layers size={12} className="shrink-0" />
               <span>スワイプ</span>
             </Link>
             <Link
               href="/grid"
-              className={`flex items-center gap-1 px-2 py-1 rounded-md transition-colors text-[11px] font-bold ${
+              className={`flex items-center gap-1 px-2 py-1 rounded-md transition-colors text-[11px] font-bold whitespace-nowrap ${
                 isGrid ? 'bg-violet-600 text-white' : 'text-[#8b949e] hover:text-[#e6edf3] hover:bg-[#161b22]'
               }`}
             >
-              <LayoutGrid size={12} />
+              <LayoutGrid size={12} className="shrink-0" />
               <span>さがす</span>
             </Link>
             <Link
               href="/my/lists"
-              className={`flex items-center gap-1 px-2 py-1 rounded-md transition-colors text-[11px] font-bold ${
+              className={`flex items-center gap-1 px-2 py-1 rounded-md transition-colors text-[11px] font-bold whitespace-nowrap ${
                 isMyLists ? 'bg-violet-600 text-white' : 'text-[#8b949e] hover:text-[#e6edf3] hover:bg-[#161b22]'
               }`}
             >
-              <ListVideo size={12} />
+              <ListVideo size={12} className="shrink-0" />
               <span>リスト</span>
             </Link>
           </div>
