@@ -114,7 +114,7 @@ function GridPage() {
     } finally {
       setLoading(false);
     }
-  }, [loading, hasMore]);
+  }, [loading, hasMore, isDebug]);
 
   // 認証状態を取得
   useEffect(() => {

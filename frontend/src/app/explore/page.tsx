@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
 import { Search, Heart, Plus, Check, Loader2, X, ChevronDown, Sparkles, Compass } from 'lucide-react';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 
 type Video = {
@@ -155,10 +155,8 @@ function VideoCard({
   );
 }
 
-export default function ExplorePage() {
+function ExplorePageInner() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const tab = searchParams.get('tab') === 'recommend' ? 'recommend' : 'browse';
 
   const [videos, setVideos] = useState<Video[]>([]);
   const [loading, setLoading] = useState(false);
@@ -239,11 +237,6 @@ export default function ExplorePage() {
     setLikedIds((prev) => new Set(prev).add(video.id));
     window.dispatchEvent(new Event('like-added'));
   };
-
-  // recommendタブのときはgridにリダイレクト
-  useEffect(() => {
-    if (tab === 'recommend') router.replace('/grid');
-  }, [tab, router]);
 
   return (
     <div className="min-h-screen bg-[#0d1117] text-[#e6edf3]">
@@ -336,5 +329,13 @@ export default function ExplorePage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function ExplorePage() {
+  return (
+    <Suspense>
+      <ExplorePageInner />
+    </Suspense>
   );
 }

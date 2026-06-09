@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Plus, ExternalLink, Loader2, Search, Trash2 } from 'lucide-react';
@@ -27,7 +27,7 @@ export default function MyListsPage() {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [searchTarget, setSearchTarget] = useState<PublicList | null>(null);
 
-  const fetchLists = async () => {
+  const fetchLists = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { router.push('/'); return; }
     const { data } = await supabase
@@ -38,9 +38,9 @@ export default function MyListsPage() {
       .order('created_at', { ascending: false });
     setLists((data as PublicList[]) ?? []);
     setLoading(false);
-  };
+  }, [router]);
 
-  useEffect(() => { fetchLists(); }, []);
+  useEffect(() => { fetchLists(); }, [fetchLists]);
 
   const handleCreate = async () => {
     if (!newTitle.trim()) return;
