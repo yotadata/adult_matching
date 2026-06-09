@@ -68,7 +68,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
       <div className="min-h-screen w-full" style={{ background: isHome ? homeGradient : nonHomeGradient }}>
         <BrowseTabBar />
         <GlobalModals />
-        <div className="pt-16">
+        <div className="pt-20">
           {children}
         </div>
       </div>

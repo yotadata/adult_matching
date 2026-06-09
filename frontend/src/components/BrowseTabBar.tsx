@@ -219,39 +219,12 @@ function BrowseTabBarInner() {
       {levelUpLevel && <LevelUpOverlay level={levelUpLevel} likeCount={likeCount ?? 0} onDone={() => setLevelUpLevel(null)} onOpenList={() => setIsDrawerOpen(true)} />}
 
       <div className="fixed top-0 left-0 right-0 z-40 bg-[#0d1117]/95 backdrop-blur flex flex-col">
-        {/* メインヘッダー: 左(ロゴ+タブ) / 中央(レベル) / 右(アクション) */}
-        <div className="grid grid-cols-3 items-center px-3 h-14">
-          {/* 左: ロゴ＋タブ */}
-          <div className="flex items-center gap-0.5">
-            <Link href="/swipe" className="flex-shrink-0 mr-1">
+        {/* 1行目: ロゴ / レベル / アクション */}
+        <div className="grid grid-cols-3 items-center px-3 h-10">
+          {/* 左: ロゴ */}
+          <div className="flex items-center">
+            <Link href="/swipe" className="flex-shrink-0">
               <Image src="/seiheki_lab.png" alt="性癖ラボ" width={72} height={22} className="h-5 w-auto" />
-            </Link>
-            <Link
-              href="/swipe"
-              className={`flex flex-col items-center gap-0.5 px-2.5 py-1 rounded-md transition-colors ${
-                isSwipe ? 'text-violet-400' : 'text-[#8b949e] hover:text-[#e6edf3]'
-              }`}
-            >
-              <Layers size={16} className="shrink-0" />
-              <span className="text-[9px] font-bold whitespace-nowrap">スワイプ</span>
-            </Link>
-            <Link
-              href="/grid"
-              className={`flex flex-col items-center gap-0.5 px-2.5 py-1 rounded-md transition-colors ${
-                isGrid ? 'text-violet-400' : 'text-[#8b949e] hover:text-[#e6edf3]'
-              }`}
-            >
-              <LayoutGrid size={16} className="shrink-0" />
-              <span className="text-[9px] font-bold whitespace-nowrap">さがす</span>
-            </Link>
-            <Link
-              href="/my/lists"
-              className={`flex flex-col items-center gap-0.5 px-2.5 py-1 rounded-md transition-colors ${
-                isMyLists ? 'text-violet-400' : 'text-[#8b949e] hover:text-[#e6edf3]'
-              }`}
-            >
-              <ListVideo size={16} className="shrink-0" />
-              <span className="text-[9px] font-bold whitespace-nowrap">リスト</span>
             </Link>
           </div>
 
@@ -275,7 +248,7 @@ function BrowseTabBarInner() {
             )}
           </div>
 
-          {/* 右: ログイン時=リスト+設定、未ログイン時=ログインボタン */}
+          {/* 右: アクション */}
           <div className="flex justify-end items-center gap-0.5">
             {isLoggedIn === false ? (
               <button
@@ -305,7 +278,38 @@ function BrowseTabBarInner() {
           </div>
         </div>
 
-        {/* 光るゲージバー（ヘッダー下端ライン） */}
+        {/* 2行目: ナビ */}
+        <div className="flex items-center gap-1 px-3 pb-1">
+          <Link
+            href="/swipe"
+            className={`flex flex-col items-center gap-0.5 px-3 py-1 rounded-md transition-colors ${
+              isSwipe ? 'text-violet-400' : 'text-[#8b949e] hover:text-[#e6edf3]'
+            }`}
+          >
+            <Layers size={15} className="shrink-0" />
+            <span className="text-[9px] font-bold whitespace-nowrap">スワイプ</span>
+          </Link>
+          <Link
+            href="/grid"
+            className={`flex flex-col items-center gap-0.5 px-3 py-1 rounded-md transition-colors ${
+              isGrid ? 'text-violet-400' : 'text-[#8b949e] hover:text-[#e6edf3]'
+            }`}
+          >
+            <LayoutGrid size={15} className="shrink-0" />
+            <span className="text-[9px] font-bold whitespace-nowrap">さがす</span>
+          </Link>
+          <Link
+            href="/my/lists"
+            className={`flex flex-col items-center gap-0.5 px-3 py-1 rounded-md transition-colors ${
+              isMyLists ? 'text-violet-400' : 'text-[#8b949e] hover:text-[#e6edf3]'
+            }`}
+          >
+            <ListVideo size={15} className="shrink-0" />
+            <span className="text-[9px] font-bold whitespace-nowrap">リスト</span>
+          </Link>
+        </div>
+
+        {/* 光るゲージバー */}
         <div className="relative h-[3px] w-full bg-[#30363d]">
           {lv && (
             <div
