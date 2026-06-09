@@ -351,8 +351,13 @@ function SwipePage() {
     const batchSize = 100;
     const VALID_TYPES = new Set(['swipe_like', 'swipe_nope', 'grid_like', 'grid_nope']);
     const validItems = items.filter((d) => VALID_TYPES.has(d.decision_type));
-    for (let i = 0; i < validItems.length; i += batchSize) {
-      const chunk = validItems.slice(i, i + batchSize).map((d) => ({
+    // 同一video_idが複数ある場合は最後のものを優先して重複除去
+    const deduped = [...validItems.reduce((map, d) => {
+      map.set(d.video_id, d);
+      return map;
+    }, new Map()).values()];
+    for (let i = 0; i < deduped.length; i += batchSize) {
+      const chunk = deduped.slice(i, i + batchSize).map((d) => ({
         user_id: user.id,
         video_id: d.video_id,
         decision_type: d.decision_type,
