@@ -222,36 +222,36 @@ function BrowseTabBarInner() {
         {/* メインヘッダー: 左(ロゴ+タブ) / 中央(レベル) / 右(アクション) */}
         <div className="grid grid-cols-3 items-center px-3 h-11">
           {/* 左: ロゴ＋タブ */}
-          <div className="flex items-center gap-1.5">
-            <Link href="/swipe" className="flex-shrink-0">
+          <div className="flex items-center gap-0.5">
+            <Link href="/swipe" className="flex-shrink-0 mr-1">
               <Image src="/seiheki_lab.png" alt="性癖ラボ" width={72} height={22} className="h-5 w-auto" />
             </Link>
             <Link
               href="/swipe"
-              className={`flex items-center justify-center w-7 h-7 rounded-md transition-colors ${
+              className={`flex items-center gap-1 px-2 py-1 rounded-md transition-colors text-[11px] font-bold ${
                 isSwipe ? 'bg-violet-600 text-white' : 'text-[#8b949e] hover:text-[#e6edf3] hover:bg-[#161b22]'
               }`}
-              title="スワイプ"
             >
-              <Layers size={14} />
+              <Layers size={12} />
+              <span>スワイプ</span>
             </Link>
             <Link
               href="/grid"
-              className={`flex items-center justify-center w-7 h-7 rounded-md transition-colors ${
+              className={`flex items-center gap-1 px-2 py-1 rounded-md transition-colors text-[11px] font-bold ${
                 isGrid ? 'bg-violet-600 text-white' : 'text-[#8b949e] hover:text-[#e6edf3] hover:bg-[#161b22]'
               }`}
-              title="グリッド"
             >
-              <LayoutGrid size={14} />
+              <LayoutGrid size={12} />
+              <span>さがす</span>
             </Link>
             <Link
               href="/my/lists"
-              className={`flex items-center justify-center w-7 h-7 rounded-md transition-colors ${
+              className={`flex items-center gap-1 px-2 py-1 rounded-md transition-colors text-[11px] font-bold ${
                 isMyLists ? 'bg-violet-600 text-white' : 'text-[#8b949e] hover:text-[#e6edf3] hover:bg-[#161b22]'
               }`}
-              title="マイリスト"
             >
-              <ListVideo size={14} />
+              <ListVideo size={12} />
+              <span>リスト</span>
             </Link>
           </div>
 
