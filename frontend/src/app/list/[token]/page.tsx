@@ -86,11 +86,12 @@ export async function generateMetadata(
     ? `好きなジャンル: ${topTags}。${data.videos.length}作品のいいねリスト。`
     : `${data.videos.length}作品のいいねリスト。`;
 
+  const listTitle = data.title ?? `${name}のお気に入りリスト`;
   return {
-    title: `${name}のお気に入りリスト | 性癖ラボ`,
+    title: `${listTitle} | 性癖ラボ`,
     description,
     openGraph: {
-      title: `${name}のお気に入りリスト | 性癖ラボ`,
+      title: `${listTitle} | 性癖ラボ`,
       description,
       url: `${SITE_URL}/list/${token}`,
       siteName: '性癖ラボ',
@@ -124,7 +125,9 @@ export default async function PublicListPage(
         <div className="mb-8 flex items-start justify-between gap-4">
           <div>
             <h1 className="text-2xl font-black text-[#e6edf3] mb-1">
-              {name ? (
+              {data.title ? (
+                data.title
+              ) : name ? (
                 <><span className="text-violet-400">{name}</span>のお気に入りリスト</>
               ) : 'お気に入りリスト'}
             </h1>
