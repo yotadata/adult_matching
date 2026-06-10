@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
-import { Search, Heart, Plus, Check, Loader2, X, ChevronDown, Sparkles, Compass } from 'lucide-react';
+import { Search, Heart, Plus, Check, Loader2, X, ChevronDown, Sparkles, Compass, ExternalLink, Play } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 
@@ -15,7 +15,7 @@ type Video = {
   distribution_code: string | null;
 };
 
-type Tag = { id: string; name: string };
+type Tag = { id: string; name: string; cnt?: number };
 type PublicList = { id: string; token: string; title: string | null; list_type: string };
 
 const FANZA_AF_ID = process.env.NEXT_PUBLIC_FANZA_AFFILIATE_ID ?? 'yotadata2-001';
@@ -30,16 +30,13 @@ function toAffiliateUrl(raw?: string | null) {
   return `https://al.fanza.co.jp/?lurl=${encodeURIComponent(raw)}&af_id=${encodeURIComponent(FANZA_AF_ID)}&ch=link_tool&ch_id=link`;
 }
 
+function toFanzaEmbedUrl(externalId: string | null) {
+  if (!externalId) return '';
+  return `https://www.dmm.co.jp/litevideo/-/part/=/affi_id=${FANZA_AF_ID}/cid=${externalId}/size=1280_720/`;
+}
+
 // リストに追加するドロップダウン
-function AddToListMenu({
-  videoId,
-  lists,
-  onClose,
-}: {
-  videoId: string;
-  lists: PublicList[];
-  onClose: () => void;
-}) {
+function AddToListMenu({ videoId, lists, onClose }: { videoId: string; lists: PublicList[]; onClose: () => void }) {
   const [addedIds, setAddedIds] = useState<Set<string>>(new Set());
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const ref = useRef<HTMLDivElement>(null);
@@ -88,28 +85,23 @@ function AddToListMenu({
   );
 }
 
-function VideoCard({
-  video,
-  likedIds,
-  onLike,
-  lists,
-}: {
+// 動画カード
+function VideoCard({ video, likedIds, onLike, lists, onClick }: {
   video: Video;
   likedIds: Set<string>;
   onLike: (video: Video) => void;
   lists: PublicList[];
+  onClick: (video: Video) => void;
 }) {
   const [showMenu, setShowMenu] = useState(false);
   const thumb = toLgThumb(video.thumbnail_url) ?? toLgThumb(video.thumbnail_vertical_url);
   const liked = likedIds.has(video.id);
 
   return (
-    <div className="break-inside-avoid mb-3 relative group">
-      <a
-        href={toAffiliateUrl(video.product_url)}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="block rounded-xl overflow-hidden border border-[#21262d] group-hover:border-violet-500/40 transition-colors bg-[#161b22]"
+    <div className="break-inside-avoid mb-2 relative group">
+      <div
+        className="block rounded-lg overflow-hidden border border-[#21262d] group-hover:border-violet-500/40 transition-colors bg-[#161b22] cursor-pointer"
+        onClick={() => onClick(video)}
       >
         {thumb ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -117,39 +109,103 @@ function VideoCard({
         ) : (
           <div className="w-full aspect-[3/4] bg-[#21262d]" />
         )}
-        <div className="p-2">
-          <p className="text-[11px] text-[#8b949e] line-clamp-2 leading-snug">{video.title}</p>
+        <div className="p-1.5">
+          <p className="text-[10px] text-[#8b949e] line-clamp-2 leading-snug">{video.title}</p>
         </div>
-      </a>
+      </div>
 
       {/* アクションボタン */}
-      <div className="absolute top-2 right-2 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-        {/* いいね */}
+      <div className="absolute top-1.5 right-1.5 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
         <button
-          onClick={(e) => { e.preventDefault(); onLike(video); }}
-          className={`flex items-center justify-center w-8 h-8 rounded-full shadow-lg transition-all ${liked ? 'bg-pink-500 text-white' : 'bg-[#0d1117]/80 text-[#8b949e] hover:text-pink-400 hover:bg-[#0d1117]'}`}
+          onClick={(e) => { e.stopPropagation(); onLike(video); }}
+          className={`flex items-center justify-center w-7 h-7 rounded-full shadow-lg transition-all ${liked ? 'bg-pink-500 text-white' : 'bg-[#0d1117]/80 text-[#8b949e] hover:text-pink-400'}`}
         >
-          <Heart size={14} fill={liked ? 'currentColor' : 'none'} />
+          <Heart size={12} fill={liked ? 'currentColor' : 'none'} />
         </button>
-
-        {/* リストに追加 */}
         {lists.length > 0 && (
           <div className="relative">
             <button
-              onClick={(e) => { e.preventDefault(); setShowMenu((v) => !v); }}
-              className="flex items-center justify-center w-8 h-8 rounded-full bg-[#0d1117]/80 text-[#8b949e] hover:text-violet-400 shadow-lg transition-all"
+              onClick={(e) => { e.stopPropagation(); setShowMenu((v) => !v); }}
+              className="flex items-center justify-center w-7 h-7 rounded-full bg-[#0d1117]/80 text-[#8b949e] hover:text-violet-400 shadow-lg transition-all"
             >
-              <Plus size={14} />
+              <Plus size={12} />
             </button>
-            {showMenu && (
-              <AddToListMenu
-                videoId={video.id}
-                lists={lists}
-                onClose={() => setShowMenu(false)}
-              />
-            )}
+            {showMenu && <AddToListMenu videoId={video.id} lists={lists} onClose={() => setShowMenu(false)} />}
           </div>
         )}
+      </div>
+    </div>
+  );
+}
+
+// 動画モーダル
+function VideoModal({ video, likedIds, onLike, onClose }: {
+  video: Video;
+  likedIds: Set<string>;
+  onLike: (video: Video) => void;
+  onClose: () => void;
+}) {
+  const [showVideo, setShowVideo] = useState(false);
+  const liked = likedIds.has(video.id);
+  const OVERLAY_HIDE_DELAY_MS = 700;
+  const overlayHideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="relative w-full max-w-2xl bg-white rounded-2xl border border-gray-200 shadow-xl flex flex-col overflow-hidden" onClick={(e) => e.stopPropagation()}>
+        <button onClick={onClose} className="absolute top-2 right-2 z-20 w-8 h-8 flex items-center justify-center rounded-full bg-black/60 text-white hover:bg-black/80">
+          <X size={16} />
+        </button>
+        <div className="relative w-full aspect-[4/3] bg-black/90 flex items-center justify-center rounded-t-2xl overflow-hidden">
+          {!showVideo && (
+            <div
+              className="absolute inset-0 w-full h-full bg-contain bg-no-repeat bg-center flex items-center justify-center z-10 cursor-pointer"
+              style={{ backgroundImage: video.thumbnail_url ? `url(${video.thumbnail_url})` : undefined, backgroundColor: video.thumbnail_url ? undefined : '#1f2937' }}
+              onClick={() => setShowVideo(true)}
+            >
+              <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center">
+                <Play className="text-white w-16 h-16 opacity-80" fill="white" />
+              </div>
+            </div>
+          )}
+          <iframe
+            scrolling="no"
+            referrerPolicy="no-referrer"
+            src={toFanzaEmbedUrl(video.external_id)}
+            frameBorder="0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
+            loading="eager"
+            onLoad={() => {
+              if (overlayHideTimer.current) clearTimeout(overlayHideTimer.current);
+              overlayHideTimer.current = setTimeout(() => setShowVideo(true), OVERLAY_HIDE_DELAY_MS);
+            }}
+            className="absolute top-0 left-0 w-full h-full overflow-hidden"
+          />
+        </div>
+        <div className="flex flex-col text-gray-800 px-4 py-3 gap-2">
+          <h2 className="text-base font-extrabold tracking-tight line-clamp-2">{video.title}</h2>
+          <div className="flex gap-2">
+            <button
+              onClick={() => onLike(video)}
+              className={`flex items-center gap-1.5 justify-center flex-1 py-2.5 rounded-lg text-sm font-bold transition-colors border ${
+                liked ? 'bg-pink-500 border-pink-500 text-white' : 'bg-white border-gray-300 text-gray-700 hover:bg-pink-50 hover:border-pink-300'
+              }`}
+            >
+              <Heart size={15} fill={liked ? 'white' : 'none'} />
+              {liked ? 'いいね済み' : 'いいね'}
+            </button>
+          </div>
+          {liked && video.product_url && (
+            <a
+              href={toAffiliateUrl(video.product_url)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 justify-center w-full py-2 rounded-lg bg-[#f0f0f0] hover:bg-[#e0e0e0] text-gray-500 text-xs font-medium transition-colors"
+            >
+              <ExternalLink size={12} />本編を見る
+            </a>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -168,16 +224,15 @@ function ExplorePageInner() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [offset, setOffset] = useState(0);
   const [hasMore, setHasMore] = useState(true);
+  const [modalVideo, setModalVideo] = useState<Video | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const LIMIT = 30;
 
-  // 認証・リスト・いいね済みIDを取得
   useEffect(() => {
     (async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
       setIsLoggedIn(true);
-
       const [{ data: listData }, { data: likedData }] = await Promise.all([
         supabase.from('public_lists').select('id, token, title, list_type').eq('user_id', user.id).eq('is_active', true),
         supabase.from('user_video_decisions').select('video_id').eq('user_id', user.id).in('decision_type', ['swipe_like', 'grid_like']),
@@ -187,13 +242,15 @@ function ExplorePageInner() {
     })();
   }, []);
 
-  // 人気タグ取得
+  // 人気タグ取得（video_tagsの件数順）
   useEffect(() => {
-    supabase
-      .from('tags')
-      .select('id, name, tag_group_id')
-      .limit(20)
-      .then(({ data }) => setPopularTags((data as Tag[]) ?? []));
+    supabase.rpc('get_popular_tags', { p_limit: 20 }).then(({ data }) => {
+      if (data) setPopularTags(data as Tag[]);
+      else {
+        // fallback
+        supabase.from('tags').select('id, name').limit(20).then(({ data: d }) => setPopularTags((d as Tag[]) ?? []));
+      }
+    });
   }, []);
 
   const fetchVideos = useCallback(async (q: string, tag: Tag | null, newOffset: number, append = false) => {
@@ -211,7 +268,6 @@ function ExplorePageInner() {
     setLoading(false);
   }, []);
 
-  // 初回・フィルター変更時
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
@@ -229,11 +285,7 @@ function ExplorePageInner() {
   const handleLike = async (video: Video) => {
     if (!isLoggedIn) { window.dispatchEvent(new Event('open-auth-modal')); return; }
     if (likedIds.has(video.id)) return;
-    await supabase.from('user_video_decisions').insert({
-      video_id: video.id,
-      decision_type: 'grid_like',
-      surface: 'grid',
-    });
+    await supabase.from('user_video_decisions').insert({ video_id: video.id, decision_type: 'grid_like', surface: 'grid' });
     setLikedIds((prev) => new Set(prev).add(video.id));
     window.dispatchEvent(new Event('like-added'));
   };
@@ -242,24 +294,16 @@ function ExplorePageInner() {
     <div className="min-h-screen bg-[#0d1117] text-[#e6edf3]">
       {/* タブ */}
       <div className="flex gap-1 px-4 pt-3 pb-0">
-        <button
-          onClick={() => router.push('/grid')}
-          className="flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-bold transition-colors text-[#8b949e] hover:text-[#e6edf3] hover:bg-white/5"
-        >
-          <Sparkles size={14} />
-          おすすめ
+        <button onClick={() => router.push('/grid')} className="flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-bold transition-colors text-[#8b949e] hover:text-[#e6edf3] hover:bg-white/5">
+          <Sparkles size={14} />おすすめ
         </button>
-        <button
-          className="flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-bold transition-colors bg-violet-600 text-white"
-        >
-          <Compass size={14} />
-          さがす
+        <button className="flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-bold bg-violet-600 text-white">
+          <Compass size={14} />さがす
         </button>
       </div>
 
       {/* フィルターバー */}
-      <div className="sticky top-[43px] sm:top-[43px] z-30 bg-[#0d1117]/95 backdrop-blur border-b border-[#21262d] px-4 py-3 space-y-2">
-        {/* 検索 */}
+      <div className="sticky top-[43px] z-30 bg-[#0d1117]/95 backdrop-blur border-b border-[#21262d] px-4 py-3 space-y-2">
         <div className="flex items-center gap-2 bg-[#161b22] border border-[#30363d] rounded-lg px-3 py-2 focus-within:border-violet-500/50">
           <Search size={14} className="text-[#656d76] shrink-0" />
           <input
@@ -269,14 +313,8 @@ function ExplorePageInner() {
             placeholder="タイトル・品番で検索"
             className="flex-1 bg-transparent text-sm text-[#e6edf3] placeholder-[#484f58] outline-none"
           />
-          {query && (
-            <button onClick={() => setQuery('')} className="text-[#656d76] hover:text-white">
-              <X size={14} />
-            </button>
-          )}
+          {query && <button onClick={() => setQuery('')} className="text-[#656d76] hover:text-white"><X size={14} /></button>}
         </div>
-
-        {/* タグフィルター */}
         <div className="flex gap-1.5 overflow-x-auto pb-0.5 scrollbar-hide">
           <button
             onClick={() => setSelectedTag(null)}
@@ -296,12 +334,12 @@ function ExplorePageInner() {
         </div>
       </div>
 
-      {/* グリッド */}
-      <div className="px-3 pt-4">
+      {/* グリッド（5列） */}
+      <div className="px-2 pt-3">
         {videos.length === 0 && !loading ? (
           <p className="text-center text-[#656d76] py-20 text-sm">見つかりませんでした</p>
         ) : (
-          <div className="[column-count:2] sm:[column-count:3] lg:[column-count:4] [column-gap:12px]">
+          <div className="[column-count:2] sm:[column-count:3] lg:[column-count:5] [column-gap:8px]">
             {videos.map((video) => (
               <VideoCard
                 key={video.id}
@@ -309,25 +347,35 @@ function ExplorePageInner() {
                 likedIds={likedIds}
                 onLike={handleLike}
                 lists={lists}
+                onClick={setModalVideo}
               />
             ))}
           </div>
         )}
-
-        {/* もっと見る */}
-        {hasMore && (
+        {loading && (
+          <div className="flex justify-center py-8"><Loader2 size={20} className="text-violet-400 animate-spin" /></div>
+        )}
+        {hasMore && !loading && (
           <div className="flex justify-center py-8">
             <button
               onClick={handleLoadMore}
-              disabled={loading}
-              className="flex items-center gap-2 px-6 py-2.5 rounded-full bg-[#161b22] border border-[#30363d] hover:border-violet-500/50 text-sm font-bold text-[#8b949e] hover:text-[#e6edf3] transition-all disabled:opacity-50"
+              className="flex items-center gap-2 px-6 py-2.5 rounded-full bg-[#161b22] border border-[#30363d] hover:border-violet-500/50 text-sm font-bold text-[#8b949e] hover:text-[#e6edf3] transition-all"
             >
-              {loading ? <Loader2 size={14} className="animate-spin" /> : <ChevronDown size={14} />}
-              もっと見る
+              <ChevronDown size={14} />もっと見る
             </button>
           </div>
         )}
       </div>
+
+      {/* 動画モーダル */}
+      {modalVideo && (
+        <VideoModal
+          video={modalVideo}
+          likedIds={likedIds}
+          onLike={handleLike}
+          onClose={() => setModalVideo(null)}
+        />
+      )}
     </div>
   );
 }
