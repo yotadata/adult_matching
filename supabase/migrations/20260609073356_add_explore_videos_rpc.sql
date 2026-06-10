@@ -1,4 +1,3 @@
--- 探索ページ用の動画取得RPC
 CREATE OR REPLACE FUNCTION explore_videos(
   p_query        text    DEFAULT NULL,
   p_tag_id       uuid    DEFAULT NULL,
@@ -24,6 +23,7 @@ BEGIN
         vi.distribution_code,
         vi.product_released_at
       FROM public.videos vi
+      LEFT JOIN public.fanza_rankings fr ON fr.video_id = vi.id
       WHERE vi.external_id IS NOT NULL
         AND (
           p_query IS NULL
@@ -44,7 +44,10 @@ BEGIN
             WHERE vp.video_id = vi.id AND vp.performer_id = p_performer_id
           )
         )
-      ORDER BY vi.product_released_at DESC NULLS LAST
+      ORDER BY
+        CASE WHEN p_tag_id IS NOT NULL OR p_query IS NOT NULL
+          THEN fr.rank END ASC NULLS LAST,
+        vi.product_released_at DESC NULLS LAST
       LIMIT p_limit
       OFFSET p_offset
     ) v
