@@ -3,9 +3,10 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Plus, ExternalLink, Loader2, Search, Trash2 } from 'lucide-react';
+import { Plus, ExternalLink, Loader2, Search, Trash2, ListVideo } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import VideoSearchModal from '@/components/lists/VideoSearchModal';
+import ListVideosModal from '@/components/lists/ListVideosModal';
 
 type PublicList = {
   id: string;
@@ -26,6 +27,7 @@ export default function MyListsPage() {
   const [newDesc, setNewDesc] = useState('');
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [searchTarget, setSearchTarget] = useState<PublicList | null>(null);
+  const [manageTarget, setManageTarget] = useState<PublicList | null>(null);
 
   const fetchLists = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -62,7 +64,14 @@ export default function MyListsPage() {
 
   const handleDelete = async (id: string) => {
     if (!confirm('このリストを削除しますか？')) return;
-    await supabase.from('public_lists').update({ is_active: false }).eq('id', id);
+    const { error } = await supabase
+      .from('public_lists')
+      .update({ is_active: false })
+      .eq('id', id);
+    if (error) {
+      alert('削除に失敗しました: ' + error.message);
+      return;
+    }
     await fetchLists();
   };
 
@@ -156,13 +165,22 @@ export default function MyListsPage() {
 
                 <div className="flex items-center gap-1.5 shrink-0">
                   {list.list_type === 'custom' && (
-                    <button
-                      onClick={() => setSearchTarget(list)}
-                      className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-violet-600/20 hover:bg-violet-600/40 text-violet-400 text-xs font-bold transition-colors border border-violet-500/30"
-                    >
-                      <Search size={11} />
-                      動画追加
-                    </button>
+                    <>
+                      <button
+                        onClick={() => setSearchTarget(list)}
+                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-violet-600/20 hover:bg-violet-600/40 text-violet-400 text-xs font-bold transition-colors border border-violet-500/30"
+                      >
+                        <Search size={11} />
+                        動画追加
+                      </button>
+                      <button
+                        onClick={() => setManageTarget(list)}
+                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-[#8b949e] text-xs font-bold transition-colors border border-[#30363d]"
+                      >
+                        <ListVideo size={11} />
+                        動画管理
+                      </button>
+                    </>
                   )}
                   <a
                     href={`/list/${list.token}`}
@@ -193,6 +211,16 @@ export default function MyListsPage() {
           listId={searchTarget.id}
           onClose={() => setSearchTarget(null)}
           onAdded={fetchLists}
+        />
+      )}
+
+      {/* 動画管理モーダル */}
+      {manageTarget && (
+        <ListVideosModal
+          listId={manageTarget.id}
+          listTitle={manageTarget.title ?? '無題のリスト'}
+          onClose={() => setManageTarget(null)}
+          onChanged={fetchLists}
         />
       )}
     </div>
