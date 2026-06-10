@@ -66,7 +66,7 @@ export default function MyListsPage() {
     if (!confirm('このリストを削除しますか？')) return;
     const { error } = await supabase
       .from('public_lists')
-      .update({ is_active: false })
+      .delete()
       .eq('id', id);
     if (error) {
       alert('削除に失敗しました: ' + error.message);
