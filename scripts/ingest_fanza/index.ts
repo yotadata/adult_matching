@@ -649,12 +649,23 @@ async function main() {
     return;
   }
 
-  const sources = [
+  const allSources = [
     { service: 'digital', floor: 'videoa', source: 'FANZA' },
     { service: 'digital', floor: 'videoc', source: 'FANZA_AMATEUR' },
     // アニメは取り込まない（非実写コンテンツ除外）
     // { service: 'digital', floor: 'anime',  source: 'FANZA_ANIME' },
   ];
+
+  // FLOOR env var で特定フロアのみ実行可能（例: FLOOR=videoc）
+  const floorFilter = process.env.FLOOR?.trim();
+  const sources = floorFilter
+    ? allSources.filter((s) => s.floor === floorFilter)
+    : allSources;
+
+  if (sources.length === 0) {
+    console.error(`[ingest_fanza] No matching sources for FLOOR="${floorFilter}". Available: ${allSources.map((s) => s.floor).join(', ')}`);
+    process.exit(1);
+  }
 
   let totalSuccess = 0;
   let totalFailure = 0;
