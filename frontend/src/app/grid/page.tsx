@@ -469,6 +469,12 @@ function GridPage() {
                   <Heart size={15} className="text-white" fill={likedIds.has(video.id) ? 'white' : 'none'} strokeWidth={2} />
                 </button>
               )}
+              {/* サンプルなしバッジ（左上） */}
+              {!video.sample_video_url && (
+                <div className="absolute top-1.5 left-1.5 text-[9px] font-bold px-1.5 py-0.5 rounded bg-black/60 text-white/60 border border-white/20 pointer-events-none">
+                  サンプルなし
+                </div>
+              )}
               {isDebug && (
                 <div className="absolute bottom-1 left-1">
                   <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${SOURCE_BADGE_COLORS[video.source] ?? 'bg-gray-600 text-white'}`}>{video.source}</span>
@@ -562,6 +568,12 @@ function GridPage() {
                   <Heart size={15} className="text-white" fill={likedIds.has(video.id) ? 'white' : 'none'} strokeWidth={2} />
                 </button>
               )}
+              {/* サンプルなしバッジ（左上） */}
+              {!video.sample_video_url && !viewedIds.has(video.id) && (
+                <div className="absolute top-1.5 left-1.5 text-[9px] font-bold px-1.5 py-0.5 rounded bg-black/60 text-white/60 border border-white/20 pointer-events-none">
+                  サンプルなし
+                </div>
+              )}
               {/* 既読バッジ（いいね済みでない場合のみ・左上） */}
               {viewedIds.has(video.id) && !likedIds.has(video.id) && (
                 <div className="absolute top-1.5 left-1.5 w-5 h-5 rounded-full bg-black/60 border border-white/20 flex items-center justify-center pointer-events-none">
@@ -631,39 +643,57 @@ function GridPage() {
 
             {/* 動画エリア（SwipeCardと同じ4:3） */}
             <div className="relative w-full aspect-[4/3] bg-black/90 flex items-center justify-center rounded-t-2xl overflow-hidden">
-              {showVideo === false && (
+              {selected.sample_video_url ? (
+                <>
+                  {showVideo === false && (
+                    <div
+                      className="absolute inset-0 w-full h-full bg-contain bg-no-repeat bg-center flex items-center justify-center z-10 cursor-pointer"
+                      style={{
+                        backgroundImage: selected.thumbnail_url ? `url(${selected.thumbnail_url})` : undefined,
+                        backgroundColor: selected.thumbnail_url ? undefined : '#1f2937',
+                      }}
+                      onClick={() => setShowVideo(true)}
+                    >
+                      <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center">
+                        <Play className="text-white w-16 h-16 opacity-80" fill="white" />
+                      </div>
+                      <div className="absolute bottom-2 left-1/2 -translate-x-1/2 text-[10px] text-white/80 bg-black/40 px-2 py-0.5 rounded whitespace-nowrap">
+                        注: 再生には最大2回のクリックが必要な場合があります
+                      </div>
+                    </div>
+                  )}
+                  <iframe
+                    scrolling="no"
+                    referrerPolicy="no-referrer"
+                    src={toFanzaEmbedUrl(selected.external_id)}
+                    frameBorder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
+                    loading="eager"
+                    onLoad={() => {
+                      if (overlayHideTimer.current) clearTimeout(overlayHideTimer.current);
+                      overlayHideTimer.current = setTimeout(() => {
+                        setShowVideo(true);
+                        overlayHideTimer.current = null;
+                      }, OVERLAY_HIDE_DELAY_MS);
+                    }}
+                    className="absolute top-0 left-0 w-full h-full overflow-hidden"
+                  />
+                </>
+              ) : (
                 <div
-                  className="absolute inset-0 w-full h-full bg-contain bg-no-repeat bg-center flex items-center justify-center z-10 cursor-pointer"
+                  className="absolute inset-0 w-full h-full bg-contain bg-no-repeat bg-center flex flex-col items-center justify-center gap-3"
                   style={{
                     backgroundImage: selected.thumbnail_url ? `url(${selected.thumbnail_url})` : undefined,
                     backgroundColor: selected.thumbnail_url ? undefined : '#1f2937',
                   }}
-                  onClick={() => setShowVideo(true)}
                 >
-                  <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center">
-                    <Play className="text-white w-16 h-16 opacity-80" fill="white" />
-                  </div>
-                  <div className="absolute bottom-2 left-1/2 -translate-x-1/2 text-[10px] text-white/80 bg-black/40 px-2 py-0.5 rounded whitespace-nowrap">
-                    注: 再生には最大2回のクリックが必要な場合があります
+                  <div className="absolute inset-0 bg-black/60" />
+                  <div className="relative z-10 flex flex-col items-center gap-2">
+                    <span className="text-white/90 text-sm font-bold">サンプル動画なし</span>
+                    <span className="text-white/50 text-xs">この作品はサンプル動画を提供していません</span>
                   </div>
                 </div>
               )}
-              <iframe
-                scrolling="no"
-                referrerPolicy="no-referrer"
-                src={toFanzaEmbedUrl(selected.external_id)}
-                frameBorder="0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
-                loading="eager"
-                onLoad={() => {
-                  if (overlayHideTimer.current) clearTimeout(overlayHideTimer.current);
-                  overlayHideTimer.current = setTimeout(() => {
-                    setShowVideo(true);
-                    overlayHideTimer.current = null;
-                  }, OVERLAY_HIDE_DELAY_MS);
-                }}
-                className="absolute top-0 left-0 w-full h-full overflow-hidden"
-              />
             </div>
 
             {/* 情報エリア */}
