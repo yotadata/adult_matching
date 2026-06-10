@@ -33,6 +33,9 @@ fi
 if [[ "${RANKING_ONLY:-}" != "" ]]; then
   DOCKER_ENV_ARGS+=(--env "RANKING_ONLY=${RANKING_ONLY}")
 fi
+if [[ "${FLOOR:-}" != "" ]]; then
+  DOCKER_ENV_ARGS+=(--env "FLOOR=${FLOOR}")
+fi
 
 exec docker run "${DOCKER_FLAGS[@]}" \
   --env-file "$ENV_FILE" \

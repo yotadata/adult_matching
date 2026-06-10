@@ -141,6 +141,27 @@ function coalesce<T>(...vals: (T | undefined | null)[]): T | null {
   return null;
 }
 
+function parseDurationSeconds(raw: string | number | null | undefined): number | null {
+  if (raw == null) return null;
+  // HH:MM:SS または MM:SS 形式 (videoc)
+  if (typeof raw === 'string' && raw.includes(':')) {
+    const parts = raw.split(':').map(Number);
+    if (parts.some(isNaN)) return null;
+    if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2];
+    if (parts.length === 2) return parts[0] * 60 + parts[1];
+    return null;
+  }
+  // 数値（分）形式 (videoa)
+  if (typeof raw === 'number') return raw > 0 ? raw * 60 : null;
+  // 文字列の数値（分）
+  const asNum = Number(raw);
+  if (!isNaN(asNum) && asNum > 0) return asNum * 60;
+  // "X分" 形式
+  const minMatch = String(raw).match(/(\d+)\s*分/);
+  if (minMatch) return parseInt(minMatch[1], 10) * 60;
+  return null;
+}
+
 function normalizeFanzaDateTime(input: string | undefined | null): string | null {
   if (!input) return null;
   const raw = input.trim();
@@ -445,9 +466,8 @@ async function ingestSource(
     }
 
     for (const item of result.items) {
-      const volumeText: string | null = item.iteminfo?.volume ?? null;
-      const durationMinutesMatch = typeof volumeText === 'string' ? volumeText.match(/(\d+)\s*分/) : null;
-      const durationSeconds: number | null = durationMinutesMatch ? parseInt(durationMinutesMatch[1], 10) * 60 : null;
+      // volume は root level (item.volume) にある。videoa は分数の数値、videoc は HH:MM:SS 形式
+      const durationSeconds: number | null = parseDurationSeconds(item.volume ?? item.iteminfo?.volume ?? null);
 
       let parsedPrice: number | null = null;
       if (item.prices && item.prices.price != null) {
@@ -537,6 +557,7 @@ async function updateRankings() {
   console.log('[ingest_fanza] === Starting ranking update ===');
   const rankingSources = [
     { service: 'digital', floor: 'videoa', source: 'fanza_videoa' },
+    { service: 'digital', floor: 'videoc', source: 'fanza_videoc' },
     // アニメはランキングからも除外
     // { service: 'digital', floor: 'anime',  source: 'fanza_anime'  },
   ];
@@ -628,11 +649,23 @@ async function main() {
     return;
   }
 
-  const sources = [
+  const allSources = [
     { service: 'digital', floor: 'videoa', source: 'FANZA' },
+    { service: 'digital', floor: 'videoc', source: 'FANZA_AMATEUR' },
     // アニメは取り込まない（非実写コンテンツ除外）
     // { service: 'digital', floor: 'anime',  source: 'FANZA_ANIME' },
   ];
+
+  // FLOOR env var で特定フロアのみ実行可能（例: FLOOR=videoc）
+  const floorFilter = process.env.FLOOR?.trim();
+  const sources = floorFilter
+    ? allSources.filter((s) => s.floor === floorFilter)
+    : allSources;
+
+  if (sources.length === 0) {
+    console.error(`[ingest_fanza] No matching sources for FLOOR="${floorFilter}". Available: ${allSources.map((s) => s.floor).join(', ')}`);
+    process.exit(1);
+  }
 
   let totalSuccess = 0;
   let totalFailure = 0;
