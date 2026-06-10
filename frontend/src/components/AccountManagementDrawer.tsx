@@ -65,7 +65,7 @@ const AccountManagementDrawer: React.FC<AccountManagementDrawerProps> = ({ isOpe
       supabase.auth.getUser().then(({ data: { user } }) => {
         if (!user) return;
         supabase.from('public_lists').select('token')
-          .eq('user_id', user.id).eq('is_active', true).maybeSingle()
+          .eq('user_id', user.id).eq('is_active', true).eq('list_type', 'liked').maybeSingle()
           .then(({ data }) => { if (data) setPublicToken(data.token); });
       });
     }
@@ -78,12 +78,12 @@ const AccountManagementDrawer: React.FC<AccountManagementDrawerProps> = ({ isOpe
       if (!user) return;
       const { data: existing } = await supabase
         .from('public_lists').select('token')
-        .eq('user_id', user.id).eq('is_active', true).maybeSingle();
+        .eq('user_id', user.id).eq('is_active', true).eq('list_type', 'liked').maybeSingle();
       if (existing) {
         setPublicToken(existing.token);
       } else {
         const { data } = await supabase
-          .from('public_lists').insert({ user_id: user.id }).select('token').single();
+          .from('public_lists').insert({ user_id: user.id, list_type: 'liked' }).select('token').single();
         if (data) setPublicToken(data.token);
       }
     } finally {
