@@ -1,7 +1,6 @@
 'use client';
 
 import { Dialog, Transition, Combobox, DialogBackdrop } from '@headlessui/react';
-import Image from 'next/image';
 import Link from 'next/link';
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import { X, Filter, Tag, Users, ExternalLink } from 'lucide-react';
@@ -438,20 +437,19 @@ export default function VideoListDrawer({
                       ))}
                     </div>
                   ) : (
-                    <div className="p-4 space-y-4 overflow-y-auto rounded-3xl">
+                    <div className="p-4 overflow-y-auto rounded-3xl grid grid-cols-1 sm:grid-cols-2 gap-4">
                       {videos.map((video) => (
                         <article
                           key={video.external_id}
-                          className="rounded-2xl border border-gray-200 bg-white text-gray-900 overflow-hidden shadow-sm flex flex-col sm:flex-row"
+                          className="rounded-2xl border border-gray-200 bg-white text-gray-900 overflow-hidden shadow-sm"
                         >
-                          <div className="relative w-full aspect-[16/9] sm:w-52 sm:aspect-[16/9] flex-shrink-0 bg-slate-200">
-                            {(() => { const { primary } = resolveThumbnail({ source: video.source, thumbnail_url: video.thumbnail_url, image_urls: video.image_urls }); const thumb = primary ?? video.thumbnail_url; return thumb ? (
-                              <Image src={thumb} alt={video.title} fill className="object-cover" />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center text-sm text-gray-500">No Image</div>
-                            ); })()}
-                          </div>
-                          <div className="flex flex-col gap-2 flex-1 min-w-0 p-3">
+                          {(() => { const { primary } = resolveThumbnail({ source: video.source, thumbnail_url: video.thumbnail_url, image_urls: video.image_urls }); const thumb = primary ?? video.thumbnail_url; return thumb ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={thumb} alt={video.title} style={{ width: '100%', height: '180px', objectFit: 'cover', display: 'block' }} />
+                          ) : (
+                            <div style={{ width: '100%', height: '180px', background: '#e2e8f0' }} />
+                          ); })()}
+                          <div className="flex flex-col gap-2 p-3">
                             <h2 className="text-sm sm:text-base font-semibold leading-tight line-clamp-2">{video.title}</h2>
                             <div className="text-xs text-gray-600 space-y-0.5">
                               <p>{formatPrice(video.price)}</p>
