@@ -444,7 +444,7 @@ export default function VideoListDrawer({
                           key={video.external_id}
                           className="rounded-2xl border border-gray-200 bg-white text-gray-900 overflow-hidden shadow-sm flex flex-col sm:flex-row"
                         >
-                          <div className="relative w-full aspect-[5/3] sm:w-52 sm:aspect-[5/4] flex-shrink-0 bg-slate-200">
+                          <div className="relative w-full aspect-video sm:w-52 sm:aspect-video flex-shrink-0 bg-slate-200">
                             {(() => { const { primary } = resolveThumbnail({ source: video.source, thumbnail_url: video.thumbnail_url, image_urls: video.image_urls }); const thumb = primary ?? video.thumbnail_url; return thumb ? (
                               <Image src={thumb} alt={video.title} fill className="object-cover" />
                             ) : (
