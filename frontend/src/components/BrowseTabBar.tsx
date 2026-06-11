@@ -153,6 +153,7 @@ function BrowseTabBarInner() {
   const [isAccountOpen, setIsAccountOpen] = useState(false);
   const [likeCount, setLikeCount] = useState<number | null>(null);
   const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
+  const [myPageUrl, setMyPageUrl] = useState('/my/lists');
   const [particles, setParticles] = useState<number[]>([]);
   const [levelUpLevel, setLevelUpLevel] = useState<Level | null>(null);
   const prevLevelRef = useRef<Level | null>(null);
@@ -169,6 +170,8 @@ function BrowseTabBarInner() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { setLikeCount(0); setIsLoggedIn(false); return; }
       setIsLoggedIn(true);
+      const uname = user.user_metadata?.username as string | undefined;
+      if (uname) setMyPageUrl(`/u/${uname}`);
       const { count } = await supabase
         .from('user_video_decisions')
         .select('*', { count: 'exact', head: true })
@@ -234,7 +237,7 @@ function BrowseTabBarInner() {
               <Link href="/explore" className={`flex items-center gap-1 px-2 py-1 rounded-md transition-colors text-[11px] font-bold whitespace-nowrap ${isGrid ? 'text-violet-400' : 'text-[#8b949e] hover:text-[#e6edf3]'}`}>
                 <LayoutGrid size={13} /><span>さがす</span>
               </Link>
-              <Link href="/my/lists" className={`flex items-center gap-1 px-2 py-1 rounded-md transition-colors text-[11px] font-bold whitespace-nowrap ${isMyLists ? 'text-violet-400' : 'text-[#8b949e] hover:text-[#e6edf3]'}`}>
+              <Link href={myPageUrl} className={`flex items-center gap-1 px-2 py-1 rounded-md transition-colors text-[11px] font-bold whitespace-nowrap ${isMyLists ? 'text-violet-400' : 'text-[#8b949e] hover:text-[#e6edf3]'}`}>
                 <ListVideo size={13} /><span>リスト</span>
               </Link>
             </div>
@@ -284,7 +287,7 @@ function BrowseTabBarInner() {
             <LayoutGrid size={15} />
             <span className="text-[9px] font-bold whitespace-nowrap">さがす</span>
           </Link>
-          <Link href="/my/lists" className={`flex flex-col items-center gap-0.5 px-3 py-0.5 rounded-md transition-colors ${isMyLists ? 'text-violet-400' : 'text-[#8b949e]'}`}>
+          <Link href={myPageUrl} className={`flex flex-col items-center gap-0.5 px-3 py-0.5 rounded-md transition-colors ${isMyLists ? 'text-violet-400' : 'text-[#8b949e]'}`}>
             <ListVideo size={15} />
             <span className="text-[9px] font-bold whitespace-nowrap">リスト</span>
           </Link>

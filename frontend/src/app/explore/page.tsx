@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
-import { Search, Heart, Plus, Check, Loader2, X, ChevronDown, Sparkles, Compass, ExternalLink, Play } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { Search, Heart, Plus, Check, Loader2, X, ChevronDown, Sparkles, Compass, ExternalLink, Play, ArrowLeft } from 'lucide-react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 
 type Video = {
@@ -86,26 +86,30 @@ function AddToListMenu({ videoId, lists, onClose }: { videoId: string; lists: Pu
 }
 
 // 動画カード
-function VideoCard({ video, likedIds, onLike, lists, onClick }: {
+function VideoCard({ video, likedIds, onLike, lists, onClick, addToListId, addedToListIds, onAddToList }: {
   video: Video;
   likedIds: Set<string>;
   onLike: (video: Video) => void;
   lists: PublicList[];
   onClick: (video: Video) => void;
+  addToListId?: string | null;
+  addedToListIds?: Set<string>;
+  onAddToList?: (videoId: string) => void;
 }) {
   const [showMenu, setShowMenu] = useState(false);
   const thumb = toLgThumb(video.thumbnail_url) ?? toLgThumb(video.thumbnail_vertical_url);
   const liked = likedIds.has(video.id);
+  const addedToList = addToListId ? (addedToListIds?.has(video.id) ?? false) : false;
 
   return (
     <div className="break-inside-avoid mb-2 relative group">
       <div
-        className="block rounded-lg overflow-hidden border border-[#21262d] group-hover:border-violet-500/40 transition-colors bg-[#161b22] cursor-pointer"
+        className={`block rounded-lg overflow-hidden border transition-colors bg-[#161b22] cursor-pointer ${addedToList ? 'border-green-500/60' : 'border-[#21262d] group-hover:border-violet-500/40'}`}
         onClick={() => onClick(video)}
       >
         {thumb ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={thumb} alt={video.title ?? ''} className="w-full h-auto" loading="lazy" />
+          <img src={thumb} alt={video.title ?? ''} className={`w-full h-auto ${addedToList ? 'opacity-60' : ''}`} loading="lazy" />
         ) : (
           <div className="w-full aspect-[3/4] bg-[#21262d]" />
         )}
@@ -116,24 +120,45 @@ function VideoCard({ video, likedIds, onLike, lists, onClick }: {
 
       {/* アクションボタン */}
       <div className="absolute top-1.5 right-1.5 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-        <button
-          onClick={(e) => { e.stopPropagation(); onLike(video); }}
-          className={`flex items-center justify-center w-7 h-7 rounded-full shadow-lg transition-all ${liked ? 'bg-pink-500 text-white' : 'bg-[#0d1117]/80 text-[#8b949e] hover:text-pink-400'}`}
-        >
-          <Heart size={12} fill={liked ? 'currentColor' : 'none'} />
-        </button>
-        {lists.length > 0 && (
-          <div className="relative">
+        {/* リスト追加モード: 直接追加ボタン */}
+        {addToListId ? (
+          <button
+            onClick={(e) => { e.stopPropagation(); if (!addedToList) onAddToList?.(video.id); }}
+            className={`flex items-center justify-center w-7 h-7 rounded-full shadow-lg transition-all ${addedToList ? 'bg-green-500 text-white' : 'bg-violet-600 hover:bg-violet-500 text-white'}`}
+          >
+            {addedToList ? <Check size={12} /> : <Plus size={12} />}
+          </button>
+        ) : (
+          <>
             <button
-              onClick={(e) => { e.stopPropagation(); setShowMenu((v) => !v); }}
-              className="flex items-center justify-center w-7 h-7 rounded-full bg-[#0d1117]/80 text-[#8b949e] hover:text-violet-400 shadow-lg transition-all"
+              onClick={(e) => { e.stopPropagation(); onLike(video); }}
+              className={`flex items-center justify-center w-7 h-7 rounded-full shadow-lg transition-all ${liked ? 'bg-pink-500 text-white' : 'bg-[#0d1117]/80 text-[#8b949e] hover:text-pink-400'}`}
             >
-              <Plus size={12} />
+              <Heart size={12} fill={liked ? 'currentColor' : 'none'} />
             </button>
-            {showMenu && <AddToListMenu videoId={video.id} lists={lists} onClose={() => setShowMenu(false)} />}
-          </div>
+            {lists.length > 0 && (
+              <div className="relative">
+                <button
+                  onClick={(e) => { e.stopPropagation(); setShowMenu((v) => !v); }}
+                  className="flex items-center justify-center w-7 h-7 rounded-full bg-[#0d1117]/80 text-[#8b949e] hover:text-violet-400 shadow-lg transition-all"
+                >
+                  <Plus size={12} />
+                </button>
+                {showMenu && <AddToListMenu videoId={video.id} lists={lists} onClose={() => setShowMenu(false)} />}
+              </div>
+            )}
+          </>
         )}
       </div>
+
+      {/* 追加済みオーバーレイ */}
+      {addedToList && (
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center shadow-lg">
+            <Check size={16} className="text-white" />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -217,6 +242,11 @@ function ExplorePageInner() {
   const [videos, setVideos] = useState<Video[]>([]);
   const [loading, setLoading] = useState(false);
   const [query, setQuery] = useState('');
+  const searchParams = useSearchParams();
+  const addToListId = searchParams.get('add_to_list');
+  const addToListTitle = searchParams.get('list_title') ?? 'リスト';
+  const returnUrl = searchParams.get('return_url') ?? null;
+
   const [selectedTag, setSelectedTag] = useState<Tag | null>(null);
   const [popularTags, setPopularTags] = useState<Tag[]>([]);
   const [likedIds, setLikedIds] = useState<Set<string>>(new Set());
@@ -225,6 +255,7 @@ function ExplorePageInner() {
   const [offset, setOffset] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const [modalVideo, setModalVideo] = useState<Video | null>(null);
+  const [addedToListIds, setAddedToListIds] = useState<Set<string>>(new Set());
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const LIMIT = 30;
 
@@ -282,6 +313,12 @@ function ExplorePageInner() {
     fetchVideos(query, selectedTag, next, true);
   };
 
+  const handleAddToList = useCallback(async (videoId: string) => {
+    if (!addToListId) return;
+    await supabase.from('public_list_videos').insert({ list_id: addToListId, video_id: videoId });
+    setAddedToListIds((prev) => new Set(prev).add(videoId));
+  }, [addToListId]);
+
   const handleLike = async (video: Video) => {
     if (!isLoggedIn) { window.dispatchEvent(new Event('open-auth-modal')); return; }
     if (likedIds.has(video.id)) return;
@@ -292,6 +329,26 @@ function ExplorePageInner() {
 
   return (
     <div className="min-h-screen bg-[#0d1117] text-[#e6edf3]">
+      {/* リスト追加モードバナー */}
+      {addToListId && (
+        <div className="sticky top-0 z-40 flex items-center justify-between gap-3 px-4 py-2.5 bg-violet-600 text-white shadow-lg">
+          <div className="flex items-center gap-2 min-w-0">
+            <Plus size={14} className="shrink-0" />
+            <span className="text-sm font-bold truncate">「{decodeURIComponent(addToListTitle)}」に追加中</span>
+            {addedToListIds.size > 0 && (
+              <span className="shrink-0 text-xs bg-white/20 px-2 py-0.5 rounded-full">{addedToListIds.size}件追加</span>
+            )}
+          </div>
+          <button
+            onClick={() => router.push(returnUrl ?? '/')}
+            className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/20 hover:bg-white/30 text-sm font-bold transition-colors"
+          >
+            <ArrowLeft size={13} />
+            完了
+          </button>
+        </div>
+      )}
+
       {/* タブ */}
       <div className="flex gap-1 px-4 pt-3 pb-0">
         <button onClick={() => router.push('/grid')} className="flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-bold transition-colors text-[#8b949e] hover:text-[#e6edf3] hover:bg-white/5">
@@ -348,6 +405,9 @@ function ExplorePageInner() {
                 onLike={handleLike}
                 lists={lists}
                 onClick={setModalVideo}
+                addToListId={addToListId}
+                addedToListIds={addedToListIds}
+                onAddToList={handleAddToList}
               />
             ))}
           </div>

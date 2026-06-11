@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import CopyLinkButton from './CopyLinkButton';
+import ListEditMode, { VideoDeleteButton } from './ListEditMode';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://www.seihekilab.com';
 const AF_ID = process.env.NEXT_PUBLIC_FANZA_AFFILIATE_ID ?? 'yotadata2-001';
@@ -21,8 +22,12 @@ type TagStat = { tag_name: string; cnt: number };
 type PerformerStat = { performer_name: string; cnt: number };
 
 type ListData = {
+  list_id: string;
+  user_id: string;
   display_name: string | null;
+  username: string | null;
   title: string | null;
+  list_type: 'liked' | 'custom';
   videos: Video[];
   tags: TagStat[];
   performers: PerformerStat[];
@@ -45,7 +50,6 @@ function toLgThumb(url: string | null | undefined): string | null {
   return url.replace('ps.jpg', 'pl.jpg');
 }
 
-// ランク(0始まり)に応じたチップサイズ
 const CHIP_SIZES = [
   { text: 'text-base', px: 'px-4',   py: 'py-2' },
   { text: 'text-sm',   px: 'px-3.5', py: 'py-1.5' },
@@ -58,7 +62,6 @@ function chipSize(i: number) { return CHIP_SIZES[Math.min(i, CHIP_SIZES.length -
 const TAG_COLOR  = { bg: 'bg-violet-500/20', border: 'border-violet-500/40', text: 'text-violet-200', num: 'text-violet-400' };
 const PERF_COLOR = { bg: 'bg-pink-500/20',   border: 'border-pink-500/40',   text: 'text-pink-200',   num: 'text-pink-400' };
 
-// 技術的・流通系タグ（嗜好を表さないもの）は除外
 const EXCLUDED_TAGS = new Set([
   '独占配信', 'ハイビジョン', '単体作品', '4K', '8K', 'VR', 'Ultra HD',
   '無修正', '高画質', 'フルHD', 'DVD', 'Blu-ray', '収録時間4時間以上',
@@ -122,19 +125,50 @@ export default async function PublicListPage(
         </Link>
 
         {/* ヘッダー */}
-        <div className="mb-8 flex items-start justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-black text-[#e6edf3] mb-1">
-              {data.title ? (
-                data.title
-              ) : name ? (
-                <><span className="text-violet-400">{name}</span>のお気に入りリスト</>
-              ) : 'お気に入りリスト'}
+        <div className="mb-6 flex items-start justify-between gap-4">
+          <div className="space-y-1">
+            <h1 className="text-2xl font-black text-[#e6edf3]">
+              {data.title ?? (name ? `${name}のお気に入りリスト` : 'お気に入りリスト')}
             </h1>
-            <p className="text-sm text-[#656d76]">いいね {data.videos.length}作品</p>
+            {name && (
+              <p className="text-sm text-[#656d76]">
+                by <span className="text-violet-400">{name}</span>
+              </p>
+            )}
+            <p className="text-xs text-[#484f58]">{data.videos.length}作品</p>
           </div>
           <CopyLinkButton url={pageUrl} />
         </div>
+
+        {/* 作者のリスト一覧へ */}
+        {data.username && (
+          <Link
+            href={`/u/${data.username}`}
+            className="flex items-center justify-between gap-3 mb-8 px-4 py-3 rounded-xl bg-[#161b22] border border-[#30363d] hover:border-violet-500/50 hover:bg-[#1c2128] transition-all group"
+          >
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="w-8 h-8 rounded-full bg-violet-500/20 border border-violet-500/30 flex items-center justify-center shrink-0 text-sm">
+                {name?.charAt(0) ?? '?'}
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs text-[#656d76]">作成者</p>
+                <p className="text-sm font-bold text-[#e6edf3] truncate">{name}</p>
+              </div>
+            </div>
+            <span className="text-xs text-[#656d76] group-hover:text-violet-400 transition-colors shrink-0">
+              他のリストを見る →
+            </span>
+          </Link>
+        )}
+
+        {/* 編集モードバナー＋動画追加ボタン（オーナーのみ表示） */}
+        <ListEditMode
+          ownerUserId={data.user_id}
+          listId={data.list_id}
+          listType={data.list_type}
+          listTitle={data.title}
+          token={token}
+        />
 
         {/* 好きなジャンルランキング */}
         {filteredTags.length > 0 && (
@@ -178,41 +212,50 @@ export default async function PublicListPage(
           </div>
         )}
 
-        {/* 作品グリッド（Pinterest風マソンリー） */}
+        {/* 作品グリッド */}
         {data.videos.length === 0 ? (
-          <p className="text-center text-[#656d76] py-20">まだいいねした作品がありません。</p>
+          <p className="text-center text-[#656d76] py-20">まだ作品がありません。</p>
         ) : (
           <div className="[column-count:2] sm:[column-count:3] [column-gap:12px]">
             {data.videos.map((video) => {
               const affiliateUrl = toAffiliateUrl(video.product_url);
               const thumb = toLgThumb(video.thumbnail_url) ?? toLgThumb(video.thumbnail_vertical_url);
               return (
-                <a
-                  key={video.id}
-                  href={affiliateUrl || '#'}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="group block rounded-lg overflow-hidden border border-[#21262d] hover:border-violet-500/50 transition-colors bg-[#161b22] mb-3 break-inside-avoid"
-                >
-                  {thumb ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={thumb}
-                      alt={video.title ?? ''}
-                      className="w-full h-auto group-hover:opacity-90 transition-opacity"
-                      loading="lazy"
-                    />
-                  ) : (
-                    <div className="w-full aspect-video bg-[#21262d] flex items-center justify-center">
-                      <span className="text-[#484f58] text-xs">No Image</span>
+                <div key={video.id} className="group relative mb-3 break-inside-avoid">
+                  <a
+                    href={affiliateUrl || '#'}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block rounded-lg overflow-hidden border border-[#21262d] hover:border-violet-500/50 transition-colors bg-[#161b22]"
+                  >
+                    {thumb ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={thumb}
+                        alt={video.title ?? ''}
+                        className="w-full h-auto group-hover:opacity-90 transition-opacity"
+                        loading="lazy"
+                      />
+                    ) : (
+                      <div className="w-full aspect-video bg-[#21262d] flex items-center justify-center">
+                        <span className="text-[#484f58] text-xs">No Image</span>
+                      </div>
+                    )}
+                    <div className="p-2">
+                      <p className="text-xs text-[#8b949e] leading-tight line-clamp-2">
+                        {video.title ?? ''}
+                      </p>
                     </div>
+                  </a>
+                  {/* 削除ボタン（オーナー＆カスタムリストのみ） */}
+                  {data.list_type === 'custom' && (
+                    <VideoDeleteButton
+                      ownerUserId={data.user_id}
+                      listId={data.list_id}
+                      videoId={video.id}
+                    />
                   )}
-                  <div className="p-2">
-                    <p className="text-xs text-[#8b949e] leading-tight line-clamp-2">
-                      {video.title ?? ''}
-                    </p>
-                  </div>
-                </a>
+                </div>
               );
             })}
           </div>
