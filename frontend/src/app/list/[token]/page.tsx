@@ -4,11 +4,12 @@ import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import CopyLinkButton from './CopyLinkButton';
 import ListEditMode, { VideoDeleteButton } from './ListEditMode';
+import ListStats from './ListStats';
 import { resolveThumbnail } from '@/utils/thumbnail';
 
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://www.seihekilab.com';
-const AF_ID = process.env.NEXT_PUBLIC_FANZA_AFFILIATE_ID ?? 'yotadata2-001';
+const SYS_AF_ID = process.env.NEXT_PUBLIC_FANZA_AFFILIATE_ID ?? 'yotadata2-001';
 
 type Video = {
   id: string;
@@ -30,23 +31,29 @@ type ListData = {
   user_id: string;
   display_name: string | null;
   username: string | null;
+  affiliate_fanza_id: string | null;
+  affiliate_fc2_id: string | null;
+  affiliate_mgs_id: string | null;
   title: string | null;
   list_type: 'liked' | 'custom';
+  view_count: number;
+  like_count: number;
   videos: Video[];
   tags: TagStat[];
   performers: PerformerStat[];
 };
 
-function toAffiliateUrl(raw?: string | null): string {
+function toAffiliateUrl(raw?: string | null, curatorAfId?: string | null): string {
   if (!raw) return '';
+  const afId = curatorAfId ?? SYS_AF_ID;
   if (raw.startsWith('https://al.fanza.co.jp/')) {
     try {
       const u = new URL(raw);
-      u.searchParams.set('af_id', AF_ID);
+      u.searchParams.set('af_id', afId);
       return u.toString();
     } catch { /* ignore */ }
   }
-  return `https://al.fanza.co.jp/?lurl=${encodeURIComponent(raw)}&af_id=${encodeURIComponent(AF_ID)}&ch=link_tool&ch_id=link`;
+  return `https://al.fanza.co.jp/?lurl=${encodeURIComponent(raw)}&af_id=${encodeURIComponent(afId)}&ch=link_tool&ch_id=link`;
 }
 
 function toLgThumb(url: string | null | undefined): string | null {
@@ -140,6 +147,11 @@ export default async function PublicListPage(
               </p>
             )}
             <p className="text-xs text-[#484f58]">{data.videos.length}作品</p>
+            <ListStats
+              token={token}
+              initialViewCount={data.view_count}
+              initialLikeCount={data.like_count}
+            />
           </div>
           <CopyLinkButton url={pageUrl} />
         </div>
@@ -222,7 +234,7 @@ export default async function PublicListPage(
         ) : (
           <div className="[column-count:2] sm:[column-count:3] [column-gap:12px]">
             {data.videos.map((video) => {
-              const affiliateUrl = toAffiliateUrl(video.product_url);
+              const affiliateUrl = toAffiliateUrl(video.product_url, data.affiliate_fanza_id);
               const { primary: resolvedThumb } = resolveThumbnail({ source: video.source, thumbnail_url: video.thumbnail_url, image_urls: video.image_urls });
               const thumb = resolvedThumb ?? toLgThumb(video.thumbnail_url) ?? toLgThumb(video.thumbnail_vertical_url);
               return (
