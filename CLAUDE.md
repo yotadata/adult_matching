@@ -40,6 +40,15 @@ git commit -m "変更の要約（日本語）"
 - 実行環境: すべて Docker 前提。ローカルの Node / Python は使用しない。
 - 作業前に `docs/requirements.md` を確認する（なければ作成する）。
 
+## 機能仕様書
+
+実装前に必ず対応する仕様書を確認すること。
+
+| 機能 | 仕様書 |
+|---|---|
+| キュレーター機能 MVP | [`docs/features/curator_mvp.md`](docs/features/curator_mvp.md) |
+| AI推薦 | [`docs/features/ai_recommend.md`](docs/features/ai_recommend.md) |
+
 ## コーディングルール
 
 - Tailwind 設定（`tailwind.config.js`）と CSS は別ファイルで管理し、混在させない。
