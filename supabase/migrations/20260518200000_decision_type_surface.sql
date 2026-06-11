@@ -119,6 +119,7 @@ $$;
 grant execute on function public.get_videos_recommendations(uuid, int) to anon, authenticated;
 
 -- 5. get_user_likes
+drop function if exists public.get_user_likes(text, text, text, int, int, uuid[], uuid[], numeric, numeric, timestamptz, timestamptz);
 create or replace function public.get_user_likes(
   p_search text default null,
   p_sort text default 'liked_at',
