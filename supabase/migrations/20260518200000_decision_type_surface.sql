@@ -28,6 +28,8 @@ group by uvd.video_id, date_trunc('day', uvd.created_at at time zone 'UTC');
 create unique index mv_pop_daily_uidx on public.video_popularity_daily (video_id, d);
 
 -- 4. get_videos_recommendations
+-- シグネチャ変更（source, image_urls 追加）のため事前に DROP
+drop function if exists public.get_videos_recommendations(uuid, int);
 create or replace function public.get_videos_recommendations(user_uuid uuid, page_limit int default 20)
 returns table (
   id uuid, title text, description text, external_id text,
