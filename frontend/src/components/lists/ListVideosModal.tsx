@@ -3,7 +3,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { X, Trash2, Loader2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
-import { resolveThumbnail } from '@/utils/thumbnail';
 
 type ListVideo = {
   id: string;
@@ -113,12 +112,12 @@ export default function ListVideosModal({ listId, listTitle, onClose, onChanged 
               className="flex items-center gap-3 px-4 py-2.5 border-b border-[#21262d] last:border-0"
             >
               <div className="w-12 h-16 shrink-0 rounded overflow-hidden bg-[#21262d]">
-                {(() => { const { primary } = resolveThumbnail({ source: video.source, thumbnail_url: video.thumbnail_url, image_urls: video.image_urls }); const thumb = primary ?? video.thumbnail_url; return thumb ? (
+                {video.thumbnail_url ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={thumb} alt="" className="w-full h-full object-cover" loading="lazy" />
+                  <img src={video.thumbnail_url} alt="" className="w-full h-full object-cover" loading="lazy" />
                 ) : (
                   <div className="w-full h-full" />
-                ); })()}
+                )}
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-xs text-[#e6edf3] line-clamp-2 leading-snug">{video.title}</p>

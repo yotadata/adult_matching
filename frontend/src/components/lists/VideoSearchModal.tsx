@@ -3,7 +3,6 @@
 import { useState, useCallback, useRef } from 'react';
 import { X, Search, Plus, Check, Loader2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
-import { resolveThumbnail } from '@/utils/thumbnail';
 
 type SearchResult = {
   id: string;
@@ -101,12 +100,12 @@ export default function VideoSearchModal({ listId, onClose, onAdded }: VideoSear
               >
                 {/* サムネイル */}
                 <div className="w-12 h-16 shrink-0 rounded overflow-hidden bg-[#21262d]">
-                  {(() => { const { primary } = resolveThumbnail({ source: video.source, thumbnail_url: video.thumbnail_url, image_urls: video.image_urls }); const thumb = primary ?? video.thumbnail_url; return thumb ? (
+                  {video.thumbnail_url ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={thumb} alt="" className="w-full h-full object-cover" loading="lazy" />
+                    <img src={video.thumbnail_url} alt="" className="w-full h-full object-cover" loading="lazy" />
                   ) : (
                     <div className="w-full h-full" />
-                  ); })()}
+                  )}
                 </div>
 
                 {/* タイトル */}
