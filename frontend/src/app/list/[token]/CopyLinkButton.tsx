@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Link2, Check } from 'lucide-react';
 
-export default function CopyLinkButton({ url }: { url: string }) {
+export default function CopyLinkButton({ url, variant = 'dark' }: { url: string; variant?: 'dark' | 'light' }) {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {
@@ -12,13 +12,21 @@ export default function CopyLinkButton({ url }: { url: string }) {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const base = 'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all';
+  const styles = {
+    dark: 'border border-[#30363d] text-[#8b949e] hover:border-violet-500/50 hover:text-violet-400',
+    light: 'bg-white/20 border border-white/30 text-white hover:bg-white/30 backdrop-blur',
+  };
+
   return (
     <button
       onClick={handleCopy}
       title={copied ? 'コピーしました' : 'リンクをコピー'}
-      className="p-2 rounded-full border border-[#30363d] text-[#8b949e] hover:border-violet-500/50 hover:text-violet-400 transition-all"
+      className={`${base} ${styles[variant]}`}
     >
-      {copied ? <Check size={14} className="text-green-400" /> : <Link2 size={14} />}
+      {copied
+        ? <><Check size={13} />コピー済み</>
+        : <><Link2 size={13} />シェア</>}
     </button>
   );
 }
