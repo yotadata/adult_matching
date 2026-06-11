@@ -28,6 +28,7 @@ interface VideoFromApi {
   score?: number | null;
   model_version?: string | null;
   params?: Record<string, unknown> | null;
+  image_urls?: string[] | null;
 }
 
 interface GuestDecision {
@@ -256,6 +257,8 @@ function SwipePage() {
           recommendationScore: typeof video.score === 'number' ? video.score : null,
           recommendationModelVersion: video.model_version ?? null,
           recommendationParams: video.params ?? null,
+          source: video.source ?? null,
+          image_urls: video.image_urls ?? null,
         };
       });
       setCards(fetchedCards);

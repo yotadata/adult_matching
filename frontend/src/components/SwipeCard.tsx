@@ -3,6 +3,7 @@
 import { motion, useAnimation, PanInfo } from 'framer-motion';
 import { forwardRef, useImperativeHandle, useState, useEffect, useRef } from 'react';
 import { Play, User, Tag, Calendar, Share2 } from 'lucide-react'; // アイコンをインポート
+import { resolveThumbnail } from '@/utils/thumbnail';
 
 // カードデータの型定義
 export interface CardData {
@@ -22,6 +23,8 @@ export interface CardData {
   recommendationScore?: number | null;
   recommendationModelVersion?: string | null;
   recommendationParams?: Record<string, unknown> | null;
+  source?: string | null;
+  image_urls?: string[] | null;
 }
 
 export interface SwipeCardHandle {
@@ -40,9 +43,15 @@ interface SwipeCardProps {
 
 const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwipe, onDrag, onDragEnd, cardWidth, canSwipe = true, onSamplePlay }, ref) => {
   const controls = useAnimation();
-  
+
   const [showVideo, setShowVideo] = useState(false);
   const [showOverlay, setShowOverlay] = useState(true);
+  const { primary: thumbPrimary, fallback: thumbFallback } = resolveThumbnail({
+    source: cardData.source,
+    thumbnail_url: cardData.thumbnail_url,
+    image_urls: cardData.image_urls,
+  });
+  const [thumbSrc, setThumbSrc] = useState(thumbPrimary ?? cardData.thumbnail_url);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const overlayHideTimer = useRef<number | null>(null);
   const overlayHideDelayMs = 700; // iframe読込後も少しサムネイルを維持
@@ -51,6 +60,8 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwi
   useEffect(() => {
     setShowVideo(false);
     setShowOverlay(true);
+    const { primary } = resolveThumbnail({ source: cardData.source, thumbnail_url: cardData.thumbnail_url, image_urls: cardData.image_urls });
+    setThumbSrc(primary ?? cardData.thumbnail_url);
     if (overlayHideTimer.current) {
       clearTimeout(overlayHideTimer.current);
       overlayHideTimer.current = null;
@@ -143,10 +154,15 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwi
       >
       {/* 上部: 動画エリア（PC版は4:3のアスペクト比） */}
       <div className="relative w-full aspect-[4/3] bg-black/90 flex items-center justify-center rounded-xl overflow-hidden">
+        {/* サムネ画像のフォールバック検出用 hidden img */}
+        {thumbFallback && thumbSrc === thumbPrimary && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={thumbPrimary ?? ''} alt="" className="hidden" onError={() => setThumbSrc(thumbFallback)} />
+        )}
         {showOverlay && (
           <div
             className="absolute inset-0 w-full h-full bg-contain bg-no-repeat bg-center flex items-center justify-center z-10"
-            style={{ backgroundImage: cardData.thumbnail_url ? `url(${cardData.thumbnail_url})` : undefined, backgroundColor: cardData.thumbnail_url ? undefined : '#1f2937' }}
+            style={{ backgroundImage: thumbSrc ? `url(${thumbSrc})` : undefined, backgroundColor: thumbSrc ? undefined : '#1f2937' }}
             onClick={() => {
               // iframe再生に統一。オーバーレイを即時非表示
               setShowOverlay(false);
