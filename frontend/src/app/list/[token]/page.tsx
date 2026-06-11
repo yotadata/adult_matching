@@ -25,6 +25,7 @@ type ListData = {
   list_id: string;
   user_id: string;
   display_name: string | null;
+  username: string | null;
   title: string | null;
   list_type: 'liked' | 'custom';
   videos: Video[];
@@ -125,15 +126,24 @@ export default async function PublicListPage(
 
         {/* ヘッダー */}
         <div className="mb-8 flex items-start justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-black text-[#e6edf3] mb-1">
-              {data.title ? (
-                data.title
-              ) : name ? (
-                <><span className="text-violet-400">{name}</span>のお気に入りリスト</>
-              ) : 'お気に入りリスト'}
+          <div className="space-y-1">
+            <h1 className="text-2xl font-black text-[#e6edf3]">
+              {data.title ?? (name ? `${name}のお気に入りリスト` : 'お気に入りリスト')}
             </h1>
-            <p className="text-sm text-[#656d76]">{data.videos.length}作品</p>
+            {/* 作者表示 — 常に表示してプロフィールへリンク */}
+            {name && (
+              data.username ? (
+                <Link
+                  href={`/u/${data.username}`}
+                  className="inline-flex items-center gap-1 text-sm text-violet-400 hover:text-violet-300 transition-colors"
+                >
+                  <span className="text-[#656d76]">by</span> {name}
+                </Link>
+              ) : (
+                <p className="text-sm text-[#656d76]">by <span className="text-violet-400">{name}</span></p>
+              )
+            )}
+            <p className="text-xs text-[#484f58]">{data.videos.length}作品</p>
           </div>
           <CopyLinkButton url={pageUrl} />
         </div>
