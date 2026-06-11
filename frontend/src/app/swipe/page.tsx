@@ -25,6 +25,7 @@ interface VideoFromApi {
   performers: { id: string; name: string }[];
   tags: { id: string; name: string }[];
   source?: string | null;
+  video_source?: string | null;
   score?: number | null;
   model_version?: string | null;
   params?: Record<string, unknown> | null;
@@ -257,7 +258,7 @@ function SwipePage() {
           recommendationScore: typeof video.score === 'number' ? video.score : null,
           recommendationModelVersion: video.model_version ?? null,
           recommendationParams: video.params ?? null,
-          source: video.source ?? null,
+          source: video.video_source ?? null,
           image_urls: video.image_urls ?? null,
         };
       });
