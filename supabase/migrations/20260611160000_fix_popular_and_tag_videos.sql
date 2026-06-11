@@ -67,6 +67,7 @@ BEGIN
 END;
 $$;
 
+DROP FUNCTION IF EXISTS public.get_videos_by_tags(uuid[], uuid[], int);
 CREATE OR REPLACE FUNCTION public.get_videos_by_tags(
   tag_ids uuid[],
   exclude_ids uuid[] DEFAULT '{}',
