@@ -437,7 +437,7 @@ export default function VideoListDrawer({
                       ))}
                     </div>
                   ) : (
-                    <div className="p-4 overflow-y-auto rounded-3xl grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
                       {videos.map((video) => (
                         <article
                           key={video.external_id}
