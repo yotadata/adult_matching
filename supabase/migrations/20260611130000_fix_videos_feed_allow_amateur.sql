@@ -1,6 +1,7 @@
 -- get_videos_feed: FANZA_AMATEUR は出演者情報がないため、
 -- EXISTS (video_performers) 条件を FANZA_AMATEUR に限り免除する
 
+DROP FUNCTION IF EXISTS public.get_videos_feed(int);
 CREATE OR REPLACE FUNCTION public.get_videos_feed(page_limit int DEFAULT 20)
 RETURNS TABLE(
   id uuid,

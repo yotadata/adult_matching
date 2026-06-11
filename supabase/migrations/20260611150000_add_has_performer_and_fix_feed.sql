@@ -8,6 +8,7 @@ CREATE INDEX IF NOT EXISTS videos_feed_eligible_idx
     AND source NOT IN ('FANZA_ANIME')
     AND (has_performer = true OR source = 'FANZA_AMATEUR');
 
+DROP FUNCTION IF EXISTS public.get_videos_feed(int);
 CREATE OR REPLACE FUNCTION public.get_videos_feed(page_limit int DEFAULT 20)
 RETURNS TABLE(
   id uuid, title text, description text, external_id text,
