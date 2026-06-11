@@ -9,7 +9,8 @@ RETURNS TABLE(
   id uuid, title text, description text, external_id text,
   thumbnail_url text, thumbnail_vertical_url text,
   sample_video_url text, product_url text, product_released_at timestamptz,
-  performers jsonb, tags jsonb, score double precision
+  performers jsonb, tags jsonb, score double precision,
+  source text, image_urls text[]
 )
 LANGUAGE plpgsql SECURITY DEFINER AS $$
 BEGIN
@@ -59,7 +60,9 @@ BEGIN
       LEFT JOIN public.tag_groups tg ON tg.id = t.tag_group_id
       WHERE vt.video_id = v.id AND coalesce(tg.show_in_ui, true)
     ), '[]'::jsonb),
-    (r.like_score + r.rank_score) AS score
+    (r.like_score + r.rank_score) AS score,
+    v.source,
+    v.image_urls
   FROM ranked r
   JOIN public.videos v ON v.id = r.id
   ORDER BY score DESC
@@ -77,7 +80,8 @@ RETURNS TABLE(
   id uuid, title text, external_id text,
   thumbnail_url text, thumbnail_vertical_url text,
   sample_video_url text, product_url text, product_released_at timestamptz,
-  performers jsonb, tags jsonb
+  performers jsonb, tags jsonb,
+  source text, image_urls text[]
 )
 LANGUAGE plpgsql SECURITY DEFINER AS $$
 BEGIN
@@ -95,7 +99,9 @@ BEGIN
       FROM public.video_tags vt JOIN public.tags t ON t.id = vt.tag_id
       LEFT JOIN public.tag_groups tg ON tg.id = t.tag_group_id
       WHERE vt.video_id = v.id AND coalesce(tg.show_in_ui, true)
-    ), '[]'::jsonb)
+    ), '[]'::jsonb),
+    v.source,
+    v.image_urls
   FROM public.videos v
   WHERE v.sample_video_url IS NOT NULL
     AND v.source NOT IN ('FANZA_ANIME')

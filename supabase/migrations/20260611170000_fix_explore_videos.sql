@@ -33,7 +33,8 @@ BEGIN
       FROM (
         SELECT vi.id, vi.title, vi.external_id,
           vi.thumbnail_url, vi.thumbnail_vertical_url,
-          vi.product_url, vi.distribution_code, vi.product_released_at
+          vi.product_url, vi.distribution_code, vi.product_released_at,
+          vi.source, vi.image_urls
         FROM public.videos vi
         WHERE vi.external_id IS NOT NULL
           AND vi.sample_video_url IS NOT NULL
@@ -51,7 +52,8 @@ BEGIN
       FROM (
         SELECT vi.id, vi.title, vi.external_id,
           vi.thumbnail_url, vi.thumbnail_vertical_url,
-          vi.product_url, vi.distribution_code, vi.product_released_at
+          vi.product_url, vi.distribution_code, vi.product_released_at,
+          vi.source, vi.image_urls
         FROM public.video_tags vt
         JOIN public.videos vi ON vi.id = vt.video_id
         LEFT JOIN public.fanza_rankings fr ON fr.video_id = vi.id

@@ -15,7 +15,8 @@ RETURNS TABLE(
   thumbnail_url text, thumbnail_vertical_url text,
   sample_video_url text, preview_video_url text,
   product_url text, product_released_at timestamptz,
-  performers jsonb, tags jsonb
+  performers jsonb, tags jsonb,
+  source text, image_urls text[]
 )
 LANGUAGE plpgsql SECURITY DEFINER AS $$
 BEGIN
@@ -36,7 +37,9 @@ BEGIN
       FROM public.video_tags vt JOIN public.tags t ON t.id = vt.tag_id
       LEFT JOIN public.tag_groups tg ON tg.id = t.tag_group_id
       WHERE vt.video_id = v.id AND coalesce(tg.show_in_ui, true)
-    ), '[]'::jsonb)
+    ), '[]'::jsonb),
+    v.source,
+    v.image_urls
   FROM public.videos v TABLESAMPLE SYSTEM(5)
   WHERE v.sample_video_url IS NOT NULL
     AND v.source NOT IN ('FANZA_ANIME')
