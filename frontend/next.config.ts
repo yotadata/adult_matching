@@ -3,7 +3,7 @@ import { withSentryConfig } from "@sentry/nextjs";
 
 const nextConfig: NextConfig = {
   images: {
-    domains: ['pics.dmm.co.jp'],
+    domains: ['pics.dmm.co.jp', 'awsimgsrc.dmm.co.jp'],
   },
   async redirects() {
     return [

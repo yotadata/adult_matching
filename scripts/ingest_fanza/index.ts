@@ -488,8 +488,8 @@ async function ingestSource(
       );
 
       const imageUrls: string[] | null = coalesce(
-        item.sampleImageURL?.sample_s?.image,
-        item.sampleImageURL?.sample_l?.image
+        item.sampleImageURL?.sample_l?.image,
+        item.sampleImageURL?.sample_s?.image
       );
       const horizontalThumbnail: string | null = coalesce(
         item.imageURL?.large,

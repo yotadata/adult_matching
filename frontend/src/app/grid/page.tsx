@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase';
 import { X, Play, Heart, Eye, ChevronDown, ChevronUp, Brain, Hand, Bot, Target, LockOpen, ExternalLink, Sparkles, Compass, type LucideIcon } from 'lucide-react';
 import { trackEvent } from '@/lib/analytics';
 import OnboardingModal from '@/components/OnboardingModal';
+import { resolveThumbnail } from '@/utils/thumbnail';
 
 type VideoItem = {
   id: string;
@@ -21,6 +22,7 @@ type VideoItem = {
   tags: { id: string; name: string }[];
   source: string;
   score: number | null;
+  image_urls?: string[] | null;
 };
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -31,6 +33,22 @@ const EMBED_USER_INTERVAL = 10; // N回いいねするたびにembed-userを呼�
 function toFanzaEmbedUrl(externalId: string | null): string {
   if (!externalId) return '';
   return `https://www.dmm.co.jp/litevideo/-/part/=/affi_id=${FANZA_AFFILIATE_ID}/cid=${externalId}/size=1280_720/`;
+}
+
+function GridImg({ video, className, onLoad }: { video: VideoItem; className?: string; onLoad?: () => void }) {
+  const { primary, fallback } = resolveThumbnail({ source: video.source, thumbnail_url: video.thumbnail_url, image_urls: video.image_urls });
+  const [src, setSrc] = useState(primary ?? (video.thumbnail_vertical_url?.replace('ps.jpg', 'pl.jpg')) ?? video.thumbnail_url ?? '');
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={src}
+      alt={video.title ?? ''}
+      className={className}
+      loading="lazy"
+      onLoad={onLoad}
+      onError={() => { if (fallback && src !== fallback) setSrc(fallback); }}
+    />
+  );
 }
 
 const SOURCE_BADGE_COLORS: Record<string, string> = {
@@ -437,12 +455,9 @@ function GridPage() {
           >
             {/* サムネイル */}
             <div className="w-full bg-black relative aspect-[7/10]">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={video.thumbnail_url ?? ''}
-                alt={video.title ?? ''}
+              <GridImg
+                video={video}
                 className="w-full h-full object-cover object-right"
-                loading="lazy"
                 onLoad={() => setLoadedIds((prev) => new Set([...prev, video.id]))}
               />
               {viewedIds.has(video.id) && !likedIds.has(video.id) && <div className="absolute inset-0 bg-black/60 pointer-events-none" />}
@@ -522,12 +537,9 @@ function GridPage() {
           >
             {/* サムネイル */}
             <div className="w-full bg-black relative group">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={(video.thumbnail_vertical_url?.replace('ps.jpg', 'pl.jpg')) || video.thumbnail_url || ''}
-                alt={video.title ?? ''}
+              <GridImg
+                video={video}
                 className="w-full object-cover"
-                loading="lazy"
                 onLoad={() => setLoadedIds((prev) => new Set([...prev, video.id]))}
               />
               {/* 既読オーバーレイ（いいね済みでない場合のみ） */}
@@ -649,8 +661,8 @@ function GridPage() {
                     <div
                       className="absolute inset-0 w-full h-full bg-contain bg-no-repeat bg-center flex items-center justify-center z-10 cursor-pointer"
                       style={{
-                        backgroundImage: selected.thumbnail_url ? `url(${selected.thumbnail_url})` : undefined,
-                        backgroundColor: selected.thumbnail_url ? undefined : '#1f2937',
+                        backgroundImage: (() => { const { primary } = resolveThumbnail({ source: selected.source, thumbnail_url: selected.thumbnail_url, image_urls: selected.image_urls }); return (primary ?? selected.thumbnail_url) ? `url(${primary ?? selected.thumbnail_url})` : undefined; })(),
+                        backgroundColor: (selected.thumbnail_url || selected.image_urls?.[0]) ? undefined : '#1f2937',
                       }}
                       onClick={() => setShowVideo(true)}
                     >
@@ -683,8 +695,8 @@ function GridPage() {
                 <div
                   className="absolute inset-0 w-full h-full bg-contain bg-no-repeat bg-center flex flex-col items-center justify-center gap-3"
                   style={{
-                    backgroundImage: selected.thumbnail_url ? `url(${selected.thumbnail_url})` : undefined,
-                    backgroundColor: selected.thumbnail_url ? undefined : '#1f2937',
+                    backgroundImage: (() => { const { primary } = resolveThumbnail({ source: selected.source, thumbnail_url: selected.thumbnail_url, image_urls: selected.image_urls }); return (primary ?? selected.thumbnail_url) ? `url(${primary ?? selected.thumbnail_url})` : undefined; })(),
+                    backgroundColor: (selected.thumbnail_url || selected.image_urls?.[0]) ? undefined : '#1f2937',
                   }}
                 >
                   <div className="absolute inset-0 bg-black/60" />

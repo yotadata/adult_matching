@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
 import { Search, Heart, Plus, Check, Loader2, X, ChevronDown, Sparkles, Compass, ExternalLink, Play, ArrowLeft } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
+import { resolveThumbnail } from '@/utils/thumbnail';
 
 type Video = {
   id: string;
@@ -13,6 +14,8 @@ type Video = {
   thumbnail_vertical_url: string | null;
   product_url: string | null;
   distribution_code: string | null;
+  source: string | null;
+  image_urls: string[] | null;
 };
 
 type Tag = { id: string; name: string; cnt?: number };
@@ -97,7 +100,13 @@ function VideoCard({ video, likedIds, onLike, lists, onClick, addToListId, added
   onAddToList?: (videoId: string) => void;
 }) {
   const [showMenu, setShowMenu] = useState(false);
-  const thumb = toLgThumb(video.thumbnail_url) ?? toLgThumb(video.thumbnail_vertical_url);
+  const { primary: thumbPrimary, fallback: thumbFallback } = resolveThumbnail({
+    source: video.source,
+    thumbnail_url: video.thumbnail_url,
+    image_urls: video.image_urls,
+  });
+  const thumb = thumbPrimary ?? toLgThumb(video.thumbnail_url) ?? toLgThumb(video.thumbnail_vertical_url);
+  const [thumbSrc, setThumbSrc] = useState(thumb);
   const liked = likedIds.has(video.id);
   const addedToList = addToListId ? (addedToListIds?.has(video.id) ?? false) : false;
 
@@ -107,9 +116,15 @@ function VideoCard({ video, likedIds, onLike, lists, onClick, addToListId, added
         className={`block rounded-lg overflow-hidden border transition-colors bg-[#161b22] cursor-pointer ${addedToList ? 'border-green-500/60' : 'border-[#21262d] group-hover:border-violet-500/40'}`}
         onClick={() => onClick(video)}
       >
-        {thumb ? (
+        {thumbSrc ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={thumb} alt={video.title ?? ''} className={`w-full h-auto ${addedToList ? 'opacity-60' : ''}`} loading="lazy" />
+          <img
+            src={thumbSrc}
+            alt={video.title ?? ''}
+            className={`w-full h-auto ${addedToList ? 'opacity-60' : ''}`}
+            loading="lazy"
+            onError={() => { if (thumbFallback && thumbSrc !== thumbFallback) setThumbSrc(thumbFallback); }}
+          />
         ) : (
           <div className="w-full aspect-[3/4] bg-[#21262d]" />
         )}
