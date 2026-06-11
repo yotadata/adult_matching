@@ -10,6 +10,9 @@ type UserListsData = {
   user_id: string;
   display_name: string;
   username: string;
+  avatar_url: string | null;
+  bio: string | null;
+  x_url: string | null;
   lists: ListItem[];
 };
 
@@ -58,12 +61,48 @@ export default async function UserListsPage(
           ← 性癖ラボへ戻る
         </Link>
 
-        {/* ヘッダー */}
-        <div className="mb-8">
-          <h1 className="text-2xl font-black text-[#e6edf3] mb-1">
-            <span className="text-violet-400">{data.display_name}</span>のリスト
-          </h1>
-          <p className="text-sm text-[#656d76]">{data.lists.length}件のリスト</p>
+        {/* ヘッダー（キュレータープロフィール） */}
+        <div className="mb-8 flex items-start gap-4">
+          {/* アバター */}
+          <div className="shrink-0">
+            {data.avatar_url ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={data.avatar_url}
+                alt={data.display_name}
+                className="w-16 h-16 rounded-full object-cover border-2 border-violet-500/40"
+              />
+            ) : (
+              <div className="w-16 h-16 rounded-full bg-violet-500/20 border-2 border-violet-500/30 flex items-center justify-center text-2xl font-black text-violet-400">
+                {data.display_name?.charAt(0) ?? '?'}
+              </div>
+            )}
+          </div>
+          <div className="min-w-0">
+            <h1 className="text-2xl font-black text-[#e6edf3] mb-0.5">
+              <span className="text-violet-400">{data.display_name}</span>
+            </h1>
+            <p className="text-xs text-[#484f58] mb-1">@{data.username}</p>
+            {data.bio && (
+              <p className="text-sm text-[#8b949e] leading-relaxed mb-2 whitespace-pre-wrap">{data.bio}</p>
+            )}
+            <div className="flex items-center gap-3 flex-wrap">
+              <p className="text-xs text-[#656d76]">{data.lists.length}件のリスト</p>
+              {data.x_url && (
+                <a
+                  href={data.x_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1 text-xs text-[#656d76] hover:text-[#8b949e] transition-colors"
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.73-8.835L1.254 2.25H8.08l4.258 5.63 5.906-5.63zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                  </svg>
+                  X（旧Twitter）
+                </a>
+              )}
+            </div>
+          </div>
         </div>
 
         {/* リスト一覧（編集モード対応クライアントコンポーネント） */}
