@@ -12,3 +12,18 @@ __pycache__/
 *.pyc
 scripts/**/node_modules/
 docker/env/ingest_dev.env
+
+# ローカル Docker override
+docker/compose.override.yml
+docker/compose.worktree.yml
+
+# Claude Code / AI ツール内部ディレクトリ
+.claire/
+.claude/worktrees/
+.codex/
+
+# テスト・一時ファイル
+frontend/public/iframe-test.html
+
+# ローカルダウンロードファイル（URLエンコードされたディレクトリ名）
+https___*/
