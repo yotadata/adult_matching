@@ -1,7 +1,7 @@
 'use client';
 
 import { Fragment, useEffect, useMemo, useState } from 'react';
-import { Edit3, Key, LogOut, Trash2, X } from 'lucide-react';
+import { Edit3, Key, LogOut, Trash2, X, User } from 'lucide-react';
 import { Dialog, Transition } from '@headlessui/react';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
@@ -15,35 +15,62 @@ const cards: Array<{ key: CardKey; title: string; icon: React.ComponentType<{ si
   { key: 'password', title: 'パスワードの変更', icon: Key, description: '現在のパスワードと新しいパスワードを入力して更新します。' },
 ];
 
+type CuratorProfile = {
+  bio: string;
+  x_url: string;
+  affiliate_fanza_id: string;
+  affiliate_fc2_id: string;
+  affiliate_mgs_id: string;
+};
+
 export default function AccountManagementPage() {
   const [activeModal, setActiveModal] = useState<CardKey | null>(null);
   const [displayName, setDisplayName] = useState('');
   const [passwords, setPasswords] = useState({ current: '', next: '', confirm: '' });
   const [loading, setLoading] = useState(false);
-  const [userProfile, setUserProfile] = useState<{ displayName: string; username: string } | null>(null);
+  const [userProfile, setUserProfile] = useState<{ displayName: string; username: string; userId: string } | null>(null);
+  const [curatorProfile, setCuratorProfile] = useState<CuratorProfile>({
+    bio: '', x_url: '', affiliate_fanza_id: '', affiliate_fc2_id: '', affiliate_mgs_id: '',
+  });
+  const [curatorSaving, setCuratorSaving] = useState(false);
   const pseudoDomain = useMemo(() => process.env.NEXT_PUBLIC_PSEUDO_EMAIL_DOMAIN || 'anon.seihekilab.com', []);
   const router = useRouter();
 
   useEffect(() => {
     const loadUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        setUserProfile(null);
-        return;
-      }
+      if (!user) { setUserProfile(null); return; }
+
+      const username = (() => {
+        const metaUsername = (user.user_metadata?.username as string) || '';
+        if (metaUsername) return metaUsername;
+        const email = user.email ?? '';
+        const suffix = `@${pseudoDomain}`;
+        if (email && email.endsWith(suffix)) return email.slice(0, -suffix.length);
+        return email || '';
+      })();
+
       setUserProfile({
         displayName: (user.user_metadata?.display_name as string) || user.user_metadata?.displayName || '',
-        username: (() => {
-          const metaUsername = (user.user_metadata?.username as string) || '';
-          if (metaUsername) return metaUsername;
-          const email = user.email ?? '';
-          const suffix = `@${pseudoDomain}`;
-          if (email && email.endsWith(suffix)) {
-            return email.slice(0, -suffix.length);
-          }
-          return email || '';
-        })(),
+        username,
+        userId: user.id,
       });
+
+      const { data: up } = await supabase
+        .from('user_profiles')
+        .select('bio, x_url, affiliate_fanza_id, affiliate_fc2_id, affiliate_mgs_id')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (up) {
+        setCuratorProfile({
+          bio: up.bio ?? '',
+          x_url: up.x_url ?? '',
+          affiliate_fanza_id: up.affiliate_fanza_id ?? '',
+          affiliate_fc2_id: up.affiliate_fc2_id ?? '',
+          affiliate_mgs_id: up.affiliate_mgs_id ?? '',
+        });
+      }
     };
     loadUser();
   }, [pseudoDomain]);
@@ -57,10 +84,7 @@ export default function AccountManagementPage() {
 
   const handleDisplayNameUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!displayName.trim()) {
-      toast.error('表示名を入力してください');
-      return;
-    }
+    if (!displayName.trim()) { toast.error('表示名を入力してください'); return; }
     setLoading(true);
     try {
       const { error } = await supabase.auth.updateUser({ data: { display_name: displayName.trim() } });
@@ -77,14 +101,8 @@ export default function AccountManagementPage() {
 
   const handlePasswordUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!passwords.next || passwords.next.length < 8) {
-      toast.error('パスワードは8文字以上で入力してください');
-      return;
-    }
-    if (passwords.next !== passwords.confirm) {
-      toast.error('確認用パスワードが一致しません');
-      return;
-    }
+    if (!passwords.next || passwords.next.length < 8) { toast.error('パスワードは8文字以上で入力してください'); return; }
+    if (passwords.next !== passwords.confirm) { toast.error('確認用パスワードが一致しません'); return; }
     setLoading(true);
     try {
       const { error } = await supabase.auth.updateUser({ password: passwords.next });
@@ -112,10 +130,28 @@ export default function AccountManagementPage() {
     }
   };
 
-  const handleOpenCard = (key: CardKey) => {
-    if (key === 'displayName') {
-      setDisplayName(userProfile?.displayName ?? '');
+  const handleCuratorProfileSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setCuratorSaving(true);
+    try {
+      const { error } = await supabase.rpc('upsert_user_profile', {
+        p_bio: curatorProfile.bio || null,
+        p_x_url: curatorProfile.x_url || null,
+        p_affiliate_fanza_id: curatorProfile.affiliate_fanza_id || null,
+        p_affiliate_fc2_id: curatorProfile.affiliate_fc2_id || null,
+        p_affiliate_mgs_id: curatorProfile.affiliate_mgs_id || null,
+      });
+      if (error) throw error;
+      toast.success('プロフィールを保存しました');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : '保存に失敗しました');
+    } finally {
+      setCuratorSaving(false);
     }
+  };
+
+  const handleOpenCard = (key: CardKey) => {
+    if (key === 'displayName') setDisplayName(userProfile?.displayName ?? '');
     setActiveModal(key);
   };
 
@@ -130,6 +166,7 @@ export default function AccountManagementPage() {
           </p>
         </header>
 
+        {/* 基本情報 */}
         <div className="rounded-2xl border border-white/60 bg-white/95 p-5 text-gray-900 shadow-lg">
           <h2 className="text-lg font-semibold">基本情報</h2>
           {userProfile ? (
@@ -142,6 +179,16 @@ export default function AccountManagementPage() {
                 <dt className="text-gray-500">表示名</dt>
                 <dd className="text-right break-words text-gray-900">{userProfile.displayName || '未設定'}</dd>
               </div>
+              {userProfile.username && (
+                <div className="flex items-start justify-between gap-3">
+                  <dt className="text-gray-500">公開プロフィール</dt>
+                  <dd>
+                    <Link href={`/u/${userProfile.username}`} className="text-violet-600 hover:underline text-xs">
+                      /u/{userProfile.username}
+                    </Link>
+                  </dd>
+                </div>
+              )}
               <p className="text-xs text-gray-500">
                 ユーザーIDは登録後に変更できません。表示名は下の編集カードからいつでも更新できます。
               </p>
@@ -150,6 +197,94 @@ export default function AccountManagementPage() {
             <p className="mt-4 text-sm text-gray-500">ユーザー情報を取得できませんでした。再読み込みしてください。</p>
           )}
         </div>
+
+        {/* キュレータープロフィール編集 */}
+        <div className="rounded-2xl border border-white/60 bg-white/95 p-5 text-gray-900 shadow-lg">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="w-8 h-8 rounded-full bg-violet-100 text-violet-600 flex items-center justify-center">
+              <User size={16} />
+            </div>
+            <h2 className="text-lg font-semibold">キュレータープロフィール</h2>
+          </div>
+          <p className="text-xs text-gray-500 mb-4">
+            公開プロフィールページに表示される情報です。リストにあなたの情報が表示されます。
+          </p>
+          <form onSubmit={handleCuratorProfileSave} className="space-y-4">
+            <div className="space-y-1">
+              <label className="text-sm font-semibold text-gray-700">自己紹介</label>
+              <textarea
+                value={curatorProfile.bio}
+                onChange={(e) => setCuratorProfile((p) => ({ ...p, bio: e.target.value }))}
+                rows={3}
+                maxLength={200}
+                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-violet-400 focus:outline-none resize-none"
+                placeholder="200文字以内で自己紹介を書いてください"
+              />
+              <p className="text-xs text-gray-400 text-right">{curatorProfile.bio.length}/200</p>
+            </div>
+            <div className="space-y-1">
+              <label className="text-sm font-semibold text-gray-700">X（旧Twitter）URL</label>
+              <input
+                type="url"
+                value={curatorProfile.x_url}
+                onChange={(e) => setCuratorProfile((p) => ({ ...p, x_url: e.target.value }))}
+                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-violet-400 focus:outline-none"
+                placeholder="https://x.com/yourname"
+              />
+            </div>
+
+            <div className="border-t border-gray-100 pt-4">
+              <p className="text-sm font-semibold text-gray-700 mb-1">アフィリエイトID設定</p>
+              <p className="text-xs text-gray-500 mb-3">
+                設定すると、あなたのリスト経由の購入であなたのアフィリエイトIDが適用されます。
+              </p>
+              <div className="space-y-3">
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-gray-600">FANZA アフィリエイトID</label>
+                  <input
+                    type="text"
+                    value={curatorProfile.affiliate_fanza_id}
+                    onChange={(e) => setCuratorProfile((p) => ({ ...p, affiliate_fanza_id: e.target.value }))}
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-violet-400 focus:outline-none"
+                    placeholder="例: yourname-001"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-gray-600">FC2 アフィリエイトID</label>
+                  <input
+                    type="text"
+                    value={curatorProfile.affiliate_fc2_id}
+                    onChange={(e) => setCuratorProfile((p) => ({ ...p, affiliate_fc2_id: e.target.value }))}
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-violet-400 focus:outline-none"
+                    placeholder="FC2アフィリエイトID"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-gray-600">MGS アフィリエイトID</label>
+                  <input
+                    type="text"
+                    value={curatorProfile.affiliate_mgs_id}
+                    onChange={(e) => setCuratorProfile((p) => ({ ...p, affiliate_mgs_id: e.target.value }))}
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-violet-400 focus:outline-none"
+                    placeholder="MGSアフィリエイトID"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end">
+              <button
+                type="submit"
+                disabled={curatorSaving}
+                className="px-5 py-2 rounded-lg bg-violet-600 text-white text-sm font-semibold hover:bg-violet-700 disabled:opacity-50 transition"
+              >
+                {curatorSaving ? '保存中...' : '保存する'}
+              </button>
+            </div>
+          </form>
+        </div>
+
+        {/* 表示名・パスワード変更カード */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {cards.map((card) => {
             const Icon = card.icon;
@@ -172,6 +307,7 @@ export default function AccountManagementPage() {
           })}
         </div>
 
+        {/* ログアウト・削除 */}
         <div className="rounded-xl border border-white/60 bg-white/95 p-5 space-y-4 text-gray-900 shadow-lg">
           <h2 className="text-lg font-semibold">その他のアクション</h2>
           <div className="space-y-3 text-sm text-gray-600">
@@ -241,16 +377,8 @@ const modalTitles: Record<CardKey, string> = {
 };
 
 function ActionModal({
-  active,
-  loading,
-  displayName,
-  setDisplayName,
-  passwords,
-  setPasswords,
-  onSubmitDisplayName,
-  onSubmitPassword,
-  onLogout,
-  onClose,
+  active, loading, displayName, setDisplayName, passwords, setPasswords,
+  onSubmitDisplayName, onSubmitPassword, onLogout, onClose,
 }: ActionModalProps) {
   if (!active) return null;
 
@@ -338,26 +466,17 @@ function ActionModal({
       <Dialog as="div" className="relative z-50" onClose={active === 'logout' ? () => {} : onClose}>
         <Transition.Child
           as={Fragment}
-          enter="ease-out duration-200"
-          enterFrom="opacity-0"
-          enterTo="opacity-100"
-          leave="ease-in duration-150"
-          leaveFrom="opacity-100"
-          leaveTo="opacity-0"
+          enter="ease-out duration-200" enterFrom="opacity-0" enterTo="opacity-100"
+          leave="ease-in duration-150" leaveFrom="opacity-100" leaveTo="opacity-0"
         >
           <div className="fixed inset-0 bg-black/40" />
         </Transition.Child>
-
         <div className="fixed inset-0 overflow-y-auto">
           <div className="flex min-h-full items-center justify-center p-4 text-center">
             <Transition.Child
               as={Fragment}
-              enter="ease-out duration-200"
-              enterFrom="opacity-0 scale-95"
-              enterTo="opacity-100 scale-100"
-              leave="ease-in duration-150"
-              leaveFrom="opacity-100 scale-100"
-              leaveTo="opacity-0 scale-95"
+              enter="ease-out duration-200" enterFrom="opacity-0 scale-95" enterTo="opacity-100 scale-100"
+              leave="ease-in duration-150" leaveFrom="opacity-100 scale-100" leaveTo="opacity-0 scale-95"
             >
               <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-xl">
                 <div className="flex items-start justify-between">

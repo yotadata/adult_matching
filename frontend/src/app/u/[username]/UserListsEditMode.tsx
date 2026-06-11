@@ -14,6 +14,8 @@ export type ListItem = {
   list_type: 'liked' | 'custom';
   created_at: string;
   video_count: number;
+  view_count: number;
+  like_count: number;
   thumbnails: string[] | null;
 };
 
@@ -176,7 +178,15 @@ export default function UserListsClient({ ownerUserId, username, displayName, in
                     {list.description && (
                       <p className="text-xs text-[#656d76] mt-0.5 line-clamp-2">{list.description}</p>
                     )}
-                    <p className="text-xs text-[#484f58] mt-1.5">{list.video_count.toLocaleString('ja-JP')}作品</p>
+                    <div className="flex items-center gap-3 mt-1.5">
+                      <span className="text-xs text-[#484f58]">{list.video_count.toLocaleString('ja-JP')}作品</span>
+                      {list.view_count > 0 && (
+                        <span className="text-xs text-[#484f58]">👁 {list.view_count.toLocaleString('ja-JP')}</span>
+                      )}
+                      {list.like_count > 0 && (
+                        <span className="text-xs text-[#484f58]">❤️ {list.like_count.toLocaleString('ja-JP')}</span>
+                      )}
+                    </div>
                   </div>
                 </Link>
 
