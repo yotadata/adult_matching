@@ -153,6 +153,8 @@ export default async function PublicListPage(
           ownerUserId={data.user_id}
           listId={data.list_id}
           listType={data.list_type}
+          listTitle={data.title}
+          token={token}
         />
 
         {/* 好きなジャンルランキング */}

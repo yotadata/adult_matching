@@ -1,10 +1,10 @@
 'use client';
 
-import { useEffect, useState, useCallback, useTransition } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Plus, Trash2, Loader2, Search } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
-import VideoSearchModal from '@/components/lists/VideoSearchModal';
 
 export type ListItem = {
   id: string;
@@ -39,10 +39,7 @@ export default function UserListsClient({ ownerUserId, username, displayName, in
   const [newDesc, setNewDesc] = useState('');
   const [creating, setCreating] = useState(false);
 
-  // 動画追加モーダル
-  const [searchTarget, setSearchTarget] = useState<ListItem | null>(null);
-
-  const [, startTransition] = useTransition();
+  const router = useRouter();
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
@@ -54,7 +51,7 @@ export default function UserListsClient({ ownerUserId, username, displayName, in
   const reloadLists = useCallback(async () => {
     const { data } = await supabase.rpc('get_user_public_lists', { p_username: username });
     if (data && !data.error) {
-      startTransition(() => setLists((data as { lists: ListItem[] }).lists ?? []));
+      setLists((data as { lists: ListItem[] }).lists ?? []);
     }
   }, [username]);
 
@@ -187,7 +184,10 @@ export default function UserListsClient({ ownerUserId, username, displayName, in
                 {isOwner && list.list_type === 'custom' && (
                   <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button
-                      onClick={() => setSearchTarget(list)}
+                      onClick={() => {
+                        const exploreUrl = `/explore?add_to_list=${list.id}&list_title=${encodeURIComponent(list.title ?? 'リスト')}&return_url=${encodeURIComponent(`/u/${username}`)}`;
+                        router.push(exploreUrl);
+                      }}
                       className="flex items-center gap-1 px-2 py-1 rounded-lg bg-violet-600/90 backdrop-blur text-white text-[10px] font-bold hover:bg-violet-500 transition-colors shadow"
                     >
                       <Search size={10} />
@@ -205,15 +205,6 @@ export default function UserListsClient({ ownerUserId, username, displayName, in
             );
           })}
         </div>
-      )}
-
-      {/* 動画追加モーダル */}
-      {searchTarget && (
-        <VideoSearchModal
-          listId={searchTarget.id}
-          onClose={() => setSearchTarget(null)}
-          onAdded={reloadLists}
-        />
       )}
     </>
   );

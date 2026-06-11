@@ -4,18 +4,18 @@ import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Search, Trash2, Loader2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
-import VideoSearchModal from '@/components/lists/VideoSearchModal';
 
 interface Props {
   ownerUserId: string;
   listId: string;
   listType: 'liked' | 'custom';
+  listTitle?: string | null;
+  token: string;
 }
 
-export default function ListEditMode({ ownerUserId, listId, listType }: Props) {
+export default function ListEditMode({ ownerUserId, listId, listType, listTitle, token }: Props) {
   const router = useRouter();
   const [isOwner, setIsOwner] = useState(false);
-  const [showSearch, setShowSearch] = useState(false);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
@@ -23,33 +23,21 @@ export default function ListEditMode({ ownerUserId, listId, listType }: Props) {
     });
   }, [ownerUserId]);
 
-  const handleAdded = useCallback(() => {
-    router.refresh();
-  }, [router]);
-
   if (!isOwner || listType !== 'custom') return null;
 
-  return (
-    <>
-      <div className="mb-6 flex items-center justify-between gap-3 px-4 py-2.5 rounded-xl border border-violet-500/40 bg-violet-500/10">
-        <span className="text-xs text-violet-300 font-semibold">編集モード</span>
-        <button
-          onClick={() => setShowSearch(true)}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold transition-colors"
-        >
-          <Search size={13} />
-          動画を追加
-        </button>
-      </div>
+  const exploreUrl = `/explore?add_to_list=${listId}&list_title=${encodeURIComponent(listTitle ?? 'リスト')}&return_url=${encodeURIComponent(`/list/${token}`)}`;
 
-      {showSearch && (
-        <VideoSearchModal
-          listId={listId}
-          onClose={() => setShowSearch(false)}
-          onAdded={handleAdded}
-        />
-      )}
-    </>
+  return (
+    <div className="mb-6 flex items-center justify-between gap-3 px-4 py-2.5 rounded-xl border border-violet-500/40 bg-violet-500/10">
+      <span className="text-xs text-violet-300 font-semibold">編集モード</span>
+      <button
+        onClick={() => router.push(exploreUrl)}
+        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold transition-colors"
+      >
+        <Search size={13} />
+        動画を追加
+      </button>
+    </div>
   );
 }
 
