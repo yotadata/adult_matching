@@ -32,6 +32,7 @@ CREATE INDEX IF NOT EXISTS video_embeddings_hnsw_cosine_idx
   WITH (m = 16, ef_construction = 64);
 
 -- 5. get_videos_recommendations: <-> (L2) → <=> (cosine) に変更して cosine HNSW を活用
+DROP FUNCTION IF EXISTS public.get_videos_recommendations(uuid, int);
 CREATE OR REPLACE FUNCTION public.get_videos_recommendations(user_uuid uuid, page_limit int DEFAULT 20)
 RETURNS TABLE (
   id uuid,
