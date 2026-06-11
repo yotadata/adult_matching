@@ -1,6 +1,6 @@
 import { Metadata } from 'next';
-import Image from 'next/image';
 import Link from 'next/link';
+import VideoThumbnail from '@/components/VideoThumbnail';
 import { notFound } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 
@@ -16,6 +16,8 @@ type TagVideo = {
   product_url: string | null;
   product_released_at: string | null;
   external_id: string;
+  source: string | null;
+  image_urls: string[] | null;
 };
 
 type Tag = { id: string; name: string };
@@ -33,7 +35,7 @@ async function getTag(id: string): Promise<Tag | null> {
 async function getTagVideos(id: string): Promise<{ videos: TagVideo[]; total: number }> {
   const { data, error, count } = await supabase
     .from('video_tags')
-    .select('videos(id, title, thumbnail_url, affiliate_url, product_url, product_released_at, external_id)', { count: 'exact' })
+    .select('videos(id, title, thumbnail_url, affiliate_url, product_url, product_released_at, external_id, source, image_urls)', { count: 'exact' })
     .eq('tag_id', id)
     .order('created_at', { referencedTable: 'videos', ascending: false })
     .limit(PAGE_SIZE);
@@ -151,19 +153,15 @@ export default async function TagPage(
                   className="relative w-full rounded-lg overflow-hidden bg-[#21262d]"
                   style={{ paddingBottom: '65%' }}
                 >
-                  {v.thumbnail_url ? (
-                    <Image
-                      src={v.thumbnail_url}
-                      alt={v.title}
-                      fill
-                      sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, 25vw"
-                      className="object-cover group-hover:scale-105 transition-transform duration-200"
-                    />
-                  ) : (
-                    <div className="absolute inset-0 flex items-center justify-center text-[#656d76] text-xs">
-                      No image
-                    </div>
-                  )}
+                  <VideoThumbnail
+                    source={v.source}
+                    thumbnailUrl={v.thumbnail_url}
+                    imageUrls={v.image_urls}
+                    alt={v.title}
+                    fill
+                    sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, 25vw"
+                    className="object-cover group-hover:scale-105 transition-transform duration-200"
+                  />
                 </div>
                 <p className="mt-1.5 text-xs text-[#8b949e] line-clamp-2 leading-snug group-hover:text-violet-400 transition-colors">
                   {v.title}
