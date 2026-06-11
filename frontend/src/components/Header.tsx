@@ -93,7 +93,7 @@ const Header = ({ cardWidth, mobileGauge }: { cardWidth: number | undefined; mob
         }
       } else {
         const { count } = await supabase
-          .from('user_book_decisions')
+          .from('user_video_decisions')
           .select('*', { count: 'exact', head: true })
           .eq('user_id', u.id);
         setDecisionCount(count || 0);
