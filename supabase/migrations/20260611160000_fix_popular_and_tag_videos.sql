@@ -1,5 +1,5 @@
 -- get_popular_videos, get_videos_by_tags: has_performer で高速化
-DROP FUNCTION IF EXISTS public.get_popular_videos(uuid, int, int);
+DROP FUNCTION IF EXISTS public.get_popular_videos(int, int, uuid);
 CREATE OR REPLACE FUNCTION public.get_popular_videos(
   limit_count int DEFAULT 20,
   lookback_days int DEFAULT 7,
