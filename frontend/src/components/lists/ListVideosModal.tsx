@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { X, Trash2, Loader2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { resolveThumbnail } from '@/utils/thumbnail';
 
 type ListVideo = {
   id: string;
@@ -10,6 +11,8 @@ type ListVideo = {
   title: string | null;
   thumbnail_url: string | null;
   distribution_code: string | null;
+  source: string | null;
+  image_urls: string[] | null;
 };
 
 interface ListVideosModalProps {
@@ -29,7 +32,7 @@ export default function ListVideosModal({ listId, listTitle, onClose, onChanged 
     setLoading(true);
     const { data, error } = await supabase
       .from('public_list_videos')
-      .select('id, video_id, videos(title, thumbnail_url, distribution_code)')
+      .select('id, video_id, videos(title, thumbnail_url, distribution_code, source, image_urls)')
       .eq('list_id', listId)
       .order('added_at', { ascending: false });
 
@@ -42,13 +45,15 @@ export default function ListVideosModal({ listId, listTitle, onClose, onChanged 
     const rows = ((data ?? []) as unknown as Array<{
       id: string;
       video_id: string;
-      videos: { title: string | null; thumbnail_url: string | null; distribution_code: string | null } | null;
+      videos: { title: string | null; thumbnail_url: string | null; distribution_code: string | null; source: string | null; image_urls: string[] | null } | null;
     }>).map((row) => ({
       id: row.id,
       video_id: row.video_id,
       title: row.videos?.title ?? null,
       thumbnail_url: row.videos?.thumbnail_url ?? null,
       distribution_code: row.videos?.distribution_code ?? null,
+      source: row.videos?.source ?? null,
+      image_urls: row.videos?.image_urls ?? null,
     }));
 
     setVideos(rows);
@@ -108,12 +113,12 @@ export default function ListVideosModal({ listId, listTitle, onClose, onChanged 
               className="flex items-center gap-3 px-4 py-2.5 border-b border-[#21262d] last:border-0"
             >
               <div className="w-12 h-16 shrink-0 rounded overflow-hidden bg-[#21262d]">
-                {video.thumbnail_url ? (
+                {(() => { const { primary } = resolveThumbnail({ source: video.source, thumbnail_url: video.thumbnail_url, image_urls: video.image_urls }); const thumb = primary ?? video.thumbnail_url; return thumb ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={video.thumbnail_url} alt="" className="w-full h-full object-cover" loading="lazy" />
+                  <img src={thumb} alt="" className="w-full h-full object-cover" loading="lazy" />
                 ) : (
                   <div className="w-full h-full" />
-                )}
+                ); })()}
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-xs text-[#e6edf3] line-clamp-2 leading-snug">{video.title}</p>
