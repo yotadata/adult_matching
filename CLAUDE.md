@@ -72,6 +72,38 @@ docker compose --env-file docker/env/dev.env -f docker/compose.yml up db-migrate
 bash scripts/<name>/run.sh
 ```
 
+## Supabase マイグレーション運用
+
+### リモートのみ適用されたマイグレーションの扱い
+
+Supabase ダッシュボードや MCP (`apply_migration`) でリモートに直接適用したマイグレーションは、ローカルの `supabase/migrations/` に存在しないため `db push` がエラーになる。**必ず以下の手順をセットで行う。**
+
+#### 毎回やること（リモート直接適用のたびに）
+
+1. **stub ファイルを作成する**
+
+```bash
+echo "-- Remote-only migration stub (applied directly to remote)" \
+  > supabase/migrations/<timestamp>_remote_only_stub.sql
+```
+
+2. **deploy ワークフローの repair リストに追加する**
+
+`.github/workflows/cicd-deploy-db.yml` の `Repair remote-only migrations` ステップにバージョン番号を追記する。
+
+```yaml
+for v in ... \
+         <timestamp>; do
+```
+
+3. **コミットに含める**
+
+stub ファイルと `cicd-deploy-db.yml` の変更を同じコミットに含める。
+
+#### なぜ必要か
+
+`supabase db push --include-all` は、リモートの migration 履歴テーブルにあってローカルに存在しないバージョンがあるとエラーになる。`repair --status reverted` でそのバージョンを「取り消し済み」として扱わせることで回避できる。stub ファイルはローカルの tracking 記録として残す。
+
 ## 禁止事項
 
 - `--no-verify` によるフックのスキップ。

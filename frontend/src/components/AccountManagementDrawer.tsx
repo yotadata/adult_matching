@@ -15,6 +15,7 @@ type PerformerItem = { id: string; name: string; cnt: number };
 
 const AccountManagementDrawer: React.FC<AccountManagementDrawerProps> = ({ isOpen, onClose }) => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [username, setUsername] = useState<string | null>(null);
   const [likeCount, setLikeCount] = useState<number | null>(null);
   const [totalCount, setTotalCount] = useState<number | null>(null);
   const [tags, setTags] = useState<TagItem[]>([]);
@@ -64,6 +65,7 @@ const AccountManagementDrawer: React.FC<AccountManagementDrawerProps> = ({ isOpe
       // 自分の公開トークンを取得（user_id フィルタ必須）
       supabase.auth.getUser().then(({ data: { user } }) => {
         if (!user) return;
+        setUsername((user.user_metadata?.username as string) ?? null);
         supabase.from('public_lists').select('token')
           .eq('user_id', user.id).eq('is_active', true).eq('list_type', 'liked').maybeSingle()
           .then(({ data }) => { if (data) setPublicToken(data.token); });
@@ -100,7 +102,7 @@ const AccountManagementDrawer: React.FC<AccountManagementDrawerProps> = ({ isOpe
 
   const handleDeletePublicList = async () => {
     if (!publicToken) return;
-    await supabase.from('public_lists').update({ is_active: false }).eq('token', publicToken);
+    await supabase.from('public_lists').delete().eq('token', publicToken);
     setPublicToken(null);
   };
 
@@ -220,71 +222,68 @@ const AccountManagementDrawer: React.FC<AccountManagementDrawerProps> = ({ isOpe
                         </>
                       )}
 
-                      {/* 公開リスト */}
-                      {isLoggedIn && (
-                        <>
-                          <div className="border-t border-white/10" />
-                          <section className="space-y-3">
-                            <p className="text-[11px] text-[#8b949e] font-semibold uppercase tracking-wider">公開リスト</p>
-                            <p className="text-xs text-[#656d76]">いいねリストを URL で公開・シェアできます。</p>
-                            {publicToken ? (
-                              <div className="space-y-2">
-                                <div className="flex items-center gap-2 p-2.5 rounded-lg bg-[#161b22] border border-[#30363d] text-xs text-[#8b949e] truncate">
-                                  <Link2 size={12} className="shrink-0" />
-                                  <span className="truncate">{typeof window !== 'undefined' ? window.location.host : 'seihekilab.com'}/list/{publicToken}</span>
-                                </div>
-                                <div className="flex gap-2">
-                                  <button
-                                    onClick={handleCopyLink}
-                                    className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold transition-colors"
-                                  >
-                                    {copied ? <><Check size={12} />コピー済み</> : <><Link2 size={12} />リンクをコピー</>}
-                                  </button>
-                                  <button
-                                    onClick={handleDeletePublicList}
-                                    className="px-3 py-2 rounded-lg bg-red-500/20 text-red-400 border border-red-500/30 text-xs font-bold hover:bg-red-500/30 transition-colors"
-                                  >
-                                    削除
-                                  </button>
-                                </div>
-                                <a
-                                  href={`/list/${publicToken}`}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg bg-[#161b22] border border-[#30363d] hover:border-violet-500/50 text-[#8b949e] hover:text-[#e6edf3] text-xs font-bold transition-all"
-                                >
-                                  <ExternalLink size={12} />
-                                  自分のリストを確認
-                                </a>
-                              </div>
-                            ) : (
-                              <button
-                                onClick={handleCreatePublicList}
-                                disabled={tokenLoading}
-                                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-[#161b22] border border-[#30363d] hover:border-violet-500/50 text-[#8b949e] hover:text-[#e6edf3] text-sm font-bold transition-all disabled:opacity-50"
-                              >
-                                {tokenLoading
-                                  ? <><Loader2 size={14} className="animate-spin" />作成中…</>
-                                  : <><Link2 size={14} />公開リンクを作成</>}
-                              </button>
-                            )}
-                          </section>
-                        </>
-                      )}
-
                       {/* マイリスト */}
                       {isLoggedIn && (
                         <>
                           <div className="border-t border-white/10" />
-                          <section className="space-y-2">
-                            <p className="text-[11px] text-[#8b949e] font-semibold uppercase tracking-wider mb-3">マイリスト</p>
-                            <a
-                              href="/my/lists"
-                              className="w-full flex items-center gap-2 py-2.5 px-4 rounded-xl bg-[#161b22] border border-[#30363d] hover:border-violet-500/50 text-[#8b949e] hover:text-[#e6edf3] text-sm font-bold transition-all"
-                            >
-                              <ListVideo size={14} />
-                              リストを管理する
-                            </a>
+                          <section className="space-y-3">
+                            <p className="text-[11px] text-[#8b949e] font-semibold uppercase tracking-wider">マイリスト</p>
+
+                            {/* マイページへ */}
+                            {username ? (
+                              <a
+                                href={`/u/${username}`}
+                                className="w-full flex items-center gap-2 py-2.5 px-4 rounded-xl bg-[#161b22] border border-[#30363d] hover:border-violet-500/50 text-[#8b949e] hover:text-[#e6edf3] text-sm font-bold transition-all"
+                              >
+                                <ListVideo size={14} />
+                                マイページを開く
+                              </a>
+                            ) : (
+                              <a
+                                href="/my/lists"
+                                className="w-full flex items-center gap-2 py-2.5 px-4 rounded-xl bg-[#161b22] border border-[#30363d] hover:border-violet-500/50 text-[#8b949e] hover:text-[#e6edf3] text-sm font-bold transition-all"
+                              >
+                                <ListVideo size={14} />
+                                マイリストを開く
+                              </a>
+                            )}
+
+                            {/* いいねリストのURL共有（サブ機能） */}
+                            <div>
+                              <p className="text-[10px] text-[#484f58] mb-2">いいねリストを URL で共有</p>
+                              {publicToken ? (
+                                <div className="space-y-1.5">
+                                  <div className="flex items-center gap-2 p-2 rounded-lg bg-[#161b22] border border-[#30363d] text-xs text-[#8b949e] truncate">
+                                    <Link2 size={11} className="shrink-0" />
+                                    <span className="truncate">{typeof window !== 'undefined' ? window.location.host : 'seihekilab.com'}/list/{publicToken}</span>
+                                  </div>
+                                  <div className="flex gap-2">
+                                    <button
+                                      onClick={handleCopyLink}
+                                      className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold transition-colors"
+                                    >
+                                      {copied ? <><Check size={11} />コピー済み</> : <><Link2 size={11} />URLをコピー</>}
+                                    </button>
+                                    <button
+                                      onClick={handleDeletePublicList}
+                                      className="px-3 py-1.5 rounded-lg bg-red-500/20 text-red-400 border border-red-500/30 text-xs font-bold hover:bg-red-500/30 transition-colors"
+                                    >
+                                      削除
+                                    </button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <button
+                                  onClick={handleCreatePublicList}
+                                  disabled={tokenLoading}
+                                  className="w-full flex items-center justify-center gap-2 py-2 rounded-lg bg-[#161b22] border border-[#30363d] hover:border-violet-500/50 text-[#8b949e] hover:text-[#e6edf3] text-xs font-bold transition-all disabled:opacity-50"
+                                >
+                                  {tokenLoading
+                                    ? <><Loader2 size={12} className="animate-spin" />作成中…</>
+                                    : <><Link2 size={12} />共有URLを作成</>}
+                                </button>
+                              )}
+                            </div>
                           </section>
                         </>
                       )}
