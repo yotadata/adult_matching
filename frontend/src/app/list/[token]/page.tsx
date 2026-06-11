@@ -125,28 +125,41 @@ export default async function PublicListPage(
         </Link>
 
         {/* ヘッダー */}
-        <div className="mb-8 flex items-start justify-between gap-4">
+        <div className="mb-6 flex items-start justify-between gap-4">
           <div className="space-y-1">
             <h1 className="text-2xl font-black text-[#e6edf3]">
               {data.title ?? (name ? `${name}のお気に入りリスト` : 'お気に入りリスト')}
             </h1>
-            {/* 作者表示 — 常に表示してプロフィールへリンク */}
             {name && (
-              data.username ? (
-                <Link
-                  href={`/u/${data.username}`}
-                  className="inline-flex items-center gap-1 text-sm text-violet-400 hover:text-violet-300 transition-colors"
-                >
-                  <span className="text-[#656d76]">by</span> {name}
-                </Link>
-              ) : (
-                <p className="text-sm text-[#656d76]">by <span className="text-violet-400">{name}</span></p>
-              )
+              <p className="text-sm text-[#656d76]">
+                by <span className="text-violet-400">{name}</span>
+              </p>
             )}
             <p className="text-xs text-[#484f58]">{data.videos.length}作品</p>
           </div>
           <CopyLinkButton url={pageUrl} />
         </div>
+
+        {/* 作者のリスト一覧へ */}
+        {data.username && (
+          <Link
+            href={`/u/${data.username}`}
+            className="flex items-center justify-between gap-3 mb-8 px-4 py-3 rounded-xl bg-[#161b22] border border-[#30363d] hover:border-violet-500/50 hover:bg-[#1c2128] transition-all group"
+          >
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="w-8 h-8 rounded-full bg-violet-500/20 border border-violet-500/30 flex items-center justify-center shrink-0 text-sm">
+                {name?.charAt(0) ?? '?'}
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs text-[#656d76]">作成者</p>
+                <p className="text-sm font-bold text-[#e6edf3] truncate">{name}</p>
+              </div>
+            </div>
+            <span className="text-xs text-[#656d76] group-hover:text-violet-400 transition-colors shrink-0">
+              他のリストを見る →
+            </span>
+          </Link>
+        )}
 
         {/* 編集モードバナー＋動画追加ボタン（オーナーのみ表示） */}
         <ListEditMode
