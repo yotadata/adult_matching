@@ -3,6 +3,8 @@ import { supabaseAdmin } from '@/lib/supabaseAdmin';
 
 // 24時間ごとに再生成
 export const revalidate = 86400;
+// ビルド時の静的生成をスキップ（DBアクセスによるタイムアウト防止）
+export const dynamic = 'force-dynamic';
 
 const SITE_URL = 'https://www.seihekilab.com';
 const PAGE_SIZE = 1000;

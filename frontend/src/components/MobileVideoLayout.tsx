@@ -16,7 +16,7 @@ interface MobileVideoLayoutProps {
 }
 
 const MobileVideoLayout: React.FC<MobileVideoLayoutProps> = ({ cardData, onSkip, onLike, onSamplePlay, skipButtonRef, likeButtonRef, likedListButtonRef }) => {
-  const { primary: thumbPrimary, fallback: thumbFallback } = resolveThumbnail({
+  const { primary: thumbPrimary } = resolveThumbnail({
     source: cardData.source,
     thumbnail_url: cardData.thumbnail_url,
     image_urls: cardData.image_urls,
