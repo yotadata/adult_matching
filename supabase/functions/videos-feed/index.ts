@@ -9,6 +9,8 @@ type VideoEntry = {
   thumbnail_url: string | null
   sample_video_url: string | null
   product_released_at: string | null
+  image_urls: string[] | null
+  video_source: string | null
   performers: unknown
   tags: unknown
   score: number | null
@@ -149,6 +151,8 @@ Deno.serve(async (req) => {
             thumbnail_url: (item.thumbnail_url ?? null) as string | null,
             sample_video_url: (item.sample_video_url ?? null) as string | null,
             product_released_at: (item.product_released_at ?? null) as string | null,
+            image_urls: Array.isArray(item.image_urls) ? item.image_urls as string[] : null,
+            video_source: (item.source ?? null) as string | null,
             performers: item.performers ?? [],
             tags: item.tags ?? [],
             score: typeof item.score === 'number' ? item.score : null,
@@ -192,6 +196,8 @@ Deno.serve(async (req) => {
                 thumbnail_url: (item.thumbnail_url ?? null) as string | null,
                 sample_video_url: (item.sample_video_url ?? null) as string | null,
                 product_released_at: (item.product_released_at ?? null) as string | null,
+                image_urls: Array.isArray(item.image_urls) ? item.image_urls as string[] : null,
+                video_source: (item.source ?? null) as string | null,
                 performers: (item.performers ?? []) as unknown,
                 tags: (item.tags ?? []) as unknown,
                 score: null,
@@ -237,6 +243,8 @@ Deno.serve(async (req) => {
             thumbnail_url: (item.thumbnail_url ?? null) as string | null,
             sample_video_url: (item.sample_video_url ?? null) as string | null,
             product_released_at: (item.product_released_at ?? null) as string | null,
+            image_urls: Array.isArray(item.image_urls) ? item.image_urls as string[] : null,
+            video_source: (item.source ?? null) as string | null,
             performers: item.performers ?? [],
             tags: item.tags ?? [],
             score: item?.score !== undefined ? Number(item.score) : null,
@@ -273,6 +281,8 @@ Deno.serve(async (req) => {
             thumbnail_url: (item.thumbnail_url ?? null) as string | null,
             sample_video_url: (item.sample_video_url ?? null) as string | null,
             product_released_at: (item.product_released_at ?? null) as string | null,
+            image_urls: Array.isArray(item.image_urls) ? item.image_urls as string[] : null,
+            video_source: (item.source ?? null) as string | null,
             performers: item.performers ?? [],
             tags: item.tags ?? [],
             score: item?.score !== undefined ? Number(item.score) : null,

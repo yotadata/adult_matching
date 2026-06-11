@@ -92,7 +92,7 @@ const LikedVideosDrawer: React.FC<LikedVideosDrawerProps> = ({ isOpen, onClose }
         setError(error.message);
         setVideos([]);
       } else {
-        setVideos(((data as VideoRecord[]) ?? []).map((row) => ({ ...row, source: row.source || 'personalized' })));
+        setVideos(((data as VideoRecord[]) ?? []).map((row) => ({ ...row })));
       }
       setLoading(false);
     };

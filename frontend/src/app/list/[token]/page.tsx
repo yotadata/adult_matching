@@ -4,6 +4,8 @@ import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import CopyLinkButton from './CopyLinkButton';
 import ListEditMode, { VideoDeleteButton } from './ListEditMode';
+import { resolveThumbnail } from '@/utils/thumbnail';
+
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://www.seihekilab.com';
 const AF_ID = process.env.NEXT_PUBLIC_FANZA_AFFILIATE_ID ?? 'yotadata2-001';
@@ -16,6 +18,8 @@ type Video = {
   thumbnail_vertical_url: string | null;
   product_url: string | null;
   liked_at: string;
+  source?: string | null;
+  image_urls?: string[] | null;
 };
 
 type TagStat = { tag_name: string; cnt: number };
@@ -219,7 +223,8 @@ export default async function PublicListPage(
           <div className="[column-count:2] sm:[column-count:3] [column-gap:12px]">
             {data.videos.map((video) => {
               const affiliateUrl = toAffiliateUrl(video.product_url);
-              const thumb = toLgThumb(video.thumbnail_url) ?? toLgThumb(video.thumbnail_vertical_url);
+              const { primary: resolvedThumb } = resolveThumbnail({ source: video.source, thumbnail_url: video.thumbnail_url, image_urls: video.image_urls });
+              const thumb = resolvedThumb ?? toLgThumb(video.thumbnail_url) ?? toLgThumb(video.thumbnail_vertical_url);
               return (
                 <div key={video.id} className="group relative mb-3 break-inside-avoid">
                   <a

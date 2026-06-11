@@ -3,6 +3,7 @@
 import { CardData } from '@/components/SwipeCard';
 import { useEffect, useRef, useState, RefObject } from 'react';
 import { Play, Calendar, User, Tag, ChevronsLeft, Heart, List, Share2 } from 'lucide-react';
+import { resolveThumbnail } from '@/utils/thumbnail';
 
 interface MobileVideoLayoutProps {
   cardData: CardData;
@@ -15,6 +16,12 @@ interface MobileVideoLayoutProps {
 }
 
 const MobileVideoLayout: React.FC<MobileVideoLayoutProps> = ({ cardData, onSkip, onLike, onSamplePlay, skipButtonRef, likeButtonRef, likedListButtonRef }) => {
+  const { primary: thumbPrimary, fallback: thumbFallback } = resolveThumbnail({
+    source: cardData.source,
+    thumbnail_url: cardData.thumbnail_url,
+    image_urls: cardData.image_urls,
+  });
+  const [thumbSrc, setThumbSrc] = useState(thumbPrimary ?? cardData.thumbnail_url);
   const [showVideo, setShowVideo] = useState(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [showOverlay, setShowOverlay] = useState(true);
@@ -25,11 +32,12 @@ const MobileVideoLayout: React.FC<MobileVideoLayoutProps> = ({ cardData, onSkip,
   useEffect(() => {
     setShowOverlay(true);
     setShowVideo(false);
+    setThumbSrc(thumbPrimary ?? cardData.thumbnail_url);
     if (overlayHideTimer.current) {
       clearTimeout(overlayHideTimer.current);
       overlayHideTimer.current = null;
     }
-  }, [cardData?.id]);
+  }, [cardData?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   
 
@@ -77,7 +85,7 @@ const MobileVideoLayout: React.FC<MobileVideoLayoutProps> = ({ cardData, onSkip,
           {showOverlay && (
             <div
               className="absolute inset-0 w-full h-full bg-contain bg-no-repeat bg-center flex items-center justify-center z-10"
-              style={{ backgroundImage: cardData.thumbnail_url ? `url(${cardData.thumbnail_url})` : undefined, backgroundColor: cardData.thumbnail_url ? undefined : '#1f2937' }}
+              style={{ backgroundImage: thumbSrc ? `url(${thumbSrc})` : undefined, backgroundColor: thumbSrc ? undefined : '#1f2937' }}
               onClick={() => {
                 // iframe再生に統一。オーバーレイを即時非表示
                 setShowOverlay(false);

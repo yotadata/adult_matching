@@ -21,6 +21,7 @@ type VideoItem = {
   performers: { id: string; name: string }[];
   tags: { id: string; name: string }[];
   source: string;
+  video_source?: string | null;
   score: number | null;
   image_urls?: string[] | null;
 };
@@ -36,7 +37,7 @@ function toFanzaEmbedUrl(externalId: string | null): string {
 }
 
 function GridImg({ video, className, onLoad }: { video: VideoItem; className?: string; onLoad?: () => void }) {
-  const { primary, fallback } = resolveThumbnail({ source: video.source, thumbnail_url: video.thumbnail_url, image_urls: video.image_urls });
+  const { primary, fallback } = resolveThumbnail({ source: video.video_source, thumbnail_url: video.thumbnail_url, image_urls: video.image_urls });
   const [src, setSrc] = useState(primary ?? (video.thumbnail_vertical_url?.replace('ps.jpg', 'pl.jpg')) ?? video.thumbnail_url ?? '');
   return (
     // eslint-disable-next-line @next/next/no-img-element
@@ -661,7 +662,7 @@ function GridPage() {
                     <div
                       className="absolute inset-0 w-full h-full bg-contain bg-no-repeat bg-center flex items-center justify-center z-10 cursor-pointer"
                       style={{
-                        backgroundImage: (() => { const { primary } = resolveThumbnail({ source: selected.source, thumbnail_url: selected.thumbnail_url, image_urls: selected.image_urls }); return (primary ?? selected.thumbnail_url) ? `url(${primary ?? selected.thumbnail_url})` : undefined; })(),
+                        backgroundImage: (() => { const { primary } = resolveThumbnail({ source: selected.video_source, thumbnail_url: selected.thumbnail_url, image_urls: selected.image_urls }); return (primary ?? selected.thumbnail_url) ? `url(${primary ?? selected.thumbnail_url})` : undefined; })(),
                         backgroundColor: (selected.thumbnail_url || selected.image_urls?.[0]) ? undefined : '#1f2937',
                       }}
                       onClick={() => setShowVideo(true)}
@@ -695,7 +696,7 @@ function GridPage() {
                 <div
                   className="absolute inset-0 w-full h-full bg-contain bg-no-repeat bg-center flex flex-col items-center justify-center gap-3"
                   style={{
-                    backgroundImage: (() => { const { primary } = resolveThumbnail({ source: selected.source, thumbnail_url: selected.thumbnail_url, image_urls: selected.image_urls }); return (primary ?? selected.thumbnail_url) ? `url(${primary ?? selected.thumbnail_url})` : undefined; })(),
+                    backgroundImage: (() => { const { primary } = resolveThumbnail({ source: selected.video_source, thumbnail_url: selected.thumbnail_url, image_urls: selected.image_urls }); return (primary ?? selected.thumbnail_url) ? `url(${primary ?? selected.thumbnail_url})` : undefined; })(),
                     backgroundColor: (selected.thumbnail_url || selected.image_urls?.[0]) ? undefined : '#1f2937',
                   }}
                 >

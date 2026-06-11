@@ -189,6 +189,8 @@ function VideoModal({ video, likedIds, onLike, onClose }: {
   const liked = likedIds.has(video.id);
   const OVERLAY_HIDE_DELAY_MS = 700;
   const overlayHideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const { primary: modalThumbPrimary } = resolveThumbnail({ source: video.source, thumbnail_url: video.thumbnail_url, image_urls: video.image_urls });
+  const modalThumb = modalThumbPrimary ?? video.thumbnail_url;
 
   return (
     <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4" onClick={onClose}>
@@ -200,7 +202,7 @@ function VideoModal({ video, likedIds, onLike, onClose }: {
           {!showVideo && (
             <div
               className="absolute inset-0 w-full h-full bg-contain bg-no-repeat bg-center flex items-center justify-center z-10 cursor-pointer"
-              style={{ backgroundImage: video.thumbnail_url ? `url(${video.thumbnail_url})` : undefined, backgroundColor: video.thumbnail_url ? undefined : '#1f2937' }}
+              style={{ backgroundImage: modalThumb ? `url(${modalThumb})` : undefined, backgroundColor: modalThumb ? undefined : '#1f2937' }}
               onClick={() => setShowVideo(true)}
             >
               <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center">
