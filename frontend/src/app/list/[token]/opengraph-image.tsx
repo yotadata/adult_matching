@@ -41,19 +41,26 @@ export default async function Image({ params }: { params: { token: string } }) {
   const list = data as ListData;
   const displayName = list.display_name ?? '';
   const title = list.title ?? (displayName ? `${displayName}のお気に入りリスト` : 'お気に入りリスト');
-  const thumbs = (list.videos ?? [])
+  // 代表サムネイル3枚（均等引き伸ばし）
+  const allThumbs = (list.videos ?? [])
     .map((v) => v.thumbnail_url)
-    .filter(Boolean)
-    .slice(0, 5) as string[];
+    .filter(Boolean) as string[];
+  // 3枚選ぶ：先頭・中間・末尾から1枚ずつ
+  const thumbs: string[] = [];
+  if (allThumbs.length >= 3) {
+    thumbs.push(allThumbs[0]);
+    thumbs.push(allThumbs[Math.floor(allThumbs.length / 2)]);
+    thumbs.push(allThumbs[allThumbs.length - 1]);
+  } else {
+    thumbs.push(...allThumbs);
+  }
 
   const videoCount = (list.videos ?? []).length;
   const viewCount = list.view_count ?? 0;
   const likeCount = list.like_count ?? 0;
 
-  // サムネイルを均等割りで横並び（足りない分は最後の画像で埋める）
   const cols = Math.max(thumbs.length, 1);
   const colWidth = Math.floor(1200 / cols);
-  // 均等割りで残り px を最後のカラムに割り当て
   const lastColWidth = 1200 - colWidth * (cols - 1);
 
   return new ImageResponse(
