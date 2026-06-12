@@ -115,12 +115,14 @@ export async function generateMetadata(
     : `${data.videos.length}作品のいいねリスト。`;
 
   const listTitle = data.title ?? `${name}のお気に入りリスト`;
+  // OGタイトル: {リスト名} | {キュレーター名}
+  const ogTitle = name ? `${listTitle} | ${name}` : `${listTitle} | 性癖ラボ`;
 
   return {
     title: `${listTitle} | 性癖ラボ`,
     description,
     openGraph: {
-      title: `${listTitle} | 性癖ラボ`,
+      title: ogTitle,
       description,
       url: `${SITE_URL}/list/${token}`,
       siteName: '性癖ラボ',
@@ -128,7 +130,7 @@ export async function generateMetadata(
     },
     twitter: {
       card: 'summary_large_image',
-      title: `${listTitle} | 性癖ラボ`,
+      title: ogTitle,
       description,
     },
     robots: { index: true, follow: true },

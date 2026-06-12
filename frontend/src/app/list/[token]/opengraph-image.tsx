@@ -22,12 +22,11 @@ export default async function Image({ params }: { params: { token: string } }) {
   const { data } = await supabase.rpc('get_public_list_data', { p_token: params.token });
 
   if (!data || data.error === 'not_found') {
-    // フォールバック: シンプルなデフォルト画像
     return new ImageResponse(
       (
         <div style={{
           width: '1200px', height: '630px',
-          background: 'linear-gradient(135deg, #0d1117 0%, #161b22 100%)',
+          background: '#0d1117',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}>
           <span style={{ color: '#656d76', fontSize: '32px', fontFamily: 'sans-serif' }}>
@@ -40,19 +39,29 @@ export default async function Image({ params }: { params: { token: string } }) {
   }
 
   const list = data as ListData;
-  const title = list.title ?? (list.display_name ? `${list.display_name}のお気に入りリスト` : 'お気に入りリスト');
-  const thumbs = (list.videos ?? [])
+  const displayName = list.display_name ?? '';
+  const title = list.title ?? (displayName ? `${displayName}のお気に入りリスト` : 'お気に入りリスト');
+  // 代表サムネイル3枚（均等引き伸ばし）
+  const allThumbs = (list.videos ?? [])
     .map((v) => v.thumbnail_url)
-    .filter(Boolean)
-    .slice(0, 5) as string[];
+    .filter(Boolean) as string[];
+  // 3枚選ぶ：先頭・中間・末尾から1枚ずつ
+  const thumbs: string[] = [];
+  if (allThumbs.length >= 3) {
+    thumbs.push(allThumbs[0]);
+    thumbs.push(allThumbs[Math.floor(allThumbs.length / 2)]);
+    thumbs.push(allThumbs[allThumbs.length - 1]);
+  } else {
+    thumbs.push(...allThumbs);
+  }
 
   const videoCount = (list.videos ?? []).length;
   const viewCount = list.view_count ?? 0;
   const likeCount = list.like_count ?? 0;
 
-  // サムネイルを1〜5枚の横並びコラージュとして表示
-  const thumbCount = thumbs.length;
-  const thumbWidth = thumbCount > 0 ? Math.floor(840 / thumbCount) : 840;
+  const cols = Math.max(thumbs.length, 1);
+  const colWidth = Math.floor(1200 / cols);
+  const lastColWidth = 1200 - colWidth * (cols - 1);
 
   return new ImageResponse(
     (
@@ -65,102 +74,91 @@ export default async function Image({ params }: { params: { token: string } }) {
         fontFamily: 'sans-serif',
         overflow: 'hidden',
       }}>
-        {/* サムネイルエリア（上部 約70%） */}
+        {/* サムネイルエリア */}
         <div style={{
           display: 'flex',
           width: '1200px',
-          height: '440px',
+          height: '450px',
           overflow: 'hidden',
           position: 'relative',
         }}>
-          {thumbCount > 0 ? (
-            thumbs.map((url, i) => (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                key={i}
-                src={url}
-                width={thumbWidth}
-                height={440}
-                style={{
-                  objectFit: 'cover',
-                  flexShrink: 0,
-                  borderRight: i < thumbCount - 1 ? '2px solid #0d1117' : 'none',
-                }}
-                alt=""
-              />
-            ))
+          {thumbs.length > 0 ? (
+            thumbs.map((url, i) => {
+              const w = i === thumbs.length - 1 ? lastColWidth : colWidth;
+              return (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  key={i}
+                  src={url}
+                  width={w}
+                  height={450}
+                  style={{
+                    objectFit: 'cover',
+                    flexShrink: 0,
+                    borderRight: i < thumbs.length - 1 ? '2px solid #0d1117' : 'none',
+                  }}
+                  alt=""
+                />
+              );
+            })
           ) : (
             <div style={{
-              width: '1200px',
-              height: '440px',
-              background: 'linear-gradient(135deg, #161b22 0%, #21262d 100%)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
+              width: '1200px', height: '450px',
+              background: '#161b22',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}>
               <span style={{ color: '#484f58', fontSize: '24px' }}>No Image</span>
             </div>
           )}
-          {/* グラデーションオーバーレイ（下部フェード） */}
+          {/* 下部グラデーションオーバーレイ */}
           <div style={{
-            position: 'absolute',
-            bottom: 0,
-            left: 0,
-            right: 0,
-            height: '160px',
+            position: 'absolute', bottom: 0, left: 0, right: 0, height: '200px',
             background: 'linear-gradient(to bottom, transparent, #0d1117)',
             display: 'flex',
           }} />
         </div>
 
-        {/* 情報エリア（下部） */}
+        {/* 情報エリア */}
         <div style={{
           display: 'flex',
           flexDirection: 'column',
-          padding: '0 48px 32px',
-          gap: '12px',
-          marginTop: '-40px',
+          padding: '0 48px 28px',
+          gap: '10px',
+          marginTop: '-60px',
           position: 'relative',
           zIndex: 1,
         }}>
           {/* タイトル */}
           <div style={{
             color: '#e6edf3',
-            fontSize: '40px',
+            fontSize: '42px',
             fontWeight: 900,
             lineHeight: 1.2,
             display: 'flex',
-            maxWidth: '1100px',
           }}>
-            {title.length > 30 ? `${title.slice(0, 30)}…` : title}
+            {title.length > 28 ? `${title.slice(0, 28)}…` : title}
           </div>
 
-          {/* 統計 */}
-          <div style={{
-            display: 'flex',
-            gap: '24px',
-            alignItems: 'center',
-          }}>
-            <span style={{ color: '#8b949e', fontSize: '22px' }}>
+          {/* 統計 + ユーザー名 */}
+          <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
+            <span style={{ color: '#8b949e', fontSize: '20px' }}>
               {videoCount.toLocaleString()}作品
             </span>
             {viewCount > 0 && (
-              <span style={{ color: '#8b949e', fontSize: '22px' }}>
+              <span style={{ color: '#8b949e', fontSize: '20px' }}>
                 👁 {viewCount.toLocaleString()}
               </span>
             )}
             {likeCount > 0 && (
-              <span style={{ color: '#8b949e', fontSize: '22px' }}>
+              <span style={{ color: '#8b949e', fontSize: '20px' }}>
                 ❤️ {likeCount.toLocaleString()}
               </span>
             )}
-            <span style={{
-              marginLeft: 'auto',
-              color: '#484f58',
-              fontSize: '18px',
-            }}>
-              seihekilab.com
-            </span>
+            {displayName && (
+              <span style={{ marginLeft: 'auto', color: '#656d76', fontSize: '18px' }}>
+                by {displayName}
+              </span>
+            )}
           </div>
         </div>
       </div>
