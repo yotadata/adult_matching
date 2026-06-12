@@ -8,7 +8,7 @@ import useWindowSize from "@/hooks/useWindowSize";
 import MobileVideoLayout from "@/components/MobileVideoLayout";
 import { supabase } from "@/lib/supabase";
 import { trackEvent, generateSessionId } from "@/lib/analytics";
-import { resolveEmbedUrl } from "@/lib/videoMeta";
+import { resolveEmbedUrl, isVrContent } from "@/lib/videoMeta";
 import { ChevronsLeft, Heart, List } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useDecisionCount } from "@/hooks/useDecisionCount";
@@ -266,6 +266,8 @@ function SwipePage() {
           recommendationParams: video.params ?? null,
           source: video.video_source ?? null,
           image_urls: video.image_urls ?? null,
+          isVr: isVrContent(video.tags as { name: string }[]),
+          externalId: video.external_id ?? null,
         };
       });
       setCards(fetchedCards);

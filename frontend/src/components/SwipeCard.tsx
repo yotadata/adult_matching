@@ -2,8 +2,9 @@
 
 import { motion, useAnimation, PanInfo } from 'framer-motion';
 import { forwardRef, useImperativeHandle, useState, useEffect, useRef } from 'react';
-import { Play, User, Tag, Calendar, Share2 } from 'lucide-react'; // アイコンをインポート
+import { Play, User, Tag, Calendar, Share2, ExternalLink } from 'lucide-react'; // アイコンをインポート
 import { resolveThumbnail } from '@/utils/thumbnail';
+import { resolveFanzaVrUrl } from '@/lib/videoMeta';
 
 // カードデータの型定義
 export interface CardData {
@@ -26,6 +27,8 @@ export interface CardData {
   recommendationParams?: Record<string, unknown> | null;
   source?: string | null;
   image_urls?: string[] | null;
+  isVr?: boolean;
+  externalId?: string | null;
 }
 
 export interface SwipeCardHandle {
@@ -161,22 +164,39 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwi
           <img src={thumbPrimary ?? ''} alt="" className="hidden" onError={() => setThumbSrc(thumbFallback)} />
         )}
         {showOverlay && (
-          <div
-            className="absolute inset-0 w-full h-full bg-contain bg-no-repeat bg-center flex items-center justify-center z-10"
-            style={{ backgroundImage: thumbSrc ? `url(${thumbSrc})` : undefined, backgroundColor: thumbSrc ? undefined : '#1f2937' }}
-            onClick={() => {
-              // iframe再生に統一。オーバーレイを即時非表示
-              setShowOverlay(false);
-              onSamplePlay?.(cardData);
-            }}
-          >
-            <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center">
-              <Play className="text-white w-16 h-16 opacity-80" fill="white" />
+          cardData.isVr ? (
+            // VR動画: FANZAのVRプレイヤーページを別タブで開く
+            <a
+              href={resolveFanzaVrUrl({ productUrl: cardData.productUrl, externalId: cardData.externalId })}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="absolute inset-0 w-full h-full bg-contain bg-no-repeat bg-center flex items-center justify-center z-10"
+              style={{ backgroundImage: thumbSrc ? `url(${thumbSrc})` : undefined, backgroundColor: thumbSrc ? undefined : '#1f2937' }}
+              onClick={() => onSamplePlay?.(cardData)}
+            >
+              <div className="absolute inset-0 bg-black bg-opacity-40 flex flex-col items-center justify-center gap-2">
+                <ExternalLink className="text-white w-12 h-12 opacity-80" />
+                <span className="text-white text-xs font-medium bg-black/50 px-3 py-1 rounded-full">FANZAでサンプルを見る</span>
+              </div>
+            </a>
+          ) : (
+            <div
+              className="absolute inset-0 w-full h-full bg-contain bg-no-repeat bg-center flex items-center justify-center z-10"
+              style={{ backgroundImage: thumbSrc ? `url(${thumbSrc})` : undefined, backgroundColor: thumbSrc ? undefined : '#1f2937' }}
+              onClick={() => {
+                // iframe再生に統一。オーバーレイを即時非表示
+                setShowOverlay(false);
+                onSamplePlay?.(cardData);
+              }}
+            >
+              <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center">
+                <Play className="text-white w-16 h-16 opacity-80" fill="white" />
+              </div>
+              <div className="absolute bottom-2 left-1/2 -translate-x-1/2 text-[10px] sm:text-xs text-white/80 bg-black/40 px-2 py-0.5 rounded">
+                注: 再生には最大2回のクリックが必要な場合があります
+              </div>
             </div>
-            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 text-[10px] sm:text-xs text-white/80 bg-black/40 px-2 py-0.5 rounded">
-              注: 再生には最大2回のクリックが必要な場合があります
-            </div>
-          </div>
+          )
         )}
         {/* プレイヤー: MGS=MP4直接再生 / FANZA=iframeプレイヤー */}
         {cardData.embedType === 'mp4' ? (

@@ -50,6 +50,23 @@ export function resolveEmbedUrl({
   };
 }
 
+const VR_TAG_NAMES = ['VR', 'VR対応', 'VR専用', 'ハイクオリティVR', '8KVR'];
+
+export const isVrContent = (tags?: { name: string }[] | null): boolean =>
+  tags?.some((t) => VR_TAG_NAMES.includes(t.name)) ?? false;
+
+export const resolveFanzaVrUrl = ({
+  productUrl,
+  externalId,
+}: {
+  productUrl?: string | null;
+  externalId?: string | null;
+}): string => {
+  if (productUrl) return productUrl;
+  if (externalId) return `https://video.dmm.co.jp/av/content/?id=${externalId}`;
+  return '';
+};
+
 export const isUpcomingRelease = (value?: string | null): boolean => {
   if (!value) return false;
   const releaseDate = new Date(value);
