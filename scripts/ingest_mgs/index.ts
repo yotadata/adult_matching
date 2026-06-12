@@ -204,18 +204,33 @@ async function ensurePerformerId(name: string): Promise<string | null> {
     return existing.id;
   }
 
-  const { data: upserted, error } = await supabase
+  // insert して重複なら再取得
+  const { data: inserted, error: insertError } = await supabase
     .from('performers')
-    .upsert([{ name: normalized }], { onConflict: 'name' })
+    .insert([{ name: normalized }])
     .select('id')
     .single();
 
-  if (error || !upserted) {
-    console.error('[ingest_mgs] performer upsert failed:', error);
-    return null;
+  if (!insertError && inserted) {
+    performerNameCache.set(normalized, inserted.id);
+    return inserted.id;
   }
-  performerNameCache.set(normalized, upserted.id);
-  return upserted.id;
+
+  // 重複エラーなら再検索
+  if (isDuplicateError(insertError)) {
+    const { data: retry } = await supabase
+      .from('performers')
+      .select('id')
+      .eq('name', normalized)
+      .maybeSingle();
+    if (retry) {
+      performerNameCache.set(normalized, retry.id);
+      return retry.id;
+    }
+  }
+
+  console.error('[ingest_mgs] performer insert failed:', insertError);
+  return null;
 }
 
 async function videoExists(externalId: string): Promise<boolean> {
@@ -416,29 +431,32 @@ async function fetchProductDetail(productId: string): Promise<PreparedVideoData 
     if (src && src.includes('image.mgstage.com')) imageUrls.push(src);
   });
 
-  // 詳細テーブルのパース
+  // 詳細テーブルのパース（th末尾の「：」を除去して正規化）
   const meta: Record<string, string> = {};
   $('div.detail_data table tr, div.info table tr').each((_, tr) => {
-    const th = $(tr).find('th').first().text().trim();
+    const th = $(tr).find('th').first().text().trim().replace(/：$/, '');
     const td = $(tr).find('td').first().text().trim();
     if (th) meta[th] = td;
   });
 
   if (debugLogs) console.log(`[ingest_mgs] meta for ${productId}:`, meta);
 
-  // 出演者
+  // 出演者（th末尾「：」除去済みのメタテーブルを再走査）
   const performerNames: string[] = [];
   $('div.detail_data table tr, div.info table tr').each((_, tr) => {
-    const th = $(tr).find('th').first().text().trim();
+    const th = $(tr).find('th').first().text().trim().replace(/：$/, '');
     if (th === '出演') {
       $(tr).find('td a').each((_, a) => {
         const name = $(a).text().trim();
         if (name) performerNames.push(name);
       });
-      // リンクなしの場合はテキスト全体を分割
+      // リンクなしの場合はテキスト全体を空白・読点で分割
       if (performerNames.length === 0) {
         const tdText = $(tr).find('td').first().text().trim();
-        if (tdText) performerNames.push(...tdText.split(/[,、\s]+/).filter(Boolean));
+        if (tdText)
+          performerNames.push(
+            ...tdText.split(/[,、\n\r\t　 ]+/).map((s) => s.trim()).filter(Boolean),
+          );
       }
     }
   });
@@ -446,7 +464,7 @@ async function fetchProductDetail(productId: string): Promise<PreparedVideoData 
   // ジャンル
   const genres: string[] = [];
   $('div.detail_data table tr, div.info table tr').each((_, tr) => {
-    const th = $(tr).find('th').first().text().trim();
+    const th = $(tr).find('th').first().text().trim().replace(/：$/, '');
     if (th === 'ジャンル') {
       $(tr).find('td a').each((_, a) => {
         const g = $(a).text().trim();
@@ -454,22 +472,29 @@ async function fetchProductDetail(productId: string): Promise<PreparedVideoData 
       });
       if (genres.length === 0) {
         const tdText = $(tr).find('td').first().text().trim();
-        if (tdText) genres.push(...tdText.split(/[\s　]+/).filter(Boolean));
+        if (tdText)
+          genres.push(
+            ...tdText.split(/[\s　\n\r\t]+/).map((s) => s.trim()).filter(Boolean),
+          );
       }
     }
   });
 
   // 価格（最安値を使用）
-  const priceRaw = meta['価格'] || meta['販売価格'] || meta['ポイント'] || null;
+  const priceRaw =
+    meta['価格'] || meta['販売価格'] || meta['ポイント'] ||
+    meta['価格：'] || null; // フォールバック
   const price = parsePrice(priceRaw);
 
   // 配信開始日
-  const releasedAt = parseMgsDate(meta['配信開始日'] || meta['発売日'] || null);
+  const releasedAt = parseMgsDate(
+    meta['配信開始日'] || meta['発売日'] || meta['商品発売日'] || null,
+  );
 
   // 収録時間
   const durationSeconds = parseDurationSeconds(meta['収録時間'] || null);
 
-  // 品番（product_id と一致するはずだが念のため取得）
+  // 品番
   const productCode = (meta['品番'] || productId).trim();
 
   const productUrl = `https://www.mgstage.com/product/product_detail/${productId}/`;
@@ -485,10 +510,10 @@ async function fetchProductDetail(productId: string): Promise<PreparedVideoData 
     sample_video_url: null,
     product_released_at: releasedAt,
     duration_seconds: durationSeconds,
-    director: meta['監督']?.trim() || null,
-    series: meta['シリーズ']?.trim() || null,
-    maker: meta['メーカー']?.trim() || null,
-    label: meta['レーベル']?.trim() || null,
+    director: (meta['監督'] || meta['監督：'])?.trim() || null,
+    series: (meta['シリーズ'] || meta['シリーズ：'])?.trim() || null,
+    maker: (meta['メーカー'] || meta['メーカー：'])?.trim() || null,
+    label: (meta['レーベル'] || meta['レーベル：'])?.trim() || null,
     product_url: productUrl,
     affiliate_url: affiliateUrl,
     price,
