@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { Eye, Heart } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
 function getFingerprint(): string {
@@ -52,18 +53,20 @@ export default function ListStats({ token, initialViewCount, initialLikeCount }:
   return (
     <div className="flex items-center gap-4 text-sm text-[#656d76]">
       <span className="flex items-center gap-1.5">
-        <span>👁</span>
+        <Eye size={15} />
         <span>{initialViewCount.toLocaleString()}</span>
       </span>
       <button
         type="button"
         onClick={handleLike}
         disabled={likeLoading}
-        className={`flex items-center gap-1.5 transition-colors ${
-          liked ? 'text-rose-400' : 'hover:text-rose-400'
+        className={`flex items-center gap-1.5 transition-colors cursor-pointer select-none rounded-full px-2.5 py-1 border ${
+          liked
+            ? 'text-rose-400 border-rose-400 bg-rose-400/10'
+            : 'border-[#444c56] hover:text-rose-400 hover:border-rose-400 hover:bg-rose-400/10'
         }`}
       >
-        <span>{liked ? '❤️' : '🤍'}</span>
+        <Heart size={14} className={liked ? 'fill-rose-400' : ''} />
         <span>{likeCount.toLocaleString()}</span>
       </button>
     </div>
