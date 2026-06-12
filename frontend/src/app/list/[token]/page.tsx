@@ -115,6 +115,7 @@ export async function generateMetadata(
     : `${data.videos.length}作品のいいねリスト。`;
 
   const listTitle = data.title ?? `${name}のお気に入りリスト`;
+
   return {
     title: `${listTitle} | 性癖ラボ`,
     description,
@@ -125,7 +126,12 @@ export async function generateMetadata(
       siteName: '性癖ラボ',
       type: 'website',
     },
-    robots: { index: false, follow: false },
+    twitter: {
+      card: 'summary_large_image',
+      title: `${listTitle} | 性癖ラボ`,
+      description,
+    },
+    robots: { index: true, follow: true },
   };
 }
 
@@ -167,7 +173,20 @@ export default async function PublicListPage(
               initialLikeCount={data.like_count}
             />
           </div>
-          <CopyLinkButton url={pageUrl} />
+          <div className="flex items-center gap-2 shrink-0">
+            <a
+              href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(`${data.title ?? (name ? `${name}のお気に入りリスト` : 'お気に入りリスト')} | 性癖ラボ`)}&url=${encodeURIComponent(pageUrl)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#161b22] border border-[#30363d] hover:border-[#8b949e] text-[#8b949e] hover:text-[#e6edf3] text-xs font-semibold transition-colors"
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.73-8.835L1.254 2.25H8.08l4.258 5.63 5.906-5.63zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+              </svg>
+              シェア
+            </a>
+            <CopyLinkButton url={pageUrl} />
+          </div>
         </div>
 
         {/* 作者のリスト一覧へ */}

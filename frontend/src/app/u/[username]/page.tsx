@@ -31,17 +31,29 @@ export async function generateMetadata(
   const data = await fetchUserLists(username);
   if (!data) return { title: 'ユーザーが見つかりません | 性癖ラボ' };
 
+  const description = data.bio
+    ? `${data.bio} | ${data.lists.length}件のリスト`
+    : `${data.display_name}が作成した${data.lists.length}件のリスト`;
+  const ogImage = data.avatar_url ?? data.lists[0]?.thumbnails?.[0] ?? null;
+
   return {
     title: `${data.display_name}のリスト一覧 | 性癖ラボ`,
-    description: `${data.display_name}が作成した${data.lists.length}件のリスト`,
+    description,
     openGraph: {
       title: `${data.display_name}のリスト一覧 | 性癖ラボ`,
-      description: `${data.display_name}が作成した${data.lists.length}件のリスト`,
+      description,
       url: `${SITE_URL}/u/${username}`,
       siteName: '性癖ラボ',
-      type: 'website',
+      type: 'profile',
+      ...(ogImage ? { images: [{ url: ogImage, width: 400, height: 400, alt: data.display_name }] } : {}),
     },
-    robots: { index: false, follow: false },
+    twitter: {
+      card: ogImage ? 'summary' : 'summary',
+      title: `${data.display_name}のリスト一覧 | 性癖ラボ`,
+      description,
+      ...(ogImage ? { images: [ogImage] } : {}),
+    },
+    robots: { index: true, follow: true },
   };
 }
 
