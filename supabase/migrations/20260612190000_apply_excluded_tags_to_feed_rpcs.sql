@@ -92,6 +92,7 @@ END;
 $$;
 
 -- get_videos_recommendations
+DROP FUNCTION IF EXISTS public.get_videos_recommendations(uuid, int);
 CREATE OR REPLACE FUNCTION public.get_videos_recommendations(user_uuid uuid, page_limit int DEFAULT 20)
 RETURNS TABLE (
   id uuid,
