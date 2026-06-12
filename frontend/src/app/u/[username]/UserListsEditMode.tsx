@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Plus, Trash2, Loader2, Search } from 'lucide-react';
+import { Plus, Trash2, Loader2, Search, Eye, Heart } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
 export type ListItem = {
@@ -181,10 +181,10 @@ export default function UserListsClient({ ownerUserId, username, displayName, in
                     <div className="flex items-center gap-3 mt-1.5">
                       <span className="text-xs text-[#484f58]">{list.video_count.toLocaleString('ja-JP')}作品</span>
                       {list.view_count > 0 && (
-                        <span className="text-xs text-[#484f58]">👁 {list.view_count.toLocaleString('ja-JP')}</span>
+                        <span className="flex items-center gap-1 text-xs text-[#484f58]"><Eye size={13} />{list.view_count.toLocaleString('ja-JP')}</span>
                       )}
                       {list.like_count > 0 && (
-                        <span className="text-xs text-[#484f58]">❤️ {list.like_count.toLocaleString('ja-JP')}</span>
+                        <span className="flex items-center gap-1 text-xs text-[#484f58]"><Heart size={13} />{list.like_count.toLocaleString('ja-JP')}</span>
                       )}
                     </div>
                   </div>
