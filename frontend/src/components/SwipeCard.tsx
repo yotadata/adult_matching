@@ -4,7 +4,7 @@ import { motion, useAnimation, PanInfo } from 'framer-motion';
 import { forwardRef, useImperativeHandle, useState, useEffect, useRef } from 'react';
 import { Play, User, Tag, Calendar, Share2, ExternalLink } from 'lucide-react'; // アイコンをインポート
 import { resolveThumbnail } from '@/utils/thumbnail';
-import { resolveFanzaVrUrl } from '@/lib/videoMeta';
+import { resolveFanzaVrUrl, buildMgsAffiliateUrl } from '@/lib/videoMeta';
 
 // カードデータの型定義
 export interface CardData {
@@ -111,7 +111,9 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwi
 
   
 
-  const toAffiliateUrl = (raw?: string) => {
+  const MGS_AF_ID = process.env.NEXT_PUBLIC_MGS_AFFILIATE_ID ?? 'HU3ADNBETQPYWHO8EFF88GY3NH';
+  const toAffiliateUrl = (raw?: string, source?: string | null) => {
+    if (source === 'mgs') return raw ? buildMgsAffiliateUrl(raw, MGS_AF_ID) : '';
     const AF_ID = 'yotadata2-001';
     try {
       if (raw && raw.startsWith('https://al.fanza.co.jp/')) {
@@ -249,7 +251,7 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwi
                   onClick={() => {
                     try {
                       const text = cardData.title || '';
-                      const url = toAffiliateUrl(cardData.productUrl);
+                      const url = toAffiliateUrl(cardData.productUrl, cardData.source);
                       const shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
                       window.open(shareUrl, '_blank', 'noopener,noreferrer');
                     } catch {}
