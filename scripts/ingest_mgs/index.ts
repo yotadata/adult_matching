@@ -427,9 +427,10 @@ async function fetchProductDetail(productId: string): Promise<PreparedVideoData 
     $('div.detail_data h2 img').first().attr('src') ||
     null;
 
-  // pb_p_（縮小）→ pb_e_（拡大）に変換
+  // 任意のサムネイルプレフィックスを pb_e_（高画質ジャケット）に変換
+  // pf_o1_, pf_o2_, pb_p_ → pb_e_
   const thumbnailLarge = jacketImgSrc
-    ? jacketImgSrc.replace('pb_p_', 'pb_e_')
+    ? jacketImgSrc.replace(/pf_o\d+_|pb_p_/, 'pb_e_')
     : null;
   const thumbnailSmall = jacketImgSrc ?? null;
 
