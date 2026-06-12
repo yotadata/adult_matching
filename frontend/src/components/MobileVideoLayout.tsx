@@ -3,7 +3,7 @@
 import { CardData } from '@/components/SwipeCard';
 import { useEffect, useRef, useState, RefObject } from 'react';
 import { Play, Calendar, User, Tag, ChevronsLeft, Heart, List, Share2, ExternalLink } from 'lucide-react';
-import { resolveFanzaVrUrl } from '@/lib/videoMeta';
+import { resolveFanzaVrUrl, buildMgsAffiliateUrl } from '@/lib/videoMeta';
 import { resolveThumbnail } from '@/utils/thumbnail';
 
 interface MobileVideoLayoutProps {
@@ -42,8 +42,9 @@ const MobileVideoLayout: React.FC<MobileVideoLayoutProps> = ({ cardData, onSkip,
 
   
 
+  const MGS_AF_ID = process.env.NEXT_PUBLIC_MGS_AFFILIATE_ID ?? 'HU3ADNBETQPYWHO8EFF88GY3NH';
   const toAffiliateUrl = (raw?: string, source?: string | null) => {
-    if (source === 'mgs') return raw ?? '';
+    if (source === 'mgs') return raw ? buildMgsAffiliateUrl(raw, MGS_AF_ID) : '';
     const AF_ID = 'yotadata2-001';
     try {
       if (raw && raw.startsWith('https://al.fanza.co.jp/')) {

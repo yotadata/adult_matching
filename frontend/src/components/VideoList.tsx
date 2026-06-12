@@ -4,6 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Tag, ExternalLink } from 'lucide-react';
 import { Video } from '@/types/video';
+import { buildMgsAffiliateUrl } from '@/lib/videoMeta';
 
 const GRADIENT = 'linear-gradient(90deg, #C4C8E3 0%, #D7D1E3 33.333%, #F7D7E0 66.666%, #F9C9D6 100%)';
 
@@ -21,9 +22,11 @@ const formatDate = (value?: string | null) => {
   }
 };
 
+const MGS_AF_ID = process.env.NEXT_PUBLIC_MGS_AFFILIATE_ID ?? 'HU3ADNBETQPYWHO8EFF88GY3NH';
+
 const toAffiliateUrl = (raw?: string | null, source?: string | null) => {
   if (!raw) return '#';
-  if (source === 'mgs') return raw;
+  if (source === 'mgs') return buildMgsAffiliateUrl(raw, MGS_AF_ID);
   const AF_ID = 'yotadata2-001';
   try {
     if (raw.startsWith('https://al.fanza.co.jp/')) {

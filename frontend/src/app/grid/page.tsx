@@ -7,7 +7,7 @@ import { X, Play, Heart, Eye, ChevronDown, ChevronUp, Brain, Hand, Bot, Target, 
 import { trackEvent } from '@/lib/analytics';
 import OnboardingModal from '@/components/OnboardingModal';
 import { resolveThumbnail } from '@/utils/thumbnail';
-import { resolveEmbedUrl, resolveProductUrl } from '@/lib/videoMeta';
+import { resolveEmbedUrl, resolveProductUrl, buildMgsAffiliateUrl } from '@/lib/videoMeta';
 
 type VideoItem = {
   id: string;
@@ -197,8 +197,9 @@ function GridPage() {
 
   const toAffiliateUrl = (raw?: string | null, source?: string | null) => {
     const AF_ID = 'yotadata2-001';
+    const MGS_AF_ID = process.env.NEXT_PUBLIC_MGS_AFFILIATE_ID ?? 'HU3ADNBETQPYWHO8EFF88GY3NH';
     if (!raw) return '';
-    if (source === 'mgs') return raw;
+    if (source === 'mgs') return buildMgsAffiliateUrl(raw, MGS_AF_ID);
     if (raw.startsWith('https://al.fanza.co.jp/')) {
       try {
         const u = new URL(raw);

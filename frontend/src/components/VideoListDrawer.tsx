@@ -6,6 +6,7 @@ import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import { X, Filter, Tag, Users, ExternalLink } from 'lucide-react';
 import { trackEvent } from '@/lib/analytics';
 import { resolveThumbnail } from '@/utils/thumbnail';
+import { buildMgsAffiliateUrl } from '@/lib/videoMeta';
 
 export interface VideoRecord {
   id?: string;
@@ -53,9 +54,11 @@ const formatPrice = (price?: number | null) => {
   return `￥${price.toLocaleString()}`;
 };
 
+const MGS_AF_ID = process.env.NEXT_PUBLIC_MGS_AFFILIATE_ID ?? 'HU3ADNBETQPYWHO8EFF88GY3NH';
+
 const defaultAffiliateBuilder = (raw?: string | null, source?: string | null) => {
   if (!raw) return '#';
-  if (source === 'mgs') return raw;
+  if (source === 'mgs') return buildMgsAffiliateUrl(raw, MGS_AF_ID);
   const AF_ID = 'yotadata2-001';
   try {
     if (raw.startsWith('https://al.fanza.co.jp/')) {
