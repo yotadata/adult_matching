@@ -7,6 +7,7 @@ import { X, Play, Heart, Eye, ChevronDown, ChevronUp, Brain, Hand, Bot, Target, 
 import { trackEvent } from '@/lib/analytics';
 import OnboardingModal from '@/components/OnboardingModal';
 import { resolveThumbnail } from '@/utils/thumbnail';
+import { resolveEmbedUrl } from '@/lib/videoMeta';
 
 type VideoItem = {
   id: string;
@@ -675,22 +676,36 @@ function GridPage() {
                       </div>
                     </div>
                   )}
-                  <iframe
-                    scrolling="no"
-                    referrerPolicy="no-referrer"
-                    src={toFanzaEmbedUrl(selected.external_id)}
-                    frameBorder="0"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
-                    loading="eager"
-                    onLoad={() => {
-                      if (overlayHideTimer.current) clearTimeout(overlayHideTimer.current);
-                      overlayHideTimer.current = setTimeout(() => {
-                        setShowVideo(true);
-                        overlayHideTimer.current = null;
-                      }, OVERLAY_HIDE_DELAY_MS);
-                    }}
-                    className="absolute top-0 left-0 w-full h-full overflow-hidden"
-                  />
+                  {(() => {
+                    const embed = resolveEmbedUrl({ source: selected.video_source, externalId: selected.external_id, sampleVideoUrl: selected.sample_video_url });
+                    return embed?.type === 'mp4' ? (
+                      <video
+                        src={embed.url}
+                        controls
+                        autoPlay
+                        playsInline
+                        onCanPlay={() => setShowVideo(true)}
+                        className="absolute top-0 left-0 w-full h-full bg-black"
+                      />
+                    ) : (
+                      <iframe
+                        scrolling="no"
+                        referrerPolicy="no-referrer"
+                        src={embed?.url ?? toFanzaEmbedUrl(selected.external_id)}
+                        frameBorder="0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
+                        loading="eager"
+                        onLoad={() => {
+                          if (overlayHideTimer.current) clearTimeout(overlayHideTimer.current);
+                          overlayHideTimer.current = setTimeout(() => {
+                            setShowVideo(true);
+                            overlayHideTimer.current = null;
+                          }, OVERLAY_HIDE_DELAY_MS);
+                        }}
+                        className="absolute top-0 left-0 w-full h-full overflow-hidden"
+                      />
+                    );
+                  })()}
                 </>
               ) : (
                 <div

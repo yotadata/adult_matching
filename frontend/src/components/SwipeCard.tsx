@@ -15,6 +15,7 @@ export interface CardData {
   thumbnail_url: string; // 追加
   sampleVideoUrl?: string; // 追加: 直接再生用
   embedUrl?: string; // 追加: iframe用
+  embedType?: 'iframe' | 'mp4'; // 追加: プレイヤー種別
   performers?: { id: string; name: string; }[]; // 追加
   tags?: { id: string; name: string; }[]; // 追加
   product_released_at?: string; // 追加: 発売日
@@ -177,24 +178,35 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(({ cardData, onSwi
             </div>
           </div>
         )}
-        {/* iframe 埋め込み（litevideo） */}
-        <iframe
-          scrolling="no"
-          referrerPolicy="no-referrer"
-          src={cardData.embedUrl || cardData.videoUrl}
-          title="Embedded Video Player"
-          frameBorder="0"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
-          loading="eager"
-          onLoad={() => {
-            if (overlayHideTimer.current) clearTimeout(overlayHideTimer.current);
-            overlayHideTimer.current = window.setTimeout(() => {
-              setShowOverlay(false);
-              overlayHideTimer.current = null;
-            }, overlayHideDelayMs);
-          }}
-          className="absolute top-0 left-0 w-full h-full overflow-hidden"
-        />
+        {/* プレイヤー: MGS=MP4直接再生 / FANZA=iframeプレイヤー */}
+        {cardData.embedType === 'mp4' ? (
+          <video
+            src={cardData.embedUrl || cardData.sampleVideoUrl}
+            controls
+            autoPlay
+            playsInline
+            onCanPlay={() => setShowOverlay(false)}
+            className="absolute top-0 left-0 w-full h-full overflow-hidden bg-black"
+          />
+        ) : (
+          <iframe
+            scrolling="no"
+            referrerPolicy="no-referrer"
+            src={cardData.embedUrl || cardData.videoUrl}
+            title="Embedded Video Player"
+            frameBorder="0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
+            loading="eager"
+            onLoad={() => {
+              if (overlayHideTimer.current) clearTimeout(overlayHideTimer.current);
+              overlayHideTimer.current = window.setTimeout(() => {
+                setShowOverlay(false);
+                overlayHideTimer.current = null;
+              }, overlayHideDelayMs);
+            }}
+            className="absolute top-0 left-0 w-full h-full overflow-hidden"
+          />
+        )}
         {/* 外部タブ再生リンクは非表示にする */}
       </div>
 

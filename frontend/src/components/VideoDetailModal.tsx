@@ -5,7 +5,7 @@ import { Fragment, useEffect, useState } from 'react';
 import { X } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
-import { isUpcomingRelease } from '@/lib/videoMeta';
+import { isUpcomingRelease, resolveEmbedUrl } from '@/lib/videoMeta';
 import { trackEvent } from '@/lib/analytics';
 
 type Performer = { id: string; name: string };
@@ -14,9 +14,11 @@ type Tag = { id: string; name: string };
 type VideoRow = {
   id: string;
   external_id: string;
+  source?: string | null;
   title: string;
   description?: string | null;
   thumbnail_url?: string | null;
+  sample_video_url?: string | null;
   product_url?: string | null;
   affiliate_url?: string | null;
   price?: number | null;
@@ -86,7 +88,11 @@ export default function VideoDetailModal({ isOpen, onClose, videoId }: { isOpen:
     run();
   }, [isOpen, videoId]);
 
-  const fanzaEmbedUrl = video ? `https://www.dmm.co.jp/litevideo/-/part/=/affi_id=${process.env.NEXT_PUBLIC_FANZA_AFFILIATE_ID}/cid=${video.external_id}/size=1280_720/` : '';
+  const embed = video ? resolveEmbedUrl({
+    source: video.source,
+    externalId: video.external_id,
+    sampleVideoUrl: video.sample_video_url,
+  }) : null;
 
   return (
     <Transition appear show={isOpen} as={Fragment}>
@@ -102,16 +108,24 @@ export default function VideoDetailModal({ isOpen, onClose, videoId }: { isOpen:
                   <X size={22} />
                 </button>
                 <div className="w-full bg-black relative" style={{ paddingBottom: '56%' }}>
-                  {video && (
+                  {embed?.type === 'mp4' ? (
+                    <video
+                      src={embed.url}
+                      controls
+                      autoPlay
+                      playsInline
+                      className="absolute inset-0 w-full h-full"
+                    />
+                  ) : embed?.type === 'iframe' ? (
                     <iframe
-                      src={fanzaEmbedUrl}
+                      src={embed.url}
                       title="Embedded Video Player"
                       frameBorder="0"
                       allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
                       loading="eager"
                       className="absolute inset-0 w-full h-full"
                     />
-                  )}
+                  ) : null}
                 </div>
                 <div className="p-4">
                   {loading ? (

@@ -8,6 +8,7 @@ import useWindowSize from "@/hooks/useWindowSize";
 import MobileVideoLayout from "@/components/MobileVideoLayout";
 import { supabase } from "@/lib/supabase";
 import { trackEvent, generateSessionId } from "@/lib/analytics";
+import { resolveEmbedUrl } from "@/lib/videoMeta";
 import { ChevronsLeft, Heart, List } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useDecisionCount } from "@/hooks/useDecisionCount";
@@ -238,17 +239,22 @@ function SwipePage() {
 
       const normalizeHttps = (u?: string) => u?.startsWith('http://') ? u.replace('http://', 'https://') : u;
       const fetchedCards: CardData[] = fetchedVideos.map((video) => {
-        const fanzaEmbedUrl = `https://www.dmm.co.jp/litevideo/-/part/=/affi_id=${process.env.NEXT_PUBLIC_FANZA_AFFILIATE_ID}/cid=${video.external_id}/size=1280_720/`;
         const normalizedSampleUrl = normalizeHttps(video.sample_video_url);
         const normalizedPreviewUrl = normalizeHttps(video.preview_video_url);
+        const embed = resolveEmbedUrl({
+          source: video.video_source,
+          externalId: video.external_id,
+          sampleVideoUrl: normalizedSampleUrl || normalizedPreviewUrl,
+        });
         return {
           id: video.id,
           title: video.title,
           genre: video.tags.map((tag) => tag.name),
           description: video.description,
-          videoUrl: fanzaEmbedUrl,
+          videoUrl: embed?.url ?? '',
           sampleVideoUrl: normalizedSampleUrl || normalizedPreviewUrl,
-          embedUrl: fanzaEmbedUrl,
+          embedUrl: embed?.url ?? '',
+          embedType: embed?.type ?? 'iframe',
           thumbnail_url: video.thumbnail_url,
           product_released_at: video.product_released_at,
           performers: video.performers,
