@@ -42,6 +42,7 @@ const AccountManagementDrawer: React.FC<AccountManagementDrawerProps> = ({ isOpe
 
   // アカウント編集
   const [accountOpen, setAccountOpen] = useState(false);
+  const [logoutConfirm, setLogoutConfirm] = useState(false);
   const [editSection, setEditSection] = useState<'displayName' | 'password' | 'curator' | null>(null);
   const [newDisplayName, setNewDisplayName] = useState('');
   const [passwords, setPasswords] = useState({ next: '', confirm: '' });
@@ -427,7 +428,7 @@ const AccountManagementDrawer: React.FC<AccountManagementDrawerProps> = ({ isOpe
                           <section className="space-y-3">
                             <button
                               type="button"
-                              onClick={() => { setAccountOpen((v) => !v); setEditSection(null); }}
+                              onClick={() => { setAccountOpen((v) => !v); setEditSection(null); setLogoutConfirm(false); }}
                               className="w-full flex items-center justify-between px-4 py-3 rounded-xl bg-[#161b22] border border-[#30363d] hover:border-violet-500/50 transition-colors"
                             >
                               <div className="flex items-center gap-2">
@@ -548,9 +549,20 @@ const AccountManagementDrawer: React.FC<AccountManagementDrawerProps> = ({ isOpe
                                 </div>
 
                                 {/* ログアウト・削除 */}
-                                <button onClick={handleLogout} className="w-full py-2.5 px-4 rounded-xl bg-red-500/20 text-red-400 border border-red-500/30 font-bold text-sm hover:bg-red-500/30 transition-colors">
-                                  ログアウト
-                                </button>
+                                {logoutConfirm ? (
+                                  <div className="flex gap-2">
+                                    <button onClick={() => setLogoutConfirm(false)} className="flex-1 py-2.5 px-4 rounded-xl bg-[#161b22] border border-[#30363d] text-[#8b949e] font-bold text-sm hover:bg-white/5 transition-colors">
+                                      キャンセル
+                                    </button>
+                                    <button onClick={handleLogout} className="flex-1 py-2.5 px-4 rounded-xl bg-red-500/30 text-red-400 border border-red-500/40 font-bold text-sm hover:bg-red-500/40 transition-colors">
+                                      ログアウト
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <button onClick={() => setLogoutConfirm(true)} className="w-full py-2.5 px-4 rounded-xl bg-[#161b22] border border-[#30363d] text-[#8b949e] font-bold text-sm hover:border-red-500/40 hover:text-red-400 transition-colors">
+                                    ログアウト
+                                  </button>
+                                )}
                                 <div className="flex items-center gap-1.5 justify-center">
                                   <Trash2 size={11} className="text-[#484f58]" />
                                   <Link href="/contact" onClick={onClose} className="text-[10px] text-[#484f58] hover:text-[#8b949e] underline">
