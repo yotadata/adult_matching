@@ -1,8 +1,8 @@
 'use client';
 
 import { Dialog, Transition } from '@headlessui/react';
-import { Fragment, useEffect, useState, useCallback } from 'react';
-import { X, Heart, Tag, Users, TrendingUp, Link2, Check, Loader2, ExternalLink, ListVideo } from 'lucide-react';
+import { Fragment, useEffect, useRef, useState, useCallback } from 'react';
+import { X, Heart, Tag, Users, TrendingUp, Link2, Check, Loader2, ExternalLink, ListVideo, ShieldOff, Search, Plus } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
 interface AccountManagementDrawerProps {
@@ -12,6 +12,7 @@ interface AccountManagementDrawerProps {
 
 type TagItem = { id: string; name: string; cnt: number };
 type PerformerItem = { id: string; name: string; cnt: number };
+type ExcludedTag = { tag_id: string; name: string };
 
 const AccountManagementDrawer: React.FC<AccountManagementDrawerProps> = ({ isOpen, onClose }) => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -24,6 +25,13 @@ const AccountManagementDrawer: React.FC<AccountManagementDrawerProps> = ({ isOpe
   const [publicToken, setPublicToken] = useState<string | null>(null);
   const [tokenLoading, setTokenLoading] = useState(false);
   const [copied, setCopied] = useState(false);
+
+  // 除外タグ
+  const [excludedTags, setExcludedTags] = useState<ExcludedTag[]>([]);
+  const [tagSearchQuery, setTagSearchQuery] = useState('');
+  const [tagSearchResults, setTagSearchResults] = useState<{ id: string; name: string }[]>([]);
+  const [tagSearchOpen, setTagSearchOpen] = useState(false);
+  const tagSearchRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const checkLoginStatus = async () => {
@@ -58,6 +66,48 @@ const AccountManagementDrawer: React.FC<AccountManagementDrawerProps> = ({ isOpe
     setPerformers(((perfData as PerformerItem[] | null) ?? []).slice(0, 3));
     setLoading(false);
   }, []);
+
+  // 除外タグ読み込み
+  useEffect(() => {
+    if (isOpen && isLoggedIn) {
+      supabase.rpc('get_user_excluded_tags').then(({ data }) => {
+        if (data) setExcludedTags(data as ExcludedTag[]);
+      });
+    }
+  }, [isOpen, isLoggedIn]);
+
+  // タグ検索 debounce
+  useEffect(() => {
+    if (!tagSearchQuery.trim()) { setTagSearchResults([]); return; }
+    const timer = setTimeout(async () => {
+      const { data } = await supabase.from('tags').select('id, name').ilike('name', `%${tagSearchQuery}%`).limit(10);
+      setTagSearchResults((data as { id: string; name: string }[]) ?? []);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [tagSearchQuery]);
+
+  // ドロップダウン外クリックで閉じる
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (tagSearchRef.current && !tagSearchRef.current.contains(e.target as Node)) setTagSearchOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const handleAddExcludedTag = async (tag: { id: string; name: string }) => {
+    if (excludedTags.some((t) => t.tag_id === tag.id)) return;
+    await supabase.rpc('add_user_excluded_tag', { p_tag_id: tag.id });
+    setExcludedTags((prev) => [...prev, { tag_id: tag.id, name: tag.name }]);
+    setTagSearchQuery('');
+    setTagSearchResults([]);
+    setTagSearchOpen(false);
+  };
+
+  const handleRemoveExcludedTag = async (tagId: string) => {
+    await supabase.rpc('remove_user_excluded_tag', { p_tag_id: tagId });
+    setExcludedTags((prev) => prev.filter((t) => t.tag_id !== tagId));
+  };
 
   useEffect(() => {
     if (isOpen && isLoggedIn) {
@@ -282,6 +332,69 @@ const AccountManagementDrawer: React.FC<AccountManagementDrawerProps> = ({ isOpe
                                     ? <><Loader2 size={12} className="animate-spin" />作成中…</>
                                     : <><Link2 size={12} />共有URLを作成</>}
                                 </button>
+                              )}
+                            </div>
+                          </section>
+                        </>
+                      )}
+
+                      {/* 除外タグ設定 */}
+                      {isLoggedIn && (
+                        <>
+                          <div className="border-t border-white/10" />
+                          <section className="space-y-3">
+                            <div className="flex items-center gap-1.5">
+                              <ShieldOff size={11} className="text-[#8b949e]" />
+                              <p className="text-[11px] text-[#8b949e] font-semibold uppercase tracking-wider">除外タグ</p>
+                            </div>
+                            <p className="text-[10px] text-[#484f58]">設定したタグの動画はフィードに表示されません</p>
+
+                            {/* 除外中タグ一覧 */}
+                            {excludedTags.length > 0 && (
+                              <div className="flex flex-wrap gap-1.5">
+                                {excludedTags.map((tag) => (
+                                  <span key={tag.tag_id} className="inline-flex items-center gap-1 rounded-full bg-red-500/15 border border-red-500/30 px-2.5 py-0.5 text-xs text-red-400">
+                                    {tag.name}
+                                    <button type="button" onClick={() => handleRemoveExcludedTag(tag.tag_id)} className="ml-0.5 hover:text-red-200">
+                                      <X size={10} />
+                                    </button>
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+
+                            {/* タグ検索 */}
+                            <div ref={tagSearchRef} className="relative">
+                              <div className="flex items-center gap-2 rounded-lg bg-[#161b22] border border-[#30363d] px-3 py-2 focus-within:border-violet-500/50">
+                                <Search size={12} className="text-[#484f58] shrink-0" />
+                                <input
+                                  type="text"
+                                  value={tagSearchQuery}
+                                  onChange={(e) => { setTagSearchQuery(e.target.value); setTagSearchOpen(true); }}
+                                  onFocus={() => setTagSearchOpen(true)}
+                                  className="flex-1 bg-transparent text-xs text-[#e6edf3] placeholder:text-[#484f58] focus:outline-none"
+                                  placeholder="タグ名で検索して追加..."
+                                />
+                              </div>
+                              {tagSearchOpen && tagSearchResults.length > 0 && (
+                                <ul className="absolute z-10 mt-1 w-full rounded-lg border border-[#30363d] bg-[#161b22] shadow-xl overflow-hidden">
+                                  {tagSearchResults.map((tag) => {
+                                    const already = excludedTags.some((t) => t.tag_id === tag.id);
+                                    return (
+                                      <li key={tag.id}>
+                                        <button
+                                          type="button"
+                                          onClick={() => !already && handleAddExcludedTag(tag)}
+                                          disabled={already}
+                                          className={`w-full flex items-center justify-between px-3 py-2 text-xs text-left transition ${already ? 'text-[#484f58] cursor-default' : 'text-[#e6edf3] hover:bg-white/5'}`}
+                                        >
+                                          <span>{tag.name}</span>
+                                          {already ? <span className="text-[#484f58]">追加済み</span> : <Plus size={12} className="text-violet-400" />}
+                                        </button>
+                                      </li>
+                                    );
+                                  })}
+                                </ul>
                               )}
                             </div>
                           </section>
