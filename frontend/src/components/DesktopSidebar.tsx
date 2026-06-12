@@ -4,7 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import { Home as HomeIcon, UserPlus, Settings, Info, Mail, FlaskConical } from 'lucide-react';
+import { Home as HomeIcon, UserPlus, Info, Mail, FlaskConical } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
 export default function DesktopSidebar() {
@@ -83,7 +83,6 @@ export default function DesktopSidebar() {
           <div className="border-t border-[#30363d] my-2" />
           <div className="space-y-1 text-sm">
             <NavButton label="お問い合わせ" icon={Mail} href="/contact" disabled={!isLoggedIn} />
-            <NavButton label="アカウント設定" icon={Settings} href="/account-management" disabled={!isLoggedIn} />
             <NavButton label="このサイトについて" icon={Info} href="/about" disabled={false} />
           </div>
         </div>
