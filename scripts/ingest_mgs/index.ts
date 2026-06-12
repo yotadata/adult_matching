@@ -431,6 +431,29 @@ async function fetchProductDetail(productId: string): Promise<PreparedVideoData 
     if (src && src.includes('image.mgstage.com')) imageUrls.push(src);
   });
 
+  // サンプル動画URL取得（data-pid UUID → sampleRespons.php → MP4変換）
+  const dataPid = $('[data-pid]').first().attr('data-pid') ?? null;
+  let sampleVideoUrl: string | null = null;
+  if (dataPid) {
+    try {
+      const sampleRes = await httpClient.get(
+        `/sampleplayer/sampleRespons.php?pid=${dataPid}`,
+        { headers: { Referer: 'https://www.mgstage.com/' } },
+      );
+      const rawUrl: string | null =
+        typeof sampleRes.data === 'object'
+          ? (sampleRes.data as any).url ?? null
+          : null;
+      if (rawUrl) {
+        // .ism/request?... → .mp4 に変換（MGSプレイヤーと同じロジック）
+        sampleVideoUrl = rawUrl.replace(/\.ism\/request.*$/, '.mp4');
+        if (debugLogs) console.log(`[ingest_mgs] sample url for ${productId}: ${sampleVideoUrl}`);
+      }
+    } catch (err: any) {
+      if (debugLogs) console.warn(`[ingest_mgs] sample fetch failed ${productId}:`, err.message);
+    }
+  }
+
   // 詳細テーブルのパース（th末尾の「：」を除去して正規化）
   const meta: Record<string, string> = {};
   $('div.detail_data table tr, div.info table tr').each((_, tr) => {
@@ -506,8 +529,8 @@ async function fetchProductDetail(productId: string): Promise<PreparedVideoData 
     description: null,
     thumbnail_url: thumbnailLarge ?? thumbnailSmall,
     thumbnail_vertical_url: thumbnailSmall ?? thumbnailLarge,
-    preview_video_url: null,
-    sample_video_url: null,
+    preview_video_url: sampleVideoUrl,
+    sample_video_url: sampleVideoUrl,
     product_released_at: releasedAt,
     duration_seconds: durationSeconds,
     director: (meta['監督'] || meta['監督：'])?.trim() || null,
