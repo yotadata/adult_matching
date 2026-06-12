@@ -32,7 +32,6 @@ type ListData = {
   display_name: string | null;
   username: string | null;
   affiliate_fanza_id: string | null;
-  affiliate_fc2_id: string | null;
   affiliate_mgs_id: string | null;
   title: string | null;
   list_type: 'liked' | 'custom';
