@@ -356,7 +356,9 @@ function ExplorePageInner() {
   const handleLike = async (video: Video) => {
     if (!isLoggedIn) { window.dispatchEvent(new Event('open-auth-modal')); return; }
     if (likedIds.has(video.id)) return;
-    await supabase.from('user_video_decisions').insert({ video_id: video.id, decision_type: 'grid_like', surface: 'grid' });
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    await supabase.from('user_video_decisions').insert({ user_id: user.id, video_id: video.id, decision_type: 'grid_like', surface: 'grid' });
     setLikedIds((prev) => new Set(prev).add(video.id));
     window.dispatchEvent(new Event('like-added'));
   };
