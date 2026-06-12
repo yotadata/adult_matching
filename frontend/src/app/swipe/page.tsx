@@ -208,7 +208,7 @@ function SwipePage() {
       const { data: { session } } = await supabase.auth.getSession();
       const headers: HeadersInit = {};
       if (session?.access_token) headers.Authorization = `Bearer ${session.access_token}`;
-      const timeoutMs = 12000;
+      const timeoutMs = 20000;
       const timeoutPromise = new Promise<never>((_, reject) => setTimeout(() => reject(new Error('videos-feed timeout')), timeoutMs));
       const savedTags = localStorage.getItem('onboarding_tags');
       const preferredTagIds = savedTags ? (() => { try { return JSON.parse(savedTags); } catch { return []; } })() : [];
@@ -408,13 +408,6 @@ function SwipePage() {
     }
     refetchVideos();
   }, [authReady, refetchVideos]);
-
-  useEffect(() => {
-    (async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) await flushGuestDecisions();
-    })();
-  }, [flushGuestDecisions]);
 
   const handleSwipe = async (direction: 'left' | 'right') => {
     const card = activeCard;

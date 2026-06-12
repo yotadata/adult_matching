@@ -96,9 +96,13 @@ function GridPage() {
   const OVERLAY_HIDE_DELAY_MS = 700;
   const loadedVideoIds = useRef<Set<string>>(new Set());
   const likeCountSinceEmbed = useRef(0);
+  const isFetchingRef = useRef(false);
+  const hasMoreRef = useRef(true);
+  const fetchVideosRef = useRef<() => Promise<void>>(async () => {});
 
   const fetchVideos = useCallback(async () => {
-    if (loading || !hasMore) return;
+    if (isFetchingRef.current || !hasMoreRef.current) return;
+    isFetchingRef.current = true;
     setLoading(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -125,6 +129,7 @@ function GridPage() {
         (v: VideoItem) => !loadedVideoIds.current.has(v.id)
       );
       if (newVideos.length === 0) {
+        hasMoreRef.current = false;
         setHasMore(false);
         return;
       }
@@ -133,9 +138,10 @@ function GridPage() {
     } catch (e) {
       console.error(e);
     } finally {
+      isFetchingRef.current = false;
       setLoading(false);
     }
-  }, [loading, hasMore, isDebug]);
+  }, [isDebug]);
 
   // 認証状態を取得
   useEffect(() => {
@@ -183,17 +189,23 @@ function GridPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // 無限スクロール
+  // fetchVideosRef を常に最新に保つ
+  useEffect(() => {
+    fetchVideosRef.current = fetchVideos;
+  }, [fetchVideos]);
+
+  // 無限スクロール（マウント時のみObserverを生成して二重リクエストを防ぐ）
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting) fetchVideos();
+        if (entries[0].isIntersecting) fetchVideosRef.current();
       },
       { threshold: 0.1 }
     );
     if (loaderRef.current) observer.observe(loaderRef.current);
     return () => observer.disconnect();
-  }, [fetchVideos]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const toAffiliateUrl = (raw?: string | null) => {
     const AF_ID = 'yotadata2-001';
@@ -266,6 +278,7 @@ function GridPage() {
     // タグ付きで最初からフェッチし直す
     setVideos([]);
     loadedVideoIds.current = new Set();
+    hasMoreRef.current = true;
     setHasMore(true);
     setShowOnboarding(false);
     fetchVideos();

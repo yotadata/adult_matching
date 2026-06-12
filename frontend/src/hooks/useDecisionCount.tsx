@@ -1,5 +1,5 @@
 
-import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 
 type DecisionCountContextType = {
@@ -13,28 +13,35 @@ const DecisionCountContext = createContext<DecisionCountContextType | undefined>
 export const DecisionCountProvider = ({ children }: { children: React.ReactNode }) => {
   const [decisionCount, setDecisionCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  const isLoadingRef = useRef(false); // 同時実行ガード
 
   const loadDecisionCount = useCallback(async () => {
+    if (isLoadingRef.current) return;
+    isLoadingRef.current = true;
     setIsLoading(true);
-    const { data: { session } } = await supabase.auth.getSession();
-    const loggedIn = Boolean(session?.user);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const loggedIn = Boolean(session?.user);
 
-    if (!loggedIn) {
-      try {
-        const raw = localStorage.getItem('guest_decisions_v1');
-        const arr = raw ? JSON.parse(raw) : [];
-        setDecisionCount(Array.isArray(arr) ? arr.length : 0);
-      } catch {
-        setDecisionCount(0);
+      if (!loggedIn) {
+        try {
+          const raw = localStorage.getItem('guest_decisions_v1');
+          const arr = raw ? JSON.parse(raw) : [];
+          setDecisionCount(Array.isArray(arr) ? arr.length : 0);
+        } catch {
+          setDecisionCount(0);
+        }
+      } else {
+        const { count } = await supabase
+          .from('user_video_decisions')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', session!.user!.id);
+        setDecisionCount(count || 0);
       }
-    } else {
-      const { count } = await supabase
-        .from('user_video_decisions')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', session!.user!.id);
-      setDecisionCount(count || 0);
+    } finally {
+      setIsLoading(false);
+      isLoadingRef.current = false;
     }
-    setIsLoading(false);
   }, []);
 
   useEffect(() => {
