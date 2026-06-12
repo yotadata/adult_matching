@@ -18,7 +18,7 @@ interface AccountManagementDrawerProps {
 type TagItem = { id: string; name: string; cnt: number };
 type PerformerItem = { id: string; name: string; cnt: number };
 type ExcludedTag = { tag_id: string; name: string };
-type CuratorProfile = { bio: string; x_url: string; affiliate_fanza_id: string; affiliate_fc2_id: string; affiliate_mgs_id: string };
+type CuratorProfile = { bio: string; x_url: string; affiliate_fanza_id: string; affiliate_mgs_id: string };
 
 const AccountManagementDrawer: React.FC<AccountManagementDrawerProps> = ({ isOpen, onClose }) => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -47,7 +47,7 @@ const AccountManagementDrawer: React.FC<AccountManagementDrawerProps> = ({ isOpe
   const [newDisplayName, setNewDisplayName] = useState('');
   const [passwords, setPasswords] = useState({ next: '', confirm: '' });
   const [accountSaving, setAccountSaving] = useState(false);
-  const [curatorProfile, setCuratorProfile] = useState<CuratorProfile>({ bio: '', x_url: '', affiliate_fanza_id: '', affiliate_fc2_id: '', affiliate_mgs_id: '' });
+  const [curatorProfile, setCuratorProfile] = useState<CuratorProfile>({ bio: '', x_url: '', affiliate_fanza_id: '', affiliate_mgs_id: '' });
   const [curatorSaving, setCuratorSaving] = useState(false);
 
   useEffect(() => {
@@ -95,13 +95,12 @@ const AccountManagementDrawer: React.FC<AccountManagementDrawerProps> = ({ isOpe
           .eq('user_id', user.id).eq('is_active', true).eq('list_type', 'liked').maybeSingle()
           .then(({ data }) => { if (data) setPublicToken(data.token); });
         supabase.from('user_profiles')
-          .select('bio, x_url, affiliate_fanza_id, affiliate_fc2_id, affiliate_mgs_id')
+          .select('bio, x_url, affiliate_fanza_id, affiliate_mgs_id')
           .eq('user_id', user.id).maybeSingle()
           .then(({ data: up }) => {
             if (up) setCuratorProfile({
               bio: up.bio ?? '', x_url: up.x_url ?? '',
               affiliate_fanza_id: up.affiliate_fanza_id ?? '',
-              affiliate_fc2_id: up.affiliate_fc2_id ?? '',
               affiliate_mgs_id: up.affiliate_mgs_id ?? '',
             });
           });
@@ -213,7 +212,6 @@ const AccountManagementDrawer: React.FC<AccountManagementDrawerProps> = ({ isOpe
         p_bio: curatorProfile.bio || null,
         p_x_url: curatorProfile.x_url || null,
         p_affiliate_fanza_id: curatorProfile.affiliate_fanza_id || null,
-        p_affiliate_fc2_id: curatorProfile.affiliate_fc2_id || null,
         p_affiliate_mgs_id: curatorProfile.affiliate_mgs_id || null,
       });
       if (error) throw error;
@@ -532,10 +530,6 @@ const AccountManagementDrawer: React.FC<AccountManagementDrawerProps> = ({ isOpe
                                       <div>
                                         <label className={labelCls}>FANZA アフィリエイトID</label>
                                         <input type="text" value={curatorProfile.affiliate_fanza_id} onChange={(e) => setCuratorProfile((p) => ({ ...p, affiliate_fanza_id: e.target.value }))} className={inputCls} placeholder="例: yourname-001" />
-                                      </div>
-                                      <div>
-                                        <label className={labelCls}>FC2 アフィリエイトID</label>
-                                        <input type="text" value={curatorProfile.affiliate_fc2_id} onChange={(e) => setCuratorProfile((p) => ({ ...p, affiliate_fc2_id: e.target.value }))} className={inputCls} placeholder="FC2アフィリエイトID" />
                                       </div>
                                       <div>
                                         <label className={labelCls}>MGS アフィリエイトID</label>

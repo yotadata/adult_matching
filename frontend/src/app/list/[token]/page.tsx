@@ -9,7 +9,8 @@ import { resolveThumbnail } from '@/utils/thumbnail';
 
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://www.seihekilab.com';
-const SYS_AF_ID = process.env.NEXT_PUBLIC_FANZA_AFFILIATE_ID ?? 'yotadata2-001';
+const SYS_AF_ID     = process.env.NEXT_PUBLIC_FANZA_AFFILIATE_ID ?? 'yotadata2-001';
+const SYS_MGS_AF_ID = process.env.NEXT_PUBLIC_MGS_AFFILIATE_ID   ?? 'HU3ADNBETQPYWHO8EFF88GY3NH';
 
 type Video = {
   id: string;
@@ -32,7 +33,6 @@ type ListData = {
   display_name: string | null;
   username: string | null;
   affiliate_fanza_id: string | null;
-  affiliate_fc2_id: string | null;
   affiliate_mgs_id: string | null;
   title: string | null;
   list_type: 'liked' | 'custom';
@@ -43,9 +43,23 @@ type ListData = {
   performers: PerformerStat[];
 };
 
-function toAffiliateUrl(raw?: string | null, curatorAfId?: string | null): string {
+function toAffiliateUrl(raw?: string | null, source?: string | null, curatorFanzaId?: string | null, curatorMgsId?: string | null): string {
   if (!raw) return '';
-  const afId = curatorAfId ?? SYS_AF_ID;
+  if (source === 'mgs') {
+    const mgsId = curatorMgsId ?? SYS_MGS_AF_ID;
+    try {
+      const u = new URL(raw);
+      u.searchParams.set('agef', '1');
+      u.searchParams.set('utm_medium', 'mgs_affiliate');
+      u.searchParams.set('utm_source', 'mgs_affiliate_linktool');
+      u.searchParams.set('utm_campaign', 'mgs_affiliate_linktool');
+      u.searchParams.set('utm_content', mgsId);
+      u.searchParams.set('form', `mgs_asp_linktool_${mgsId}`);
+      return u.toString();
+    } catch { /* ignore */ }
+    return raw;
+  }
+  const afId = curatorFanzaId ?? SYS_AF_ID;
   if (raw.startsWith('https://al.fanza.co.jp/')) {
     try {
       const u = new URL(raw);
@@ -234,7 +248,7 @@ export default async function PublicListPage(
         ) : (
           <div className="[column-count:2] sm:[column-count:3] [column-gap:12px]">
             {data.videos.map((video) => {
-              const affiliateUrl = toAffiliateUrl(video.product_url, data.affiliate_fanza_id);
+              const affiliateUrl = toAffiliateUrl(video.product_url, video.source, data.affiliate_fanza_id, data.affiliate_mgs_id);
               const { primary: resolvedThumb } = resolveThumbnail({ source: video.source, thumbnail_url: video.thumbnail_url, image_urls: video.image_urls });
               const thumb = resolvedThumb ?? toLgThumb(video.thumbnail_url) ?? toLgThumb(video.thumbnail_vertical_url);
               return (
