@@ -109,6 +109,20 @@ for v in ... \
 
 stub ファイルと `cicd-deploy-db.yml` の変更を同じコミットに含める。
 
+#### stub が CI で一度適用されたら repair リストから外す
+
+`repair --status reverted` は `schema_migrations` の行を削除せずステータスを変更するだけのため、stub が CI で適用済み（行が存在する）の状態で再度 repair すると、次の `db push` が同じバージョンを INSERT しようとして `duplicate key` エラーになる。
+
+**stub が CI で正常に適用された（= `db push` が成功した）ことを確認したら、そのバージョンを repair リストから削除する PR を作成する。**
+
+```yaml
+# 削除する
+for v in ... \
+         <timestamp>; do  ← ここから該当バージョンを取り除く
+```
+
+repair リストに残すのは「まだ stub が適用されていない（= CI が一度も通っていない）バージョン」だけにする。
+
 #### なぜ必要か
 
 `supabase db push --include-all` は、リモートの migration 履歴テーブルにあってローカルに存在しないバージョンがあるとエラーになる。`repair --status reverted` でそのバージョンを「取り消し済み」として扱わせることで回避できる。stub ファイルはローカルの tracking 記録として残す。
