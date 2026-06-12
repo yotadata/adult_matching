@@ -7,6 +7,7 @@ CREATE INDEX IF NOT EXISTS idx_videos_fanza_rank ON public.videos (fanza_rank AS
   WHERE fanza_rank IS NOT NULL;
 
 -- get_popular_videos: fanza_rank をフォールバックとして使用
+DROP FUNCTION IF EXISTS public.get_popular_videos(uuid, int, int);
 CREATE OR REPLACE FUNCTION public.get_popular_videos(
   user_uuid uuid DEFAULT NULL,
   limit_count int DEFAULT 20,
