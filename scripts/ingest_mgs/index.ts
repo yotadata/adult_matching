@@ -278,6 +278,7 @@ async function insertVideoData(data: PreparedVideoData): Promise<boolean> {
   }
 
   const videoId = upserted.id;
+  const hasPerformer = data.performers.length > 0;
 
   // タグ
   const tagRows: { video_id: string; tag_id: string }[] = [];
@@ -307,8 +308,16 @@ async function insertVideoData(data: PreparedVideoData): Promise<boolean> {
       console.error(`[ingest_mgs] video_performers upsert failed:`, pe);
   }
 
+  // has_performer フラグを更新（グリッドRPCのインデックス条件に必要）
+  if (hasPerformer) {
+    await supabase
+      .from('videos')
+      .update({ has_performer: true })
+      .eq('id', videoId);
+  }
+
   if (debugLogs) {
-    console.log(`[ingest_mgs] upserted ${data.external_id} "${data.title}"`);
+    console.log(`[ingest_mgs] upserted ${data.external_id} "${data.title}" has_performer=${hasPerformer}`);
   } else {
     process.stdout.write('.');
   }
