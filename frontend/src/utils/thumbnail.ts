@@ -35,7 +35,9 @@ export function resolveThumbnail(params: {
       const jsUrl = image_urls[0];
       return {
         primary: toAmateurLargeUrl(jsUrl),
-        fallback: jsUrl,
+        // thumbnail_url (jm.jpg) を最終フォールバックとして使う。
+        // js-001.jpg はサンプル画像がない動画では実在しないため使わない。
+        fallback: thumbnail_url ?? jsUrl,
       };
     }
     // image_urls が未取得の場合、thumbnail_url の jm→jp-001 変換を試みる
