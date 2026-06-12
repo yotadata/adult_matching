@@ -96,6 +96,7 @@ function GridPage() {
   const OVERLAY_HIDE_DELAY_MS = 700;
   const loadedVideoIds = useRef<Set<string>>(new Set());
   const likeCountSinceEmbed = useRef(0);
+  const fetchVideosRef = useRef<() => Promise<void>>(async () => {});
 
   const fetchVideos = useCallback(async () => {
     if (loading || !hasMore) return;
@@ -183,17 +184,23 @@ function GridPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // 無限スクロール
+  // fetchVideosの最新参照を保持（ObserverからはrefのみでアクセスしObserverの再生成を防ぐ）
+  useEffect(() => {
+    fetchVideosRef.current = fetchVideos;
+  }, [fetchVideos]);
+
+  // 無限スクロール（マウント時のみObserverを生成）
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting) fetchVideos();
+        if (entries[0].isIntersecting) fetchVideosRef.current();
       },
       { threshold: 0.1 }
     );
     if (loaderRef.current) observer.observe(loaderRef.current);
     return () => observer.disconnect();
-  }, [fetchVideos]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const toAffiliateUrl = (raw?: string | null) => {
     const AF_ID = 'yotadata2-001';
