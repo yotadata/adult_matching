@@ -428,10 +428,14 @@ const AccountManagementDrawer: React.FC<AccountManagementDrawerProps> = ({ isOpe
                             <button
                               type="button"
                               onClick={() => { setAccountOpen((v) => !v); setEditSection(null); }}
-                              className="w-full flex items-center justify-between"
+                              className="w-full flex items-center justify-between px-4 py-3 rounded-xl bg-[#161b22] border border-[#30363d] hover:border-violet-500/50 transition-colors"
                             >
-                              <p className="text-[11px] text-[#8b949e] font-semibold uppercase tracking-wider">アカウント</p>
-                              {accountOpen ? <ChevronUp size={14} className="text-[#8b949e]" /> : <ChevronDown size={14} className="text-[#8b949e]" />}
+                              <div className="flex items-center gap-2">
+                                <User size={14} className="text-[#8b949e]" />
+                                <span className="text-sm font-bold text-[#e6edf3]">アカウント設定</span>
+                                {displayName && <span className="text-xs text-[#8b949e] truncate max-w-[120px]">{displayName}</span>}
+                              </div>
+                              {accountOpen ? <ChevronUp size={14} className="text-[#8b949e] shrink-0" /> : <ChevronDown size={14} className="text-[#8b949e] shrink-0" />}
                             </button>
 
                             {accountOpen && (
