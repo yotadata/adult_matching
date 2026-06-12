@@ -560,12 +560,6 @@ const AccountManagementDrawer: React.FC<AccountManagementDrawerProps> = ({ isOpe
                               </div>
                             )}
 
-                            {/* アカウント折りたたみ時はログアウトのみ表示 */}
-                            {!accountOpen && (
-                              <button onClick={handleLogout} className="w-full py-2.5 px-4 rounded-xl bg-red-500/20 text-red-400 border border-red-500/30 font-bold text-sm hover:bg-red-500/30 transition-colors">
-                                ログアウト
-                              </button>
-                            )}
                           </section>
                         </>
                       )}
