@@ -5,6 +5,7 @@ import { Search, Heart, Plus, Check, Loader2, X, ChevronDown, Sparkles, Compass,
 import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { resolveThumbnail } from '@/utils/thumbnail';
+import { resolveEmbedUrl } from '@/lib/videoMeta';
 
 type Video = {
   id: string;
@@ -16,6 +17,7 @@ type Video = {
   distribution_code: string | null;
   source: string | null;
   image_urls: string[] | null;
+  sample_video_url?: string | null;
 };
 
 type Tag = { id: string; name: string; cnt?: number };
@@ -210,19 +212,33 @@ function VideoModal({ video, likedIds, onLike, onClose }: {
               </div>
             </div>
           )}
-          <iframe
-            scrolling="no"
-            referrerPolicy="no-referrer"
-            src={toFanzaEmbedUrl(video.external_id)}
-            frameBorder="0"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
-            loading="eager"
-            onLoad={() => {
-              if (overlayHideTimer.current) clearTimeout(overlayHideTimer.current);
-              overlayHideTimer.current = setTimeout(() => setShowVideo(true), OVERLAY_HIDE_DELAY_MS);
-            }}
-            className="absolute top-0 left-0 w-full h-full overflow-hidden"
-          />
+          {(() => {
+            const embed = resolveEmbedUrl({ source: video.source, externalId: video.external_id, sampleVideoUrl: video.sample_video_url });
+            return embed?.type === 'mp4' ? (
+              <video
+                src={embed.url}
+                controls
+                autoPlay
+                playsInline
+                onCanPlay={() => setShowVideo(true)}
+                className="absolute top-0 left-0 w-full h-full bg-black"
+              />
+            ) : (
+              <iframe
+                scrolling="no"
+                referrerPolicy="no-referrer"
+                src={embed?.url ?? toFanzaEmbedUrl(video.external_id)}
+                frameBorder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
+                loading="eager"
+                onLoad={() => {
+                  if (overlayHideTimer.current) clearTimeout(overlayHideTimer.current);
+                  overlayHideTimer.current = setTimeout(() => setShowVideo(true), OVERLAY_HIDE_DELAY_MS);
+                }}
+                className="absolute top-0 left-0 w-full h-full overflow-hidden"
+              />
+            );
+          })()}
         </div>
         <div className="flex flex-col text-gray-800 px-4 py-3 gap-2">
           <h2 className="text-base font-extrabold tracking-tight line-clamp-2">{video.title}</h2>
