@@ -7,7 +7,7 @@ import { X, Play, Heart, Eye, ChevronDown, ChevronUp, Brain, Hand, Bot, Target, 
 import { trackEvent } from '@/lib/analytics';
 import OnboardingModal from '@/components/OnboardingModal';
 import { resolveThumbnail } from '@/utils/thumbnail';
-import { resolveEmbedUrl } from '@/lib/videoMeta';
+import { resolveEmbedUrl, resolveProductUrl } from '@/lib/videoMeta';
 
 type VideoItem = {
   id: string;
@@ -18,6 +18,7 @@ type VideoItem = {
   sample_video_url: string | null;
   embed_url: string | null;
   product_url: string | null;
+  affiliate_url?: string | null;
   product_released_at: string | null;
   performers: { id: string; name: string }[];
   tags: { id: string; name: string }[];
@@ -768,9 +769,9 @@ function GridPage() {
                     {likedIds.has(selected.id) ? 'いいね済み' : 'いいね'}
                   </button>
                 </div>
-                {likedIds.has(selected.id) && selected.product_url && (
+                {likedIds.has(selected.id) && (selected.product_url || selected.affiliate_url) && (
                   <a
-                    href={toAffiliateUrl(selected.product_url)}
+                    href={resolveProductUrl({ source: selected.video_source ?? selected.source, productUrl: selected.product_url, affiliateUrl: selected.affiliate_url })}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center gap-1.5 justify-center w-full py-2 rounded-lg bg-[#f0f0f0] hover:bg-[#e0e0e0] text-gray-500 text-xs font-medium transition-colors"

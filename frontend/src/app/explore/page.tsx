@@ -5,7 +5,7 @@ import { Search, Heart, Plus, Check, Loader2, X, ChevronDown, Sparkles, Compass,
 import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { resolveThumbnail } from '@/utils/thumbnail';
-import { resolveEmbedUrl } from '@/lib/videoMeta';
+import { resolveEmbedUrl, resolveProductUrl } from '@/lib/videoMeta';
 
 type Video = {
   id: string;
@@ -14,6 +14,7 @@ type Video = {
   thumbnail_url: string | null;
   thumbnail_vertical_url: string | null;
   product_url: string | null;
+  affiliate_url?: string | null;
   distribution_code: string | null;
   source: string | null;
   image_urls: string[] | null;
@@ -253,9 +254,9 @@ function VideoModal({ video, likedIds, onLike, onClose }: {
               {liked ? 'いいね済み' : 'いいね'}
             </button>
           </div>
-          {liked && video.product_url && (
+          {liked && (video.product_url || video.affiliate_url) && (
             <a
-              href={toAffiliateUrl(video.product_url)}
+              href={resolveProductUrl({ source: video.source, productUrl: video.product_url, affiliateUrl: video.affiliate_url })}
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-1.5 justify-center w-full py-2 rounded-lg bg-[#f0f0f0] hover:bg-[#e0e0e0] text-gray-500 text-xs font-medium transition-colors"
