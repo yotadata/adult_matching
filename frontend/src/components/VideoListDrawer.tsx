@@ -53,8 +53,9 @@ const formatPrice = (price?: number | null) => {
   return `￥${price.toLocaleString()}`;
 };
 
-const defaultAffiliateBuilder = (raw?: string | null) => {
+const defaultAffiliateBuilder = (raw?: string | null, source?: string | null) => {
   if (!raw) return '#';
+  if (source === 'mgs') return raw;
   const AF_ID = 'yotadata2-001';
   try {
     if (raw.startsWith('https://al.fanza.co.jp/')) {
@@ -86,7 +87,7 @@ export interface VideoListDrawerProps {
   selectedPerformerIds: string[];
   onToggleTag: (id: string) => void;
   onTogglePerformer: (id: string) => void;
-  buildAffiliateHref?: (url?: string | null) => string | undefined;
+  buildAffiliateHref?: (url?: string | null, source?: string | null) => string | undefined;
   totalCount?: number | null;
 }
 
@@ -471,7 +472,7 @@ export default function VideoListDrawer({
                             </div>
                             <div className="mt-auto pt-1">
                               <Link
-                                href={buildAffiliateHref(video.product_url) ?? '#'}
+                                href={buildAffiliateHref(video.product_url, video.source) ?? '#'}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-full bg-rose-500 text-white text-sm font-semibold hover:bg-rose-400 transition"

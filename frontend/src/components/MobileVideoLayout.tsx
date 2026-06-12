@@ -42,7 +42,8 @@ const MobileVideoLayout: React.FC<MobileVideoLayoutProps> = ({ cardData, onSkip,
 
   
 
-  const toAffiliateUrl = (raw?: string) => {
+  const toAffiliateUrl = (raw?: string, source?: string | null) => {
+    if (source === 'mgs') return raw ?? '';
     const AF_ID = 'yotadata2-001';
     try {
       if (raw && raw.startsWith('https://al.fanza.co.jp/')) {
@@ -159,7 +160,7 @@ const MobileVideoLayout: React.FC<MobileVideoLayoutProps> = ({ cardData, onSkip,
                 onClick={() => {
                   try {
                     const text = cardData.title || '';
-                    const url = toAffiliateUrl(cardData.productUrl);
+                    const url = toAffiliateUrl(cardData.productUrl, cardData.source);
                     const shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
                     window.open(shareUrl, '_blank', 'noopener,noreferrer');
                   } catch {}

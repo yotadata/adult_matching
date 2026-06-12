@@ -195,9 +195,10 @@ function GridPage() {
     return () => observer.disconnect();
   }, [fetchVideos]);
 
-  const toAffiliateUrl = (raw?: string | null) => {
+  const toAffiliateUrl = (raw?: string | null, source?: string | null) => {
     const AF_ID = 'yotadata2-001';
     if (!raw) return '';
+    if (source === 'mgs') return raw;
     if (raw.startsWith('https://al.fanza.co.jp/')) {
       try {
         const u = new URL(raw);

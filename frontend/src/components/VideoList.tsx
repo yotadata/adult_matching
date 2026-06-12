@@ -21,8 +21,9 @@ const formatDate = (value?: string | null) => {
   }
 };
 
-const toAffiliateUrl = (raw?: string | null) => {
+const toAffiliateUrl = (raw?: string | null, source?: string | null) => {
   if (!raw) return '#';
+  if (source === 'mgs') return raw;
   const AF_ID = 'yotadata2-001';
   try {
     if (raw.startsWith('https://al.fanza.co.jp/')) {
@@ -112,7 +113,7 @@ export default function VideoList({ title, description, videos, loading, error, 
                   </div>
                   <div className="mt-auto flex gap-2">
                     <Link
-                      href={toAffiliateUrl(video.product_url)}
+                      href={toAffiliateUrl(video.affiliate_url ?? video.product_url, video.source)}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-full bg-rose-500 text-white text-sm font-semibold hover:bg-rose-400 transition"

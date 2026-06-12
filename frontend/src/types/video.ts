@@ -10,4 +10,5 @@ export interface Video {
   tags: { id: string; name: string }[] | null;
   product_url: string | null;
   affiliate_url: string | null;
+  source?: string | null;
 }
