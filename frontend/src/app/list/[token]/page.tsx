@@ -116,9 +116,6 @@ export async function generateMetadata(
 
   const listTitle = data.title ?? `${name}のお気に入りリスト`;
 
-  // 先頭作品のサムネイルをOGP画像に使用
-  const ogImage = data.videos[0]?.thumbnail_url ?? null;
-
   return {
     title: `${listTitle} | 性癖ラボ`,
     description,
@@ -128,13 +125,11 @@ export async function generateMetadata(
       url: `${SITE_URL}/list/${token}`,
       siteName: '性癖ラボ',
       type: 'website',
-      ...(ogImage ? { images: [{ url: ogImage, width: 800, height: 450, alt: listTitle }] } : {}),
     },
     twitter: {
-      card: ogImage ? 'summary_large_image' : 'summary',
+      card: 'summary_large_image',
       title: `${listTitle} | 性癖ラボ`,
       description,
-      ...(ogImage ? { images: [ogImage] } : {}),
     },
     robots: { index: true, follow: true },
   };
