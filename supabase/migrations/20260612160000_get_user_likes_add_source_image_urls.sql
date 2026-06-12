@@ -1,0 +1,1 @@
+-- get_user_likes に source/image_urls を追加（MCPで直接適用済み）

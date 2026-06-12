@@ -5,6 +5,7 @@ import { Search, Heart, Plus, Check, Loader2, X, ChevronDown, Sparkles, Compass,
 import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { resolveThumbnail } from '@/utils/thumbnail';
+import { resolveEmbedUrl, resolveProductUrl } from '@/lib/videoMeta';
 
 type Video = {
   id: string;
@@ -13,9 +14,11 @@ type Video = {
   thumbnail_url: string | null;
   thumbnail_vertical_url: string | null;
   product_url: string | null;
+  affiliate_url?: string | null;
   distribution_code: string | null;
   source: string | null;
   image_urls: string[] | null;
+  sample_video_url?: string | null;
 };
 
 type Tag = { id: string; name: string; cnt?: number };
@@ -210,19 +213,33 @@ function VideoModal({ video, likedIds, onLike, onClose }: {
               </div>
             </div>
           )}
-          <iframe
-            scrolling="no"
-            referrerPolicy="no-referrer"
-            src={toFanzaEmbedUrl(video.external_id)}
-            frameBorder="0"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
-            loading="eager"
-            onLoad={() => {
-              if (overlayHideTimer.current) clearTimeout(overlayHideTimer.current);
-              overlayHideTimer.current = setTimeout(() => setShowVideo(true), OVERLAY_HIDE_DELAY_MS);
-            }}
-            className="absolute top-0 left-0 w-full h-full overflow-hidden"
-          />
+          {(() => {
+            const embed = resolveEmbedUrl({ source: video.source, externalId: video.external_id, sampleVideoUrl: video.sample_video_url });
+            return embed?.type === 'mp4' ? (
+              <video
+                src={embed.url}
+                controls
+                autoPlay
+                playsInline
+                onCanPlay={() => setShowVideo(true)}
+                className="absolute top-0 left-0 w-full h-full bg-black"
+              />
+            ) : (
+              <iframe
+                scrolling="no"
+                referrerPolicy="no-referrer"
+                src={embed?.url ?? toFanzaEmbedUrl(video.external_id)}
+                frameBorder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
+                loading="eager"
+                onLoad={() => {
+                  if (overlayHideTimer.current) clearTimeout(overlayHideTimer.current);
+                  overlayHideTimer.current = setTimeout(() => setShowVideo(true), OVERLAY_HIDE_DELAY_MS);
+                }}
+                className="absolute top-0 left-0 w-full h-full overflow-hidden"
+              />
+            );
+          })()}
         </div>
         <div className="flex flex-col text-gray-800 px-4 py-3 gap-2">
           <h2 className="text-base font-extrabold tracking-tight line-clamp-2">{video.title}</h2>
@@ -237,9 +254,9 @@ function VideoModal({ video, likedIds, onLike, onClose }: {
               {liked ? 'いいね済み' : 'いいね'}
             </button>
           </div>
-          {liked && video.product_url && (
+          {liked && (video.product_url || video.affiliate_url) && (
             <a
-              href={toAffiliateUrl(video.product_url)}
+              href={resolveProductUrl({ source: video.source, productUrl: video.product_url, affiliateUrl: video.affiliate_url })}
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-1.5 justify-center w-full py-2 rounded-lg bg-[#f0f0f0] hover:bg-[#e0e0e0] text-gray-500 text-xs font-medium transition-colors"
@@ -339,7 +356,9 @@ function ExplorePageInner() {
   const handleLike = async (video: Video) => {
     if (!isLoggedIn) { window.dispatchEvent(new Event('open-auth-modal')); return; }
     if (likedIds.has(video.id)) return;
-    await supabase.from('user_video_decisions').insert({ video_id: video.id, decision_type: 'grid_like', surface: 'grid' });
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    await supabase.from('user_video_decisions').insert({ user_id: user.id, video_id: video.id, decision_type: 'grid_like', surface: 'grid' });
     setLikedIds((prev) => new Set(prev).add(video.id));
     window.dispatchEvent(new Event('like-added'));
   };

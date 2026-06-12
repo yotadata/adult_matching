@@ -7,6 +7,7 @@ import { X, Play, Heart, Eye, ChevronDown, ChevronUp, Brain, Hand, Bot, Target, 
 import { trackEvent } from '@/lib/analytics';
 import OnboardingModal from '@/components/OnboardingModal';
 import { resolveThumbnail } from '@/utils/thumbnail';
+import { resolveEmbedUrl, resolveProductUrl } from '@/lib/videoMeta';
 
 type VideoItem = {
   id: string;
@@ -17,6 +18,7 @@ type VideoItem = {
   sample_video_url: string | null;
   embed_url: string | null;
   product_url: string | null;
+  affiliate_url?: string | null;
   product_released_at: string | null;
   performers: { id: string; name: string }[];
   tags: { id: string; name: string }[];
@@ -675,22 +677,36 @@ function GridPage() {
                       </div>
                     </div>
                   )}
-                  <iframe
-                    scrolling="no"
-                    referrerPolicy="no-referrer"
-                    src={toFanzaEmbedUrl(selected.external_id)}
-                    frameBorder="0"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
-                    loading="eager"
-                    onLoad={() => {
-                      if (overlayHideTimer.current) clearTimeout(overlayHideTimer.current);
-                      overlayHideTimer.current = setTimeout(() => {
-                        setShowVideo(true);
-                        overlayHideTimer.current = null;
-                      }, OVERLAY_HIDE_DELAY_MS);
-                    }}
-                    className="absolute top-0 left-0 w-full h-full overflow-hidden"
-                  />
+                  {(() => {
+                    const embed = resolveEmbedUrl({ source: selected.video_source, externalId: selected.external_id, sampleVideoUrl: selected.sample_video_url });
+                    return embed?.type === 'mp4' ? (
+                      <video
+                        src={embed.url}
+                        controls
+                        autoPlay
+                        playsInline
+                        onCanPlay={() => setShowVideo(true)}
+                        className="absolute top-0 left-0 w-full h-full bg-black"
+                      />
+                    ) : (
+                      <iframe
+                        scrolling="no"
+                        referrerPolicy="no-referrer"
+                        src={embed?.url ?? toFanzaEmbedUrl(selected.external_id)}
+                        frameBorder="0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
+                        loading="eager"
+                        onLoad={() => {
+                          if (overlayHideTimer.current) clearTimeout(overlayHideTimer.current);
+                          overlayHideTimer.current = setTimeout(() => {
+                            setShowVideo(true);
+                            overlayHideTimer.current = null;
+                          }, OVERLAY_HIDE_DELAY_MS);
+                        }}
+                        className="absolute top-0 left-0 w-full h-full overflow-hidden"
+                      />
+                    );
+                  })()}
                 </>
               ) : (
                 <div
@@ -753,9 +769,9 @@ function GridPage() {
                     {likedIds.has(selected.id) ? 'いいね済み' : 'いいね'}
                   </button>
                 </div>
-                {likedIds.has(selected.id) && selected.product_url && (
+                {likedIds.has(selected.id) && (selected.product_url || selected.affiliate_url) && (
                   <a
-                    href={toAffiliateUrl(selected.product_url)}
+                    href={resolveProductUrl({ source: selected.video_source ?? selected.source, productUrl: selected.product_url, affiliateUrl: selected.affiliate_url })}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center gap-1.5 justify-center w-full py-2 rounded-lg bg-[#f0f0f0] hover:bg-[#e0e0e0] text-gray-500 text-xs font-medium transition-colors"
