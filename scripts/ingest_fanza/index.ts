@@ -487,10 +487,16 @@ async function ingestSource(
         sm.size_476_306
       );
 
-      const imageUrls: string[] | null = coalesce(
+      let imageUrls: string[] | null = coalesce(
         item.sampleImageURL?.sample_l?.image,
         item.sampleImageURL?.sample_s?.image
       );
+      // FANZA_AMATEUR は sampleImageURL が返らないケースがある。
+      // thumbnail_url から js-001〜js-005 を生成してフォールバックとする。
+      if (!imageUrls && source === 'FANZA_AMATEUR' && item.imageURL?.list) {
+        const base = (item.imageURL.list as string).replace(/jm\.jpg$/, '');
+        imageUrls = [1, 2, 3, 4, 5].map((n) => `${base}js-${String(n).padStart(3, '0')}.jpg`);
+      }
       const horizontalThumbnail: string | null = coalesce(
         item.imageURL?.large,
         item.imageURL?.list,
