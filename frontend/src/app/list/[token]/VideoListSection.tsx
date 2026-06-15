@@ -135,6 +135,10 @@ export default function VideoListSection({
     });
   }, []);
 
+  const updateSectionTitle = useCallback((sectionId: string, title: string) => {
+    setSections(prev => prev.map(s => s.id === sectionId ? { ...s, title } : s));
+  }, []);
+
   const toggleDisplayMode = useCallback((sectionId: string) => {
     setSections(prev =>
       prev.map(s =>
@@ -215,10 +219,12 @@ export default function VideoListSection({
         if (error) throw error;
       }
 
-      // display_mode 変更分を保存
+      // タイトル・display_mode 変更分を保存
       for (const section of sections) {
         const original = initialSections.find(s => s.id === section.id);
-        if (original && original.display_mode !== section.display_mode) {
+        const titleChanged = original && original.title !== section.title;
+        const modeChanged = original && original.display_mode !== section.display_mode;
+        if (titleChanged || modeChanged) {
           const { error } = await supabase.rpc('upsert_list_section', {
             p_list_id: listId,
             p_section_id: section.id,
@@ -375,7 +381,12 @@ export default function VideoListSection({
                         <div {...provided.dragHandleProps} className="text-[#484f58] hover:text-[#8b949e] cursor-grab shrink-0">
                           <GripVertical size={14} />
                         </div>
-                        <span className="text-xs font-bold text-[#e6edf3] flex-1">{section.title ?? '無題'}</span>
+                        <input
+                          value={section.title ?? ''}
+                          onChange={e => updateSectionTitle(section.id, e.target.value)}
+                          className="flex-1 text-xs font-bold text-[#e6edf3] bg-transparent outline-none border-b border-transparent focus:border-violet-500/50 min-w-0"
+                          placeholder="セクション名"
+                        />
                         <button
                           onClick={() => toggleDisplayMode(section.id)}
                           title={section.display_mode === 'ranked' ? 'ランキング表示' : 'プレーン表示'}
@@ -433,7 +444,7 @@ export default function VideoListSection({
           type="text"
           value={newSectionTitle}
           onChange={e => setNewSectionTitle(e.target.value)}
-          onKeyDown={e => e.key === 'Enter' && addSection()}
+          onKeyDown={e => e.key === 'Enter' && !e.nativeEvent.isComposing && addSection()}
           placeholder="新しいセクション名を追加..."
           className="flex-1 px-3 py-1.5 rounded-lg bg-[#161b22] border border-[#30363d] focus:border-violet-500/60 outline-none text-xs text-[#e6edf3] placeholder-[#484f58]"
         />
