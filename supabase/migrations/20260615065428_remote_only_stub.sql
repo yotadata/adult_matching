@@ -1,0 +1,1 @@
+-- Remote-only migration stub (applied directly via MCP)
