@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
-import { GripVertical, Save, X, Plus, Loader2, Pencil, Trophy, List } from 'lucide-react';
+import { GripVertical, Save, X, Plus, Loader2, Pencil, Trophy, List, Play } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { resolveThumbnail } from '@/utils/thumbnail';
+import { resolveEmbedUrl } from '@/lib/videoMeta';
 
 type Video = {
   id: string;
@@ -19,6 +20,7 @@ type Video = {
   image_urls?: string[] | null;
   sort_order: number | null;
   section_id: string | null;
+  sample_video_url?: string | null;
 };
 
 type Section = {
@@ -64,6 +66,7 @@ export default function VideoListSection({
   const [editMode, setEditMode] = useState(false);
   const [saving, setSaving] = useState(false);
   const [addingSection, setAddingSection] = useState(false);
+  const [playingVideo, setPlayingVideo] = useState<Video | null>(null);
 
   // セクション別に動画を管理（null = 未分類）
   const [videosBySection, setVideosBySection] = useState<Map<string | null, Video[]>>(new Map());
@@ -277,6 +280,7 @@ export default function VideoListSection({
                 video={video}
                 affiliateUrl={affiliateUrls[video.id] ?? ''}
                 rank={flatIsRanked ? i + 1 : null}
+                onPlay={setPlayingVideo}
               />
             ))}
           </div>
@@ -299,6 +303,7 @@ export default function VideoListSection({
                         video={video}
                         affiliateUrl={affiliateUrls[video.id] ?? ''}
                         rank={section.display_mode === 'ranked' ? i + 1 : null}
+                        onPlay={setPlayingVideo}
                       />
                     ))}
                   </div>
@@ -317,12 +322,18 @@ export default function VideoListSection({
                       video={video}
                       affiliateUrl={affiliateUrls[video.id] ?? ''}
                       rank={null}
+                      onPlay={setPlayingVideo}
                     />
                   ))}
                 </div>
               </div>
             )}
           </div>
+        )}
+
+        {/* サンプル再生モーダル */}
+        {playingVideo && (
+          <SampleModal video={playingVideo} onClose={() => setPlayingVideo(null)} />
         )}
       </div>
     );
@@ -514,12 +525,14 @@ function CompactCard({ video, index, isRanked }: { video: Video; index: number; 
   );
 }
 
-function NormalCard({ video, affiliateUrl, rank }: {
+function NormalCard({ video, affiliateUrl, rank, onPlay }: {
   video: Video;
   affiliateUrl: string;
   rank: number | null;
+  onPlay: (v: Video) => void;
 }) {
   const thumb = getThumb(video);
+  const hasSample = !!video.sample_video_url && video.source !== 'vr';
   return (
     <div className="group relative mb-3 break-inside-avoid">
       <a
@@ -542,11 +555,94 @@ function NormalCard({ video, affiliateUrl, rank }: {
               <span className="text-[11px] font-black text-violet-300">#{rank}</span>
             </div>
           )}
+          {hasSample && (
+            <button
+              onClick={e => { e.preventDefault(); e.stopPropagation(); onPlay(video); }}
+              className="absolute bottom-1.5 right-1.5 w-7 h-7 flex items-center justify-center rounded-full bg-black/70 hover:bg-black/90 transition-colors"
+            >
+              <Play size={13} className="text-white ml-0.5" fill="white" />
+            </button>
+          )}
         </div>
         <div className="p-2">
           <p className="text-xs text-[#8b949e] leading-tight line-clamp-2">{video.title ?? ''}</p>
         </div>
       </a>
+    </div>
+  );
+}
+
+function SampleModal({ video, onClose }: { video: Video; onClose: () => void }) {
+  const [showVideo, setShowVideo] = useState(false);
+  const overlayTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const thumb = getThumb(video);
+  const embed = resolveEmbedUrl({
+    source: video.source,
+    externalId: video.external_id,
+    sampleVideoUrl: video.sample_video_url,
+  });
+
+  useEffect(() => {
+    return () => { if (overlayTimer.current) clearTimeout(overlayTimer.current); };
+  }, []);
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
+      onClick={onClose}
+    >
+      <div
+        className="relative w-full max-w-lg rounded-2xl overflow-hidden bg-[#0d1117] shadow-2xl"
+        onClick={e => e.stopPropagation()}
+      >
+        <button
+          onClick={onClose}
+          className="absolute top-2 right-2 z-20 w-8 h-8 flex items-center justify-center rounded-full bg-black/60 text-white hover:bg-black/80"
+        >
+          <X size={16} />
+        </button>
+
+        <div className="relative w-full aspect-video bg-black flex items-center justify-center overflow-hidden">
+          {!showVideo && (
+            <div
+              className="absolute inset-0 flex items-center justify-center z-10 cursor-pointer"
+              style={{ backgroundImage: thumb ? `url(${thumb})` : undefined, backgroundSize: 'cover', backgroundPosition: 'center' }}
+              onClick={() => setShowVideo(true)}
+            >
+              <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                <Play className="text-white w-14 h-14 opacity-80" fill="white" />
+              </div>
+            </div>
+          )}
+          {embed?.type === 'mp4' ? (
+            <video
+              src={embed.url}
+              controls
+              autoPlay
+              playsInline
+              onCanPlay={() => setShowVideo(true)}
+              className="absolute inset-0 w-full h-full bg-black"
+            />
+          ) : embed?.type === 'iframe' ? (
+            <iframe
+              src={embed.url}
+              frameBorder="0"
+              scrolling="no"
+              referrerPolicy="no-referrer"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
+              loading="eager"
+              onLoad={() => {
+                overlayTimer.current = setTimeout(() => setShowVideo(true), 1500);
+              }}
+              className="absolute inset-0 w-full h-full"
+            />
+          ) : null}
+        </div>
+
+        <div className="p-3">
+          <p className="text-xs text-[#8b949e] line-clamp-2">{video.title ?? ''}</p>
+        </div>
+      </div>
     </div>
   );
 }

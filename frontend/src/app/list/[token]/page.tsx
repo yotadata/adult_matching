@@ -24,6 +24,7 @@ type Video = {
   image_urls?: string[] | null;
   sort_order: number | null;
   section_id: string | null;
+  sample_video_url?: string | null;
 };
 
 type Section = {
