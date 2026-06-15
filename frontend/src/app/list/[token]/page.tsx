@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import CopyLinkButton from './CopyLinkButton';
 import ListEditMode, { VideoDeleteButton } from './ListEditMode';
+import ListReorderMode from './ListReorderMode';
 import ListStats from './ListStats';
 import { resolveThumbnail } from '@/utils/thumbnail';
 
@@ -22,6 +23,15 @@ type Video = {
   liked_at: string;
   source?: string | null;
   image_urls?: string[] | null;
+  sort_order: number | null;
+  section_id: string | null;
+};
+
+type Section = {
+  id: string;
+  title: string | null;
+  display_mode: 'ranked' | 'plain';
+  sort_order: number;
 };
 
 type TagStat = { tag_name: string; cnt: number };
@@ -41,6 +51,7 @@ type ListData = {
   videos: Video[];
   tags: TagStat[];
   performers: PerformerStat[];
+  sections: Section[];
 };
 
 function toAffiliateUrl(raw?: string | null, source?: string | null, curatorFanzaId?: string | null, curatorMgsId?: string | null): string {
@@ -115,7 +126,6 @@ export async function generateMetadata(
     : `${data.videos.length}作品のいいねリスト。`;
 
   const listTitle = data.title ?? `${name}のお気に入りリスト`;
-  // OGタイトル: {リスト名} | {キュレーター名}
   const ogTitle = name ? `${listTitle} | ${name}` : `${listTitle} | 性癖ラボ`;
 
   return {
@@ -137,6 +147,68 @@ export async function generateMetadata(
   };
 }
 
+function VideoCard({
+  video,
+  affiliateUrl,
+  rank,
+  ownerUserId,
+  listId,
+  listType,
+}: {
+  video: Video;
+  affiliateUrl: string;
+  rank: number | null;
+  ownerUserId: string;
+  listId: string;
+  listType: 'liked' | 'custom';
+}) {
+  const { primary: resolvedThumb } = resolveThumbnail({ source: video.source, thumbnail_url: video.thumbnail_url, image_urls: video.image_urls });
+  const thumb = resolvedThumb ?? toLgThumb(video.thumbnail_url) ?? toLgThumb(video.thumbnail_vertical_url);
+  return (
+    <div className="group relative mb-3 break-inside-avoid">
+      <a
+        href={affiliateUrl || '#'}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="block rounded-lg overflow-hidden border border-[#21262d] hover:border-violet-500/50 transition-colors bg-[#161b22]"
+      >
+        <div className="relative">
+          {thumb ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={thumb}
+              alt={video.title ?? ''}
+              className="w-full h-auto group-hover:opacity-90 transition-opacity"
+              loading="lazy"
+            />
+          ) : (
+            <div className="w-full aspect-video bg-[#21262d] flex items-center justify-center">
+              <span className="text-[#484f58] text-xs">No Image</span>
+            </div>
+          )}
+          {rank !== null && (
+            <div className="absolute top-1.5 left-1.5 min-w-[22px] h-[22px] px-1.5 rounded-md bg-black/70 backdrop-blur flex items-center justify-center">
+              <span className="text-[11px] font-black text-violet-300">#{rank}</span>
+            </div>
+          )}
+        </div>
+        <div className="p-2">
+          <p className="text-xs text-[#8b949e] leading-tight line-clamp-2">
+            {video.title ?? ''}
+          </p>
+        </div>
+      </a>
+      {listType === 'custom' && (
+        <VideoDeleteButton
+          ownerUserId={ownerUserId}
+          listId={listId}
+          videoId={video.id}
+        />
+      )}
+    </div>
+  );
+}
+
 export default async function PublicListPage(
   { params }: { params: Promise<{ token: string }> }
 ) {
@@ -147,6 +219,24 @@ export default async function PublicListPage(
   const name = data.display_name;
   const pageUrl = `${SITE_URL}/list/${token}`;
   const filteredTags = filterTags(data.tags);
+  const sections = data.sections ?? [];
+
+  // セクションIDで動画をグループ化（section_id=null は「未分類」）
+  const sectionMap = new Map<string | null, Video[]>();
+  sectionMap.set(null, []);
+  for (const s of sections) sectionMap.set(s.id, []);
+  for (const v of data.videos) {
+    const key = v.section_id ?? null;
+    if (!sectionMap.has(key)) sectionMap.set(key, []);
+    sectionMap.get(key)!.push(v);
+  }
+
+  // セクションなし（liked リストまたはまだセクション未作成）はフラット表示
+  const isFlat = sections.length === 0;
+
+  // フラット時：sort_order が設定されていればランキング表示
+  const flatVideos = data.videos;
+  const flatIsRanked = data.list_type === 'custom' && flatVideos.some(v => v.sort_order !== null);
 
   return (
     <div className="min-h-screen bg-[#0d1117] text-[#e6edf3]">
@@ -212,7 +302,7 @@ export default async function PublicListPage(
           </Link>
         )}
 
-        {/* 編集モードバナー＋動画追加ボタン（オーナーのみ表示） */}
+        {/* 編集モード（オーナーのみ） */}
         <ListEditMode
           ownerUserId={data.user_id}
           listId={data.list_id}
@@ -220,6 +310,17 @@ export default async function PublicListPage(
           listTitle={data.title}
           token={token}
         />
+
+        {/* 並べ替え＆セクション管理（オーナー＆カスタムリストのみ） */}
+        {data.list_type === 'custom' && (
+          <ListReorderMode
+            ownerUserId={data.user_id}
+            listId={data.list_id}
+            videos={data.videos}
+            sections={sections}
+            token={token}
+          />
+        )}
 
         {/* 好きなジャンルランキング */}
         {filteredTags.length > 0 && (
@@ -266,50 +367,72 @@ export default async function PublicListPage(
         {/* 作品グリッド */}
         {data.videos.length === 0 ? (
           <p className="text-center text-[#656d76] py-20">まだ作品がありません。</p>
-        ) : (
+        ) : isFlat ? (
+          /* セクションなし：フラット表示（ランキングバッジ付き） */
           <div className="[column-count:2] sm:[column-count:3] [column-gap:12px]">
-            {data.videos.map((video) => {
-              const affiliateUrl = toAffiliateUrl(video.product_url, video.source, data.affiliate_fanza_id, data.affiliate_mgs_id);
-              const { primary: resolvedThumb } = resolveThumbnail({ source: video.source, thumbnail_url: video.thumbnail_url, image_urls: video.image_urls });
-              const thumb = resolvedThumb ?? toLgThumb(video.thumbnail_url) ?? toLgThumb(video.thumbnail_vertical_url);
+            {flatVideos.map((video, i) => (
+              <VideoCard
+                key={video.id}
+                video={video}
+                affiliateUrl={toAffiliateUrl(video.product_url, video.source, data.affiliate_fanza_id, data.affiliate_mgs_id)}
+                rank={flatIsRanked ? i + 1 : null}
+                ownerUserId={data.user_id}
+                listId={data.list_id}
+                listType={data.list_type}
+              />
+            ))}
+          </div>
+        ) : (
+          /* セクションあり：セクション別に表示 */
+          <div className="space-y-10">
+            {sections.map((section) => {
+              const sectionVideos = sectionMap.get(section.id) ?? [];
+              const isRanked = section.display_mode === 'ranked';
+              if (sectionVideos.length === 0) return null;
               return (
-                <div key={video.id} className="group relative mb-3 break-inside-avoid">
-                  <a
-                    href={affiliateUrl || '#'}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="block rounded-lg overflow-hidden border border-[#21262d] hover:border-violet-500/50 transition-colors bg-[#161b22]"
-                  >
-                    {thumb ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={thumb}
-                        alt={video.title ?? ''}
-                        className="w-full h-auto group-hover:opacity-90 transition-opacity"
-                        loading="lazy"
-                      />
-                    ) : (
-                      <div className="w-full aspect-video bg-[#21262d] flex items-center justify-center">
-                        <span className="text-[#484f58] text-xs">No Image</span>
-                      </div>
-                    )}
-                    <div className="p-2">
-                      <p className="text-xs text-[#8b949e] leading-tight line-clamp-2">
-                        {video.title ?? ''}
-                      </p>
-                    </div>
-                  </a>
-                  {/* 削除ボタン（オーナー＆カスタムリストのみ） */}
-                  {data.list_type === 'custom' && (
-                    <VideoDeleteButton
-                      ownerUserId={data.user_id}
-                      listId={data.list_id}
-                      videoId={video.id}
-                    />
+                <div key={section.id}>
+                  {section.title && (
+                    <h2 className="text-sm font-bold text-[#8b949e] uppercase tracking-wider mb-4 pb-2 border-b border-[#21262d]">
+                      {section.title}
+                    </h2>
                   )}
+                  <div className="[column-count:2] sm:[column-count:3] [column-gap:12px]">
+                    {sectionVideos.map((video, i) => (
+                      <VideoCard
+                        key={video.id}
+                        video={video}
+                        affiliateUrl={toAffiliateUrl(video.product_url, video.source, data.affiliate_fanza_id, data.affiliate_mgs_id)}
+                        rank={isRanked ? i + 1 : null}
+                        ownerUserId={data.user_id}
+                        listId={data.list_id}
+                        listType={data.list_type}
+                      />
+                    ))}
+                  </div>
                 </div>
               );
             })}
+            {/* 未分類（どのセクションにも属さない動画） */}
+            {(sectionMap.get(null) ?? []).length > 0 && (
+              <div>
+                <h2 className="text-sm font-bold text-[#484f58] uppercase tracking-wider mb-4 pb-2 border-b border-[#21262d]">
+                  未分類
+                </h2>
+                <div className="[column-count:2] sm:[column-count:3] [column-gap:12px]">
+                  {(sectionMap.get(null) ?? []).map((video) => (
+                    <VideoCard
+                      key={video.id}
+                      video={video}
+                      affiliateUrl={toAffiliateUrl(video.product_url, video.source, data.affiliate_fanza_id, data.affiliate_mgs_id)}
+                      rank={null}
+                      ownerUserId={data.user_id}
+                      listId={data.list_id}
+                      listType={data.list_type}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
