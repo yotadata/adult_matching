@@ -592,7 +592,8 @@ function NormalCard({ video, affiliateUrl, rank, onPlay }: {
 }
 
 function SampleModal({ video, affiliateUrl, onClose }: { video: Video; affiliateUrl: string; onClose: () => void }) {
-  const [showVideo, setShowVideo] = useState(false);
+  // ユーザーがPlay▶をクリックして初めて再生開始
+  const [started, setStarted] = useState(false);
   const overlayTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const thumb = getThumb(video);
   const embed = resolveEmbedUrl({
@@ -621,28 +622,37 @@ function SampleModal({ video, affiliateUrl, onClose }: { video: Video; affiliate
           <X size={16} />
         </button>
 
-        <div className="relative w-full aspect-video bg-black flex items-center justify-center overflow-hidden">
-          {!showVideo && (
+        <div className="relative w-full aspect-video bg-black overflow-hidden">
+          {/* サムネイル＋Playボタン（未再生時） */}
+          {!started && (
             <div
-              className="absolute inset-0 flex items-center justify-center z-10 cursor-pointer"
-              style={{ backgroundImage: thumb ? `url(${thumb})` : undefined, backgroundSize: 'cover', backgroundPosition: 'center' }}
-              onClick={() => setShowVideo(true)}
+              className="absolute inset-0 z-10 cursor-pointer flex items-center justify-center"
+              style={{
+                backgroundImage: thumb ? `url(${thumb})` : undefined,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+                backgroundColor: '#111',
+              }}
+              onClick={() => setStarted(true)}
             >
-              <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                <Play className="text-white w-14 h-14 opacity-80" fill="white" />
+              <div className="absolute inset-0 bg-black/40" />
+              <div className="relative z-10 w-16 h-16 flex items-center justify-center rounded-full bg-black/70 hover:bg-black/90 transition-colors">
+                <Play className="text-white w-8 h-8 ml-1" fill="white" />
               </div>
             </div>
           )}
-          {embed?.type === 'mp4' ? (
+
+          {/* 再生コンテンツ（startedになったら描画） */}
+          {started && embed?.type === 'mp4' && (
             <video
               src={embed.url}
               controls
               autoPlay
               playsInline
-              onCanPlay={() => setShowVideo(true)}
               className="absolute inset-0 w-full h-full bg-black"
             />
-          ) : embed?.type === 'iframe' ? (
+          )}
+          {started && embed?.type === 'iframe' && (
             <iframe
               src={embed.url}
               frameBorder="0"
@@ -650,12 +660,9 @@ function SampleModal({ video, affiliateUrl, onClose }: { video: Video; affiliate
               referrerPolicy="no-referrer"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
               loading="eager"
-              onLoad={() => {
-                overlayTimer.current = setTimeout(() => setShowVideo(true), 1500);
-              }}
               className="absolute inset-0 w-full h-full"
             />
-          ) : null}
+          )}
         </div>
 
         <div className="p-3 flex items-center justify-between gap-3">
