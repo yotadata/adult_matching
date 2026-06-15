@@ -12,8 +12,9 @@
   },
   "dependencies": {
     "@headlessui/react": "^2.2.7",
-    "@sentry/nextjs": "^9",
+    "@hello-pangea/dnd": "^18.0.1",
     "@react-spring/web": "^9.7.5",
+    "@sentry/nextjs": "^9",
     "@supabase/supabase-js": "^2.78.0",
     "framer-motion": "^12.23.12",
     "html-to-image": "^1.11.13",
