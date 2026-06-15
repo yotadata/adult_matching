@@ -333,7 +333,11 @@ export default function VideoListSection({
 
         {/* サンプル再生モーダル */}
         {playingVideo && (
-          <SampleModal video={playingVideo} onClose={() => setPlayingVideo(null)} />
+          <SampleModal
+            video={playingVideo}
+            affiliateUrl={affiliateUrls[playingVideo.id] ?? ''}
+            onClose={() => setPlayingVideo(null)}
+          />
         )}
       </div>
     );
@@ -533,46 +537,61 @@ function NormalCard({ video, affiliateUrl, rank, onPlay }: {
 }) {
   const thumb = getThumb(video);
   const hasSample = !!video.sample_video_url && video.source !== 'vr';
+
+  const cardContent = (
+    <>
+      <div className="relative">
+        {thumb ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={thumb} alt={video.title ?? ''} className="w-full h-auto group-hover:opacity-90 transition-opacity" loading="lazy" />
+        ) : (
+          <div className="w-full aspect-video bg-[#21262d] flex items-center justify-center">
+            <span className="text-[#484f58] text-xs">No Image</span>
+          </div>
+        )}
+        {rank !== null && (
+          <div className="absolute top-1.5 left-1.5 min-w-[22px] h-[22px] px-1.5 rounded-md bg-black/70 backdrop-blur flex items-center justify-center">
+            <span className="text-[11px] font-black text-violet-300">#{rank}</span>
+          </div>
+        )}
+        {hasSample && (
+          <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/30">
+            <div className="w-10 h-10 flex items-center justify-center rounded-full bg-black/70">
+              <Play size={18} className="text-white ml-0.5" fill="white" />
+            </div>
+          </div>
+        )}
+      </div>
+      <div className="p-2">
+        <p className="text-xs text-[#8b949e] leading-tight line-clamp-2">{video.title ?? ''}</p>
+      </div>
+    </>
+  );
+
   return (
     <div className="group relative mb-3 break-inside-avoid">
-      <a
-        href={affiliateUrl || '#'}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="block rounded-lg overflow-hidden border border-[#21262d] hover:border-violet-500/50 transition-colors bg-[#161b22]"
-      >
-        <div className="relative">
-          {thumb ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={thumb} alt={video.title ?? ''} className="w-full h-auto group-hover:opacity-90 transition-opacity" loading="lazy" />
-          ) : (
-            <div className="w-full aspect-video bg-[#21262d] flex items-center justify-center">
-              <span className="text-[#484f58] text-xs">No Image</span>
-            </div>
-          )}
-          {rank !== null && (
-            <div className="absolute top-1.5 left-1.5 min-w-[22px] h-[22px] px-1.5 rounded-md bg-black/70 backdrop-blur flex items-center justify-center">
-              <span className="text-[11px] font-black text-violet-300">#{rank}</span>
-            </div>
-          )}
-          {hasSample && (
-            <button
-              onClick={e => { e.preventDefault(); e.stopPropagation(); onPlay(video); }}
-              className="absolute bottom-1.5 right-1.5 w-7 h-7 flex items-center justify-center rounded-full bg-black/70 hover:bg-black/90 transition-colors"
-            >
-              <Play size={13} className="text-white ml-0.5" fill="white" />
-            </button>
-          )}
-        </div>
-        <div className="p-2">
-          <p className="text-xs text-[#8b949e] leading-tight line-clamp-2">{video.title ?? ''}</p>
-        </div>
-      </a>
+      {hasSample ? (
+        <button
+          onClick={() => onPlay(video)}
+          className="w-full text-left rounded-lg overflow-hidden border border-[#21262d] hover:border-violet-500/50 transition-colors bg-[#161b22]"
+        >
+          {cardContent}
+        </button>
+      ) : (
+        <a
+          href={affiliateUrl || '#'}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="block rounded-lg overflow-hidden border border-[#21262d] hover:border-violet-500/50 transition-colors bg-[#161b22]"
+        >
+          {cardContent}
+        </a>
+      )}
     </div>
   );
 }
 
-function SampleModal({ video, onClose }: { video: Video; onClose: () => void }) {
+function SampleModal({ video, affiliateUrl, onClose }: { video: Video; affiliateUrl: string; onClose: () => void }) {
   const [showVideo, setShowVideo] = useState(false);
   const overlayTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const thumb = getThumb(video);
@@ -639,8 +658,18 @@ function SampleModal({ video, onClose }: { video: Video; onClose: () => void }) 
           ) : null}
         </div>
 
-        <div className="p-3">
-          <p className="text-xs text-[#8b949e] line-clamp-2">{video.title ?? ''}</p>
+        <div className="p-3 flex items-center justify-between gap-3">
+          <p className="text-xs text-[#8b949e] line-clamp-2 flex-1">{video.title ?? ''}</p>
+          {affiliateUrl && (
+            <a
+              href={affiliateUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="shrink-0 px-3 py-1.5 rounded-lg bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold transition-colors"
+            >
+              本編を見る →
+            </a>
+          )}
         </div>
       </div>
     </div>
