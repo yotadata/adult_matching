@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
-import { GripVertical, Save, X, Plus, Loader2, Pencil } from 'lucide-react';
+import { GripVertical, Save, X, Plus, Loader2, Pencil, Trophy, List } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { resolveThumbnail } from '@/utils/thumbnail';
@@ -78,7 +78,7 @@ export default function VideoListSection({
     setEditMode(true);
   }, [videos, initialSections]);
 
-  const onDragEnd = useCallback((result: DropResult) => {
+  const onVideoDragEnd = useCallback((result: DropResult) => {
     if (!result.destination) return;
     setOrderedVideos(prev => {
       const next = [...prev];
@@ -86,6 +86,26 @@ export default function VideoListSection({
       next.splice(result.destination!.index, 0, moved);
       return next;
     });
+  }, []);
+
+  const onSectionDragEnd = useCallback((result: DropResult) => {
+    if (!result.destination) return;
+    setSections(prev => {
+      const next = [...prev];
+      const [moved] = next.splice(result.source.index, 1);
+      next.splice(result.destination!.index, 0, moved);
+      return next;
+    });
+  }, []);
+
+  const toggleDisplayMode = useCallback((sectionId: string) => {
+    setSections(prev =>
+      prev.map(s =>
+        s.id === sectionId
+          ? { ...s, display_mode: s.display_mode === 'ranked' ? 'plain' : 'ranked' }
+          : s
+      )
+    );
   }, []);
 
   const assignSection = useCallback((videoId: string, sectionId: string | null) => {
@@ -124,13 +144,14 @@ export default function VideoListSection({
   const save = useCallback(async () => {
     setSaving(true);
     try {
-      const videoIds = orderedVideos.map(v => v.id);
+      // 動画並べ替え
       const { error: reorderErr } = await supabase.rpc('reorder_list_videos', {
         p_list_id: listId,
-        p_video_ids: videoIds,
+        p_video_ids: orderedVideos.map(v => v.id),
       });
       if (reorderErr) throw reorderErr;
 
+      // 動画セクション割り当て
       for (const video of orderedVideos) {
         const original = videos.find(v => v.id === video.id);
         if (original?.section_id !== video.section_id) {
@@ -143,6 +164,30 @@ export default function VideoListSection({
         }
       }
 
+      // セクション並べ替え
+      if (sections.length > 0) {
+        const { error: secReorderErr } = await supabase.rpc('reorder_list_sections', {
+          p_list_id: listId,
+          p_section_ids: sections.map(s => s.id),
+        });
+        if (secReorderErr) throw secReorderErr;
+      }
+
+      // display_mode 更新（変更があったセクションのみ）
+      for (const section of sections) {
+        const original = initialSections.find(s => s.id === section.id);
+        if (original && original.display_mode !== section.display_mode) {
+          const { error } = await supabase.rpc('upsert_list_section', {
+            p_list_id: listId,
+            p_section_id: section.id,
+            p_title: section.title ?? '',
+            p_sort_order: section.sort_order,
+            p_display_mode: section.display_mode,
+          });
+          if (error) throw error;
+        }
+      }
+
       setEditMode(false);
       router.refresh();
     } catch (err: unknown) {
@@ -150,7 +195,7 @@ export default function VideoListSection({
     } finally {
       setSaving(false);
     }
-  }, [orderedVideos, listId, videos, router]);
+  }, [orderedVideos, sections, initialSections, listId, videos, router]);
 
   // ---- 通常表示（閲覧モード） ----
   if (!editMode) {
@@ -269,42 +314,78 @@ export default function VideoListSection({
       </div>
 
       {/* セクション管理 */}
-      {sections.length > 0 && (
-        <div className="mb-4 flex flex-wrap gap-2">
-          {sections.map(section => (
-            <div key={section.id} className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#161b22] border border-[#30363d] text-xs text-[#e6edf3]">
-              <span>{section.title ?? '無題'}</span>
-              <button
-                onClick={() => deleteSection(section.id)}
-                className="text-[#484f58] hover:text-red-400 transition-colors"
-              >
-                <X size={11} />
-              </button>
-            </div>
-          ))}
+      <div className="mb-5 space-y-2">
+        <DragDropContext onDragEnd={onSectionDragEnd}>
+          <Droppable droppableId="section-list" direction="vertical">
+            {provided => (
+              <div ref={provided.innerRef} {...provided.droppableProps} className="space-y-1.5">
+                {sections.map((section, i) => (
+                  <Draggable key={section.id} draggableId={`sec-${section.id}`} index={i}>
+                    {(provided, snapshot) => (
+                      <div
+                        ref={provided.innerRef}
+                        {...provided.draggableProps}
+                        className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-[#161b22] border text-xs transition-shadow ${
+                          snapshot.isDragging ? 'border-violet-500/50 shadow-md' : 'border-[#30363d]'
+                        }`}
+                      >
+                        <div {...provided.dragHandleProps} className="text-[#484f58] hover:text-[#8b949e] cursor-grab">
+                          <GripVertical size={13} />
+                        </div>
+                        <span className="text-[#e6edf3] flex-1">{section.title ?? '無題'}</span>
+                        {/* display_mode トグル */}
+                        <button
+                          onClick={() => toggleDisplayMode(section.id)}
+                          title={section.display_mode === 'ranked' ? 'ランキング表示（クリックでプレーンに変更）' : 'プレーン表示（クリックでランキングに変更）'}
+                          className={`flex items-center gap-1 px-2 py-0.5 rounded-full border text-[10px] font-bold transition-colors ${
+                            section.display_mode === 'ranked'
+                              ? 'border-amber-500/40 bg-amber-500/10 text-amber-400 hover:bg-amber-500/20'
+                              : 'border-[#30363d] bg-[#0d1117] text-[#656d76] hover:border-[#8b949e] hover:text-[#8b949e]'
+                          }`}
+                        >
+                          {section.display_mode === 'ranked'
+                            ? <><Trophy size={9} />ランク</>
+                            : <><List size={9} />プレーン</>
+                          }
+                        </button>
+                        <button
+                          onClick={() => deleteSection(section.id)}
+                          className="text-[#484f58] hover:text-red-400 transition-colors"
+                        >
+                          <X size={12} />
+                        </button>
+                      </div>
+                    )}
+                  </Draggable>
+                ))}
+                {provided.placeholder}
+              </div>
+            )}
+          </Droppable>
+        </DragDropContext>
+        {/* 新規セクション追加 */}
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={newSectionTitle}
+            onChange={e => setNewSectionTitle(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && addSection()}
+            placeholder="新しいセクション名を追加..."
+            className="flex-1 px-3 py-1.5 rounded-lg bg-[#161b22] border border-[#30363d] focus:border-violet-500/60 outline-none text-xs text-[#e6edf3] placeholder-[#484f58]"
+          />
+          <button
+            onClick={addSection}
+            disabled={addingSection || !newSectionTitle.trim()}
+            className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[#161b22] border border-[#30363d] hover:border-violet-500/50 text-[#8b949e] hover:text-violet-300 disabled:opacity-40 text-xs font-semibold transition-colors"
+          >
+            {addingSection ? <Loader2 size={12} className="animate-spin" /> : <Plus size={12} />}
+            追加
+          </button>
         </div>
-      )}
-      <div className="flex gap-2 mb-6">
-        <input
-          type="text"
-          value={newSectionTitle}
-          onChange={e => setNewSectionTitle(e.target.value)}
-          onKeyDown={e => e.key === 'Enter' && addSection()}
-          placeholder="新しいセクション名を追加..."
-          className="flex-1 px-3 py-1.5 rounded-lg bg-[#161b22] border border-[#30363d] focus:border-violet-500/60 outline-none text-xs text-[#e6edf3] placeholder-[#484f58]"
-        />
-        <button
-          onClick={addSection}
-          disabled={addingSection || !newSectionTitle.trim()}
-          className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[#161b22] border border-[#30363d] hover:border-violet-500/50 text-[#8b949e] hover:text-violet-300 disabled:opacity-40 text-xs font-semibold transition-colors"
-        >
-          {addingSection ? <Loader2 size={12} className="animate-spin" /> : <Plus size={12} />}
-          追加
-        </button>
       </div>
 
-      {/* D&D リスト */}
-      <DragDropContext onDragEnd={onDragEnd}>
+      {/* 動画 D&D リスト */}
+      <DragDropContext onDragEnd={onVideoDragEnd}>
         <Droppable droppableId="video-list">
           {provided => (
             <div
