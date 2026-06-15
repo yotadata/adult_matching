@@ -26,7 +26,7 @@ jobs:
       - name: Setup Supabase CLI
         uses: supabase/setup-cli@v2
         with:
-          version: latest
+          version: 2.23.4
 
       - name: Link project
         working-directory: supabase
