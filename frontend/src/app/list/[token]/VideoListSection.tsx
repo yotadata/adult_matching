@@ -494,9 +494,9 @@ function CompactCard({ video, index, isRanked }: { video: Video; index: number; 
         >
           {thumb ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={thumb} alt="" className="w-full aspect-[2/3] object-cover" loading="lazy" />
+            <img src={thumb} alt="" className="w-full aspect-video object-cover" loading="lazy" />
           ) : (
-            <div className="w-full aspect-[2/3] bg-[#21262d] flex items-center justify-center">
+            <div className="w-full aspect-video bg-[#21262d] flex items-center justify-center">
               <span className="text-[#484f58] text-[9px]">No Image</span>
             </div>
           )}
