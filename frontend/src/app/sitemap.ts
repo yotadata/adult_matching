@@ -22,9 +22,9 @@ export default async function sitemap({ id }: { id: string }): Promise<MetadataR
   // 静的ページ
   if (id === '0') {
     return [
-      { url: `${SITE_URL}/grid`, lastModified: new Date(), changeFrequency: 'daily', priority: 1.0 },
-      { url: `${SITE_URL}/swipe`, lastModified: new Date(), changeFrequency: 'daily', priority: 0.9 },
-      { url: `${SITE_URL}/about`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.8 },
+      { url: `${SITE_URL}/`, lastModified: new Date(), changeFrequency: 'daily', priority: 1.0 },
+      { url: `${SITE_URL}/grid`, lastModified: new Date(), changeFrequency: 'daily', priority: 0.9 },
+      { url: `${SITE_URL}/swipe`, lastModified: new Date(), changeFrequency: 'daily', priority: 0.8 },
       { url: `${SITE_URL}/quiz`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.7 },
       { url: `${SITE_URL}/quiz/characters`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.6 },
       { url: `${SITE_URL}/tags`, lastModified: new Date(), changeFrequency: 'weekly', priority: 0.8 },
