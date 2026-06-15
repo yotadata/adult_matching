@@ -25,12 +25,6 @@ export default function Footer() {
               <li><Link href="/quiz" className="hover:text-[#e6edf3] transition-colors">偏愛16診断</Link></li>
             </ul>
           </div>
-          <div>
-            <p className="font-semibold text-[#8b949e] mb-3">サービス</p>
-            <ul className="space-y-2">
-              <li><Link href="/about" className="hover:text-[#e6edf3] transition-colors">性癖ラボとは</Link></li>
-            </ul>
-          </div>
         </div>
         <p className="text-xs text-center text-[#484f58]">© 2025 性癖ラボ. 18歳以上対象.</p>
       </div>

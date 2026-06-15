@@ -338,11 +338,7 @@ const AccountManagementDrawer: React.FC<AccountManagementDrawerProps> = ({ isOpe
                               <a href={`/u/${username}`} className="w-full flex items-center gap-2 py-2.5 px-4 rounded-xl bg-[#161b22] border border-[#30363d] hover:border-violet-500/50 text-[#8b949e] hover:text-[#e6edf3] text-sm font-bold transition-all">
                                 <ListVideo size={14} />マイページを開く
                               </a>
-                            ) : (
-                              <a href="/my/lists" className="w-full flex items-center gap-2 py-2.5 px-4 rounded-xl bg-[#161b22] border border-[#30363d] hover:border-violet-500/50 text-[#8b949e] hover:text-[#e6edf3] text-sm font-bold transition-all">
-                                <ListVideo size={14} />マイリストを開く
-                              </a>
-                            )}
+                            ) : null}
                             <div>
                               <p className="text-[10px] text-[#484f58] mb-2">いいねリストを URL で共有</p>
                               {publicToken ? (
@@ -559,9 +555,9 @@ const AccountManagementDrawer: React.FC<AccountManagementDrawerProps> = ({ isOpe
                                 )}
                                 <div className="flex items-center gap-1.5 justify-center">
                                   <Trash2 size={11} className="text-[#484f58]" />
-                                  <Link href="/contact" onClick={onClose} className="text-[10px] text-[#484f58] hover:text-[#8b949e] underline">
-                                    アカウント削除はこちら
-                                  </Link>
+                                  <span className="text-[10px] text-[#484f58]">
+                                    アカウント削除はお問い合わせください
+                                  </span>
                                 </div>
                               </div>
                             )}
