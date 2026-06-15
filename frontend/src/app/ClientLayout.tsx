@@ -51,7 +51,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
   useEffect(() => {
     if (!authInitialized || isLoggedIn === null || !pathname) return;
     if (pathname.startsWith('/quiz')) return;
-    const publicPaths = ['/', '/swipe', '/grid', '/explore', '/about', '/videos/', '/performers', '/tags', '/list', '/u/'];
+    const publicPaths = ['/', '/swipe', '/grid', '/explore', '/videos/', '/performers', '/tags', '/list', '/u/'];
     const isPublic = publicPaths.some((p) => pathname === p || pathname.startsWith(p));
     if (!isPublic && isLoggedIn === false) {
       router.replace('/grid');
